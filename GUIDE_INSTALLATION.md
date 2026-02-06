@@ -8,39 +8,46 @@
 
 ## 📋 Prérequis
 
-Vous devez avoir Python 3.9+ installé sur votre système.
+**⚠️ IMPORTANT**:
+- Le projet cible **Python >= 3.11** (3.12 OK).
+- Le package PyPI `mcp` requiert **Python >= 3.10**.
 
 ---
 
-## Étape 1: Vérifier Python
+## Étape 1: Vérifier/Installer Python ≥3.11
 
-### 1.1 Vérifier que Python est installé
+### 1.1 Vérifier la version actuelle
 
 ```bash
 python3 --version
 ```
 
-**Résultat attendu**: `Python 3.9.x` (ou version supérieure)
+**Résultat requis**: `Python 3.11.x` ou `Python 3.12.x`
 
-Si vous obtenez une erreur, installez Python:
+### 1.2 Si Python < 3.11, installer une version récente
+
+**Avec Homebrew (recommandé)**:
 ```bash
-# Avec Homebrew (recommandé)
-brew install python3
+# Installer Python 3.12
+brew install python@3.12
 
-# OU téléchargez depuis python.org
+# Vérifier l'installation
+python3.12 --version
+
+# Créer un alias (optionnel)
+alias python3=python3.12
 ```
 
-### 1.2 Vérifier pip3
-
-```bash
-pip3 --version
-```
-
-**Résultat attendu**: `pip 23.x.x from /usr/local/lib/python3.x/site-packages/pip (python 3.x)`
+**Alternative - Téléchargement direct**:
+- Visitez https://www.python.org/downloads/
+- Téléchargez Python 3.12.x pour macOS
+- Installez le package
 
 ---
 
-## Étape 2: Installer les Dépendances MCP
+## Étape 2: Créer un Environnement Virtuel (venv)
+
+**⚠️ IMPORTANT**: N'utilisez JAMAIS `pip3` système. Utilisez toujours un venv + `python -m pip`
 
 ### 2.1 Naviguer vers le dossier Cockpit
 
@@ -48,36 +55,74 @@ pip3 --version
 cd /Users/oliviercloutier/Desktop/Cockpit
 ```
 
-### 2.2 Installer le SDK MCP
+### 2.2 Créer le venv
 
 ```bash
-pip3 install mcp
+# Créer l'environnement virtuel avec Python 3.11+
+python3 -m venv venv
+
+# OU si vous avez installé python3.12 spécifiquement
+python3.12 -m venv venv
 ```
 
-**⚠️ Note**: Sur macOS, utilisez toujours `pip3` (pas `pip`)
-
-### 2.3 Installer PySide6 (si pas déjà installé)
+### 2.3 Activer le venv
 
 ```bash
-pip3 install PySide6
+# Sur macOS/Linux
+source venv/bin/activate
+
+# Vous devriez voir (venv) dans votre prompt
+# (venv) oliviercloutier@MacBook-Air Cockpit %
 ```
 
-### 2.4 Vérifier l'installation
+### 2.4 Vérifier que le venv utilise Python >=3.11
 
 ```bash
-pip3 list | grep mcp
+python --version
 ```
 
-**Résultat attendu**: Vous devriez voir `mcp` dans la liste
+**Résultat attendu**: `Python 3.11.x` ou `Python 3.12.x`
+
+**⚠️ Si vous voyez Python 3.9**, le venv a été créé avec la mauvaise version. Supprimez et recréez:
+```bash
+deactivate
+rm -rf venv
+python3.12 -m venv venv
+source venv/bin/activate
+```
 
 ---
 
-## Étape 3: Tester le Serveur MCP
+## Étape 3: Installer les Dépendances
 
-### 3.1 Lancer le test de vérification
+**⚠️ Assurez-vous que le venv est activé** (vous devez voir `(venv)` dans votre prompt)
+
+### 3.1 Installer depuis requirements.txt
 
 ```bash
-python3 tests/verify_mcp_basic.py
+python -m pip install -r requirements.txt
+```
+
+**Note**: Utilisez toujours `python -m pip` (pas `pip` ou `pip3`)
+
+### 3.2 Vérifier l'installation
+
+```bash
+python -m pip list | grep mcp
+```
+
+**Résultat attendu**: une ligne `mcp <version>` dans la sortie.
+
+---
+
+## Étape 4: Tester le Serveur MCP
+
+**⚠️ Le venv doit être activé** (vérifiez le `(venv)` dans votre prompt)
+
+### 4.1 Lancer le test de vérification
+
+```bash
+python tests/verify_mcp_basic.py
 ```
 
 **Résultat attendu**:
@@ -105,22 +150,22 @@ Results: 2 passed, 0 failed
 ✅ All basic checks passed!
 ```
 
-### 3.2 Si le test échoue
+### 4.2 Si le test échoue
 
 **Problème**: `ModuleNotFoundError: No module named 'mcp'`
 
 **Solution**:
 ```bash
-# Réinstaller avec --upgrade
-pip3 install --upgrade mcp
+# Verifier que le venv est active, puis re-installer
+python -m pip install -r requirements.txt
 
-# Ou avec --user si problème de permissions
-pip3 install --user mcp
+# Si besoin, forcer la mise a jour du package
+python -m pip install --upgrade mcp
 ```
 
 ---
 
-## Étape 4: Configurer Antigravity
+## Étape 5: Configurer Antigravity
 
 ### 4.1 Localiser le fichier de configuration Antigravity MCP
 
@@ -136,7 +181,7 @@ Ouvrez le fichier de config et ajoutez:
 {
   "mcpServers": {
     "cockpit": {
-      "command": "python3",
+      "command": "/Users/oliviercloutier/Desktop/Cockpit/venv/bin/python",
       "args": ["/Users/oliviercloutier/Desktop/Cockpit/control/mcp_server.py"],
       "env": {
         "COCKPIT_PROJECT_ID": "demo"
@@ -145,6 +190,8 @@ Ouvrez le fichier de config et ajoutez:
   }
 }
 ```
+
+**⚠️ IMPORTANT**: Le chemin `command` doit pointer vers le Python du venv, pas le système!
 
 **📝 Note**: Si vous avez déjà d'autres serveurs MCP configurés, ajoutez simplement la section `"cockpit"` dans `mcpServers`.
 
@@ -158,7 +205,7 @@ Ouvrez le fichier de config et ajoutez:
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/files"]
     },
     "cockpit": {
-      "command": "python3",
+      "command": "/Users/oliviercloutier/Desktop/Cockpit/venv/bin/python",
       "args": ["/Users/oliviercloutier/Desktop/Cockpit/control/mcp_server.py"],
       "env": {
         "COCKPIT_PROJECT_ID": "demo"
@@ -304,31 +351,34 @@ Ne spamme pas le chat avec chaque action!
 
 ## 🔧 Dépannage
 
+### Problème: Python < 3.11 installé
+
+**Solution**: Installer Python 3.12 via Homebrew:
+```bash
+brew install python@3.12
+python3.12 -m venv venv
+source venv/bin/activate
+```
+
+### Problème: "No module named 'mcp'"
+
+**Solution**: Vérifiez que le venv est activé et réinstallez:
+```bash
+# Activer le venv
+source venv/bin/activate
+
+# Vérifier la version Python
+python --version  # Doit être ≥3.11
+
+# Réinstaller
+python -m pip install -r requirements.txt
+```
+
 ### Problème: "command not found: pip"
 
-**Solution**: Utilisez `pip3` au lieu de `pip` sur macOS:
+**Solution**: N'utilisez jamais `pip` seul. Utilisez `python -m pip`:
 ```bash
-pip3 install mcp
-```
-
-### Problème: "Permission denied"
-
-**Solution**: Installez en mode utilisateur:
-```bash
-pip3 install --user mcp
-```
-
-### Problème: Module MCP introuvable
-
-**Solution**: Vérifiez le chemin Python:
-```bash
-which python3
-pip3 show mcp
-```
-
-Si installé mais non trouvé, ajoutez au PATH:
-```bash
-export PATH="$HOME/Library/Python/3.9/bin:$PATH"
+python -m pip install package_name
 ```
 
 ### Problème: Le serveur MCP ne démarre pas
@@ -362,11 +412,13 @@ tail -f mcp_server.log
 
 Avant de considérer l'installation terminée, vérifiez:
 
-- [ ] Python 3.9+ installé (`python3 --version`)
-- [ ] pip3 fonctionnel (`pip3 --version`)
-- [ ] MCP SDK installé (`pip3 list | grep mcp`)
-- [ ] Tests passent (`python3 tests/verify_mcp_basic.py`)
-- [ ] Configuration Antigravity créée
+- [ ] Python 3.11+ installé (`python3 --version`)
+- [ ] Venv créé (`ls venv/`)
+- [ ] Venv activé (`(venv)` visible dans prompt)
+- [ ] MCP SDK installé (`python -m pip list | grep mcp`)
+- [ ] Tests passent (`python tests/verify_mcp_basic.py`)
+- [ ] Configuration Antigravity créée (venv python path)
+- [ ] Fichier `control/mcp_server.py` existe
 - [ ] Test end-to-end réussi (agent → Cockpit)
 - [ ] Données visibles dans `control/projects/`
 

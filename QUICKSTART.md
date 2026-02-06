@@ -10,17 +10,18 @@ MCP server that connects Antigravity agents to Cockpit mission control, enabling
 
 ## ⚠️ Prerequisites
 
-- **Python ≥ 3.11** (mcp package requires this)
+- Python >= 3.11 (project target; PyPI package `mcp` requires Python >= 3.10)
 - macOS (tested) or Linux
 
 ## 🚀 Quick Start
 
 ### 1. Verify Python Version
+
 ```bash
-python3 --version  # Must be ≥ 3.11
+python3 --version  # must be >= 3.11
 ```
 
-If < 3.11, install Python 3.12:
+If < 3.11, install Python 3.12 (macOS):
 ```bash
 brew install python@3.12
 ```
@@ -28,8 +29,8 @@ brew install python@3.12
 ### 2. Create Virtual Environment
 ```bash
 cd /Users/oliviercloutier/Desktop/Cockpit
-python3.11 -m venv .venv
-source .venv/bin/activate
+python3 -m venv venv
+source venv/bin/activate
 ```
 
 ### 3. Install Dependencies
@@ -58,7 +59,7 @@ Add to your Antigravity MCP config:
 {
   "mcpServers": {
     "cockpit": {
-      "command": "/Users/oliviercloutier/Desktop/Cockpit/.venv/bin/python",
+      "command": "/Users/oliviercloutier/Desktop/Cockpit/venv/bin/python",
       "args": ["/Users/oliviercloutier/Desktop/Cockpit/control/mcp_server.py"],
       "env": {
         "COCKPIT_PROJECT_ID": "demo"
@@ -84,7 +85,7 @@ await use_mcp_tool("cockpit.update_agent_state", {
     "project_id": "demo",
     "status": "executing",
     "progress": 50,
-    "current_phase": "Implementation"
+    "current_phase": "Implement"
 })
 
 # Post message
