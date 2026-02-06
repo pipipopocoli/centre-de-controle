@@ -1,7 +1,7 @@
 # ISSUE-0005 - Pack Context generator (Light/Full)
 
 - Owner: victor (@victor)
-- Phase: Implement
+- Phase: Ship
 - Status: Done
 
 ## Objective

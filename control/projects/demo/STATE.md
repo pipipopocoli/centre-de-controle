@@ -1,19 +1,18 @@
 # State
 ## Phase
-- Plan
+- Implement
 ## Objective
-- Stabiliser Cockpit V1 + lancer UI redesign (research) + Pack Context generator
+- Stabiliser Cockpit V1 + lancer UI redesign (research) + Pack Context generator (progress: 60%)
 ## Now
 - PR-1..PR-4 merged to main (docs/setup/mcp/roster+memory)
-- Kickoff UI redesign research (ISSUE-0006)
-- Kickoff Pack Context generator (ISSUE-0005)
+- Pack Context generator merged (ISSUE-0005)
+- UI research merged (ISSUE-0006, Phase 1)
 ## Next
-- @leo: 2-3 UI directions + 1 recommendation (ISSUE-0006)
-- @victor: spec + implement Pack Context Light/Full (ISSUE-0005)
-- Decide the first UI direction + scope (small, reversible PR)
+- @leo: Phase 2 UI implementation (tokens + layout + screenshot)
+- Apply chosen direction (Paper Ops) in a small, reversible PR
+- Manual QA checklist (resize, contrast, no clipping)
 ## In Progress
-- ISSUE-0005 Pack Context generator (victor)
-- ISSUE-0006 UI redesign V1 (research first) (leo)
+- ISSUE-0006 UI redesign V1 (implementation) (leo)
 ## Blockers
 - None declared
 ## Risks

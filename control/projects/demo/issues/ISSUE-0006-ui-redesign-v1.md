@@ -1,8 +1,8 @@
 # ISSUE-0006 - UI redesign V1 (research first)
 
 - Owner: leo (@leo)
-- Phase: Plan
-- Status: Done (Phase 1)
+- Phase: Implement
+- Status: In progress (Phase 2)
 
 ## Objective
 - Upgrade Cockpit UI from "functional but ugly" to a high-quality, intentional "mission control" experience.

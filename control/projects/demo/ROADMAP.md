@@ -2,12 +2,10 @@
 
 ## Now
 - Stabilisation V1 merged (docs/setup/mcp/roster+memory)
-- UI redesign research (ISSUE-0006)
-- Pack Context generator (ISSUE-0005)
+- Pack Context generator merged (ISSUE-0005)
+- UI redesign Phase 2 (implementation) (ISSUE-0006)
 
 ## Next
-- PR: Pack Context generator (Light/Full) + copy to clipboard
-- PR: UI redesign research spec (2-3 directions + recommendation)
 - PR: UI redesign implementation (styles + layout) + screenshot
 - Later: memory compaction tool (V2)
 
