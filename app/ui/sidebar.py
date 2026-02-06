@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QListWidget, QPushButton, QVBoxLayout, QWidget, QL
 
 
 class SidebarWidget(QWidget):
-    def __init__(self, projects: list[str] | None = None) -> None:
+    def __init__(self, projects: list[str] | None = None, footer_text: str | None = None) -> None:
         super().__init__()
         self.setObjectName("sidebar")
 
@@ -26,3 +26,9 @@ class SidebarWidget(QWidget):
         layout.addWidget(title)
         layout.addWidget(self.project_list, 1)
         layout.addWidget(self.new_project_btn)
+
+        if footer_text:
+            footer = QLabel(footer_text)
+            footer.setObjectName("sidebarFooter")
+            footer.setWordWrap(True)
+            layout.addWidget(footer)

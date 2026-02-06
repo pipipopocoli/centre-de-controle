@@ -12,8 +12,12 @@ python3 --version  # must be >= 3.11
 python3 -m venv venv
 source venv/bin/activate
 python -m pip install -r requirements.txt
-python app/main.py
+./launch_cockpit.sh
 ```
+
+Version check:
+- The window title shows: `Centre de controle - <branch>@<sha><*dirty>`
+- Sidebar footer shows the same stamp plus `Data: control/projects`
 
 ## Run MCP Server (stdio)
 
