@@ -2,7 +2,7 @@
 
 - Owner: victor
 - Phase: Plan
-- Status: Todo
+- Status: In progress
 
 ## Objective
 - Research and prototype packaging Cockpit as a macOS .app (double-click run), without breaking local-first behavior.
@@ -41,3 +41,57 @@
 - Packaging churn and time sink.
 - Runtime path bugs (resources vs working dir).
 
+## Research Notes (Options)
+
+### Option A — PyInstaller (recommendation for V2 prototype)
+Pros:
+- Mature, widely used for PySide6 on macOS.
+- Can generate a native `.app` bundle (`--windowed`) and run offline.
+- Minimal project structure changes; spec file handles data files.
+Cons:
+- Larger binaries; build artifacts can be heavy.
+- Qt plugin collection can be finicky (platforms, imageformats).
+- `--onefile` extracts to temp at runtime; slower cold start.
+Expected Steps:
+- Create a `.spec` file and add data files (QSS, templates, `control/` defaults).
+- Build: `pyinstaller --windowed --name "Centre de controle" app/main.py`.
+- Verify `.app` launches and reads/writes data dir outside bundle.
+Risks:
+- Missing Qt plugins -> blank window or crash.
+- App resources path differs from dev (need path helper).
+
+### Option B — Briefcase (BeeWare)
+Pros:
+- Produces a proper macOS app bundle with standard structure.
+- Good for long-term distribution if we commit to the tooling.
+Cons:
+- Requires project packaging setup (pyproject, app config).
+- Qt/PySide6 support is less turnkey; more moving parts.
+Expected Steps:
+- Add Briefcase config; package app + dependencies.
+- Run `briefcase create` / `briefcase build` / `briefcase run`.
+Risks:
+- Toolchain friction and slower iteration.
+- Dependency compatibility and template constraints.
+
+### Option C — Nuitka (compiled, standalone)
+Pros:
+- Compiles Python to C, can reduce runtime overhead.
+- Standalone app bundle; good performance.
+Cons:
+- Longer builds; more complex flags.
+- Troubleshooting is heavier vs PyInstaller.
+Expected Steps:
+- Build with `nuitka --standalone --macos-app-name=... app/main.py`.
+- Include Qt plugins/resources manually if needed.
+Risks:
+- Build complexity; bigger surface for platform-specific issues.
+
+## Local-first Constraints
+- Data dir must live outside the `.app` bundle (e.g., `~/Library/Application Support/...`).
+- App should run fully offline with local `control/projects/...` state.
+- Version stamp must remain visible post-packaging.
+
+## Recommendation (Draft)
+- Start with **PyInstaller** for the V2 prototype: fastest path to a working `.app`.
+- Re-evaluate Briefcase/Nuitka only if PyInstaller proves unstable.
