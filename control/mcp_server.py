@@ -24,7 +24,7 @@ from typing import Any
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
-from app.data.model import AgentState, ProjectData  # noqa: E402
+from app.data.model import AgentState, PHASES, ProjectData  # noqa: E402
 from app.data.store import get_project, list_projects, save_project  # noqa: E402
 
 try:
@@ -173,9 +173,19 @@ TOOL_DEFINITIONS = [
                     "maximum": 100,
                     "description": "Completion percentage of current task"
                 },
+                "percent": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Completion percentage (canonical; alias of progress)"
+                },
                 "current_phase": {
                     "type": "string",
                     "description": "Current work phase"
+                },
+                "phase": {
+                    "type": "string",
+                    "description": "Current phase (canonical; alias of current_phase)"
                 },
                 "current_task": {
                     "type": "string",
@@ -186,6 +196,21 @@ TOOL_DEFINITIONS = [
                     "type": "string",
                     "format": "date-time",
                     "description": "Estimated completion time"
+                },
+                "eta_minutes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Estimated completion time in minutes (canonical)"
+                },
+                "engine": {
+                    "type": "string",
+                    "description": "Engine identifier for grid badge (canonical): CDX or AG"
+                },
+                "blockers": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "List of blockers (canonical)",
+                    "maxItems": 10
                 },
                 "metadata": {
                     "type": "object",
@@ -268,6 +293,72 @@ TOOL_DEFINITIONS = [
         }
     )
 ]
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def _normalize_phase(value: Any) -> str:
+    if not value:
+        return PHASES[0]
+    raw = str(value).strip().lower()
+    synonyms = {
+        "planning": "Plan",
+        "plan": "Plan",
+        "init": "Plan",
+        "implement": "Implement",
+        "implementation": "Implement",
+        "build": "Implement",
+        "execute": "Implement",
+        "executing": "Implement",
+        "test": "Test",
+        "testing": "Test",
+        "qa": "Test",
+        "verify": "Review",
+        "verifying": "Review",
+        "review": "Review",
+        "ship": "Ship",
+        "release": "Ship",
+        "complete": "Ship",
+        "completed": "Ship",
+        "done": "Ship",
+    }
+    if raw in synonyms:
+        return synonyms[raw]
+    for option in PHASES:
+        if option.lower() == raw:
+            return option
+    return PHASES[0]
+
+
+def _normalize_engine(value: Any) -> str:
+    if not value:
+        return "AG"
+    raw = str(value).strip().lower()
+    if raw in {"ag", "antigravity", "anti-gravity"}:
+        return "AG"
+    if raw in {"cdx", "codex"}:
+        return "CDX"
+    return "AG"
+
+
+def _normalize_percent(value: Any) -> int:
+    try:
+        percent = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, min(percent, 100))
+
+
+def _normalize_blockers(value: Any) -> list[str]:
+    if not value:
+        return []
+    if isinstance(value, str):
+        trimmed = value.strip()
+        return [trimmed] if trimmed else []
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    return []
 
 
 # Tool implementations
@@ -361,14 +452,17 @@ async def handle_update_agent_state(arguments: dict[str, Any]) -> list[TextConte
         agent_id = arguments["agent_id"]
         project_id = arguments["project_id"]
         status = arguments["status"]
-        progress = arguments.get("progress", 0)
-        current_phase = arguments.get("current_phase", "")
+        percent_raw = arguments.get("percent", arguments.get("progress", 0))
+        phase_raw = arguments.get("phase", arguments.get("current_phase", ""))
         current_task = arguments.get("current_task", "")
         eta = arguments.get("eta")
+        eta_minutes_raw = arguments.get("eta_minutes")
+        engine_raw = arguments.get("engine")
+        blockers_raw = arguments.get("blockers")
         metadata = arguments.get("metadata", {})
         is_heartbeat = arguments.get("heartbeat", False)
 
-        logger.info(f"Updating agent state: {agent_id} @ {project_id} - {status} ({progress}%)")
+        logger.info(f"Updating agent state: {agent_id} @ {project_id} - {status} ({percent_raw}%)")
 
         # Load project
         project = get_project(project_id)
@@ -378,9 +472,14 @@ async def handle_update_agent_state(arguments: dict[str, Any]) -> list[TextConte
         
         # Calculate ETA in minutes
         eta_minutes = None
-        if eta:
+        if eta_minutes_raw is not None:
             try:
-                eta_dt = datetime.fromisoformat(eta.replace('Z', '+00:00'))
+                eta_minutes = int(eta_minutes_raw)
+            except (TypeError, ValueError):
+                eta_minutes = None
+        elif eta:
+            try:
+                eta_dt = datetime.fromisoformat(str(eta).replace("Z", "+00:00"))
                 now = datetime.now(timezone.utc)
                 eta_minutes = int((eta_dt - now).total_seconds() / 60)
             except Exception as e:
@@ -390,21 +489,35 @@ async def handle_update_agent_state(arguments: dict[str, Any]) -> list[TextConte
             # Update existing agent
             agent = project.agents[agent_idx]
             agent.status = status
-            agent.progress = int(progress)
-            agent.phase = current_phase or agent.phase
-            agent.eta_minutes = eta_minutes
-            agent.heartbeat = datetime.now(timezone.utc).isoformat()
+            agent.heartbeat = _utc_now_iso()
+            if not is_heartbeat:
+                agent.percent = _normalize_percent(percent_raw)
+                if str(phase_raw).strip():
+                    agent.phase = _normalize_phase(phase_raw)
+                agent.eta_minutes = eta_minutes
+                agent.engine = _normalize_engine(
+                    engine_raw
+                    or (metadata.get("engine") if isinstance(metadata, dict) else None)
+                    or (metadata.get("source") if isinstance(metadata, dict) else None)
+                )
+                agent.blockers = _normalize_blockers(blockers_raw)
         else:
             # Create new agent
             agent = AgentState(
                 agent_id=agent_id,
                 name=metadata.get("name", agent_id),
-                source=metadata.get("source", "antigravity"),
-                phase=current_phase,
-                progress=int(progress),
+                engine=_normalize_engine(
+                    engine_raw
+                    or (metadata.get("engine") if isinstance(metadata, dict) else None)
+                    or (metadata.get("source") if isinstance(metadata, dict) else None)
+                    or "AG"
+                ),
+                phase=_normalize_phase(phase_raw),
+                percent=_normalize_percent(percent_raw),
                 eta_minutes=eta_minutes,
-                heartbeat=datetime.now(timezone.utc).isoformat(),
-                status=status
+                heartbeat=_utc_now_iso(),
+                status=status,
+                blockers=_normalize_blockers(blockers_raw),
             )
             project.agents.append(agent)
 
@@ -414,9 +527,9 @@ async def handle_update_agent_state(arguments: dict[str, Any]) -> list[TextConte
                 project.settings["agent_tasks"] = {}
             project.settings["agent_tasks"][agent_id] = {
                 "current_task": current_task,
-                "current_phase": current_phase,
+                "current_phase": phase_raw,
                 "metadata": metadata,
-                "updated_at": datetime.now(timezone.utc).isoformat()
+                "updated_at": _utc_now_iso()
             }
 
         save_project(project)
@@ -575,7 +688,13 @@ def _serialize_project(project: ProjectData, scope: str) -> dict[str, Any]:
             {
                 "agent_id": agent.agent_id,
                 "name": agent.name,
+                "engine": agent.engine,
+                "phase": agent.phase,
+                "percent": agent.percent,
+                "eta_minutes": agent.eta_minutes,
+                "heartbeat": agent.heartbeat,
                 "status": agent.status or "idle",
+                "blockers": agent.blockers,
                 "current_task": project.settings.get("agent_tasks", {}).get(agent.agent_id, {}).get("current_task")
             }
             for agent in project.agents

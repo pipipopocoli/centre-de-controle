@@ -89,8 +89,8 @@ def test_update_agent_state():
     agent = next((a for a in project.agents if a.agent_id == "test_agent_xyz"), None)
     assert agent is not None
     assert agent.status == "executing"
-    assert agent.progress == 75
-    print(f"  ✅ Agent state updated: {agent.name} @ {agent.progress}%")
+    assert agent.percent == 75
+    print(f"  ✅ Agent state updated: {agent.name} @ {agent.percent}%")
 
 
 def test_request_run():

@@ -1,0 +1,12 @@
+{
+  "agent_id": "leo",
+  "name": "Leo",
+  "engine": "AG",
+  "phase": "Implement",
+  "percent": 85,
+  "eta_minutes": 5,
+  "heartbeat": "2026-02-06T14:10:00+00:00",
+  "status": "executing",
+  "blockers": [],
+  "updated_at": "2026-02-06T14:20:49+00:00"
+}

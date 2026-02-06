@@ -31,13 +31,48 @@ async def test_data_layer():
     # Create demo project
     project = ensure_demo_project()
     assert project.project_id == "demo"
-    assert len(project.agents) >= 1
+    agent_ids = {a.agent_id for a in project.agents}
+    assert {"clems", "victor", "leo"} <= agent_ids
     print(f"  ✅ Demo project created: {project.name}")
+
+    for agent_id in ("clems", "victor", "leo"):
+        agent_dir = ROOT_DIR / "control" / "projects" / "demo" / "agents" / agent_id
+        assert (agent_dir / "memory.md").exists()
+        assert (agent_dir / "journal.ndjson").exists()
+    print("  ✅ Default roster + per-agent memory scaffolded")
+
+    # Default roster files
+    for agent_id in ("clems", "victor", "leo"):
+        memory_path = ROOT_DIR / "control" / "projects" / "demo" / "agents" / agent_id / "memory.md"
+        assert memory_path.exists()
+    print("  ✅ Default roster memory files present")
     
     # Test get_project
     project2 = get_project("demo")
     assert project2.project_id == project.project_id
     print(f"  ✅ Project retrieved: {project2.name}")
+
+    # Legacy compat: source/progress -> engine/percent
+    legacy_dir = ROOT_DIR / "control" / "projects" / "demo" / "agents" / "legacy_agent"
+    legacy_dir.mkdir(parents=True, exist_ok=True)
+    legacy_state = legacy_dir / "state.json"
+    legacy_state.write_text(json.dumps({
+        "agent_id": "legacy_agent",
+        "name": "Legacy Agent",
+        "source": "antigravity",
+        "phase": "Testing",
+        "progress": 42,
+        "eta_minutes": 5,
+        "heartbeat": "2026-02-06T00:00:00+00:00",
+        "status": "executing"
+    }), encoding="utf-8")
+    project3 = get_project("demo")
+    legacy = next((a for a in project3.agents if a.agent_id == "legacy_agent"), None)
+    assert legacy is not None
+    assert legacy.engine == "AG"
+    assert legacy.percent == 42
+    assert legacy.phase == "Test"
+    print("  ✅ Legacy source/progress normalized")
 
 
 async def test_tool_logic():
@@ -118,7 +153,7 @@ async def test_tool_logic():
     project = get_project("demo")
     agent = next((a for a in project.agents if a.agent_id == "test_agent_new"), None)
     assert agent is not None
-    assert agent.progress == 50
+    assert agent.percent == 50
     print(f"  ✅ Agent persisted correctly")
     
     # Test request_run
