@@ -1,8 +1,8 @@
 # ISSUE-0005 - Pack Context generator (Light/Full)
 
 - Owner: victor (@victor)
-- Phase: Plan
-- Status: Todo
+- Phase: Implement
+- Status: In progress
 
 ## Objective
 - Add a 1-click way to generate a context pack (Light/Full) from the project state, for pasting into external agents or posting back into chat.

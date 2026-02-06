@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QSizePolicy, QVBoxLayout, QWidget
 
 from app.data.model import ProjectData
 from app.data.store import (
@@ -15,6 +15,7 @@ from app.data.store import (
     load_project,
 )
 from app.services.chat_parser import parse_mentions, parse_tags
+from app.services.pack_context import build_pack_context, write_pack_context
 from app.ui.agents_grid import AgentsGridWidget
 from app.ui.chatroom import ChatroomWidget
 from app.ui.roadmap import RoadmapWidget
@@ -62,6 +63,8 @@ class MainWindow(QMainWindow):
         self.sidebar.project_list.currentTextChanged.connect(self.on_project_selected)
         self.chatroom.send_btn.clicked.connect(self.on_send_message)
         self.chatroom.thread_selector.currentTextChanged.connect(self.on_thread_selected)
+        self.chatroom.pack_light_btn.clicked.connect(self.on_pack_light)
+        self.chatroom.pack_full_btn.clicked.connect(self.on_pack_full)
         if projects and project.project_id in projects:
             self.sidebar.project_list.setCurrentRow(projects.index(project.project_id))
 
@@ -131,3 +134,32 @@ class MainWindow(QMainWindow):
             append_thread_message(self.current_project_id, tag, payload)
         self.chatroom.input.clear()
         self.refresh_chat()
+
+    def _emit_pack_feedback(self, mode: str, path: str) -> None:
+        payload = {
+            "timestamp": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "author": "system",
+            "text": f"Pack Context {mode} generated: {path}",
+            "tags": ["pack"],
+            "mentions": [],
+        }
+        append_chat_message(self.current_project_id, payload)
+        append_thread_message(self.current_project_id, "pack", payload)
+        self.refresh_chat()
+
+    def on_pack_light(self) -> None:
+        if not self.current_project_id:
+            return
+        content = build_pack_context(self.current_project_id, "light", None)
+        path = write_pack_context(self.current_project_id, "light", content)
+        QApplication.clipboard().setText(content)
+        self._emit_pack_feedback("Light", str(path))
+
+    def on_pack_full(self) -> None:
+        if not self.current_project_id:
+            return
+        thread_tag = self.chatroom.current_thread_tag()
+        content = build_pack_context(self.current_project_id, "full", thread_tag or None)
+        path = write_pack_context(self.current_project_id, "full", content)
+        QApplication.clipboard().setText(content)
+        self._emit_pack_feedback("Full", str(path))
