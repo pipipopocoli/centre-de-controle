@@ -57,7 +57,7 @@
 - STATE.md: control/projects/demo/STATE.md
 - DECISIONS.md: control/projects/demo/DECISIONS.md
 - UI research: docs/ui-research.md
-- PR:
+- PR: https://github.com/pipipopocoli/centre-de-controle/pull/6
 
 ## Risks
 - QSS limitations may constrain fancy ideas (keep it pragmatic).
