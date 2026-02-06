@@ -13,6 +13,7 @@ from app.data.store import (
     load_chat_global,
     load_chat_thread,
     load_project,
+    record_mentions,
 )
 from app.services.chat_parser import parse_mentions, parse_tags
 from app.services.pack_context import build_pack_context, write_pack_context
@@ -148,6 +149,7 @@ class MainWindow(QMainWindow):
         append_chat_message(self.current_project_id, payload)
         for tag in tags:
             append_thread_message(self.current_project_id, tag, payload)
+        record_mentions(self.current_project_id, payload)
         self.chatroom.input.clear()
         self.refresh_chat()
 

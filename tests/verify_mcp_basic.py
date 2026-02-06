@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
-from app.data.store import ensure_demo_project, get_project  # noqa: E402
+from app.data.store import ensure_demo_project, get_project, load_agent_journal  # noqa: E402
 
 
 class MockTextContent:
@@ -107,6 +107,20 @@ async def test_tool_logic():
     assert last.get("author") == "test_agent"
     assert last.get("text") == "Test message"
     print(f"  ✅ post_message persisted to chat feed")
+
+    # Test mention ack + state/journal update
+    await handle_post_message({
+        "agent_id": "test_agent",
+        "content": "Ping @leo",
+        "metadata": {"project_id": "demo"}
+    })
+    project = get_project("demo")
+    leo = next((a for a in project.agents if a.agent_id == "leo"), None)
+    assert leo is not None
+    assert leo.status == "pinged"
+    journal = load_agent_journal("demo", "leo", limit=5)
+    assert any(entry.get("event") == "mention" for entry in journal)
+    print(f"  ✅ mention updates state + journal")
     
     # Test read_state
     result = await handle_read_state({

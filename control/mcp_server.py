@@ -31,6 +31,7 @@ from app.data.store import (  # noqa: E402
     append_thread_message,
     get_project,
     list_projects,
+    record_mentions,
     save_project,
 )
 from app.services.chat_parser import parse_mentions  # noqa: E402
@@ -447,6 +448,7 @@ async def handle_post_message(arguments: dict[str, Any]) -> list[TextContent]:
             append_thread_message(project_id, tag, message_payload)
         if thread_id:
             append_thread_message(project_id, str(thread_id), message_payload)
+        record_mentions(project_id, message_payload)
 
         result = {
             "message_id": message_id,
