@@ -63,7 +63,7 @@ class AgentCard(QFrame):
         header = QHBoxLayout()
         name = QLabel(state.name)
         name.setObjectName("agentName")
-        badge = QLabel(state.source)
+        badge = QLabel(state.engine)
         badge.setObjectName("agentBadge")
         badge.setAlignment(Qt.AlignCenter)
         badge.setFixedWidth(44)
@@ -78,8 +78,8 @@ class AgentCard(QFrame):
         self.progress = QProgressBar()
         self.progress.setObjectName("agentProgress")
         self.progress.setRange(0, 100)
-        self.progress.setValue(max(0, min(state.progress, 100)))
-        self.progress.setFormat(f"{state.progress}%")
+        self.progress.setValue(max(0, min(state.percent, 100)))
+        self.progress.setFormat(f"{state.percent}%")
 
         eta_text = "-" if state.eta_minutes is None else f"ETA: {state.eta_minutes} min"
         heartbeat_text, stale = _format_heartbeat(state.heartbeat)
