@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "cockpit": {
+      "command": "python3",
+      "args": ["/Users/oliviercloutier/Desktop/Cockpit/control/mcp_server.py"],
+      "env": {
+        "COCKPIT_PROJECT_ID": "demo"
+      }
+    }
+  }
+}

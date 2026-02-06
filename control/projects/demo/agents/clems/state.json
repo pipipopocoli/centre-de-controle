@@ -1,0 +1,11 @@
+{
+  "agent_id": "clems",
+  "name": "Clems",
+  "source": "CDX",
+  "phase": "Plan",
+  "progress": 5,
+  "eta_minutes": 45,
+  "heartbeat": "2026-02-06T10:46:42+00:00",
+  "status": "idle",
+  "updated_at": "2026-02-06T10:53:22+00:00"
+}
