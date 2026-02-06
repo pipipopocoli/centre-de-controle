@@ -15,6 +15,7 @@ Implements 5 core tools:
 import asyncio
 import json
 import logging
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,7 +26,14 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
 from app.data.model import AgentState, PHASES, ProjectData  # noqa: E402
-from app.data.store import get_project, list_projects, save_project  # noqa: E402
+from app.data.store import (  # noqa: E402
+    append_chat_message,
+    append_thread_message,
+    get_project,
+    list_projects,
+    save_project,
+)
+from app.services.chat_parser import parse_mentions, parse_tags  # noqa: E402
 
 try:
     from mcp.server import Server
@@ -91,6 +99,10 @@ TOOL_DEFINITIONS = [
         inputSchema={
             "type": "object",
             "properties": {
+                "project_id": {
+                    "type": "string",
+                    "description": "Project identifier (optional if provided in metadata or COCKPIT_PROJECT_ID)"
+                },
                 "content": {
                     "type": "string",
                     "description": "Message content (markdown supported)",
@@ -361,6 +373,41 @@ def _normalize_blockers(value: Any) -> list[str]:
     return []
 
 
+def _normalize_tags(value: Any) -> list[str]:
+    if not value:
+        return []
+    if isinstance(value, str):
+        items = [value]
+    elif isinstance(value, (list, tuple, set)):
+        items = list(value)
+    else:
+        items = [value]
+    normalized: list[str] = []
+    for raw in items:
+        if raw is None:
+            continue
+        text = str(raw).strip()
+        if not text:
+            continue
+        if text.startswith("#"):
+            text = text[1:]
+        text = text.strip().lower()
+        if text:
+            normalized.append(text)
+    return normalized
+
+
+def _resolve_project_id(arguments: dict[str, Any], metadata: dict[str, Any]) -> str:
+    project_id = arguments.get("project_id")
+    if not project_id:
+        project_id = metadata.get("project_id")
+    if not project_id:
+        project_id = os.getenv("COCKPIT_PROJECT_ID")
+    if not project_id:
+        raise ValueError("project_id is required (argument, metadata.project_id, or COCKPIT_PROJECT_ID).")
+    return str(project_id)
+
+
 # Tool implementations
 async def handle_post_message(arguments: dict[str, Any]) -> list[TextContent]:
     """Handle cockpit.post_message tool call."""
@@ -369,38 +416,38 @@ async def handle_post_message(arguments: dict[str, Any]) -> list[TextContent]:
         agent_id = arguments["agent_id"]
         thread_id = arguments.get("thread_id")
         priority = arguments.get("priority", "normal")
-        tags = arguments.get("tags", [])
-        metadata = arguments.get("metadata", {})
+        tags_input = arguments.get("tags", [])
+        metadata = arguments.get("metadata") if isinstance(arguments.get("metadata"), dict) else {}
 
-        # TODO: Implement actual message storage/broadcasting
-        # For now, log to file and return success
+        project_id = _resolve_project_id(arguments, metadata)
+        _ = get_project(project_id)
+
+        tags = sorted(set(_normalize_tags(tags_input) + parse_tags(content)))
+        mentions = parse_mentions(content)
         message_id = f"msg_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{agent_id[:8]}"
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = _utc_now_iso()
 
         message_data = {
             "message_id": message_id,
-            "content": content,
+            "timestamp": timestamp,
+            "author": agent_id,
+            "text": content,
             "agent_id": agent_id,
             "thread_id": thread_id,
             "priority": priority,
             "tags": tags,
+            "mentions": mentions,
             "metadata": metadata,
-            "timestamp": timestamp
         }
 
         logger.info(f"Message posted: {message_id} from {agent_id} (priority: {priority})")
-        
-        # Store message in project data
-        project_id = metadata.get("project_id")
-        if project_id:
-            try:
-                project = get_project(project_id)
-                if "messages" not in project.settings:
-                    project.settings["messages"] = []
-                project.settings["messages"].append(message_data)
-                save_project(project)
-            except Exception as e:
-                logger.warning(f"Could not save message to project: {e}")
+
+        append_chat_message(project_id, message_data)
+        thread_targets = list(tags)
+        if thread_id:
+            thread_targets.append(thread_id)
+        for tag in thread_targets:
+            append_thread_message(project_id, tag, message_data)
 
         result = {
             "message_id": message_id,
@@ -457,7 +504,7 @@ async def handle_update_agent_state(arguments: dict[str, Any]) -> list[TextConte
         current_task = arguments.get("current_task", "")
         eta = arguments.get("eta")
         eta_minutes_raw = arguments.get("eta_minutes")
-        engine_raw = arguments.get("engine")
+        engine_raw = arguments.get("engine", arguments.get("source"))
         blockers_raw = arguments.get("blockers")
         metadata = arguments.get("metadata", {})
         is_heartbeat = arguments.get("heartbeat", False)

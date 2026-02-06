@@ -8,13 +8,19 @@ Verifies MCP server functions work without requiring full MCP SDK.
 import asyncio
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Add parent directory to path
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
-from app.data.store import ensure_demo_project, get_project  # noqa: E402
+from app.data.store import (  # noqa: E402
+    ensure_demo_project,
+    get_project,
+    load_chat_global,
+    load_chat_thread,
+)
 
 
 class MockTextContent:
@@ -118,13 +124,19 @@ async def test_tool_logic():
     )
     
     # Test post_message
+    unique_text = f"Test message {datetime.now(timezone.utc).isoformat()}"
     result = await handle_post_message({
         "agent_id": "test_agent",
-        "content": "Test message",
+        "content": unique_text,
+        "tags": ["#mcpwire"],
         "metadata": {"project_id": "demo"}
     })
     data = json.loads(result[0].text)
     assert data["status"] == "posted"
+    messages = load_chat_global("demo")
+    assert any(msg.get("text") == unique_text for msg in messages)
+    thread_messages = load_chat_thread("demo", "mcpwire")
+    assert any(msg.get("text") == unique_text for msg in thread_messages)
     print(f"  ✅ post_message works")
     
     # Test read_state

@@ -8,25 +8,33 @@ Tests the Cockpit MCP server implementation.
 import asyncio
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Add parent directory to path
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
-from app.data.store import ensure_demo_project, get_project  # noqa: E402
+from app.data.store import (  # noqa: E402
+    ensure_demo_project,
+    get_project,
+    load_chat_global,
+    load_chat_thread,
+)
 
 
 def test_post_message():
     """Test post_message tool."""
     print("Testing: cockpit.post_message")
     
+    unique_text = f"🧪 Test message from unit test {datetime.now(timezone.utc).isoformat()}"
     arguments = {
+        "project_id": "demo",
         "agent_id": "test_agent_123",
-        "content": "🧪 Test message from unit test",
+        "content": unique_text,
         "priority": "normal",
         "tags": ["#test"],
-        "metadata": {"project_id": "demo"}
+        "metadata": {}
     }
     
     # Simulate tool call
@@ -36,6 +44,10 @@ def test_post_message():
     data = json.loads(result[0].text)
     assert "message_id" in data
     assert data["status"] == "posted"
+    messages = load_chat_global("demo")
+    assert any(msg.get("text") == unique_text for msg in messages)
+    thread_messages = load_chat_thread("demo", "test")
+    assert any(msg.get("text") == unique_text for msg in thread_messages)
     print(f"  ✅ Message posted: {data['message_id']}")
 
 
@@ -74,7 +86,7 @@ def test_update_agent_state():
         "progress": 75,
         "current_phase": "Testing",
         "current_task": "Running MCP tests",
-        "metadata": {"source": "test_suite"}
+        "metadata": {"source": "codex"}
     }
     
     from control.mcp_server import handle_update_agent_state
@@ -90,6 +102,8 @@ def test_update_agent_state():
     assert agent is not None
     assert agent.status == "executing"
     assert agent.percent == 75
+    assert agent.engine == "CDX"
+    assert agent.phase == "Test"
     print(f"  ✅ Agent state updated: {agent.name} @ {agent.percent}%")
 
 

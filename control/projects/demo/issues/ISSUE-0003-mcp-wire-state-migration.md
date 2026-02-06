@@ -2,7 +2,7 @@
 
 - Owner: victor
 - Phase: Implement
-- Status: Todo
+- Status: In progress
 
 ## Objective
 - Make MCP integration coherent end-to-end: chat messages visible in UI, and agent state uses a canonical schema.
@@ -45,4 +45,3 @@
 
 ## Risks
 - Breaking client payloads (keep compat + tests).
-

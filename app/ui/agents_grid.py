@@ -100,6 +100,11 @@ class AgentCard(QFrame):
         layout.addWidget(self.progress)
         layout.addWidget(self.eta_label)
         layout.addWidget(self.status_label)
+        if state.blockers:
+            blockers_text = "Blockers: " + "; ".join(state.blockers)
+            self.blockers_label = QLabel(blockers_text)
+            self.blockers_label.setObjectName("agentBlockers")
+            layout.addWidget(self.blockers_label)
         layout.addWidget(self.heartbeat_label)
 
 
