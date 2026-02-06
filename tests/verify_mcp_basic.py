@@ -31,8 +31,15 @@ async def test_data_layer():
     # Create demo project
     project = ensure_demo_project()
     assert project.project_id == "demo"
-    assert len(project.agents) >= 1
+    agent_ids = {a.agent_id for a in project.agents}
+    assert {"clems", "victor", "leo"} <= agent_ids
     print(f"  ✅ Demo project created: {project.name}")
+
+    for agent_id in ("clems", "victor", "leo"):
+        agent_dir = ROOT_DIR / "control" / "projects" / "demo" / "agents" / agent_id
+        assert (agent_dir / "memory.md").exists()
+        assert (agent_dir / "journal.ndjson").exists()
+    print("  ✅ Default roster + per-agent memory scaffolded")
     
     # Test get_project
     project2 = get_project("demo")

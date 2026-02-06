@@ -16,6 +16,12 @@ DEFAULT_ROADMAP = {
     "risks": ["Codex App Server protocol changes"],
 }
 
+DEFAULT_AGENT_ROSTER = [
+    {"agent_id": "clems", "name": "Clems", "engine": "CDX"},
+    {"agent_id": "victor", "name": "Victor", "engine": "CDX"},
+    {"agent_id": "leo", "name": "Leo", "engine": "AG"},
+]
+
 
 def ensure_projects_root() -> None:
     PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -33,6 +39,20 @@ def _write_text_if_missing(path: Path, content: str) -> None:
 def _write_json_if_missing(path: Path, payload: dict[str, Any]) -> None:
     if not path.exists():
         path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def _memory_template(agent_id: str) -> str:
+    return (
+        f"# Memory - {agent_id}\n\n"
+        "## Role\n- ...\n\n"
+        "## Facts / Constraints\n- ...\n\n"
+        "## Decisions (refs ADR)\n- ...\n\n"
+        "## Open Loops\n- ...\n\n"
+        "## Now\n- ...\n\n"
+        "## Next\n- ...\n\n"
+        "## Blockers\n- ...\n\n"
+        "## Links\n- ...\n"
+    )
 
 
 def ensure_project_structure(project_id: str, project_name: str | None = None) -> Path:
@@ -86,31 +106,13 @@ def ensure_project_structure(project_id: str, project_name: str | None = None) -
     global_chat = chat_dir / "global.ndjson"
     _write_text_if_missing(global_chat, "")
 
+    ensure_default_roster(project_id)
+
     return pdir
 
 
 def ensure_demo_project() -> ProjectData:
-    pdir = ensure_project_structure("demo", "Demo")
-    agent_dir = pdir / "agents" / "clems"
-    agent_dir.mkdir(parents=True, exist_ok=True)
-
-    state_path = agent_dir / "state.json"
-    journal_path = agent_dir / "journal.ndjson"
-
-    default_state = AgentState(
-        agent_id="clems",
-        name="Clems",
-        engine="CDX",
-        phase="Plan",
-        percent=5,
-        eta_minutes=45,
-        heartbeat=_utc_now_iso(),
-        status="idle",
-        blockers=[],
-    )
-    _write_json_if_missing(state_path, asdict(default_state))
-    _write_text_if_missing(journal_path, "")
-
+    ensure_project_structure("demo", "Demo")
     return load_project("demo")
 
 
@@ -199,8 +201,56 @@ def _normalize_eta(eta: Any) -> int | None:
     return value if value >= 0 else None
 
 
+def _normalize_blockers(blockers: Any) -> list[str]:
+    if not blockers:
+        return []
+    if isinstance(blockers, str):
+        value = blockers.strip()
+        return [value] if value else []
+    if isinstance(blockers, list):
+        return [str(item).strip() for item in blockers if str(item).strip()]
+    return []
+
+
+def ensure_agent_files(project_id: str, agent_id: str, name: str, engine: str) -> None:
+    agent_dir = project_dir(project_id) / "agents" / agent_id
+    agent_dir.mkdir(parents=True, exist_ok=True)
+
+    state_path = agent_dir / "state.json"
+    _write_json_if_missing(
+        state_path,
+        {
+            "agent_id": agent_id,
+            "name": name,
+            "engine": engine,
+            "phase": PHASES[0],
+            "percent": 0,
+            "eta_minutes": None,
+            "heartbeat": _utc_now_iso(),
+            "status": "idle",
+            "blockers": [],
+        },
+    )
+    _write_text_if_missing(agent_dir / "journal.ndjson", "")
+    _write_text_if_missing(agent_dir / "memory.md", _memory_template(agent_id))
+
+
+def ensure_default_roster(project_id: str) -> None:
+    agents_dir = project_dir(project_id) / "agents"
+    agents_dir.mkdir(parents=True, exist_ok=True)
+    for agent in DEFAULT_AGENT_ROSTER:
+        ensure_agent_files(
+            project_id=project_id,
+            agent_id=agent["agent_id"],
+            name=agent["name"],
+            engine=agent["engine"],
+        )
+
+
 def load_project(project_id: str) -> ProjectData:
     pdir = project_dir(project_id)
+    if pdir.exists():
+        ensure_default_roster(project_id)
     settings_path = pdir / "settings.json"
     settings: dict[str, Any] = {}
     if settings_path.exists():
@@ -225,7 +275,7 @@ def load_project(project_id: str) -> ProjectData:
                     eta_minutes=_normalize_eta(payload.get("eta_minutes")),
                     heartbeat=payload.get("heartbeat"),
                     status=payload.get("status"),
-                    blockers=[str(item) for item in payload.get("blockers", []) if item],
+                    blockers=_normalize_blockers(payload.get("blockers")),
                 )
             )
 
