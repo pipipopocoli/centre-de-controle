@@ -27,6 +27,9 @@ def main() -> int:
     light_lines = light.strip().splitlines()
     assert len(light_lines) <= 30
 
+    full_lines = full.strip().splitlines()
+    assert len(full_lines) <= 120
+
     required_sections = [
         "Objectif",
         "Etat",
