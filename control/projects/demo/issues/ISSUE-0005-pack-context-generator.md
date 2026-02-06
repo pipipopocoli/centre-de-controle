@@ -1,8 +1,8 @@
 # ISSUE-0005 - Pack Context generator (Light/Full)
 
 - Owner: victor (@victor)
-- Phase: Plan
-- Status: Todo
+- Phase: Implement
+- Status: Done
 
 ## Objective
 - Add a 1-click way to generate a context pack (Light/Full) from the project state, for pasting into external agents or posting back into chat.
@@ -47,7 +47,7 @@
 ## Links
 - STATE.md: control/projects/demo/STATE.md
 - DECISIONS.md: control/projects/demo/DECISIONS.md
-- PR:
+- PR: https://github.com/pipipopocoli/centre-de-controle/pull/5
 
 ## Risks
 - Output becomes noisy without strict limits (must enforce caps).
