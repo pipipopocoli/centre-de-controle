@@ -82,6 +82,7 @@ class MainWindow(QMainWindow):
         self.chatroom.thread_selector.currentTextChanged.connect(self.on_thread_selected)
         self.chatroom.pack_light_btn.clicked.connect(self.on_pack_light)
         self.chatroom.pack_full_btn.clicked.connect(self.on_pack_full)
+        self.chatroom.ping_btn.clicked.connect(self.on_ping_agents)
         if projects and project.project_id in projects:
             self.sidebar.project_list.setCurrentRow(projects.index(project.project_id))
 
@@ -181,3 +182,22 @@ class MainWindow(QMainWindow):
         path = write_pack_context(self.current_project_id, "full", content)
         QApplication.clipboard().setText(content)
         self._emit_pack_feedback("Full", str(path))
+
+    def on_ping_agents(self) -> None:
+        if not self.current_project_id:
+            return
+        text = "Ping @leo @victor #ping"
+        tags = parse_tags(text)
+        mentions = parse_mentions(text)
+        payload = {
+            "timestamp": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "author": "operator",
+            "text": text,
+            "tags": tags,
+            "mentions": mentions,
+        }
+        append_chat_message(self.current_project_id, payload)
+        for tag in tags:
+            append_thread_message(self.current_project_id, tag, payload)
+        record_mentions(self.current_project_id, payload)
+        self.refresh_chat()
