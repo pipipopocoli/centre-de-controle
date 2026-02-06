@@ -6,9 +6,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Prefer the repo-standard venv/, but allow .venv/ as a fallback (common local convention).
 VENV_PY="$SCRIPT_DIR/venv/bin/python"
 if [[ ! -x "$VENV_PY" ]]; then
-  echo "ERROR: venv python not found at: $VENV_PY" >&2
+  VENV_PY="$SCRIPT_DIR/.venv/bin/python"
+fi
+if [[ ! -x "$VENV_PY" ]]; then
+  echo "ERROR: python venv not found at: $SCRIPT_DIR/venv/bin/python or $SCRIPT_DIR/.venv/bin/python" >&2
   echo "Create it with: python3 -m venv venv && source venv/bin/activate && python -m pip install -r requirements.txt" >&2
   exit 1
 fi
