@@ -1,8 +1,8 @@
 # ISSUE-0003 - MCP Wire + state.json Migration (V1)
 
-- Owner: victor
-- Phase: Implement
-- Status: Todo
+- Owner: victor (@victor)
+- Phase: Ship
+- Status: Done
 
 ## Objective
 - Make MCP integration coherent end-to-end: chat messages visible in UI, and agent state uses a canonical schema.
@@ -20,14 +20,10 @@
 - Full production quota tracking (get_quotas can stay mock for now).
 
 ## Now
-- MCP post_message stores messages in settings.json (UI does not read that).
-- state.json uses old keys (source/progress) and lacks blockers.
+- Merged to main (2026-02-06).
 
 ## Next
-- Update app/data/model.py + app/data/store.py (schema + normalization + migration).
-- Update UI to display blockers.
-- Update control/mcp_server.py post_message + update_agent_state.
-- Update tests.
+- None.
 
 ## Blockers
 - None
@@ -41,8 +37,7 @@
 ## Links
 - STATE.md: control/projects/demo/STATE.md
 - DECISIONS.md: control/projects/demo/DECISIONS.md
-- PR: (to create) codex/mcp-wire-state-migration
+- PR: Merged: codex/mcp-wire-state-migration -> main (2026-02-06)
 
 ## Risks
 - Breaking client payloads (keep compat + tests).
-

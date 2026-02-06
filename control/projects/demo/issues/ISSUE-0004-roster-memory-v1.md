@@ -1,8 +1,8 @@
 # ISSUE-0004 - Default roster + per-agent memory (V1)
 
 - Owner: victor (@victor)
-- Phase: Implement
-- Status: In progress
+- Phase: Ship
+- Status: Done
 
 ## Objective
 - Every project auto-creates a stable default roster (clems/victor/leo) and per-agent memory files, isolated per project.
@@ -25,12 +25,10 @@
 - UI redesign (separate issue).
 
 ## Now
-- Implement store scaffolding + demo project files.
+- Merged to main (2026-02-06).
 
 ## Next
-- Verify end-to-end:
-  - Create a new project -> roster visible immediately.
-  - Run `./.venv/bin/python tests/verify_mcp_basic.py`.
+- None.
 
 ## Blockers
 - None.
@@ -45,7 +43,7 @@
 ## Links
 - STATE.md: control/projects/demo/STATE.md
 - DECISIONS.md: control/projects/demo/DECISIONS.md
-- PR:
+- PR: Merged: codex/roster-memory-v1 -> main (2026-02-06)
 
 ## Risks
 - Tests may generate local demo artifacts (keep demo scaffold deterministic).

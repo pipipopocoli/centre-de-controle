@@ -1,8 +1,8 @@
 # ISSUE-0001 - Docs/Runbook + Screenshot
 
-- Owner: victor
-- Phase: Review
-- Status: In progress
+- Owner: victor (@victor)
+- Phase: Ship
+- Status: Done
 
 ## Objective
 - Clarify how to run Cockpit UI + MCP server with a clean, reproducible quickstart.
@@ -16,12 +16,10 @@
 - No functional code changes (keep this PR low risk).
 
 ## Now
-- Runbook exists + screenshot committed, but docs need alignment (venv naming, pip usage, python requirement wording).
+- Merged to main (2026-02-06).
 
 ## Next
-- Fix docs commands to standardize on venv/ + python -m pip.
-- Fix screenshot link path in docs/RUNBOOK.md.
-- Review control/README.md examples for phase vocabulary.
+- None.
 
 ## Blockers
 - None
@@ -38,8 +36,7 @@
 ## Links
 - STATE.md: control/projects/demo/STATE.md
 - DECISIONS.md: control/projects/demo/DECISIONS.md
-- PR: codex/docs-runbook
+- PR: Merged: codex/docs-runbook -> main (2026-02-06)
 
 ## Risks
 - Docs drift vs actual commands (keep commands minimal and tested).
-
