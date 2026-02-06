@@ -370,19 +370,7 @@ def record_mentions(project_id: str, payload: dict[str, Any]) -> None:
     for mention in mentions:
         agent = next((a for a in project.agents if a.agent_id == mention), None)
         if agent is None:
-            roster = next((a for a in DEFAULT_AGENT_ROSTER if a["agent_id"] == mention), None)
-            agent = AgentState(
-                agent_id=mention,
-                name=roster["name"] if roster else mention.title(),
-                engine=roster["engine"] if roster else "CDX",
-                phase=PHASES[0],
-                percent=0,
-                eta_minutes=None,
-                heartbeat=timestamp,
-                status="pinged",
-                blockers=[],
-            )
-            project.agents.append(agent)
+            continue
 
         agent.status = "pinged"
         agent.heartbeat = timestamp
