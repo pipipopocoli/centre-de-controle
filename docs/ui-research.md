@@ -82,6 +82,9 @@ Go with **Paper Ops** to balance clarity, warmth, and long-session comfort.
 
 ## Phase 2 Preview (Implementation)
 - Centralize QSS tokens.
-- Bundle Plex fonts + register in app.
+- Fonts V1: system fallback (no bundled fonts). Consider bundling Plex in V2.
 - Apply to sidebar, roadmap, agents, chat.
 - Add a subtle paper texture / gradient background.
+
+## References
+- docs/references/vercel-react-best-practices.md
