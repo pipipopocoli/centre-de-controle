@@ -1,8 +1,8 @@
 # ISSUE-0010 - Agent loop e2e (AG/MCP) (V2)
 
 - Owner: victor
-- Phase: Plan
-- Status: Todo
+- Phase: Ship
+- Status: Done
 
 ## Objective
 - Make pings lead to real replies by wiring an end-to-end loop between Cockpit chat and an external agent (AG/MCP).
@@ -22,13 +22,14 @@
 - Notifications.
 
 ## Now
-- Write the spec + decide the handshake format.
+- Run requests logged to NDJSON on mentions.
+- E2E verify script added (mention -> run request -> agent reply).
 
 ## Next
-- Implement the handshake + one happy-path e2e test script.
+- Optional: add a small UI panel for run requests (post-V2).
 
 ## Blockers
-- Need an agreed handshake format (file location + schema) for run requests.
+- None.
 
 ## Done (Definition)
 - A ping produces a run request record.
@@ -43,4 +44,3 @@
 ## Risks
 - Too much scope (keep it minimal).
 - Hard to test without a real agent (use a mock script first).
-

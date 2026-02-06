@@ -35,3 +35,12 @@
 - Consequences: Pour les changements Python, restart reste necessaire; le QSS se reload a la sauvegarde.
 - Owners: Clems, Victor
 - References: control/projects/demo/issues/ISSUE-0007-version-stamp-dev-reload.md
+
+## 2026-02-06 - ADR-005 Run requests handshake (agent loop e2e)
+- Status: Accepted
+- Context: Besoin d'un handshake minimal pour relier un ping a une action agent (AG/MCP) sans scheduler.
+- Decision: Emission de run requests en NDJSON local: control/projects/<id>/runs/requests.ndjson. Chaque mention cree une entree avec request_id, project_id, agent_id (target), status=queued, source=mention, created_at, et le message source.
+- Rationale: Local-first, auditable, simple a consommer par un agent externe.
+- Consequences: Le log peut grossir; rotation/compaction a faire en V3.
+- Owners: Clems, Victor
+- References: control/projects/demo/issues/ISSUE-0010-agent-loop-e2e-v2.md

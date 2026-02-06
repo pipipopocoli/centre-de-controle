@@ -1,12 +1,12 @@
 # State
 ## Phase
-- Implement
+- Review
 ## Objective
 - V2: deliver memory compaction, then agent loop (AG/MCP)
 ## Now
 - Memory compaction tool shipped (ISSUE-0009)
+- Agent loop e2e shipped (ISSUE-0010)
 ## Next
-- Start ISSUE-0010 (agent loop e2e)
 - Optional later: ISSUE-0011 packaging research
 ## In Progress
 - None

@@ -12,3 +12,4 @@ dist/
 *.egg-info/
 *.app/
 **/memory.proposed.md
+**/runs/*.ndjson

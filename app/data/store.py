@@ -368,6 +368,14 @@ def append_thread_message(project_id: str, tag: str, payload: dict[str, Any]) ->
     _append_ndjson(chat_thread_path(project_id, safe_tag), payload)
 
 
+def run_requests_path(project_id: str) -> Path:
+    return project_dir(project_id) / "runs" / "requests.ndjson"
+
+
+def append_run_request(project_id: str, payload: dict[str, Any]) -> None:
+    _append_ndjson(run_requests_path(project_id), payload)
+
+
 def agent_journal_path(project_id: str, agent_id: str) -> Path:
     return project_dir(project_id) / "agents" / agent_id / "journal.ndjson"
 
@@ -415,6 +423,38 @@ def record_mentions(project_id: str, payload: dict[str, Any]) -> None:
                 "thread_id": thread_id,
                 "text": text,
                 "tags": tags,
+            },
+        )
+
+        request_id_base = (
+            str(timestamp)
+            .replace(":", "")
+            .replace("-", "")
+            .replace("+", "")
+            .replace("Z", "")
+            .replace("T", "")
+        )
+        request_id = f"runreq_{request_id_base}_{mention}"
+        if message_id:
+            request_id = f"{request_id}_{message_id}"
+
+        append_run_request(
+            project_id,
+            {
+                "request_id": request_id,
+                "project_id": project_id,
+                "agent_id": mention,
+                "status": "queued",
+                "source": "mention",
+                "created_at": timestamp,
+                "message": {
+                    "message_id": message_id,
+                    "thread_id": thread_id,
+                    "author": author,
+                    "text": text,
+                    "tags": tags,
+                    "mentions": mentions,
+                },
             },
         )
 
