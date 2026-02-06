@@ -1,15 +1,16 @@
 # Roadmap
 
 ## Now
-- Stabilisation V1 merged (docs/setup/mcp/roster+memory)
-- Pack Context generator merged (ISSUE-0005)
-- UI redesign Phase 2 (implementation) (ISSUE-0006)
+- V1 local dev release shipped (stable + fast iteration)
+- V2 planning: pick 2 epics to start (memory + agent loop)
 
 ## Next
-- PR: UI redesign implementation (styles + layout) + screenshot
-- Later: memory compaction tool (V2)
+- ISSUE-0009: Memory compaction tool (V2)
+- ISSUE-0010: Agent loop e2e (AG/MCP) so pings can lead to real replies
+- ISSUE-0011: Packaging research (macOS .app) (V2, optional)
 
 ## Risks
-- QSS limitations + visual regressions (needs manual QA checklist)
-- Pack Context output noise (must enforce caps)
+- Scope creep (keep V2 as small, testable PRs)
+- Packaging drag (PySide6 bundling can be time-consuming)
+- Memory contamination (cross-project) if retrieval is not scoped
 - Schema drift (state.json / phases) if not enforced by tests

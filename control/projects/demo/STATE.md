@@ -1,22 +1,21 @@
 # State
 ## Phase
-- Ship
+- Plan
 ## Objective
-- Finaliser Paper Ops UI + release readiness (Phase 3)
+- Plan V2 (ambition): memory compaction + agent loop (AG/MCP) + packaging (optional)
 ## Now
-- Paper Ops UI appliquee (QSS direct)
-- Chat actions compactes + tooltips
-- V1 local dev release ready (no packaging)
+- V1 local dev release shipped (stable)
+- Start V2 planning (issues + acceptance criteria)
 ## Next
-- Phase 3: release checklist + monitoring
-- Optional: tighten QA checklist (resize, contrast, no clipping)
+- Create V2 issues (0009/0010/0011)
+- Decide V2 order of operations (reco: memory compaction -> agent loop -> packaging)
 ## In Progress
 - None
 ## Blockers
 - None declared
 ## Risks
-- UI redesign scope creep / churn (keep research -> spec -> PR)
-- Pack Context output gets noisy without strict caps (enforce limits)
+- Packaging drag (PySide6 bundling can be time-consuming)
+- Memory contamination (cross-project) if retrieval is not scoped
 - Runtime demo artifacts (tests modify state/chat) -> keep deterministic baseline
 ## Links
 - ROADMAP.md
