@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -64,10 +65,21 @@ class ChatroomWidget(QFrame):
         composer.addWidget(self.send_btn)
 
         actions = QHBoxLayout()
-        self.pack_light_btn = QPushButton("Pack Context (Light)")
-        self.pack_full_btn = QPushButton("Pack Context (Full)")
-        self.ping_btn = QPushButton("Ping Leo+Victor")
-
+        # Compact buttons to avoid clipping (Paper Ops Fix)
+        # ------------------------------------------------
+        self.pack_light_btn = QPushButton("Pack (Light)")
+        self.pack_light_btn.setToolTip("Pack Context (Light) - Summarized")
+        self.pack_light_btn.setCursor(Qt.PointingHandCursor)
+        
+        self.pack_full_btn = QPushButton("Pack (Full)")
+        self.pack_full_btn.setToolTip("Pack Context (Full) - All details")
+        self.pack_full_btn.setCursor(Qt.PointingHandCursor)
+        
+        self.ping_btn = QPushButton("Ping Team")
+        self.ping_btn.setToolTip("Ping Leo + Victor")
+        self.ping_btn.setCursor(Qt.PointingHandCursor)
+        # ------------------------------------------------
+        
         actions.addWidget(self.pack_light_btn)
         actions.addWidget(self.pack_full_btn)
         actions.addWidget(self.ping_btn)

@@ -1,47 +1,273 @@
-#sidebar {
-    background: #f5f6f8;
-    border-right: 1px solid #d8dadd;
+/* Paper Ops Theme (QSS) */
+
+QMainWindow, QWidget {
+    background-color: #F6F3EE;
+    color: #1C1C1C;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
 }
-#sidebarTitle {
+
+QLabel {
+    color: #1C1C1C;
+}
+
+/* Sidebar */
+QWidget#sidebar {
+    background-color: #F0ECE6;
+    border-right: 1px solid #D9D3C8;
+}
+
+QLabel#sidebarTitle {
+    color: #2C5DFF;
     font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 1px;
 }
-#sidebarFooter {
-    color: #5e6167;
+
+QLabel#versionStamp {
+    color: #5E6167;
+    font-family: Menlo, Consolas, "Liberation Mono", monospace;
     font-size: 10px;
+    padding: 6px 8px;
 }
-#roadmap {
-    background: #fdfdfd;
-    border: 1px solid #d8dadd;
-    border-radius: 6px;
+
+QListWidget#projectList {
+    background: transparent;
+    border: none;
 }
-#agentsGrid {
-    background: #ffffff;
-    border-top: 1px solid #d8dadd;
-}
-#agentCard {
-    background: #f8f9fb;
-    border: 1px solid #e0e2e5;
-    border-radius: 6px;
-}
-#agentCard[stale="true"] {
-    background: #fff5f5;
-    border: 1px solid #d69b9b;
-}
-#agentBadge {
-    background: #1b6ef3;
-    color: #ffffff;
+
+QListWidget#projectList::item {
+    padding: 6px 8px;
     border-radius: 4px;
-    padding: 2px 4px;
+    color: #5E6167;
+}
+
+QListWidget#projectList::item:hover {
+    background-color: rgba(44, 93, 255, 0.08);
+    color: #2C5DFF;
+}
+
+QListWidget#projectList::item:selected {
+    background-color: rgba(44, 93, 255, 0.15);
+    color: #2C5DFF;
+    font-weight: 600;
+    border-left: 2px solid #2C5DFF;
+}
+
+QPushButton#newProjectButton {
+    background-color: #2C5DFF;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-weight: 600;
+}
+
+QPushButton#newProjectButton:hover {
+    background-color: #2454E0;
+}
+
+/* Roadmap */
+QFrame#roadmap {
+    background-color: #FFFFFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 8px;
+}
+
+QLabel#roadmapTimeline {
+    color: #5E6167;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+QLabel#roadmapSectionTitle {
+    color: #2C5DFF;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+QLabel#roadmapSectionItems {
+    color: #1C1C1C;
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+/* Agents */
+QFrame#agentsGrid {
+    background: transparent;
+}
+
+QFrame#agentCard {
+    background-color: #FFFFFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 8px;
+}
+
+QFrame#agentCard[stale="true"] {
+    background-color: #FFF5F5;
+    border-color: #C94B4B;
+}
+
+QLabel#agentName {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+QLabel#agentBadge {
+    background-color: #2C5DFF;
+    color: #FFFFFF;
+    border-radius: 4px;
+    padding: 2px 6px;
     font-size: 10px;
 }
-#chatroom {
-    background: #f9fafc;
-    border-left: 1px solid #d8dadd;
-}
-#chatroomTitle {
+
+QLabel#agentPhase {
+    color: #5E6167;
     font-weight: 600;
 }
-#agentHeartbeat[stale="true"] {
-    color: #b03030;
+
+QLabel#agentStatus {
+    color: #5E6167;
+}
+
+QProgressBar#agentProgress {
+    background-color: #E8E2D9;
+    border: none;
+    border-radius: 4px;
+    height: 8px;
+}
+
+QProgressBar#agentProgress::chunk {
+    background-color: #23A6A6;
+    border-radius: 4px;
+}
+
+QLabel#agentEta {
+    color: #5E6167;
+    font-size: 11px;
+}
+
+QLabel#agentHeartbeat {
+    color: #5E6167;
+    font-size: 11px;
+}
+
+QLabel#agentHeartbeat[stale="true"] {
+    color: #C94B4B;
     font-weight: 600;
+}
+
+QLabel#agentsEmpty {
+    color: #5E6167;
+}
+
+/* Chatroom */
+QWidget#chatroom {
+    background-color: #F6F3EE;
+    border-left: 1px solid #D9D3C8;
+}
+
+QLabel#chatroomTitle {
+    color: #2C5DFF;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+QTabWidget#chatroomTabs::pane {
+    border: 1px solid #D9D3C8;
+    background-color: #FFFFFF;
+    top: -1px;
+}
+
+QTabBar::tab {
+    background-color: #F0ECE6;
+    border: 1px solid #D9D3C8;
+    padding: 6px 10px;
+    margin-right: 4px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    color: #5E6167;
+}
+
+QTabBar::tab:selected {
+    background-color: #FFFFFF;
+    color: #1C1C1C;
+    font-weight: 600;
+}
+
+QListWidget {
+    background-color: #FFFFFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 4px;
+}
+
+QListWidget::item {
+    padding: 6px 8px;
+    color: #1C1C1C;
+}
+
+/* Inputs */
+QLineEdit {
+    background-color: #FFFFFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: #1C1C1C;
+}
+
+QLineEdit:focus {
+    border-color: #2C5DFF;
+}
+
+QLineEdit::placeholder {
+    color: #5E6167;
+}
+
+QComboBox {
+    background-color: #FFFFFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: #1C1C1C;
+}
+
+QComboBox:hover {
+    border-color: #CFC7BA;
+}
+
+/* Buttons */
+QPushButton {
+    background-color: #2C5DFF;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-weight: 600;
+}
+
+QPushButton:hover {
+    background-color: #2454E0;
+}
+
+QPushButton:pressed {
+    background-color: #1E49C2;
+}
+
+/* Scrollbars */
+QScrollBar:vertical {
+    border: none;
+    background: #F6F3EE;
+    width: 10px;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:vertical {
+    background: #CFC7BA;
+    min-height: 24px;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #B9B2A7;
 }

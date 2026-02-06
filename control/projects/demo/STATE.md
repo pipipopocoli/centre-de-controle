@@ -1,18 +1,17 @@
 # State
 ## Phase
-- Implement
+- Ship
 ## Objective
-- Stabiliser Cockpit V1 + lancer UI redesign (research) + Pack Context generator (progress: 60%)
+- Finaliser Paper Ops UI + release readiness (Phase 3)
 ## Now
-- PR-1..PR-4 merged to main (docs/setup/mcp/roster+memory)
-- Pack Context generator merged (ISSUE-0005)
-- UI research merged (ISSUE-0006, Phase 1)
+- Paper Ops UI appliquee (QSS direct)
+- Chat actions compactes + tooltips
+- Screenshot final ajoute
 ## Next
-- @leo: Phase 2 UI implementation (tokens + layout + screenshot)
-- Apply chosen direction (Paper Ops) in a small, reversible PR
-- Manual QA checklist (resize, contrast, no clipping)
+- Phase 3: release checklist + monitoring
+- Optional: tighten QA checklist (resize, contrast, no clipping)
 ## In Progress
-- ISSUE-0006 UI redesign V1 (implementation) (leo)
+- None
 ## Blockers
 - None declared
 ## Risks

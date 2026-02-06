@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QListWidget, QPushButton, QVBoxLayout, QWidget, QLabel
 
 
@@ -20,15 +21,18 @@ class SidebarWidget(QWidget):
         if projects:
             self.project_list.addItems(projects)
 
+        self.project_list.setFocusPolicy(Qt.NoFocus)
+
         self.new_project_btn = QPushButton("New Project")
         self.new_project_btn.setObjectName("newProjectButton")
 
         layout.addWidget(title)
         layout.addWidget(self.project_list, 1)
-        layout.addWidget(self.new_project_btn)
 
         if footer_text:
-            footer = QLabel(footer_text)
-            footer.setObjectName("sidebarFooter")
-            footer.setWordWrap(True)
-            layout.addWidget(footer)
+            self.version_label = QLabel(footer_text)
+            self.version_label.setObjectName("versionStamp")
+            self.version_label.setAlignment(Qt.AlignLeft | Qt.AlignBottom)
+            layout.addWidget(self.version_label)
+            
+        layout.addWidget(self.new_project_btn)

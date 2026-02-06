@@ -1,8 +1,8 @@
 # ISSUE-0006 - UI redesign V1 (research first)
 
 - Owner: leo (@leo)
-- Phase: Implement
-- Status: In progress (Phase 2)
+- Phase: Ship
+- Status: Done
 
 ## Objective
 - Upgrade Cockpit UI from "functional but ugly" to a high-quality, intentional "mission control" experience.
@@ -23,14 +23,12 @@
 - Anything that breaks core interactions (project switch, chat, agent cards).
 
 ## Now
-- None.
+- Phase 2 implementation completed (Paper Ops in QSS).
+- Chat action buttons compact + tooltips.
+- Screenshot added for review.
 
 ## Next
-- Phase 2 implementation (pending):
-  - Centralize styling (QSS / styles module).
-  - Apply Paper Ops tokens across sidebar, roadmap, agents, chat.
-  - Bundle Plex fonts + register via QFontDatabase.
-  - Add updated screenshot in docs.
+- Phase 3 release checklist + monitoring.
 
 ## Research Summary (Phase 1 Done)
 - Direction A: Paper Ops (recommended)
