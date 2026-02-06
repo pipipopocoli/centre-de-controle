@@ -38,7 +38,7 @@ async def initialize_agent(mcp: MockMCPClient, agent_id: str, project_id: str):
         "project_id": project_id,
         "status": "idle",
         "progress": 0,
-        "current_phase": "Initialization",
+        "current_phase": "Plan",
         "current_task": "Connecting to Cockpit"
     })
     print(f"✅ Agent {agent_id} registered")
@@ -70,7 +70,7 @@ async def execute_task(mcp: MockMCPClient, agent_id: str, project_id: str):
         "project_id": project_id,
         "status": "planning",
         "progress": 10,
-        "current_phase": "Planning",
+        "current_phase": "Plan",
         "current_task": "Analyzing requirements"
     })
     
@@ -90,7 +90,7 @@ async def execute_task(mcp: MockMCPClient, agent_id: str, project_id: str):
         "project_id": project_id,
         "status": "executing",
         "progress": 45,
-        "current_phase": "Implementation",
+        "current_phase": "Implement",
         "current_task": "Building core features"
     })
     
@@ -125,7 +125,7 @@ async def execute_task(mcp: MockMCPClient, agent_id: str, project_id: str):
         "project_id": project_id,
         "status": "completed",
         "progress": 100,
-        "current_phase": "Complete",
+        "current_phase": "Ship",
         "current_task": "Feature implementation finished"
     })
     
