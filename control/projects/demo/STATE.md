@@ -1,14 +1,13 @@
 # State
 ## Phase
-- Plan
+- Implement
 ## Objective
-- Plan V2 (ambition): memory compaction + agent loop (AG/MCP) + packaging (optional)
+- V2: deliver memory compaction, then agent loop (AG/MCP)
 ## Now
-- V1 local dev release shipped (stable)
-- Start V2 planning (issues + acceptance criteria)
+- Memory compaction tool shipped (ISSUE-0009)
 ## Next
-- Create V2 issues (0009/0010/0011)
-- Decide V2 order of operations (reco: memory compaction -> agent loop -> packaging)
+- Start ISSUE-0010 (agent loop e2e)
+- Optional later: ISSUE-0011 packaging research
 ## In Progress
 - None
 ## Blockers

@@ -1,8 +1,8 @@
 # ISSUE-0009 - Memory compaction tool (V2)
 
 - Owner: victor
-- Phase: Plan
-- Status: Todo
+- Phase: Ship
+- Status: Done
 
 ## Objective
 - Add a compaction tool that proposes updates to `memory.md` from recent project signals (chat/journal/decisions), with strict caps.
@@ -23,11 +23,11 @@
 - Auto-writing memory without a review step.
 
 ## Now
-- Spec acceptance criteria + input caps.
+- Script + tests implemented (local-first).
+- Output = memory.proposed.md (non-destructive).
 
 ## Next
-- Implement script in `scripts/` + basic tests.
-- Wire a small UI action later (optional).
+- Optional: wire a small UI action for one-click compaction.
 
 ## Blockers
 - None.
@@ -45,4 +45,3 @@
 ## Risks
 - Over-summarization that drops important constraints.
 - Noise if inputs are not capped tightly.
-
