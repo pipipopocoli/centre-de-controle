@@ -2,7 +2,7 @@
 
 - Owner: victor
 - Phase: Implement
-- Status: In progress
+- Status: Done
 
 ## Objective
 - Show a visible version stamp (branch + short SHA + dirty flag) and the data dir path.
@@ -32,4 +32,4 @@
 ## Links
 - STATE.md: control/projects/demo/STATE.md
 - DECISIONS.md: control/projects/demo/DECISIONS.md
-- PR:
+- PR: https://github.com/pipipopocoli/centre-de-controle/pull/8
