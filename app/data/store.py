@@ -340,6 +340,73 @@ def append_thread_message(project_id: str, tag: str, payload: dict[str, Any]) ->
     _append_ndjson(chat_thread_path(project_id, safe_tag), payload)
 
 
+def agent_journal_path(project_id: str, agent_id: str) -> Path:
+    return project_dir(project_id) / "agents" / agent_id / "journal.ndjson"
+
+
+def append_agent_journal(project_id: str, agent_id: str, payload: dict[str, Any]) -> None:
+    _append_ndjson(agent_journal_path(project_id, agent_id), payload)
+
+
+def load_agent_journal(project_id: str, agent_id: str, limit: int = 200) -> list[dict[str, Any]]:
+    return _read_ndjson(agent_journal_path(project_id, agent_id), limit=limit)
+
+
+def record_mentions(project_id: str, payload: dict[str, Any]) -> None:
+    mentions = payload.get("mentions") or []
+    if not mentions:
+        return
+
+    timestamp = payload.get("timestamp") or _utc_now_iso()
+    author = payload.get("author") or payload.get("agent_id") or "operator"
+    message_id = payload.get("message_id")
+    text = payload.get("text") or payload.get("content") or ""
+    tags = payload.get("tags") or []
+    thread_id = payload.get("thread_id")
+
+    project = get_project(project_id)
+    updated = False
+
+    for mention in mentions:
+        agent = next((a for a in project.agents if a.agent_id == mention), None)
+        if agent is None:
+            continue
+
+        agent.status = "pinged"
+        agent.heartbeat = timestamp
+        updated = True
+
+        append_agent_journal(
+            project_id,
+            mention,
+            {
+                "timestamp": timestamp,
+                "event": "mention",
+                "from": author,
+                "message_id": message_id,
+                "thread_id": thread_id,
+                "text": text,
+                "tags": tags,
+            },
+        )
+
+    if updated:
+        save_project(project)
+
+    ack_text = "Mentions: " + " ".join(f"@{m}" for m in mentions)
+    append_chat_message(
+        project_id,
+        {
+            "timestamp": _utc_now_iso(),
+            "author": "system",
+            "text": ack_text,
+            "tags": [],
+            "mentions": [],
+            "event": "mention_ack",
+        },
+    )
+
+
 def load_chat_global(project_id: str, limit: int = 200) -> list[dict[str, Any]]:
     return _read_ndjson(chat_global_path(project_id), limit=limit)
 
