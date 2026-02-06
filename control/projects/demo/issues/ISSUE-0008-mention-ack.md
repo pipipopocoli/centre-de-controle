@@ -2,7 +2,7 @@
 
 - Owner: victor
 - Phase: Implement
-- Status: In progress
+- Status: Done
 
 ## Objective
 - Make @leo/@victor/@clems mentions visible and traceable.
@@ -23,4 +23,4 @@
 ## Links
 - STATE.md: control/projects/demo/STATE.md
 - DECISIONS.md: control/projects/demo/DECISIONS.md
-- PR:
+- PR: https://github.com/pipipopocoli/centre-de-controle/pull/9
