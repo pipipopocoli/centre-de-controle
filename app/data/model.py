@@ -12,12 +12,13 @@ PHASES = ["Plan", "Implement", "Test", "Review", "Ship"]
 class AgentState:
     agent_id: str
     name: str
-    source: str
+    engine: str
     phase: str
-    progress: int
+    percent: int
     eta_minutes: int | None
     heartbeat: str | None
     status: str | None
+    blockers: list[str]
 
 
 @dataclass

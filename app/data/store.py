@@ -100,12 +100,13 @@ def ensure_demo_project() -> ProjectData:
     default_state = AgentState(
         agent_id="clems",
         name="Clems",
-        source="CDX",
+        engine="CDX",
         phase="Plan",
-        progress=5,
+        percent=5,
         eta_minutes=45,
         heartbeat=_utc_now_iso(),
         status="idle",
+        blockers=[],
     )
     _write_json_if_missing(state_path, asdict(default_state))
     _write_text_if_missing(journal_path, "")
@@ -149,7 +150,18 @@ def _normalize_phase(phase: str | None) -> str:
     return PHASES[0]
 
 
-def _normalize_progress(progress: Any) -> int:
+def _normalize_engine(engine: Any) -> str:
+    if not engine:
+        return "CDX"
+    value = str(engine).strip().lower()
+    if value in {"ag", "antigravity", "anti-gravity"}:
+        return "AG"
+    if value in {"cdx", "codex"}:
+        return "CDX"
+    return value.upper()
+
+
+def _normalize_percent(progress: Any) -> int:
     try:
         value = int(progress)
     except (TypeError, ValueError):
@@ -187,12 +199,13 @@ def load_project(project_id: str) -> ProjectData:
                 AgentState(
                     agent_id=payload.get("agent_id", agent_folder.name),
                     name=payload.get("name", agent_folder.name.title()),
-                    source=payload.get("source", "CDX"),
+                    engine=_normalize_engine(payload.get("engine") or payload.get("source")),
                     phase=_normalize_phase(payload.get("phase")),
-                    progress=_normalize_progress(payload.get("progress", 0)),
+                    percent=_normalize_percent(payload.get("percent", payload.get("progress", 0))),
                     eta_minutes=_normalize_eta(payload.get("eta_minutes")),
                     heartbeat=payload.get("heartbeat"),
                     status=payload.get("status"),
+                    blockers=[str(item) for item in payload.get("blockers", []) if item],
                 )
             )
 

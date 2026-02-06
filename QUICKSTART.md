@@ -38,14 +38,21 @@ source venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-### 4. Test the Server
+### 4. Run Setup Doctor
+```bash
+python scripts/setup_doctor.py
+```
+
+Expected output: `PySide6: OK` and `mcp: OK`.
+
+### 5. Test the Server
 ```bash
 python tests/verify_mcp_basic.py
 ```
 
 Expected output: `✅ All basic checks passed!`
 
-### 5. Configure Antigravity
+### 6. Configure Antigravity
 
 Add to your Antigravity MCP config:
 ```json
@@ -62,9 +69,9 @@ Add to your Antigravity MCP config:
 }
 ```
 
-Important: use the venv python path, not system python3.
+**Important**: Use the venv python path, not system python3!
 
-### 6. Use in Agents
+### 7. Use in Agents
 
 ```python
 # Check quotas
