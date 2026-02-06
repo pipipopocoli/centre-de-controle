@@ -143,6 +143,30 @@ def _parse_simple_roadmap(path: Path) -> dict[str, list[str]]:
     return data
 
 
+def _parse_markdown_roadmap(path: Path) -> dict[str, list[str]]:
+    data: dict[str, list[str]] = {"now": [], "next": [], "risks": []}
+    if not path.exists():
+        return data
+
+    current: str | None = None
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith("## "):
+            heading = line[3:].strip().lower()
+            if heading in {"now", "next", "risks", "risk"}:
+                current = "risks" if heading == "risk" else heading
+            else:
+                current = None
+            continue
+        if line.startswith("-") and current:
+            item = line.lstrip("-").strip()
+            if item:
+                data[current].append(item)
+    return data
+
+
 def _normalize_phase(phase: str | None) -> str:
     if not phase:
         return PHASES[0]
@@ -279,7 +303,11 @@ def load_project(project_id: str) -> ProjectData:
                 )
             )
 
-    roadmap = _parse_simple_roadmap(pdir / "roadmap.yml")
+    roadmap_md = _parse_markdown_roadmap(pdir / "ROADMAP.md")
+    if any(roadmap_md.values()):
+        roadmap = roadmap_md
+    else:
+        roadmap = _parse_simple_roadmap(pdir / "roadmap.yml")
 
     return ProjectData(
         project_id=project_id,
