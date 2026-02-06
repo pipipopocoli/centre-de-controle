@@ -23,9 +23,18 @@ from app.ui.sidebar import SidebarWidget
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, project: ProjectData, projects: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        project: ProjectData,
+        projects: list[str] | None = None,
+        version_text: str = "",
+        data_dir: str = "",
+    ) -> None:
         super().__init__()
-        self.setWindowTitle("Centre de controle")
+        title = "Centre de controle"
+        if version_text:
+            title = f"{title} - {version_text}"
+        self.setWindowTitle(title)
         self.resize(1400, 860)
         self.current_project_id = project.project_id
 
@@ -34,7 +43,14 @@ class MainWindow(QMainWindow):
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
 
-        self.sidebar = SidebarWidget(projects=projects)
+        footer_lines = []
+        if version_text:
+            footer_lines.append(version_text)
+        if data_dir:
+            footer_lines.append(f"Data: {data_dir}")
+        footer_text = "\n".join(footer_lines) if footer_lines else None
+
+        self.sidebar = SidebarWidget(projects=projects, footer_text=footer_text)
         self.sidebar.setFixedWidth(220)
 
         self.center = QWidget()
