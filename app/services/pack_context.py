@@ -87,6 +87,7 @@ def build_pack_context(project_id: str, mode: Mode, thread_tag: str | None = Non
     is_light = mode == "light"
     chat_limit = 20 if is_light else 200
     chat_max_chars = 280 if is_light else 800
+    max_lines = 30 if is_light else 120
 
     state_lines = _read_lines(project_dir(project_id) / "STATE.md", 200)
     roadmap_lines = _read_lines(project_dir(project_id) / "ROADMAP.md", 200)
@@ -101,11 +102,11 @@ def build_pack_context(project_id: str, mode: Mode, thread_tag: str | None = Non
     next_items = state_sections.get("Next") or roadmap_sections.get("Next") or []
     risk_items = state_sections.get("Risks") or roadmap_sections.get("Risks") or []
 
-    decision_items = _extract_decisions(decisions_lines, 4 if is_light else 10)
-    open_issues = _read_open_issues(project_id, max_items=5 if is_light else 10)
+    decision_items = _extract_decisions(decisions_lines, 2 if is_light else 10)
+    open_issues = _read_open_issues(project_id, max_items=3 if is_light else 10)
 
     chat_messages = load_chat_global(project_id, limit=chat_limit)
-    chat_lines = _format_chat_messages(chat_messages, chat_max_chars, 6 if is_light else chat_limit)
+    chat_lines = _format_chat_messages(chat_messages, chat_max_chars, 8 if is_light else chat_limit)
 
     thread_lines: list[str] = []
     if thread_tag:
@@ -115,7 +116,7 @@ def build_pack_context(project_id: str, mode: Mode, thread_tag: str | None = Non
     parts: list[str] = []
     parts.append("Objectif")
     if objective:
-        parts.extend(f"- {item}" for item in objective[:2 if is_light else 5])
+        parts.extend(f"- {item}" for item in objective[:1 if is_light else 5])
     else:
         parts.append("- (non defini)")
 
@@ -123,9 +124,9 @@ def build_pack_context(project_id: str, mode: Mode, thread_tag: str | None = Non
     parts.append("Etat")
     if phase:
         parts.append(f"- Phase: {phase}")
-    for item in now_items[:2 if is_light else 5]:
+    for item in now_items[:1 if is_light else 5]:
         parts.append(f"- Now: {item}")
-    for item in next_items[:2 if is_light else 5]:
+    for item in next_items[:1 if is_light else 5]:
         parts.append(f"- Next: {item}")
     if not phase and not now_items and not next_items:
         parts.append("- (pas de state)")
@@ -162,12 +163,12 @@ def build_pack_context(project_id: str, mode: Mode, thread_tag: str | None = Non
     parts.append("")
     parts.append("Risques")
     if risk_items:
-        parts.extend(f"- {item}" for item in risk_items[:2 if is_light else 5])
+        parts.extend(f"- {item}" for item in risk_items[:1 if is_light else 5])
     else:
         parts.append("- (non explicit)")
 
-    if is_light:
-        parts = parts[:30]
+    if len(parts) > max_lines:
+        parts = parts[:max_lines]
 
     return "\n".join(parts).strip() + "\n"
 
