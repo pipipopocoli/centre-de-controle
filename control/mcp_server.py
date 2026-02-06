@@ -15,6 +15,7 @@ Implements 5 core tools:
 import asyncio
 import json
 import logging
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,8 +25,15 @@ from typing import Any
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
-from app.data.model import AgentState, ProjectData  # noqa: E402
-from app.data.store import get_project, list_projects, save_project  # noqa: E402
+from app.data.model import AgentState, PHASES, ProjectData  # noqa: E402
+from app.data.store import (  # noqa: E402
+    append_chat_message,
+    append_thread_message,
+    get_project,
+    list_projects,
+    save_project,
+)
+from app.services.chat_parser import parse_mentions  # noqa: E402
 
 try:
     from mcp.server import Server
@@ -68,10 +76,11 @@ except ImportError:
 
 
 # Configure logging
+LOG_FILE = Path("/tmp/cockpit_mcp_server.log")  # Use /tmp to avoid Desktop permissions
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.FileHandler("mcp_server.log"), logging.StreamHandler(sys.stderr)]
+    handlers=[logging.FileHandler(LOG_FILE), logging.StreamHandler(sys.stderr)]
 )
 logger = logging.getLogger("cockpit-mcp")
 
@@ -99,6 +108,10 @@ TOOL_DEFINITIONS = [
                 "thread_id": {
                     "type": "string",
                     "description": "Optional thread ID. If null, posts to global channel",
+                },
+                "project_id": {
+                    "type": "string",
+                    "description": "Project identifier (preferred over metadata.project_id)",
                 },
                 "priority": {
                     "type": "string",
@@ -173,9 +186,19 @@ TOOL_DEFINITIONS = [
                     "maximum": 100,
                     "description": "Completion percentage of current task"
                 },
+                "percent": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Completion percentage (canonical; alias of progress)"
+                },
                 "current_phase": {
                     "type": "string",
                     "description": "Current work phase"
+                },
+                "phase": {
+                    "type": "string",
+                    "description": "Current phase (canonical; alias of current_phase)"
                 },
                 "current_task": {
                     "type": "string",
@@ -186,6 +209,21 @@ TOOL_DEFINITIONS = [
                     "type": "string",
                     "format": "date-time",
                     "description": "Estimated completion time"
+                },
+                "eta_minutes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Estimated completion time in minutes (canonical)"
+                },
+                "engine": {
+                    "type": "string",
+                    "description": "Engine identifier for grid badge (canonical): CDX or AG"
+                },
+                "blockers": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "List of blockers (canonical)",
+                    "maxItems": 10
                 },
                 "metadata": {
                     "type": "object",
@@ -270,6 +308,107 @@ TOOL_DEFINITIONS = [
 ]
 
 
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _normalize_phase(value: Any) -> str:
+    if not value:
+        return PHASES[0]
+    raw = str(value).strip().lower()
+    synonyms = {
+        "planning": "Plan",
+        "plan": "Plan",
+        "init": "Plan",
+        "initialization": "Plan",
+        "implement": "Implement",
+        "implementation": "Implement",
+        "build": "Implement",
+        "execute": "Implement",
+        "executing": "Implement",
+        "test": "Test",
+        "testing": "Test",
+        "qa": "Test",
+        "verify": "Review",
+        "verifying": "Review",
+        "review": "Review",
+        "ship": "Ship",
+        "release": "Ship",
+        "complete": "Ship",
+        "completed": "Ship",
+        "done": "Ship",
+    }
+    if raw in synonyms:
+        return synonyms[raw]
+    for option in PHASES:
+        if option.lower() == raw:
+            return option
+    return PHASES[0]
+
+
+def _normalize_engine(value: Any) -> str:
+    if not value:
+        return "AG"
+    raw = str(value).strip().lower()
+    if raw in {"ag", "antigravity", "anti-gravity"}:
+        return "AG"
+    if raw in {"cdx", "codex"}:
+        return "CDX"
+    return "AG"
+
+
+def _normalize_percent(value: Any) -> int:
+    try:
+        percent = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, min(percent, 100))
+
+
+def _normalize_blockers(value: Any) -> list[str]:
+    if not value:
+        return []
+    if isinstance(value, str):
+        trimmed = value.strip()
+        return [trimmed] if trimmed else []
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    return []
+
+
+def _normalize_tags(tags: Any) -> list[str]:
+    if not tags:
+        return []
+    if not isinstance(tags, list):
+        return []
+    normalized: set[str] = set()
+    for item in tags:
+        if not isinstance(item, str):
+            continue
+        tag = item.strip()
+        if tag.startswith("#"):
+            tag = tag[1:]
+        tag = tag.strip().lower()
+        if tag:
+            normalized.add(tag)
+    return sorted(normalized)
+
+
+def _infer_project_id(arguments: dict[str, Any]) -> str | None:
+    project_id = arguments.get("project_id")
+    if isinstance(project_id, str) and project_id.strip():
+        return project_id.strip()
+    metadata = arguments.get("metadata", {})
+    if isinstance(metadata, dict):
+        project_id = metadata.get("project_id")
+        if isinstance(project_id, str) and project_id.strip():
+            return project_id.strip()
+    env_pid = os.environ.get("COCKPIT_PROJECT_ID")
+    if env_pid and env_pid.strip():
+        return env_pid.strip()
+    return None
+
+
 # Tool implementations
 async def handle_post_message(arguments: dict[str, Any]) -> list[TextContent]:
     """Handle cockpit.post_message tool call."""
@@ -278,38 +417,36 @@ async def handle_post_message(arguments: dict[str, Any]) -> list[TextContent]:
         agent_id = arguments["agent_id"]
         thread_id = arguments.get("thread_id")
         priority = arguments.get("priority", "normal")
-        tags = arguments.get("tags", [])
+        tags = _normalize_tags(arguments.get("tags"))
         metadata = arguments.get("metadata", {})
 
-        # TODO: Implement actual message storage/broadcasting
-        # For now, log to file and return success
-        message_id = f"msg_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{agent_id[:8]}"
-        timestamp = datetime.now(timezone.utc).isoformat()
+        project_id = _infer_project_id(arguments)
+        if not project_id:
+            return [TextContent(type="text", text=json.dumps({"error": "Missing project_id (or metadata.project_id / COCKPIT_PROJECT_ID)"}))]
 
-        message_data = {
+        message_id = f"msg_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{agent_id[:8]}"
+        timestamp = _utc_now_iso()
+
+        mentions = parse_mentions(content)
+        message_payload = {
             "message_id": message_id,
-            "content": content,
-            "agent_id": agent_id,
+            "timestamp": timestamp,
+            "author": agent_id,
+            "text": content,
             "thread_id": thread_id,
             "priority": priority,
             "tags": tags,
+            "mentions": mentions,
             "metadata": metadata,
-            "timestamp": timestamp
         }
 
-        logger.info(f"Message posted: {message_id} from {agent_id} (priority: {priority})")
-        
-        # Store message in project data
-        project_id = metadata.get("project_id")
-        if project_id:
-            try:
-                project = get_project(project_id)
-                if "messages" not in project.settings:
-                    project.settings["messages"] = []
-                project.settings["messages"].append(message_data)
-                save_project(project)
-            except Exception as e:
-                logger.warning(f"Could not save message to project: {e}")
+        logger.info(f"Message posted: {message_id} from {agent_id} (project={project_id}, priority={priority})")
+
+        append_chat_message(project_id, message_payload)
+        for tag in tags:
+            append_thread_message(project_id, tag, message_payload)
+        if thread_id:
+            append_thread_message(project_id, str(thread_id), message_payload)
 
         result = {
             "message_id": message_id,
@@ -340,8 +477,8 @@ async def handle_read_state(arguments: dict[str, Any]) -> list[TextContent]:
             projects_data = [_serialize_project(project, scope)]
         else:
             # Get all projects
-            projects = list_projects()
-            projects_data = [_serialize_project(p, scope) for p in projects]
+            project_ids = list_projects()
+            projects_data = [_serialize_project(get_project(pid), scope) for pid in project_ids]
 
         result = {
             "projects": projects_data,
@@ -361,26 +498,42 @@ async def handle_update_agent_state(arguments: dict[str, Any]) -> list[TextConte
         agent_id = arguments["agent_id"]
         project_id = arguments["project_id"]
         status = arguments["status"]
-        progress = arguments.get("progress", 0)
-        current_phase = arguments.get("current_phase", "")
+        percent_raw = arguments.get("percent", arguments.get("progress"))
+        phase_raw = arguments.get("phase", arguments.get("current_phase", ""))
         current_task = arguments.get("current_task", "")
         eta = arguments.get("eta")
+        eta_minutes_raw = arguments.get("eta_minutes")
+        engine_raw = arguments.get("engine")
+        blockers_raw = arguments.get("blockers")
         metadata = arguments.get("metadata", {})
         is_heartbeat = arguments.get("heartbeat", False)
 
-        logger.info(f"Updating agent state: {agent_id} @ {project_id} - {status} ({progress}%)")
+        logger.info(f"Updating agent state: {agent_id} @ {project_id} - {status} ({percent_raw}%)")
 
         # Load project
         project = get_project(project_id)
 
+        has_percent = "percent" in arguments or "progress" in arguments
+        has_phase = "phase" in arguments or "current_phase" in arguments
+        has_engine = (
+            "engine" in arguments
+            or (isinstance(metadata, dict) and ("engine" in metadata or "source" in metadata))
+        )
+        has_blockers = "blockers" in arguments
+        has_eta = "eta_minutes" in arguments or "eta" in arguments
+
         # Find or create agent
         agent_idx = next((i for i, a in enumerate(project.agents) if a.agent_id == agent_id), None)
         
-        # Calculate ETA in minutes
         eta_minutes = None
-        if eta:
+        if eta_minutes_raw is not None:
             try:
-                eta_dt = datetime.fromisoformat(eta.replace('Z', '+00:00'))
+                eta_minutes = int(eta_minutes_raw)
+            except (TypeError, ValueError):
+                eta_minutes = None
+        elif eta:
+            try:
+                eta_dt = datetime.fromisoformat(str(eta).replace("Z", "+00:00"))
                 now = datetime.now(timezone.utc)
                 eta_minutes = int((eta_dt - now).total_seconds() / 60)
             except Exception as e:
@@ -390,21 +543,44 @@ async def handle_update_agent_state(arguments: dict[str, Any]) -> list[TextConte
             # Update existing agent
             agent = project.agents[agent_idx]
             agent.status = status
-            agent.progress = int(progress)
-            agent.phase = current_phase or agent.phase
-            agent.eta_minutes = eta_minutes
-            agent.heartbeat = datetime.now(timezone.utc).isoformat()
+            agent.heartbeat = _utc_now_iso()
+            if not is_heartbeat:
+                if has_percent:
+                    agent.percent = _normalize_percent(percent_raw)
+                if has_phase and str(phase_raw).strip():
+                    agent.phase = _normalize_phase(phase_raw)
+                if has_engine:
+                    agent.engine = _normalize_engine(
+                        engine_raw
+                        or (metadata.get("engine") if isinstance(metadata, dict) else None)
+                        or (metadata.get("source") if isinstance(metadata, dict) else None)
+                    )
+                if has_blockers:
+                    agent.blockers = _normalize_blockers(blockers_raw)
+                if has_eta:
+                    agent.eta_minutes = eta_minutes
         else:
             # Create new agent
+            engine = _normalize_engine(
+                engine_raw
+                or (metadata.get("engine") if isinstance(metadata, dict) else None)
+                or (metadata.get("source") if isinstance(metadata, dict) else None)
+                or "AG"
+            )
+            phase = _normalize_phase(phase_raw) if str(phase_raw).strip() else PHASES[0]
+            percent = _normalize_percent(percent_raw) if has_percent else 0
+            blockers = _normalize_blockers(blockers_raw) if has_blockers else []
+
             agent = AgentState(
                 agent_id=agent_id,
                 name=metadata.get("name", agent_id),
-                source=metadata.get("source", "antigravity"),
-                phase=current_phase,
-                progress=int(progress),
+                engine=engine,
+                phase=phase,
+                percent=percent,
                 eta_minutes=eta_minutes,
-                heartbeat=datetime.now(timezone.utc).isoformat(),
-                status=status
+                heartbeat=_utc_now_iso(),
+                status=status,
+                blockers=blockers,
             )
             project.agents.append(agent)
 
@@ -414,9 +590,9 @@ async def handle_update_agent_state(arguments: dict[str, Any]) -> list[TextConte
                 project.settings["agent_tasks"] = {}
             project.settings["agent_tasks"][agent_id] = {
                 "current_task": current_task,
-                "current_phase": current_phase,
+                "current_phase": agent.phase,
                 "metadata": metadata,
-                "updated_at": datetime.now(timezone.utc).isoformat()
+                "updated_at": _utc_now_iso()
             }
 
         save_project(project)
@@ -575,7 +751,13 @@ def _serialize_project(project: ProjectData, scope: str) -> dict[str, Any]:
             {
                 "agent_id": agent.agent_id,
                 "name": agent.name,
+                "engine": agent.engine,
+                "phase": agent.phase,
+                "percent": agent.percent,
+                "eta_minutes": agent.eta_minutes,
+                "heartbeat": agent.heartbeat,
                 "status": agent.status or "idle",
+                "blockers": agent.blockers,
                 "current_task": project.settings.get("agent_tasks", {}).get(agent.agent_id, {}).get("current_task")
             }
             for agent in project.agents

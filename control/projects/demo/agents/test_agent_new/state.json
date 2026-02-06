@@ -1,11 +1,12 @@
 {
   "agent_id": "test_agent_new",
   "name": "test_agent_new",
-  "source": "antigravity",
-  "phase": "Testing",
-  "progress": 50,
+  "engine": "AG",
+  "phase": "Test",
+  "percent": 50,
   "eta_minutes": null,
-  "heartbeat": "2026-02-06T10:53:22.035813+00:00",
+  "heartbeat": "2026-02-06T00:00:00+00:00",
   "status": "executing",
-  "updated_at": "2026-02-06T10:53:22+00:00"
+  "blockers": [],
+  "updated_at": "2026-02-06T00:00:00+00:00"
 }

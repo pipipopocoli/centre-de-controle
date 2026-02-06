@@ -57,50 +57,67 @@ class AgentCard(QFrame):
         self.setFrameShape(QFrame.StyledPanel)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(6)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
 
+        # Header: Name + Badge
         header = QHBoxLayout()
         name = QLabel(state.name)
         name.setObjectName("agentName")
+        
         badge = QLabel(state.engine)
         badge.setObjectName("agentBadge")
         badge.setAlignment(Qt.AlignCenter)
-        badge.setFixedWidth(44)
+        badge.setFixedWidth(50)  # Slightly wider for better padding
 
         header.addWidget(name)
         header.addStretch(1)
         header.addWidget(badge)
 
-        self.phase_label = QLabel(f"Phase: {state.phase}")
+        # Info Row: Phase
+        phase_row = QHBoxLayout()
+        self.phase_label = QLabel(f"{state.phase}")
         self.phase_label.setObjectName("agentPhase")
+        if state.status:
+            status_indicator = "●"
+            color = "#4caf50" if state.status == "executing" else "#ff9800"
+            self.status_label = QLabel(f"<span style='color:{color};'>{status_indicator}</span> {state.status}")
+        else:
+            self.status_label = QLabel("Idle")
+        self.status_label.setObjectName("agentStatus")
+        
+        phase_row.addWidget(self.phase_label)
+        phase_row.addStretch(1)
+        phase_row.addWidget(self.status_label)
 
+        # Progress
         self.progress = QProgressBar()
         self.progress.setObjectName("agentProgress")
         self.progress.setRange(0, 100)
         self.progress.setValue(max(0, min(state.percent, 100)))
-        self.progress.setFormat(f"{state.percent}%")
-
-        eta_text = "-" if state.eta_minutes is None else f"ETA: {state.eta_minutes} min"
-        heartbeat_text, stale = _format_heartbeat(state.heartbeat)
-
+        # Text aligned center is default for some styles, but we can enforce if needed or leave to stylesheet
+        
+        # Footer: ETA + Heartbeat
+        footer = QHBoxLayout()
+        
+        eta_text = "ETA: --" if state.eta_minutes is None else f"ETA: {state.eta_minutes}m"
         self.eta_label = QLabel(eta_text)
         self.eta_label.setObjectName("agentEta")
+        
+        heartbeat_text, stale = _format_heartbeat(state.heartbeat)
         self.heartbeat_label = QLabel(heartbeat_text)
         self.heartbeat_label.setObjectName("agentHeartbeat")
         self.heartbeat_label.setProperty("stale", stale)
         self.setProperty("stale", stale)
 
-        status_text = "-" if not state.status else f"Status: {state.status}"
-        self.status_label = QLabel(status_text)
-        self.status_label.setObjectName("agentStatus")
+        footer.addWidget(self.eta_label)
+        footer.addStretch(1)
+        footer.addWidget(self.heartbeat_label)
 
         layout.addLayout(header)
-        layout.addWidget(self.phase_label)
+        layout.addLayout(phase_row)
         layout.addWidget(self.progress)
-        layout.addWidget(self.eta_label)
-        layout.addWidget(self.status_label)
-        layout.addWidget(self.heartbeat_label)
+        layout.addLayout(footer)
 
 
 class AgentsGridWidget(QFrame):

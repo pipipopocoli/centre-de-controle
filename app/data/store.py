@@ -144,8 +144,27 @@ def _parse_simple_roadmap(path: Path) -> dict[str, list[str]]:
 def _normalize_phase(phase: str | None) -> str:
     if not phase:
         return PHASES[0]
+    raw = str(phase).strip().lower()
+    synonyms = {
+        "planning": "Plan",
+        "init": "Plan",
+        "initialization": "Plan",
+        "implementation": "Implement",
+        "build": "Implement",
+        "executing": "Implement",
+        "testing": "Test",
+        "qa": "Test",
+        "verifying": "Review",
+        "verify": "Review",
+        "release": "Ship",
+        "complete": "Ship",
+        "completed": "Ship",
+        "done": "Ship",
+    }
+    if raw in synonyms:
+        return synonyms[raw]
     for option in PHASES:
-        if option.lower() == phase.lower():
+        if option.lower() == raw:
             return option
     return PHASES[0]
 
@@ -158,7 +177,8 @@ def _normalize_engine(engine: Any) -> str:
         return "AG"
     if value in {"cdx", "codex"}:
         return "CDX"
-    return value.upper()
+    # Canonical engines for the grid are CDX/AG; default unknown to AG.
+    return "AG"
 
 
 def _normalize_percent(progress: Any) -> int:

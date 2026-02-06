@@ -91,6 +91,15 @@ async def test_tool_logic():
     data = json.loads(result[0].text)
     assert data["status"] == "posted"
     print(f"  ✅ post_message works")
+
+    # Verify message persisted to chat feed (UI reads this file)
+    global_path = ROOT_DIR / "control" / "projects" / "demo" / "chat" / "global.ndjson"
+    lines = global_path.read_text(encoding="utf-8").splitlines()
+    assert lines, "Expected at least 1 chat message line"
+    last = json.loads(lines[-1])
+    assert last.get("author") == "test_agent"
+    assert last.get("text") == "Test message"
+    print(f"  ✅ post_message persisted to chat feed")
     
     # Test read_state
     result = await handle_read_state({
@@ -118,7 +127,8 @@ async def test_tool_logic():
     project = get_project("demo")
     agent = next((a for a in project.agents if a.agent_id == "test_agent_new"), None)
     assert agent is not None
-    assert agent.progress == 50
+    assert agent.percent == 50
+    assert agent.phase == "Test"
     print(f"  ✅ Agent persisted correctly")
     
     # Test request_run
