@@ -2,12 +2,25 @@
 
 ## Run (Python >= 3.11)
 
+Notes:
+- Project targets Python >= 3.11 (3.12 OK).
+- The PyPI package "mcp" requires Python >= 3.10, but we standardize higher for simplicity.
+
 ```bash
 cd /Users/oliviercloutier/Desktop/Cockpit
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python3 app/main.py
+python3 --version  # must be >= 3.11
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
+python app/main.py
+```
+
+## Run MCP Server (stdio)
+
+```bash
+cd /Users/oliviercloutier/Desktop/Cockpit
+source venv/bin/activate
+python control/mcp_server.py
 ```
 
 ## UI Layout (fixed)
@@ -34,4 +47,4 @@ control/projects/<project_id>/
 
 ## Screenshot
 
-![Centre de controle UI](docs/images/centre-de-controle.png)
+![Centre de controle UI](images/centre-de-controle.png)

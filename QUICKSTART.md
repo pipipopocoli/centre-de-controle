@@ -8,38 +8,51 @@ MCP server that connects Antigravity agents to Cockpit mission control, enabling
 - Controlled run execution with approval
 - Quota monitoring
 
+## ⚠️ Prerequisites
+
+- Python >= 3.11 (project target; PyPI package `mcp` requires Python >= 3.10)
+- macOS (tested) or Linux
+
 ## 🚀 Quick Start
 
-### 1. Python Version + Virtualenv
+### 1. Verify Python Version
 
-Supported Python: **3.9.6**  
-Recommended venv setup:
+```bash
+python3 --version  # must be >= 3.11
+```
+
+If < 3.11, install Python 3.12 (macOS):
+```bash
+brew install python@3.12
+```
+
+### 2. Create Virtual Environment
 ```bash
 cd /Users/oliviercloutier/Desktop/Cockpit
-python3.9 -m venv .venv
-source .venv/bin/activate
+python3 -m venv venv
+source venv/bin/activate
 ```
 
-### 2. Install Dependencies
+### 3. Install Dependencies
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-### 3. Test the Server
+### 4. Test the Server
 ```bash
-python3 tests/verify_mcp_basic.py
+python tests/verify_mcp_basic.py
 ```
 
 Expected output: `✅ All basic checks passed!`
 
-### 4. Configure Antigravity
+### 5. Configure Antigravity
 
 Add to your Antigravity MCP config:
 ```json
 {
   "mcpServers": {
     "cockpit": {
-      "command": "python3",
+      "command": "/Users/oliviercloutier/Desktop/Cockpit/venv/bin/python",
       "args": ["/Users/oliviercloutier/Desktop/Cockpit/control/mcp_server.py"],
       "env": {
         "COCKPIT_PROJECT_ID": "demo"
@@ -49,7 +62,9 @@ Add to your Antigravity MCP config:
 }
 ```
 
-### 5. Use in Agents
+Important: use the venv python path, not system python3.
+
+### 6. Use in Agents
 
 ```python
 # Check quotas
@@ -63,7 +78,7 @@ await use_mcp_tool("cockpit.update_agent_state", {
     "project_id": "demo",
     "status": "executing",
     "progress": 50,
-    "current_phase": "Implementation"
+    "current_phase": "Implement"
 })
 
 # Post message
