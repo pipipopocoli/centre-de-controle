@@ -2,7 +2,7 @@
 
 - Owner: victor
 - Phase: Implement
-- Status: In progress
+- Status: Done
 
 ## Objective
 - Make MCP integration coherent end-to-end: chat messages visible in UI, and agent state uses a canonical schema.
@@ -41,7 +41,7 @@
 ## Links
 - STATE.md: control/projects/demo/STATE.md
 - DECISIONS.md: control/projects/demo/DECISIONS.md
-- PR: (to create) codex/mcp-wire-state-migration
+- PR: https://github.com/pipipopocoli/centre-de-controle/pull/4
 
 ## Risks
 - Breaking client payloads (keep compat + tests).
