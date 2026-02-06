@@ -6,7 +6,7 @@
 ## Now
 - Paper Ops UI appliquee (QSS direct)
 - Chat actions compactes + tooltips
-- Screenshot final ajoute
+- V1 local dev release ready (no packaging)
 ## Next
 - Phase 3: release checklist + monitoring
 - Optional: tighten QA checklist (resize, contrast, no clipping)

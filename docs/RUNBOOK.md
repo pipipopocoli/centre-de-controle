@@ -19,6 +19,17 @@ Version check:
 - The window title shows: `Centre de controle - <branch>@<sha><*dirty>`
 - Sidebar footer shows the same stamp plus `Data: control/projects`
 
+## V1 Local Dev Release (Phase 3)
+
+Release note (short):
+- V1 local dev release is live. Paper Ops UI is applied, chat actions are compact, and the version stamp is visible. Packaging is deferred to V2.
+
+QA checklist (V1):
+1. Launch app: `./.venv/bin/python app/main.py`
+2. Title shows `main@<sha>`
+3. Resize window: no clipping in chat action row
+4. Click `Ping Team`: ACK appears in chat and heartbeat updates
+
 ## Run MCP Server (stdio)
 
 ```bash
