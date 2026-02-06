@@ -2,7 +2,7 @@
 
 - Owner: leo (@leo)
 - Phase: Plan
-- Status: Todo
+- Status: Done (Phase 1)
 
 ## Objective
 - Upgrade Cockpit UI from "functional but ugly" to a high-quality, intentional "mission control" experience.
@@ -26,11 +26,20 @@
 - None.
 
 ## Next
-- Research deliverable:
-  - 2-3 directions + a recommendation.
-  - Concrete typography choice (not a default stack) and spacing scale.
-  - Color system (backgrounds, surfaces, text, accents) + contrast notes.
-  - A short "Do / Don't" list to avoid generic UI patterns.
+- Phase 2 implementation (pending):
+  - Centralize styling (QSS / styles module).
+  - Apply Paper Ops tokens across sidebar, roadmap, agents, chat.
+  - Bundle Plex fonts + register via QFontDatabase.
+  - Add updated screenshot in docs.
+
+## Research Summary (Phase 1 Done)
+- Direction A: Paper Ops (recommended)
+  - Warm off-white background, crisp borders, cobalt accent.
+  - IBM Plex Sans + Plex Mono.
+- Direction B: Signal Grid
+  - Industrial mission-control, high-contrast panels, orange/teal accents.
+- Direction C: Orbit Minimal
+  - Cool gradients, soft glass surfaces, minimal chrome.
 
 ## Blockers
 - None.
@@ -47,7 +56,8 @@
 ## Links
 - STATE.md: control/projects/demo/STATE.md
 - DECISIONS.md: control/projects/demo/DECISIONS.md
-- PR:
+- UI research: docs/ui-research.md
+- PR: https://github.com/pipipopocoli/centre-de-controle/pull/6
 
 ## Risks
 - QSS limitations may constrain fancy ideas (keep it pragmatic).
