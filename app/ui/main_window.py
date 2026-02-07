@@ -266,11 +266,11 @@ class MainWindow(QMainWindow):
         if any(key in lower for key in ["next", "prochaine", "etape", "roadmap", "etat", "status"]):
             lines = ["Etat actuel:"]
             if phase:
-                lines.append(f"- Phase: {phase}")
+                lines.append(f"- Etape: {phase}")
             if objective:
-                lines.append(f"- Objectif: {objective}")
+                lines.append(f"- Cible: {objective}")
             if next_items:
-                lines.append("- Next:")
+                lines.append("- Suite:")
                 for item in next_items[:3]:
                     lines.append(f"  - {item}")
             return "\n".join(lines), False

@@ -14,18 +14,18 @@ class RoadmapWidget(QFrame):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(0)  # Spacing handled by separators
 
-        # Create sections (FR Microcopy)
-        # 1. MISSION (Phase + Objectif)
-        self.mission = self._section("MISSION", "roadmapSectionMission")
-        
-        # 2. EN COURS (Now)
-        self.focus = self._section("EN COURS", "roadmapSectionFocus")
-        
-        # 3. A VENIR (Next)
-        self.upcoming = self._section("A VENIR", "roadmapSectionUpcoming")
-        
-        # 4. RISQUES
-        self.risks = self._section("RISQUES", "roadmapSectionRisks")
+        # Create sections (FR microcopy)
+        # 1. CAP (Etape + Cible)
+        self.mission = self._section("CAP", "roadmapSectionMission")
+
+        # 2. FOCUS (Now)
+        self.focus = self._section("FOCUS", "roadmapSectionFocus")
+
+        # 3. SUITE (Next)
+        self.upcoming = self._section("SUITE", "roadmapSectionUpcoming")
+
+        # 4. ALERTES (Risks)
+        self.risks = self._section("ALERTES", "roadmapSectionRisks")
 
         # Layout: Mission | En Cours | A Venir | Risques
         layout.addWidget(self.mission, 2)  # Give more space to mission
@@ -69,11 +69,11 @@ class RoadmapWidget(QFrame):
         self.risks.findChild(QLabel, "roadmapSectionItems").setText("\n".join(f"- {item}" for item in risks) or "-")
 
     def set_state(self, phase: str, objective: str, next_items: list[str]) -> None:
-        # Mission column combines Phase & Objective
+        # Cap column combines Etape & Cible
         lines: list[str] = []
         if phase:
-            lines.append(f"Phase: {phase}")
+            lines.append(f"Etape: {phase}")
         if objective:
-            lines.append(f"Cap: {objective}")
+            lines.append(f"Cible: {objective}")
         
         self.mission.findChild(QLabel, "roadmapSectionItems").setText("\n".join(lines) or "-")
