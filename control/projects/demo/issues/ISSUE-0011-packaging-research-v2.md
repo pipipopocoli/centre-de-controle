@@ -26,7 +26,7 @@
 - Run PyInstaller build and verify .app behavior (QA checklist).
 
 ## Blockers
-- None.
+- PyInstaller install failed (pip could not reach pypi).
 
 ## Done (Definition)
 - A documented prototype exists (build command + run steps).

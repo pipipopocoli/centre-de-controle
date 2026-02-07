@@ -10,7 +10,7 @@
 ## In Progress
 - ISSUE-0011 packaging research
 ## Blockers
-- None declared
+- PyInstaller install failed (pip could not reach pypi)
 ## Risks
 - Packaging drag (PySide6 bundling can be time-consuming)
 - Memory contamination (cross-project) if retrieval is not scoped
