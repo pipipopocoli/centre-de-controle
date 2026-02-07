@@ -12,8 +12,11 @@ dist/
 *.egg-info/
 *.app/
 *.spec
+!Centre de controle.spec
 **/memory.proposed.md
 **/runs/*.ndjson
+control/projects/**/runs/inbox/
+control/projects/**/runs/dispatch_state.json
 control/projects/**/agents/agent-*/
 control/projects/**/chat/threads/
 control/projects/**/packs/

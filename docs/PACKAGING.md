@@ -20,6 +20,10 @@ Build (windowed .app):
 Output:
 - dist/Centre de controle.app
 
+Version stamp:
+- The build script writes `app/version.json` with branch/sha/dirty.
+- The app reads this file when git is unavailable inside the bundle.
+
 Notes:
 - The build script sets `PYINSTALLER_CONFIG_DIR=build/pyinstaller-cache` to avoid permissions errors in
   `~/Library/Application Support/pyinstaller`.
@@ -36,5 +40,5 @@ If the app launches with the *old* UI, ensure you're opening:
 
 ## Notes / Risks
 - Qt plugins can be finicky; if the app opens blank, verify PyInstaller collected Qt plugins.
-- Version stamp will show unknown@unknown if git is not available inside the bundle.
+- Version stamp will show unknown@unknown if version.json is missing and git is not available inside the bundle.
 - Build artifacts can be large; use dist/ cleanup as needed.

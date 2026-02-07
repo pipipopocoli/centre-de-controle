@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -43,7 +44,30 @@ def _run_git(args: list[str]) -> str:
     return result.stdout.strip()
 
 
+def _read_version_json(path: Path) -> str | None:
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    branch = str(payload.get("branch") or "").strip()
+    sha = str(payload.get("sha") or "").strip()
+    if not branch or not sha:
+        return None
+    dirty = payload.get("dirty") is True
+    dirty_flag = "*" if dirty else ""
+    return f"{branch}@{sha}{dirty_flag}"
+
+
 def _get_version_stamp() -> str:
+    version_json = _resource_path("app", "version.json")
+    stamp = _read_version_json(version_json)
+    if stamp:
+        return stamp
+
     try:
         branch = _run_git(["git", "rev-parse", "--abbrev-ref", "HEAD"])
         sha = _run_git(["git", "rev-parse", "--short", "HEAD"])
