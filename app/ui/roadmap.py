@@ -16,6 +16,7 @@ class RoadmapWidget(QFrame):
         self.timeline = QLabel("Timeline")
         self.timeline.setObjectName("roadmapTimeline")
         self.timeline.setFixedWidth(140)
+        self.timeline.setWordWrap(True)
 
         self.sections = QWidget()
         sections_layout = QHBoxLayout(self.sections)
@@ -53,3 +54,18 @@ class RoadmapWidget(QFrame):
         self.now.findChild(QLabel, "roadmapSectionItems").setText("\n".join(f"- {item}" for item in now) or "-")
         self.next.findChild(QLabel, "roadmapSectionItems").setText("\n".join(f"- {item}" for item in next_items) or "-")
         self.risks.findChild(QLabel, "roadmapSectionItems").setText("\n".join(f"- {item}" for item in risks) or "-")
+
+    def set_state(self, phase: str, objective: str, next_items: list[str]) -> None:
+        lines: list[str] = []
+        if phase:
+            lines.append(f"Phase: {phase}")
+        if objective:
+            lines.append("")
+            lines.append("Objective:")
+            lines.append(f"- {objective}")
+        if next_items:
+            lines.append("")
+            lines.append("Next:")
+            for item in next_items[:2]:
+                lines.append(f"- {item}")
+        self.timeline.setText("\n".join(lines) if lines else "Timeline")

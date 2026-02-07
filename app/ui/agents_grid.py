@@ -79,11 +79,13 @@ class AgentCard(QFrame):
         self.phase_label = QLabel(f"{state.phase}")
         self.phase_label.setObjectName("agentPhase")
         if state.status:
-            status_indicator = "●"
-            color = "#4caf50" if state.status == "executing" else "#ff9800"
-            self.status_label = QLabel(f"<span style='color:{color};'>{status_indicator}</span> {state.status}")
+            color = "#0369a1" if state.status == "executing" else "#d1d5db"
+            status_text = "En cours" if state.status == "executing" else "En attente"
+            status_html = f"<span style='color:{color}; font-weight:bold;'>•</span> {status_text}"
+            self.status_label = QLabel(status_html)
         else:
-            self.status_label = QLabel("Idle")
+            self.status_label = QLabel("<span style='color:#d1d5db;'>•</span> En attente")
+        
         self.status_label.setObjectName("agentStatus")
         
         phase_row.addWidget(self.phase_label)

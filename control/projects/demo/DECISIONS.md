@@ -53,3 +53,12 @@
 - Consequences: Packaged builds need QA for data path and permissions.
 - Owners: Clems, Victor
 - References: control/projects/demo/issues/ISSUE-0011-packaging-research-v2.md, docs/PACKAGING.md
+
+## 2026-02-07 - ADR-007 Clems auto-reply + personas split
+- Status: Accepted
+- Context: Operator needs a primary assistant response in chat and clearer next steps.
+- Decision: Clems auto-replies to operator messages; personas moved to agents/ files; roadmap shows Phase/Objective/Next.
+- Rationale: Improves usability and reduces confusion about next actions.
+- Consequences: Must avoid reply loops; reminders kept minimal.
+- Owners: Clems, Victor, Leo
+- References: control/projects/demo/issues/ISSUE-0012-clems-autoreply-v2.md

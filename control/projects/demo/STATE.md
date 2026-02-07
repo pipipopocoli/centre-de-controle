@@ -1,14 +1,14 @@
 # State
 ## Phase
-- Implement
+- Review
 ## Objective
-- V2: packaging prototype (macOS .app) with local-first data path
+- V2.1: Clems auto-reply + steps clarity + personas split
 ## Now
-- Packaging prototype docs + data path fallback shipped (ISSUE-0011)
+- QA Clems auto-reply + steps clarity (ISSUE-0012)
 ## Next
-- Run PyInstaller build + QA checklist (ISSUE-0011)
+- Close ISSUE-0012 after QA
 ## In Progress
-- ISSUE-0011 packaging research
+- ISSUE-0012 clems auto-reply
 ## Blockers
 - PyInstaller install failed (pip could not reach pypi)
 ## Risks
