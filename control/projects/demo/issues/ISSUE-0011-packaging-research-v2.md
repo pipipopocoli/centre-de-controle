@@ -112,6 +112,7 @@ Risks:
 - ✅ App launched and created data dir at:
   - `~/Library/Application Support/Cockpit/projects/demo`
 - ✅ Local-first structure created (STATE/ROADMAP/DECISIONS/agents/chat).
+- ✅ Fix: theme loading in bundled app uses `_MEIPASS` path (PyInstaller).
 - ⏳ Manual checks pending:
   - Version stamp visible in title/footer (may show `unknown@unknown` in .app).
   - Send a message and confirm `chat/global.ndjson` writes in data dir.

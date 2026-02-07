@@ -15,7 +15,13 @@ from app.data.store import ensure_demo_project, list_projects  # noqa: E402
 from app.ui.main_window import MainWindow  # noqa: E402
 
 
-THEME_PATH = Path(__file__).parent / "ui" / "theme.qss"
+def _resource_path(*parts: str) -> Path:
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS).joinpath(*parts)  # type: ignore[attr-defined]
+    return ROOT_DIR.joinpath(*parts)
+
+
+THEME_PATH = _resource_path("app", "ui", "theme.qss")
 
 
 def _read_stylesheet(path: Path) -> str:
