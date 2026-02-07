@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import json
-import subprocess
+import sys
 import tempfile
 from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT_DIR))
+
+from app.services.auto_mode import dispatch_once
 
 
 def _write_ndjson(path: Path, payload: dict) -> None:
@@ -13,100 +18,60 @@ def _write_ndjson(path: Path, payload: dict) -> None:
 
 
 def main() -> int:
-    repo_root = Path(__file__).resolve().parents[1]
-    script = repo_root / "scripts" / "auto_mode.py"
-    python = repo_root / ".venv" / "bin" / "python"
-
-    if not script.exists():
-        raise SystemExit("missing scripts/auto_mode.py")
-    if not python.exists():
-        raise SystemExit("missing .venv/bin/python")
-
     with tempfile.TemporaryDirectory() as tmp:
         projects_root = Path(tmp) / "projects"
         project_id = "demo"
         requests_path = projects_root / project_id / "runs" / "requests.ndjson"
-        config_path = projects_root / project_id / "runs" / "auto_mode_config.json"
 
-        config_payload = {
-            "app_map": {"codex": "Codex", "antigravity": "Antigravity"},
-            "agent_map": {"agent-1": "codex", "agent-2": "antigravity"},
-            "max_actions": 0,
-        }
-        config_path.parent.mkdir(parents=True, exist_ok=True)
-        config_path.write_text(json.dumps(config_payload, indent=2), encoding="utf-8")
-
-        req_1 = {
-            "request_id": "runreq_test_001",
-            "project_id": project_id,
-            "agent_id": "agent-1",
-            "status": "queued",
-            "source": "mention",
-            "created_at": "2026-02-07T00:00:00Z",
-            "message": {
-                "message_id": "msg_test_001",
-                "thread_id": None,
-                "author": "operator",
-                "text": "Ping @agent-1 test",
-                "tags": [],
-                "mentions": ["agent-1"],
-            },
-        }
-        req_2 = {
-            "request_id": "runreq_test_002",
-            "project_id": project_id,
-            "agent_id": "agent-2",
-            "status": "queued",
-            "source": "mention",
-            "created_at": "2026-02-07T00:00:05Z",
-            "message": {
-                "message_id": "msg_test_002",
-                "thread_id": None,
-                "author": "operator",
-                "text": "Ping @agent-2 test",
-                "tags": [],
-                "mentions": ["agent-2"],
-            },
-        }
-        _write_ndjson(requests_path, req_1)
-        _write_ndjson(requests_path, req_2)
-
-        cmd = [
-            str(python),
-            str(script),
-            "--project",
-            project_id,
-            "--data-dir",
-            str(projects_root),
-            "--config",
-            str(config_path),
-            "--once",
-            "--no-open",
-            "--no-clipboard",
-            "--no-notify",
+        reqs = [
+            ("runreq_test_001", "agent-1", "msg_test_001", "Ping @agent-1 test"),
+            ("runreq_test_002", "agent-2", "msg_test_002", "Ping @agent-2 test"),
+            ("runreq_test_003", "agent-3", "msg_test_003", "Ping @agent-3 test"),
         ]
+        for request_id, agent_id, msg_id, text in reqs:
+            _write_ndjson(
+                requests_path,
+                {
+                    "request_id": request_id,
+                    "project_id": project_id,
+                    "agent_id": agent_id,
+                    "status": "queued",
+                    "source": "mention",
+                    "created_at": "2026-02-07T00:00:00Z",
+                    "message": {
+                        "message_id": msg_id,
+                        "thread_id": None,
+                        "author": "operator",
+                        "text": text,
+                        "tags": [],
+                        "mentions": [agent_id],
+                    },
+                },
+            )
 
-        subprocess.run(cmd, check=True, cwd=str(repo_root))
+        result_1 = dispatch_once(projects_root, project_id, max_actions=1)
 
-        inbox_1 = projects_root / project_id / "runs" / "inbox" / "agent-1.ndjson"
-        inbox_2 = projects_root / project_id / "runs" / "inbox" / "agent-2.ndjson"
+        assert result_1.dispatched_count == 3, f"expected 3 dispatched, got {result_1.dispatched_count}"
+        assert len(result_1.actions) == 1, f"expected max_actions=1, got {len(result_1.actions)}"
+        assert result_1.actions[0].agent_id == "agent-1", "expected first action to be agent-1"
+
+        for _request_id, agent_id, _msg_id, _text in reqs:
+            inbox = projects_root / project_id / "runs" / "inbox" / f"{agent_id}.ndjson"
+            assert inbox.exists(), f"inbox not created for {agent_id}"
+            inbox_lines = inbox.read_text(encoding="utf-8").splitlines()
+            assert len(inbox_lines) == 1, f"expected 1 inbox line for {agent_id}, got {len(inbox_lines)}"
+
         state = projects_root / project_id / "runs" / "auto_mode_state.json"
-
-        assert inbox_1.exists(), "agent-1 inbox not created"
-        assert inbox_2.exists(), "agent-2 inbox not created"
         assert state.exists(), "state file not created"
 
-        inbox_lines_1 = inbox_1.read_text(encoding="utf-8").splitlines()
-        inbox_lines_2 = inbox_2.read_text(encoding="utf-8").splitlines()
-        assert len(inbox_lines_1) == 1, f"expected 1 inbox line, got {len(inbox_lines_1)}"
-        assert len(inbox_lines_2) == 1, f"expected 1 inbox line, got {len(inbox_lines_2)}"
-
-        # Second run should not duplicate.
-        subprocess.run(cmd, check=True, cwd=str(repo_root))
-        inbox_lines_1b = inbox_1.read_text(encoding="utf-8").splitlines()
-        inbox_lines_2b = inbox_2.read_text(encoding="utf-8").splitlines()
-        assert len(inbox_lines_1b) == 1, f"expected dedupe, got {len(inbox_lines_1b)}"
-        assert len(inbox_lines_2b) == 1, f"expected dedupe, got {len(inbox_lines_2b)}"
+        # Second run should not duplicate inbox entries and should produce no actions.
+        result_2 = dispatch_once(projects_root, project_id, max_actions=1)
+        assert result_2.dispatched_count == 0, f"expected 0 dispatched, got {result_2.dispatched_count}"
+        assert len(result_2.actions) == 0, f"expected no actions, got {len(result_2.actions)}"
+        for _request_id, agent_id, _msg_id, _text in reqs:
+            inbox = projects_root / project_id / "runs" / "inbox" / f"{agent_id}.ndjson"
+            inbox_lines = inbox.read_text(encoding="utf-8").splitlines()
+            assert len(inbox_lines) == 1, f"expected dedupe for {agent_id}, got {len(inbox_lines)}"
 
     print("OK: auto-mode runner verified")
     return 0

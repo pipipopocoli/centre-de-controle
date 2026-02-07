@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -20,6 +21,7 @@ from app.data.store import (
 )
 from app.services.chat_parser import parse_mentions, parse_tags
 from app.services.pack_context import build_pack_context, write_pack_context
+from app.services.auto_mode import dispatch_once as auto_mode_dispatch_once
 from app.ui.agents_grid import AgentsGridWidget
 from app.ui.chatroom import ChatroomWidget
 from app.ui.roadmap import RoadmapWidget
@@ -50,11 +52,10 @@ class MainWindow(QMainWindow):
         footer_lines = []
         if version_text:
             footer_lines.append(version_text)
-        if data_dir:
-            footer_lines.append(f"Data: {data_dir}")
+        # Data dir moved to Auto-Mode Panel
         footer_text = "\n".join(footer_lines) if footer_lines else None
 
-        self.sidebar = SidebarWidget(projects=projects, footer_text=footer_text)
+        self.sidebar = SidebarWidget(projects=projects, footer_text=footer_text, data_dir=data_dir)
         self.sidebar.setFixedWidth(220)
 
         self.center = QWidget()
@@ -87,10 +88,25 @@ class MainWindow(QMainWindow):
         self.chatroom.pack_light_btn.clicked.connect(self.on_pack_light)
         self.chatroom.pack_full_btn.clicked.connect(self.on_pack_full)
         self.chatroom.ping_btn.clicked.connect(self.on_ping_agents)
+        self.sidebar.auto_mode.toggle.toggled.connect(self.on_auto_mode_toggled)
+        self.sidebar.auto_mode.run_once_btn.clicked.connect(self.on_auto_mode_run_once)
         if projects and project.project_id in projects:
             self.sidebar.project_list.setCurrentRow(projects.index(project.project_id))
 
+        # Auto-mode: default ON (can be overridden per project via settings.json).
+        self.auto_mode_enabled = True
+        self.auto_mode_interval_seconds = 5
+        self.auto_mode_max_actions = 1
+        self.auto_mode_codex_app = "Codex"
+        self.auto_mode_ag_app = "Antigravity"
+        self.auto_mode_last_error: str | None = None
+
+        self.auto_mode_timer = QTimer(self)
+        self.auto_mode_timer.setInterval(self.auto_mode_interval_seconds * 1000)
+        self.auto_mode_timer.timeout.connect(self.run_auto_mode_tick)
+
         self.load_project(project)
+        self.run_auto_mode_tick()
 
         self.refresh_timer = QTimer(self)
         self.refresh_timer.setInterval(5000)
@@ -109,7 +125,11 @@ class MainWindow(QMainWindow):
         self.reminder_timer.start()
 
     def load_project(self, project: ProjectData) -> None:
+        prev_project_id = self.current_project_id
         self.current_project_id = project.project_id
+        if prev_project_id != self.current_project_id:
+            self.sidebar.auto_mode.set_last_dispatch("-")
+            self.sidebar.auto_mode.set_last_error("")
         self.roadmap.set_roadmap(
             project.roadmap.get("now", []),
             project.roadmap.get("next", []),
@@ -118,6 +138,7 @@ class MainWindow(QMainWindow):
         phase, objective, next_items = self._read_state_summary()
         self.roadmap.set_state(phase, objective, next_items)
         self.agents_grid.set_agents(project.agents)
+        self._sync_auto_mode_from_settings(project)
         self.refresh_chat()
 
     def on_project_selected(self, project_id: str) -> None:
@@ -171,6 +192,8 @@ class MainWindow(QMainWindow):
         for tag in tags:
             append_thread_message(self.current_project_id, tag, payload)
         record_mentions(self.current_project_id, payload)
+        # Auto-mode should react quickly to operator mentions (when enabled).
+        self.run_auto_mode_tick()
         self._auto_reply(payload)
         self.chatroom.input.clear()
         self.refresh_chat()
@@ -223,8 +246,136 @@ class MainWindow(QMainWindow):
         for tag in tags:
             append_thread_message(self.current_project_id, tag, payload)
         record_mentions(self.current_project_id, payload)
+        self.run_auto_mode_tick()
         self._auto_reply(payload)
         self.refresh_chat()
+
+    def _settings_path(self, project_id: str) -> Path:
+        return project_dir(project_id) / "settings.json"
+
+    def _load_settings_json(self, project_id: str) -> dict:
+        path = self._settings_path(project_id)
+        if not path.exists():
+            return {}
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return {}
+        return payload if isinstance(payload, dict) else {}
+
+    def _save_settings_json(self, project_id: str, settings: dict) -> None:
+        path = self._settings_path(project_id)
+        settings["updated_at"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
+
+    def _sync_auto_mode_from_settings(self, project: ProjectData) -> None:
+        # Read settings from loaded project (fast path).
+        settings = project.settings if isinstance(project.settings, dict) else {}
+        feature_flags = settings.get("feature_flags") if isinstance(settings.get("feature_flags"), dict) else {}
+        enabled = feature_flags.get("auto_mode")
+        if enabled is None:
+            enabled = True
+
+        auto_mode = settings.get("auto_mode") if isinstance(settings.get("auto_mode"), dict) else {}
+        interval_seconds = auto_mode.get("interval_seconds", 5)
+        max_actions = auto_mode.get("max_actions", 1)
+
+        try:
+            interval_seconds = int(interval_seconds)
+        except (TypeError, ValueError):
+            interval_seconds = 5
+        try:
+            max_actions = int(max_actions)
+        except (TypeError, ValueError):
+            max_actions = 1
+
+        interval_seconds = max(1, min(interval_seconds, 60))
+        max_actions = max(0, min(max_actions, 5))
+
+        self.auto_mode_enabled = bool(enabled)
+        self.auto_mode_interval_seconds = interval_seconds
+        self.auto_mode_max_actions = max_actions
+
+        self.sidebar.auto_mode.set_enabled(self.auto_mode_enabled)
+        self.auto_mode_timer.setInterval(self.auto_mode_interval_seconds * 1000)
+        if self.auto_mode_enabled and not self.auto_mode_timer.isActive():
+            self.auto_mode_timer.start()
+        if not self.auto_mode_enabled and self.auto_mode_timer.isActive():
+            self.auto_mode_timer.stop()
+
+    def _persist_auto_mode_settings(self) -> None:
+        if not self.current_project_id:
+            return
+        settings = self._load_settings_json(self.current_project_id)
+        feature_flags = settings.get("feature_flags")
+        if not isinstance(feature_flags, dict):
+            feature_flags = {}
+            settings["feature_flags"] = feature_flags
+        feature_flags["auto_mode"] = bool(self.auto_mode_enabled)
+
+        auto_mode = settings.get("auto_mode")
+        if not isinstance(auto_mode, dict):
+            auto_mode = {}
+            settings["auto_mode"] = auto_mode
+        auto_mode["interval_seconds"] = int(self.auto_mode_interval_seconds)
+        auto_mode["max_actions"] = int(self.auto_mode_max_actions)
+
+        self._save_settings_json(self.current_project_id, settings)
+
+    def on_auto_mode_toggled(self, enabled: bool) -> None:
+        self.auto_mode_enabled = bool(enabled)
+        self._persist_auto_mode_settings()
+        if self.auto_mode_enabled:
+            self.auto_mode_timer.start()
+            self.run_auto_mode_tick(manual=True)
+        else:
+            self.auto_mode_timer.stop()
+        self.sidebar.auto_mode.set_last_error("")
+
+    def on_auto_mode_run_once(self) -> None:
+        self.run_auto_mode_tick(manual=True)
+
+    def run_auto_mode_tick(self, manual: bool = False) -> None:
+        if not self.current_project_id:
+            return
+        if not self.auto_mode_enabled and not manual:
+            return
+
+        try:
+            result = auto_mode_dispatch_once(
+                PROJECTS_DIR,
+                self.current_project_id,
+                max_actions=self.auto_mode_max_actions,
+                codex_app=self.auto_mode_codex_app,
+                ag_app=self.auto_mode_ag_app,
+            )
+        except Exception as exc:
+            self.auto_mode_last_error = str(exc)
+            self.sidebar.auto_mode.set_last_error(f"Error: {self.auto_mode_last_error}")
+            return
+
+        # Apply at most max_actions actions (already capped).
+        for action in result.actions:
+            QApplication.clipboard().setText(action.prompt_text)
+            completed = subprocess.run(
+                ["open", "-a", action.app_to_open],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if completed.returncode != 0:
+                self.auto_mode_last_error = (completed.stderr or completed.stdout or "open failed").strip()
+                self.sidebar.auto_mode.set_last_error(f"Open error: {self.auto_mode_last_error}")
+            else:
+                self.sidebar.auto_mode.set_last_error("")
+            now = datetime.now().strftime("%H:%M:%S")
+            self.sidebar.auto_mode.set_last_dispatch(f"{now} @{action.agent_id} -> {action.app_to_open}")
+
+        # If there was dispatch activity but no action (max_actions=0), still update status.
+        if not result.actions and result.dispatched_count:
+            now = datetime.now().strftime("%H:%M:%S")
+            self.sidebar.auto_mode.set_last_dispatch(f"{now} dispatched {result.dispatched_count}")
 
     def _make_message_id(self, author: str) -> str:
         return f"msg_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{author}"

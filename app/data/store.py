@@ -73,6 +73,11 @@ def ensure_project_structure(project_id: str, project_name: str | None = None) -
         "project_name": project_name,
         "feature_flags": {
             "deep_mining": False,
+            "auto_mode": True,
+        },
+        "auto_mode": {
+            "interval_seconds": 5,
+            "max_actions": 1,
         },
         "github": {
             "repo": "",

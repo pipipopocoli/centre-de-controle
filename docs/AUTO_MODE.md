@@ -1,6 +1,20 @@
-# Auto-mode (Runner)
+# Auto-mode (In-App + CLI)
 
 Auto-mode turns Cockpit run requests into actionable inbox items and helps you launch the right app.
+
+## In the app (recommended)
+In the packaged app, auto-mode is ON by default and runs in the background for the currently selected project.
+
+Where:
+- Left sidebar -> Auto-mode panel (toggle + status + "Run once").
+
+What it does:
+- When you mention `@agent-1`, Cockpit writes a run request.
+- Auto-mode consumes it, writes it to the agent inbox, and (at most once per cycle) copies a ready-to-paste prompt + opens Codex/Antigravity.
+
+Notes:
+- It does not auto-create threads and does not auto-press Send.
+- It ignores reminders (`source=reminder`) to avoid loops.
 
 ## What this does (and what it does not)
 Does:
@@ -60,3 +74,11 @@ tail -n 1 ~/Library/Application\\ Support/Cockpit/projects/demo/runs/inbox/agent
 - If `open -a Codex` fails: find the app name in Finder and pass `--codex-app "<Exact Name>"`.
 - If you want dev data dir: pass `--data-dir /Users/oliviercloutier/Desktop/Cockpit/control/projects` (not recommended for packaged app).
 - If clipboard looks empty: run with `--print-prompt` and copy the prompt directly from the terminal.
+
+## QA checklist (8 agents)
+- Turn Auto-mode ON.
+- In chat, send: `@agent-1 ping`, `@agent-2 ping`, ... `@agent-8 ping`.
+- Verify inbox files exist, e.g.:
+- `~/Library/Application Support/Cockpit/projects/<project>/runs/inbox/agent-1.ndjson`
+- `~/Library/Application Support/Cockpit/projects/<project>/runs/inbox/agent-2.ndjson`
+- Verify only 1 copy/open action happens per cycle (the rest is inbox-only).

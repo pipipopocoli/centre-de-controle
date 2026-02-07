@@ -31,6 +31,64 @@ QLabel#versionStamp {
     padding: 6px 8px;
 }
 
+/* Auto-mode panel */
+QFrame#autoModePanel {
+    background-color: #FFFFFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 8px;
+}
+
+QLabel#autoModeHeader {
+    color: #5E6167;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 1px;
+}
+
+QLabel#autoModeMicrocopy {
+    color: #5E6167;
+    font-size: 11px;
+}
+
+QLabel#autoModeInfo {
+    color: #5E6167;
+    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 10px;
+}
+
+QLabel#autoModeError {
+    color: #C94B4B;
+    font-size: 11px;
+}
+
+QPushButton#autoModeToggle {
+    background-color: #F0ECE6;
+    color: #1C1C1C;
+    border: 1px solid #D9D3C8;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-weight: 700;
+}
+
+QPushButton#autoModeToggle:checked {
+    background-color: #23A6A6;
+    color: #FFFFFF;
+    border-color: #23A6A6;
+}
+
+QPushButton#autoModeRunOnce {
+    background-color: #FFFFFF;
+    color: #2C5DFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-weight: 700;
+}
+
+QPushButton#autoModeRunOnce:hover {
+    background-color: rgba(44, 93, 255, 0.08);
+}
+
 QListWidget#projectList {
     background: transparent;
     border: none;
