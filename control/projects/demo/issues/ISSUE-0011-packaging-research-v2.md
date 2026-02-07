@@ -106,6 +106,7 @@ Risks:
 - Notes:
   - Build script uses `pyinstaller` CLI + `--noconfirm`.
   - Set `PYINSTALLER_CONFIG_DIR` to `build/pyinstaller-cache` to avoid permission errors.
+  - Verified `theme.qss` is bundled at `Contents/Resources/app/ui/theme.qss`.
 
 ## QA (Partial)
 - ✅ App launched and created data dir at:
@@ -114,3 +115,4 @@ Risks:
 - ⏳ Manual checks pending:
   - Version stamp visible in title/footer (may show `unknown@unknown` in .app).
   - Send a message and confirm `chat/global.ndjson` writes in data dir.
+  - If UI looks outdated, ensure you opened `dist/Centre de controle.app` (not /Applications copy).

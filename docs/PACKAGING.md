@@ -15,14 +15,17 @@ Install:
 - (fallback) python3 -m pip install pyinstaller
 
 Build (windowed .app):
-- ./.venv/bin/python -m pyinstaller --windowed --name "Centre de controle" \
-  --add-data "app/ui/theme.qss:app/ui" \
-  app/main.py
+- PATH="$PWD/.venv/bin:$PATH" scripts/packaging/build_mac_app.sh
 
 Output:
 - dist/Centre de controle.app
 
-If you see "python: command not found", use the venv command above.
+Notes:
+- The build script sets `PYINSTALLER_CONFIG_DIR=build/pyinstaller-cache` to avoid permissions errors in
+  `~/Library/Application Support/pyinstaller`.
+- If you see "python: command not found", use the venv command above.
+If the app launches with the *old* UI, ensure you're opening:
+- `dist/Centre de controle.app` (not a previously installed copy in /Applications).
 
 ## QA checklist
 - Launch the .app
