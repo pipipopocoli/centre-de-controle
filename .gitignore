@@ -20,3 +20,5 @@ control/projects/**/runs/dispatch_state.json
 control/projects/**/agents/agent-*/
 control/projects/**/chat/threads/
 control/projects/**/packs/
+control/projects/**/runs/inbox/
+control/projects/**/runs/auto_mode_state.json
