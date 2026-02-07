@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import json
-import shutil
-import sys
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -39,14 +37,8 @@ def _write_text_if_missing(path: Path, content: str) -> None:
 
 
 def _write_json_if_missing(path: Path, payload: dict[str, Any]) -> None:
-    try:
-        if not path.exists():
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    except PermissionError:
-        print(f"Warning: Permission denied for {path}. Assuming existing or read-only.")
-    except Exception as e:
-        print(f"Error handling {path}: {e}")
+    if not path.exists():
+        path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
 def _memory_template(agent_id: str) -> str:
@@ -249,32 +241,6 @@ def _normalize_blockers(blockers: Any) -> list[str]:
     return []
 
 
-def _normalize_status(status: Any) -> str:
-    if status is None:
-        return "idle"
-    raw = str(status).strip().lower()
-    if not raw:
-        return "idle"
-    synonyms = {
-        "running": "executing",
-        "working": "executing",
-        "in progress": "executing",
-        "in_progress": "executing",
-        "complete": "done",
-        "completed": "done",
-        "ok": "active",
-        "stuck": "blocked",
-        "failed": "error",
-        "ping": "pinged",
-        "reply": "replied",
-    }
-    normalized = synonyms.get(raw, raw)
-    allowed = {"idle", "executing", "active", "blocked", "replied", "pinged", "done", "error"}
-    if normalized in allowed:
-        return normalized
-    return "idle"
-
-
 def ensure_agent_files(project_id: str, agent_id: str, name: str, engine: str) -> None:
     agent_dir = project_dir(project_id) / "agents" / agent_id
     agent_dir.mkdir(parents=True, exist_ok=True)
@@ -325,40 +291,32 @@ def load_project(project_id: str) -> ProjectData:
     agents_dir = pdir / "agents"
     if agents_dir.exists():
         for agent_folder in sorted([p for p in agents_dir.iterdir() if p.is_dir()]):
-
-            try:
-                state_path = agent_folder / "state.json"
-                if not state_path.exists():
-                    continue
-
-                payload = json.loads(state_path.read_text(encoding="utf-8"))
-                
-                # Check settings overrides for tasks
-                settings_tasks = settings.get("agent_tasks") if isinstance(settings, dict) else {}
-                task_entry = settings_tasks.get(agent_folder.name) if isinstance(settings_tasks, dict) else None
-                current_task = None
-                if isinstance(task_entry, dict):
-                    current_task = task_entry.get("current_task")
-                if current_task is None:
-                    current_task = payload.get("current_task")
-
-                agents.append(
-                    AgentState(
-                        agent_id=payload.get("agent_id", agent_folder.name),
-                        name=payload.get("name", agent_folder.name.title()),
-                        engine=_normalize_engine(payload.get("engine") or payload.get("source")),
-                        phase=_normalize_phase(payload.get("phase")),
-                        percent=_normalize_percent(payload.get("percent", payload.get("progress", 0))),
-                        status=_normalize_status(payload.get("status")),
-                        current_task=str(current_task).strip() if current_task else None,
-                        eta_minutes=_normalize_eta(payload.get("eta_minutes")),
-                        heartbeat=payload.get("last_heartbeat") or payload.get("updated_at") or payload.get("heartbeat"),
-                        blockers=_normalize_blockers(payload.get("blockers")),
-                    )
-                )
-            except Exception as e:
-                print(f"Skipping agent {agent_folder.name}: {e}")
+            state_path = agent_folder / "state.json"
+            if not state_path.exists():
                 continue
+            payload = json.loads(state_path.read_text(encoding="utf-8"))
+            settings_tasks = settings.get("agent_tasks") if isinstance(settings, dict) else {}
+            task_entry = settings_tasks.get(agent_folder.name) if isinstance(settings_tasks, dict) else None
+            current_task = None
+            if isinstance(task_entry, dict):
+                current_task = task_entry.get("current_task")
+            if current_task is None:
+                current_task = payload.get("current_task")
+
+            agents.append(
+                AgentState(
+                    agent_id=payload.get("agent_id", agent_folder.name),
+                    name=payload.get("name", agent_folder.name.title()),
+                    engine=_normalize_engine(payload.get("engine") or payload.get("source")),
+                    phase=_normalize_phase(payload.get("phase")),
+                    percent=_normalize_percent(payload.get("percent", payload.get("progress", 0))),
+                    eta_minutes=_normalize_eta(payload.get("eta_minutes")),
+                    heartbeat=payload.get("heartbeat"),
+                    status=payload.get("status"),
+                    blockers=_normalize_blockers(payload.get("blockers")),
+                    current_task=str(current_task).strip() if current_task else None,
+                )
+            )
 
     roadmap_md = _parse_markdown_roadmap(pdir / "ROADMAP.md")
     if any(roadmap_md.values()):
@@ -376,69 +334,29 @@ def load_project(project_id: str) -> ProjectData:
     )
 
 
-def _read_ndjson(path: Path, limit: int | None = None) -> list[dict[str, Any]]:
-    try:
-        if not path.exists():
-            return []
-        
-        lines = path.read_text(encoding="utf-8").splitlines()
-        data = []
-        for line in lines:
-            if not line.strip():
-                continue
-            try:
-                data.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
-        if limit and len(data) > limit:
-            return data[-limit:]
-        return data
-    except (PermissionError, Exception) as e:
-        print(f"Warning: Failed to read ndjson {path}: {e}")
+def _read_ndjson(path: Path, limit: int = 200) -> list[dict[str, Any]]:
+    if not path.exists():
         return []
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if limit > 0:
+        lines = lines[-limit:]
+    messages: list[dict[str, Any]] = []
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            messages.append(payload)
+    return messages
 
 
 def _append_ndjson(path: Path, payload: dict[str, Any]) -> None:
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(payload) + "\n")
-    except PermissionError:
-        print(f"Warning: Permission denied writing to {path}. Skipping append.")
-    except Exception as e:
-        print(f"Error appending to {path}: {e}")
-
-
-def _write_text_if_missing(path: Path, content: str) -> None:
-    try:
-        if not path.exists():
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content, encoding="utf-8")
-    except PermissionError:
-        print(f"Warning: Permission denied for {path}. Assuming existing or read-only.")
-    except Exception as e:
-        print(f"Error handling {path}: {e}")
-
-
-def _write_ndjson_atomic(path: Path, payloads: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = path.with_suffix(path.suffix + ".tmp")
-    with tmp_path.open("w", encoding="utf-8") as handle:
-        for payload in payloads:
-            handle.write(json.dumps(payload) + "\n")
-    tmp_path.replace(path)
-
-
-def _parse_iso(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload) + "\n")
 
 
 def chat_global_path(project_id: str) -> Path:
@@ -471,39 +389,6 @@ def run_requests_path(project_id: str) -> Path:
 
 def append_run_request(project_id: str, payload: dict[str, Any]) -> None:
     _append_ndjson(run_requests_path(project_id), payload)
-
-
-def load_run_requests(project_id: str) -> list[dict[str, Any]]:
-    return _read_ndjson(run_requests_path(project_id), limit=0)
-
-
-def mark_agent_requests_done(project_id: str, agent_id: str, responded_at: str | None = None) -> int:
-    requests = load_run_requests(project_id)
-    if not requests:
-        return 0
-
-    handled_at = responded_at or _utc_now_iso()
-    responded_dt = _parse_iso(responded_at)
-    changed = 0
-
-    for payload in requests:
-        if str(payload.get("agent_id") or "").strip() != agent_id:
-            continue
-        status = str(payload.get("status") or "").strip().lower()
-        if status in {"done", "acknowledged"}:
-            continue
-
-        created_dt = _parse_iso(str(payload.get("created_at") or ""))
-        if responded_dt and created_dt and created_dt > responded_dt:
-            continue
-
-        payload["status"] = "done"
-        payload["handled_at"] = handled_at
-        changed += 1
-
-    if changed:
-        _write_ndjson_atomic(run_requests_path(project_id), requests)
-    return changed
 
 
 def agent_journal_path(project_id: str, agent_id: str) -> Path:
