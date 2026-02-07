@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -19,6 +20,7 @@ from PySide6.QtWidgets import (
 from app.data.model import ProjectData
 from app.data.paths import PROJECTS_DIR, project_dir
 from app.data.store import (
+    append_agent_journal,
     append_chat_message,
     append_thread_message,
     list_chat_threads,
@@ -26,16 +28,26 @@ from app.data.store import (
     load_chat_global,
     load_chat_thread,
     load_project,
+    mark_agent_requests_done,
     record_mentions,
+    save_project,
 )
 from app.services.brain_manager import BrainManager
 from app.services.chat_parser import parse_mentions, parse_tags
 from app.services.pack_context import build_pack_context, write_pack_context
-from app.services.auto_mode import dispatch_once as auto_mode_dispatch_once
+from app.services.auto_mode import (
+    dispatch_once as auto_mode_dispatch_once,
+    iter_reminder_candidates,
+    load_runtime_state,
+    mark_agent_replied,
+    mark_request_reminded,
+)
 from app.ui.agents_grid import AgentsGridWidget
 from app.ui.chatroom import ChatroomWidget
 from app.ui.roadmap import RoadmapWidget
 from app.ui.sidebar import SidebarWidget
+
+logger = logging.getLogger(__name__)
 
 
 class MainWindow(QMainWindow):
@@ -127,7 +139,6 @@ class MainWindow(QMainWindow):
         self.refresh_timer.start()
 
         self._clems_seen: set[str] = set()
-        self._clems_reminded_requests: set[str] = set()
         self._clems_pending_question_at: str | None = None
         self._clems_pinged_operator: bool = False
         self._clems_last_agent_ack_key: str | None = None
@@ -143,6 +154,7 @@ class MainWindow(QMainWindow):
         if prev_project_id != self.current_project_id:
             self.sidebar.auto_mode.set_last_dispatch("-")
             self.sidebar.auto_mode.set_last_error("")
+            self.sidebar.auto_mode.set_pending(0)
         self.roadmap.set_roadmap(
             project.roadmap.get("now", []),
             project.roadmap.get("next", []),
@@ -152,6 +164,7 @@ class MainWindow(QMainWindow):
         self.roadmap.set_state(phase, objective, next_items, eta=eta)
         self.agents_grid.set_agents(project.agents)
         self._sync_auto_mode_from_settings(project)
+        self.sidebar.auto_mode.set_pending(self._count_fresh_pending_requests())
         self.refresh_chat()
 
     def on_project_selected(self, project_id: str) -> None:
@@ -402,6 +415,8 @@ class MainWindow(QMainWindow):
             self.sidebar.auto_mode.set_last_error(f"Error: {self.auto_mode_last_error}")
             return
 
+        self.sidebar.auto_mode.set_pending(self._count_fresh_pending_requests())
+
         # Apply at most max_actions actions (already capped).
         for action in result.actions:
             QApplication.clipboard().setText(action.prompt_text)
@@ -423,6 +438,11 @@ class MainWindow(QMainWindow):
         if not result.actions and result.dispatched_count:
             now = datetime.now().strftime("%H:%M:%S")
             self.sidebar.auto_mode.set_last_dispatch(f"{now} dispatched {result.dispatched_count}")
+        elif not result.actions and not result.dispatched_count and manual:
+            now = datetime.now().strftime("%H:%M:%S")
+            self.sidebar.auto_mode.set_last_dispatch(
+                f"{now} no-op (skipped: reminder={result.skipped_reminder}, old={result.skipped_old}, duplicate={result.skipped_duplicate})"
+            )
 
     def _make_message_id(self, author: str) -> str:
         return f"msg_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{author}"
@@ -535,6 +555,39 @@ class MainWindow(QMainWindow):
         key = self._message_key(last)
         if self._clems_last_agent_ack_key == key:
             return
+
+        response_ts = str(last.get("timestamp") or datetime.now(timezone.utc).replace(microsecond=0).isoformat())
+        request_id: str | None = None
+        try:
+            mark_agent_requests_done(self.current_project_id, author, responded_at=response_ts)
+            request_id = mark_agent_replied(
+                PROJECTS_DIR,
+                self.current_project_id,
+                author,
+                reply_message_id=str(last.get("message_id") or "") or None,
+                replied_at=response_ts,
+            )
+            project = load_project(self.current_project_id)
+            agent = next((a for a in project.agents if a.agent_id == author), None)
+            if agent is not None:
+                agent.status = "replied"
+                agent.heartbeat = response_ts
+                save_project(project)
+            append_agent_journal(
+                self.current_project_id,
+                author,
+                {
+                    "timestamp": response_ts,
+                    "event": "reply_ack",
+                    "message_id": last.get("message_id"),
+                    "request_id": request_id,
+                    "from": author,
+                },
+            )
+        except Exception:
+            logger.exception("Failed to sync agent reply lifecycle for %s", author)
+        self.sidebar.auto_mode.set_pending(self._count_fresh_pending_requests())
+
         ack = {
             "message_id": self._make_message_id("clems"),
             "timestamp": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
@@ -551,48 +604,88 @@ class MainWindow(QMainWindow):
         if not value:
             return None
         try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
         except ValueError:
             return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed
+
+    def _count_fresh_pending_requests(self) -> int:
+        if not self.current_project_id:
+            return 0
+        now = datetime.now(timezone.utc)
+        runtime = load_runtime_state(PROJECTS_DIR, self.current_project_id)
+        requests = runtime.get("requests", {})
+        if not isinstance(requests, dict):
+            return 0
+        pending = 0
+        for req in requests.values():
+            if not isinstance(req, dict):
+                continue
+            status = str(req.get("status") or "").strip().lower()
+            if status not in {"queued", "dispatched", "reminded"}:
+                continue
+            created_at = self._parse_iso(str(req.get("dispatched_at") or req.get("created_at") or ""))
+            if created_at and now - created_at > timedelta(hours=24):
+                continue
+            pending += 1
+        return pending
 
     def check_reminders(self) -> None:
         if not self.current_project_id:
             return
         now = datetime.now(timezone.utc)
         global_messages = load_chat_global(self.current_project_id)
+        try:
+            candidates = iter_reminder_candidates(
+                PROJECTS_DIR,
+                self.current_project_id,
+                min_age_minutes=30,
+                cooldown_minutes=60,
+                max_reminders=3,
+            )
+            for candidate in candidates:
+                request_id = str(candidate.get("request_id") or "").strip()
+                agent_id = str(candidate.get("agent_id") or "").strip()
+                if not request_id or not agent_id or agent_id == "clems":
+                    continue
 
-        # Agent reminders (run requests)
-        runs_path = project_dir(self.current_project_id) / "runs" / "requests.ndjson"
-        if runs_path.exists():
-            for raw in runs_path.read_text(encoding="utf-8").splitlines():
-                if not raw.strip():
-                    continue
-                try:
-                    req = json.loads(raw)
-                except Exception:
-                    continue
-                request_id = req.get("request_id")
-                if not request_id or request_id in self._clems_reminded_requests:
-                    continue
-                if req.get("source") != "mention":
-                    continue
-                created_at = self._parse_iso(str(req.get("created_at", "")))
-                agent_id = req.get("agent_id")
-                if not created_at or not agent_id:
-                    continue
-                if now - created_at < timedelta(minutes=30):
-                    continue
-                replied = False
-                for msg in reversed(global_messages[-200:]):
+                created_at = self._parse_iso(str(candidate.get("dispatched_at") or candidate.get("created_at") or ""))
+                replied_message: dict | None = None
+                for msg in reversed(global_messages[-500:]):
                     msg_time = self._parse_iso(str(msg.get("timestamp", "")))
-                    if not msg_time or msg_time < created_at:
+                    if not msg_time:
+                        continue
+                    if created_at and msg_time < created_at:
                         continue
                     if msg.get("author") == agent_id:
-                        replied = True
+                        replied_message = msg
                         break
-                if replied:
-                    self._clems_reminded_requests.add(request_id)
+
+                if replied_message is not None:
+                    reply_ts = str(replied_message.get("timestamp") or now.replace(microsecond=0).isoformat())
+                    mark_agent_requests_done(self.current_project_id, agent_id, responded_at=reply_ts)
+                    mark_agent_replied(
+                        PROJECTS_DIR,
+                        self.current_project_id,
+                        agent_id,
+                        reply_message_id=str(replied_message.get("message_id") or "") or None,
+                        replied_at=reply_ts,
+                    )
+                    append_agent_journal(
+                        self.current_project_id,
+                        agent_id,
+                        {
+                            "timestamp": reply_ts,
+                            "event": "reply_ack",
+                            "message_id": replied_message.get("message_id"),
+                            "request_id": request_id,
+                            "from": agent_id,
+                        },
+                    )
                     continue
+
                 reminder = {
                     "message_id": self._make_message_id("clems"),
                     "timestamp": now.replace(microsecond=0).isoformat(),
@@ -604,7 +697,38 @@ class MainWindow(QMainWindow):
                 }
                 append_chat_message(self.current_project_id, reminder)
                 record_mentions(self.current_project_id, reminder)
-                self._clems_reminded_requests.add(request_id)
+                reminder_status = mark_request_reminded(
+                    PROJECTS_DIR,
+                    self.current_project_id,
+                    request_id,
+                    reminded_at=reminder["timestamp"],
+                    max_reminders=3,
+                )
+                if reminder_status.get("status") == "closed":
+                    close_note = {
+                        "message_id": self._make_message_id("system"),
+                        "timestamp": now.replace(microsecond=0).isoformat(),
+                        "author": "system",
+                        "text": f"Request {request_id} closed after 3 reminders for @{agent_id}.",
+                        "tags": ["runs"],
+                        "mentions": [],
+                        "event": "request_closed",
+                    }
+                    append_chat_message(self.current_project_id, close_note)
+                    append_agent_journal(
+                        self.current_project_id,
+                        agent_id,
+                        {
+                            "timestamp": close_note["timestamp"],
+                            "event": "request_closed",
+                            "request_id": request_id,
+                            "reason": "max_reminders_reached",
+                        },
+                    )
+        except Exception:
+            logger.exception("Reminder lifecycle check failed for project=%s", self.current_project_id)
+
+        self.sidebar.auto_mode.set_pending(self._count_fresh_pending_requests())
 
         # Operator reminder after question
         if self._clems_pending_question_at and not self._clems_pinged_operator:

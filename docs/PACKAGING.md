@@ -19,6 +19,14 @@ Build (windowed .app):
 
 Output:
 - dist/Centre de controle.app
+- scripts/packaging/assets/centre-de-controle.icns (if icon pipeline succeeds or fallback is used)
+
+Icon pipeline (manual):
+- scripts/packaging/build_icon_icns.sh
+- scripts/packaging/build_icon_icns.sh /absolute/path/to/source.png
+
+Icon source default:
+- docs/images/centre-de-controle.png
 
 Version stamp:
 - The build script writes `build/version.json` with branch/sha/dirty.
@@ -31,6 +39,9 @@ Notes:
 - Version stamp is written at build time to `build/version.json` and bundled into the app as `app/version.json`.
 - The `*` indicates a dirty repo **at build time**, not runtime.
 - If you see "python: command not found", use the venv command above.
+- The icon pipeline requires macOS tools `sips` and `iconutil`.
+- If `sips` or `iconutil` are missing, build continues and prints a warning.
+- If icon generation fails, the script reuses `assets/Cockpit.icns` when available.
 If the app launches with the *old* UI, ensure you're opening:
 - `dist/Centre de controle.app` (not a previously installed copy in /Applications).
 If you distribute outside your dev machine, codesign the app:
@@ -41,6 +52,7 @@ codesign --deep --force --options runtime --sign "Developer ID Application: <NAM
 ## QA checklist
 - Launch the .app
 - Verify version stamp is visible (or fallback string)
+- Verify Finder + Dock icon is custom (not default Python icon)
 - Open demo project (auto-created if missing)
 - Send a chat message and confirm NDJSON writes to the data dir
 - Verify UI layout (Paper Ops) and chat buttons are not clipped

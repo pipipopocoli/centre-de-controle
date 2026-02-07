@@ -3,6 +3,9 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 APP_NAME="Centre de controle"
+ICON_PIPELINE="$ROOT_DIR/scripts/packaging/build_iconset.sh"
+ICON_SOURCE="$ROOT_DIR/docs/images/centre-de-controle.png"
+ICON_FILE="$ROOT_DIR/assets/Cockpit.icns"
 # Avoid writing to ~/Library/Application Support in sandboxed environments.
 export PYINSTALLER_CONFIG_DIR="${PYINSTALLER_CONFIG_DIR:-$ROOT_DIR/build/pyinstaller-cache}"
 
@@ -42,10 +45,28 @@ target.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 print(f"Wrote version stamp: {target}")
 PY
 
+ICON_ARGS=()
+if [[ -x "$ICON_PIPELINE" ]]; then
+  if "$ICON_PIPELINE" "$ICON_SOURCE" "$ICON_FILE"; then
+    if [[ -f "$ICON_FILE" ]]; then
+      ICON_ARGS=(--icon "$ICON_FILE")
+      echo "Using app icon: $ICON_FILE"
+    fi
+  elif [[ -f "$ICON_FILE" ]]; then
+    echo "WARNING: icon pipeline failed, reusing existing icon: $ICON_FILE"
+    ICON_ARGS=(--icon "$ICON_FILE")
+  else
+    echo "WARNING: icon pipeline failed and no icon file exists. Continuing without custom icon."
+  fi
+else
+  echo "WARNING: icon pipeline script missing at $ICON_PIPELINE. Continuing without custom icon."
+fi
+
 pyinstaller \
   --noconfirm \
   --windowed \
   --name "${APP_NAME}" \
+  "${ICON_ARGS[@]}" \
   --add-data "app/ui/theme.qss:app/ui" \
   --add-data "build/version.json:app" \
   --collect-submodules PySide6 \
