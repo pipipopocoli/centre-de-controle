@@ -53,12 +53,19 @@ def _read_version_json(path: Path) -> str | None:
         return None
     if not isinstance(payload, dict):
         return None
+    stamp = str(payload.get("stamp") or "").strip()
+    if stamp:
+        return stamp
     branch = str(payload.get("branch") or "").strip()
     sha = str(payload.get("sha") or "").strip()
     if not branch or not sha:
         return None
-    dirty = payload.get("dirty") is True
-    dirty_flag = "*" if dirty else ""
+    dirty = payload.get("dirty")
+    dirty_flag = ""
+    if isinstance(dirty, bool) and dirty:
+        dirty_flag = "*"
+    elif isinstance(dirty, str) and dirty.strip() == "*":
+        dirty_flag = "*"
     return f"{branch}@{sha}{dirty_flag}"
 
 
