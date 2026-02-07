@@ -11,15 +11,18 @@ Order of precedence:
 ## PyInstaller prototype (recommended)
 
 Install:
-- python -m pip install pyinstaller
+- ./.venv/bin/python -m pip install pyinstaller
+- (fallback) python3 -m pip install pyinstaller
 
 Build (windowed .app):
-- pyinstaller --windowed --name "Centre de controle" \
+- ./.venv/bin/python -m pyinstaller --windowed --name "Centre de controle" \
   --add-data "app/ui/theme.qss:app/ui" \
   app/main.py
 
 Output:
 - dist/Centre de controle.app
+
+If you see "python: command not found", use the venv command above.
 
 ## QA checklist
 - Launch the .app

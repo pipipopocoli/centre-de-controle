@@ -21,6 +21,7 @@
 ## Now
 - Auto-reply and reminders implemented.
 - Personas split into agents/ files.
+- QA pending in app.
 
 ## Next
 - QA in app: send message -> Clems replies.

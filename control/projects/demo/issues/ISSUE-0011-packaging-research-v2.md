@@ -21,12 +21,14 @@
 ## Now
 - Data dir fallback added (COCKPIT_DATA_DIR -> repo control/projects -> ~/Library/Application Support/Cockpit/projects).
 - Packaging doc + build script added (PyInstaller prototype).
+- Need local PyInstaller install + build run.
 
 ## Next
 - Run PyInstaller build and verify .app behavior (QA checklist).
+- Capture any plugin errors and update docs with fixes.
 
 ## Blockers
-- PyInstaller install failed (pip could not reach pypi).
+- PyInstaller install may fail if pip cannot reach pypi (run locally).
 
 ## Done (Definition)
 - A documented prototype exists (build command + run steps).
