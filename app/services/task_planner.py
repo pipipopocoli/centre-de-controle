@@ -52,7 +52,7 @@ def build_plan(intake: dict[str, Any], answers: dict[str, Any] | None = None) ->
             }
         )
 
-    # Operator answers can influence tasks (placeholder for V5.1)
+    # Operator answers can influence tasks (placeholder for V3.1)
     if answers:
         plan["summary"] += " (answers incorporated)"
 

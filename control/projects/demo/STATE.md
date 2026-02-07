@@ -2,7 +2,7 @@
 ## Phase
 - Plan
 ## Objective
-- V5 Brain Manager + Project Intake + UI clarity
+- V3 Project Intake + Plan/Issues + UI clarity
 ## Now
 - Implement Brain Manager service and intake flow
 - UI clarity upgrades (status, task, timeline, chat)

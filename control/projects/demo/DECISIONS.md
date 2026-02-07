@@ -72,7 +72,7 @@
 - Owners: Clems, Victor, Leo
 - References: control/projects/demo/issues/ISSUE-0014-parallel-delegation-v2.md
 
-## 2026-02-07 - ADR-009 V5 Brain Manager + Project Intake
+## 2026-02-07 - ADR-009 V3 Project Intake + Brain Manager
 - Status: Accepted
 - Context: Need a full orchestrator to link existing repos, run intake, ask questions, and generate plans/issues.
 - Decision: Add Brain Manager (brain_manager.py) with intake, question builder, task planner, and issue creation.
