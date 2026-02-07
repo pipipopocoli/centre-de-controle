@@ -1,8 +1,8 @@
 # ISSUE-0014 - Parallel delegation (agent-N specialists) (V2.2.1)
 
 - Owner: clems
-- Phase: Review
-- Status: Review
+- Phase: Ship
+- Status: Done
 
 ## Objective
 - Allow leads (Victor/Leo) to delegate work to specialists named `agent-1`, `agent-2`, ... via mentions, even if the specialist is not in the roster yet.
@@ -20,10 +20,10 @@
 - Full routing/assignment AI.
 
 ## Now
-- Implement mention policy + run request emission.
+- Shipped: mention policy + run request emission.
 
 ## Next
-- Manual QA in app: ping @agent-1 -> run request written + action visible.
+- None.
 
 ## Blockers
 - None.
