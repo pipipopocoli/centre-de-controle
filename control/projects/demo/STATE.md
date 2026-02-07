@@ -1,15 +1,14 @@
 # State
 ## Phase
-- Review
+- Implement
 ## Objective
-- V2: deliver memory compaction, then agent loop (AG/MCP)
+- V2: packaging prototype (macOS .app) with local-first data path
 ## Now
-- Memory compaction tool shipped (ISSUE-0009)
-- Agent loop e2e shipped (ISSUE-0010)
+- Packaging prototype docs + data path fallback shipped (ISSUE-0011)
 ## Next
-- Optional later: ISSUE-0011 packaging research
+- Run PyInstaller build + QA checklist (ISSUE-0011)
 ## In Progress
-- None
+- ISSUE-0011 packaging research
 ## Blockers
 - None declared
 ## Risks

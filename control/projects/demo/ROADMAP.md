@@ -3,6 +3,7 @@
 ## Now
 - V1 local dev release shipped (stable + fast iteration)
 - V2: memory compaction + agent loop e2e shipped
+- V2: packaging prototype in progress (ISSUE-0011)
 
 ## Next
 - ISSUE-0011: Packaging research (macOS .app) (V2, optional)

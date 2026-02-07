@@ -1,7 +1,7 @@
 # ISSUE-0011 - Packaging research (macOS .app) (V2)
 
 - Owner: victor
-- Phase: Plan
+- Phase: Implement
 - Status: In progress
 
 ## Objective
@@ -19,10 +19,11 @@
 - Auto-update system.
 
 ## Now
-- Research options + constraints (PySide6 bundling, size, paths).
+- Data dir fallback added (COCKPIT_DATA_DIR -> repo control/projects -> ~/Library/Application Support/Cockpit/projects).
+- Packaging doc + build script added (PyInstaller prototype).
 
 ## Next
-- Prototype build + run on a clean user account (best effort).
+- Run PyInstaller build and verify .app behavior (QA checklist).
 
 ## Blockers
 - None.
@@ -35,6 +36,8 @@
 ## Links
 - STATE.md: control/projects/demo/STATE.md
 - DECISIONS.md: control/projects/demo/DECISIONS.md
+- docs/PACKAGING.md
+- scripts/packaging/build_mac_app.sh
 - PR:
 
 ## Risks

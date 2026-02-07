@@ -44,3 +44,12 @@
 - Consequences: Le log peut grossir; rotation/compaction a faire en V3.
 - Owners: Clems, Victor
 - References: control/projects/demo/issues/ISSUE-0010-agent-loop-e2e-v2.md
+
+## 2026-02-06 - ADR-006 Data dir fallback for packaging
+- Status: Accepted
+- Context: Packaged app cannot rely on repo-local control/projects path.
+- Decision: Data dir precedence: COCKPIT_DATA_DIR -> repo control/projects (if present) -> ~/Library/Application Support/Cockpit/projects.
+- Rationale: Local-first and stable path for .app while preserving dev workflow.
+- Consequences: Packaged builds need QA for data path and permissions.
+- Owners: Clems, Victor
+- References: control/projects/demo/issues/ISSUE-0011-packaging-research-v2.md, docs/PACKAGING.md
