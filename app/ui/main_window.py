@@ -82,6 +82,7 @@ class MainWindow(QMainWindow):
 
         self.sidebar.project_list.currentTextChanged.connect(self.on_project_selected)
         self.chatroom.send_btn.clicked.connect(self.on_send_message)
+        self.chatroom.input.returnPressed.connect(self.on_send_message)
         self.chatroom.thread_selector.currentTextChanged.connect(self.on_thread_selected)
         self.chatroom.pack_light_btn.clicked.connect(self.on_pack_light)
         self.chatroom.pack_full_btn.clicked.connect(self.on_pack_full)
