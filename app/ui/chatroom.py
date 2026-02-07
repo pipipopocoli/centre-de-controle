@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -32,6 +33,8 @@ class ChatroomWidget(QFrame):
         self.tabs.setObjectName("chatroomTabs")
 
         self.global_list = QListWidget()
+        self.global_list.setObjectName("chatGlobalList")
+        self.global_list.setSpacing(6)
         self.global_list.addItem("Global feed ready")
 
         self.thread_selector = QComboBox()
@@ -39,6 +42,8 @@ class ChatroomWidget(QFrame):
         self.thread_selector.addItem("No threads", "")
 
         self.threads_list = QListWidget()
+        self.threads_list.setObjectName("chatThreadList")
+        self.threads_list.setSpacing(6)
         self.threads_list.addItem("No threads yet")
 
         global_tab = QWidget()
@@ -89,21 +94,57 @@ class ChatroomWidget(QFrame):
         layout.addLayout(composer)
         layout.addLayout(actions)
 
+    def _format_timestamp(self, timestamp: str) -> str:
+        if not timestamp:
+            return ""
+        # Keep only time portion for readability.
+        if "T" in timestamp:
+            time_part = timestamp.split("T", 1)[1]
+            return time_part.split("+", 1)[0].replace("Z", "")
+        return timestamp
+
+    def _author_color(self, author: str) -> QColor:
+        key = author.lower().strip()
+        if key == "operator":
+            return QColor("#1E40AF")
+        if key == "clems":
+            return QColor("#6D28D9")
+        if key == "system":
+            return QColor("#374151")
+        # default agent
+        return QColor("#0F766E")
+
+    def _author_badge(self, author: str) -> str:
+        key = author.lower().strip()
+        if key == "operator":
+            return "OP"
+        if key == "clems":
+            return "CL"
+        if key == "system":
+            return "SYS"
+        return "AG"
+
     def format_message(self, payload: dict) -> str:
-        timestamp = payload.get("timestamp", "")
+        timestamp = self._format_timestamp(payload.get("timestamp", ""))
         author = payload.get("author", "operator")
         text = payload.get("text", "")
+        badge = self._author_badge(author)
         if timestamp:
-            return f"[{timestamp}] {author}: {text}"
-        return f"{author}: {text}"
+            return f"{timestamp} {badge} {author}: {text}"
+        return f"{badge} {author}: {text}"
 
     def set_global_messages(self, messages: list[dict]) -> None:
         self.global_list.clear()
         if not messages:
             self.global_list.addItem("Global feed is empty")
             return
+        from PySide6.QtWidgets import QListWidgetItem
         for payload in messages:
-            self.global_list.addItem(self.format_message(payload))
+            text = self.format_message(payload)
+            item = QListWidgetItem(text)
+            item.setForeground(self._author_color(payload.get("author", "operator")))
+            item.setToolTip(payload.get("timestamp", ""))
+            self.global_list.addItem(item)
 
     def set_thread_tags(self, tags: list[str]) -> None:
         current = self.thread_selector.currentData()
@@ -130,4 +171,9 @@ class ChatroomWidget(QFrame):
             self.threads_list.addItem("No thread messages")
             return
         for payload in messages:
-            self.threads_list.addItem(self.format_message(payload))
+            text = self.format_message(payload)
+            from PySide6.QtWidgets import QListWidgetItem
+            item = QListWidgetItem(text)
+            item.setForeground(self._author_color(payload.get("author", "operator")))
+            item.setToolTip(payload.get("timestamp", ""))
+            self.threads_list.addItem(item)

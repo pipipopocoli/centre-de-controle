@@ -1,0 +1,29 @@
+{
+  "skills": [
+    {
+      "id": "python",
+      "name": "Python",
+      "description": "Analyze Python projects, dependencies, tests, and packaging."
+    },
+    {
+      "id": "node",
+      "name": "Node",
+      "description": "Analyze Node/JS/TS projects, tooling, and scripts."
+    },
+    {
+      "id": "ui",
+      "name": "UI",
+      "description": "Review UI clarity, layout, and user experience."
+    },
+    {
+      "id": "mcp",
+      "name": "MCP",
+      "description": "MCP integration, agent loops, and run requests."
+    },
+    {
+      "id": "packaging",
+      "name": "Packaging",
+      "description": "Build and packaging workflows for desktop apps."
+    }
+  ]
+}

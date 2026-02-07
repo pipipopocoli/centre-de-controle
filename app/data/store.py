@@ -258,6 +258,7 @@ def ensure_agent_files(project_id: str, agent_id: str, name: str, engine: str) -
             "heartbeat": _utc_now_iso(),
             "status": "idle",
             "blockers": [],
+            "current_task": "",
         },
     )
     _write_text_if_missing(agent_dir / "journal.ndjson", "")
@@ -294,6 +295,14 @@ def load_project(project_id: str) -> ProjectData:
             if not state_path.exists():
                 continue
             payload = json.loads(state_path.read_text(encoding="utf-8"))
+            settings_tasks = settings.get("agent_tasks") if isinstance(settings, dict) else {}
+            task_entry = settings_tasks.get(agent_folder.name) if isinstance(settings_tasks, dict) else None
+            current_task = None
+            if isinstance(task_entry, dict):
+                current_task = task_entry.get("current_task")
+            if current_task is None:
+                current_task = payload.get("current_task")
+
             agents.append(
                 AgentState(
                     agent_id=payload.get("agent_id", agent_folder.name),
@@ -305,6 +314,7 @@ def load_project(project_id: str) -> ProjectData:
                     heartbeat=payload.get("heartbeat"),
                     status=payload.get("status"),
                     blockers=_normalize_blockers(payload.get("blockers")),
+                    current_task=str(current_task).strip() if current_task else None,
                 )
             )
 

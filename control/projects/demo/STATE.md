@@ -1,22 +1,21 @@
 # State
 ## Phase
-- Ship
+- Plan
 ## Objective
-- V2.3 release: dispatcher + packaging + roadmap microcopy
+- V5 Brain Manager + Project Intake + UI clarity
 ## Now
-- Release validation complete (packaged app + version stamp + data dir)
-- Dispatcher auto-mode running (run requests -> inbox)
-- Microcopy applied (CAP/FOCUS/SUITE/ALERTES)
+- Implement Brain Manager service and intake flow
+- UI clarity upgrades (status, task, timeline, chat)
 ## Next
-- Snapshot release (final screenshot + release note)
-- Optional: implement Leo's extended roadmap wording (later)
+- Issue generation + assignments
+- BrainFS profile integration
 ## In Progress
-- Release snapshot
+- Brain Manager core
 ## Blockers
 - None
 ## Risks
-- Packaging drift if build steps change
-- Memory contamination (cross-project) if retrieval is not scoped
+- Intake scope creep (keep scan lightweight)
+- UI overload if too dense
 ## Links
 - ROADMAP.md
 - DECISIONS.md

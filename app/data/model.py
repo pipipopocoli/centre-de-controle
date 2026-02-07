@@ -19,6 +19,7 @@ class AgentState:
     heartbeat: str | None
     status: str | None
     blockers: list[str]
+    current_task: str | None = None
 
 
 @dataclass

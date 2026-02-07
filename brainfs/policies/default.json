@@ -1,0 +1,6 @@
+{
+  "max_questions": 5,
+  "max_tasks_per_agent": 5,
+  "max_scan_files": 2000,
+  "max_read_bytes": 200000
+}

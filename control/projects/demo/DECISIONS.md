@@ -71,3 +71,12 @@
 - Consequences: Specialists appear in the grid only when they post state; gitignore hides agent-N directories by default.
 - Owners: Clems, Victor, Leo
 - References: control/projects/demo/issues/ISSUE-0014-parallel-delegation-v2.md
+
+## 2026-02-07 - ADR-009 V5 Brain Manager + Project Intake
+- Status: Accepted
+- Context: Need a full orchestrator to link existing repos, run intake, ask questions, and generate plans/issues.
+- Decision: Add Brain Manager (brain_manager.py) with intake, question builder, task planner, and issue creation.
+- Rationale: Enables consistent project onboarding and delegation at scale.
+- Consequences: Requires UI wiring for project intake and lightweight scanning guardrails.
+- Owners: Clems, Victor, Leo
+- References: ROADMAP.md

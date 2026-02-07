@@ -6,7 +6,15 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QHBoxLayout,
+    QMainWindow,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 from app.data.model import ProjectData
 from app.data.paths import PROJECTS_DIR, project_dir
@@ -14,11 +22,13 @@ from app.data.store import (
     append_chat_message,
     append_thread_message,
     list_chat_threads,
+    list_projects,
     load_chat_global,
     load_chat_thread,
     load_project,
     record_mentions,
 )
+from app.services.brain_manager import BrainManager
 from app.services.chat_parser import parse_mentions, parse_tags
 from app.services.pack_context import build_pack_context, write_pack_context
 from app.services.auto_mode import dispatch_once as auto_mode_dispatch_once
@@ -57,6 +67,7 @@ class MainWindow(QMainWindow):
 
         self.sidebar = SidebarWidget(projects=projects, footer_text=footer_text, data_dir=data_dir)
         self.sidebar.setFixedWidth(220)
+        self.sidebar.new_project_btn.clicked.connect(self.on_new_project)
 
         self.center = QWidget()
         center_layout = QVBoxLayout(self.center)
@@ -92,6 +103,8 @@ class MainWindow(QMainWindow):
         self.sidebar.auto_mode.run_once_btn.clicked.connect(self.on_auto_mode_run_once)
         if projects and project.project_id in projects:
             self.sidebar.project_list.setCurrentRow(projects.index(project.project_id))
+
+        self.brain_manager = BrainManager()
 
         # Auto-mode: default ON (can be overridden per project via settings.json).
         self.auto_mode_enabled = True
@@ -135,8 +148,8 @@ class MainWindow(QMainWindow):
             project.roadmap.get("next", []),
             project.roadmap.get("risks", []),
         )
-        phase, objective, next_items = self._read_state_summary()
-        self.roadmap.set_state(phase, objective, next_items)
+        phase, objective, next_items, eta = self._read_state_summary()
+        self.roadmap.set_state(phase, objective, next_items, eta=eta)
         self.agents_grid.set_agents(project.agents)
         self._sync_auto_mode_from_settings(project)
         self.refresh_chat()
@@ -144,6 +157,40 @@ class MainWindow(QMainWindow):
     def on_project_selected(self, project_id: str) -> None:
         if not project_id:
             return
+        project = load_project(project_id)
+        self.load_project(project)
+
+    def _reload_projects_list(self, select_id: str | None = None) -> None:
+        projects = list_projects()
+        self.sidebar.project_list.blockSignals(True)
+        self.sidebar.project_list.clear()
+        if projects:
+            self.sidebar.project_list.addItems(projects)
+        if select_id and select_id in projects:
+            self.sidebar.project_list.setCurrentRow(projects.index(select_id))
+        self.sidebar.project_list.blockSignals(False)
+
+    def on_new_project(self) -> None:
+        folder = QFileDialog.getExistingDirectory(self, "Select project folder")
+        if not folder:
+            return
+        repo_path = Path(folder)
+        try:
+            project_id = self.brain_manager.create_project_from_repo(repo_path)
+            self.brain_manager.run_intake(project_id, repo_path)
+        except Exception as exc:  # noqa: BLE001 - show error in chat log
+            append_chat_message(
+                self.current_project_id,
+                {
+                    "timestamp": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+                    "author": "system",
+                    "text": f"Intake failed: {exc}",
+                    "tags": ["intake"],
+                    "mentions": [],
+                },
+            )
+            return
+        self._reload_projects_list(select_id=project_id)
         project = load_project(project_id)
         self.load_project(project)
 
@@ -400,19 +447,21 @@ class MainWindow(QMainWindow):
                     sections[current].append(item)
         return sections
 
-    def _read_state_summary(self) -> tuple[str, str, list[str]]:
+    def _read_state_summary(self) -> tuple[str, str, list[str], str | None]:
         if not self.current_project_id:
-            return "", "", []
+            return "", "", [], None
         state_path = project_dir(self.current_project_id) / "STATE.md"
         sections = self._parse_sections(state_path)
         phase = (sections.get("Phase") or [""])[0]
         objective = (sections.get("Objective") or [""])[0]
         next_items = sections.get("Next") or []
-        return phase, objective, next_items
+        eta = (sections.get("ETA") or sections.get("Estimate") or [""])[0]
+        eta = eta.strip() or None
+        return phase, objective, next_items, eta
 
     def _build_clems_reply(self, text: str, mentions: list[str]) -> tuple[str, bool]:
         lower = text.lower()
-        phase, objective, next_items = self._read_state_summary()
+        phase, objective, next_items, eta = self._read_state_summary()
 
         if any(key in lower for key in ["next", "prochaine", "etape", "roadmap", "etat", "status"]):
             lines = ["Etat actuel:"]
@@ -420,6 +469,8 @@ class MainWindow(QMainWindow):
                 lines.append(f"- Etape: {phase}")
             if objective:
                 lines.append(f"- Cible: {objective}")
+            if eta:
+                lines.append(f"- ETA: {eta}")
             if next_items:
                 lines.append("- Suite:")
                 for item in next_items[:3]:

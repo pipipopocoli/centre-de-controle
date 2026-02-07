@@ -36,7 +36,7 @@ def _format_age(seconds: float) -> str:
 
 def _format_heartbeat(heartbeat: str | None) -> tuple[str, bool]:
     if not heartbeat:
-        return "Heartbeat: -", False
+        return "Last update: -", False
     try:
         ts = datetime.fromisoformat(heartbeat)
         if ts.tzinfo is None:
@@ -45,9 +45,25 @@ def _format_heartbeat(heartbeat: str | None) -> tuple[str, bool]:
         delta = (now - ts).total_seconds()
         stale = delta > STALE_SECONDS
         delta = max(0.0, delta)
-        return f"Heartbeat: {_format_age(delta)}", stale
+        return f"Last update: {_format_age(delta)}", stale
     except ValueError:
-        return f"Heartbeat: {heartbeat}", False
+        return f"Last update: {heartbeat}", False
+
+
+def _status_label(status: str | None) -> tuple[str, str]:
+    if not status:
+        return "En attente", "idle"
+    normalized = status.strip().lower()
+    mapping = {
+        "idle": ("En attente", "idle"),
+        "planning": ("Planifie", "planning"),
+        "executing": ("En cours", "executing"),
+        "verifying": ("Verification", "verifying"),
+        "blocked": ("Bloque", "blocked"),
+        "error": ("Erreur", "error"),
+        "completed": ("Termine", "completed"),
+    }
+    return mapping.get(normalized, (status, normalized))
 
 
 class AgentCard(QFrame):
@@ -69,28 +85,32 @@ class AgentCard(QFrame):
         badge.setObjectName("agentBadge")
         badge.setAlignment(Qt.AlignCenter)
         badge.setFixedWidth(50)  # Slightly wider for better padding
+        engine_hint = "Engine: Codex" if state.engine == "CDX" else "Engine: Antigravity"
+        badge.setToolTip(engine_hint)
 
         header.addWidget(name)
         header.addStretch(1)
         header.addWidget(badge)
 
-        # Info Row: Phase
+        # Info Row: Phase + Status
         phase_row = QHBoxLayout()
         self.phase_label = QLabel(f"{state.phase}")
         self.phase_label.setObjectName("agentPhase")
-        if state.status:
-            color = "#0369a1" if state.status == "executing" else "#d1d5db"
-            status_text = "En cours" if state.status == "executing" else "En attente"
-            status_html = f"<span style='color:{color}; font-weight:bold;'>•</span> {status_text}"
-            self.status_label = QLabel(status_html)
-        else:
-            self.status_label = QLabel("<span style='color:#d1d5db;'>•</span> En attente")
-        
+        status_text, status_key = _status_label(state.status)
+        self.status_label = QLabel(status_text)
         self.status_label.setObjectName("agentStatus")
+        self.status_label.setProperty("status", status_key)
+        self.status_label.setToolTip(f"Status: {status_text}")
         
         phase_row.addWidget(self.phase_label)
         phase_row.addStretch(1)
         phase_row.addWidget(self.status_label)
+
+        # Task line
+        task_text = state.current_task.strip() if state.current_task else "-"
+        self.task_label = QLabel(f"Tache: {task_text}")
+        self.task_label.setObjectName("agentTask")
+        self.task_label.setWordWrap(True)
 
         # Progress
         self.progress = QProgressBar()
@@ -110,6 +130,7 @@ class AgentCard(QFrame):
         self.heartbeat_label = QLabel(heartbeat_text)
         self.heartbeat_label.setObjectName("agentHeartbeat")
         self.heartbeat_label.setProperty("stale", stale)
+        self.heartbeat_label.setToolTip("Last update from agent")
         self.setProperty("stale", stale)
 
         footer.addWidget(self.eta_label)
@@ -118,6 +139,7 @@ class AgentCard(QFrame):
 
         layout.addLayout(header)
         layout.addLayout(phase_row)
+        layout.addWidget(self.task_label)
         layout.addWidget(self.progress)
         layout.addLayout(footer)
 

@@ -3,6 +3,8 @@ from __future__ import annotations
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
+PHASES = ["Plan", "Implement", "Test", "Review", "Ship"]
+
 
 class RoadmapWidget(QFrame):
     def __init__(self) -> None:
@@ -10,9 +12,30 @@ class RoadmapWidget(QFrame):
         self.setObjectName("roadmap")
         self.setFrameShape(QFrame.StyledPanel)
 
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(0)  # Spacing handled by separators
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(16, 16, 16, 16)
+        outer.setSpacing(12)
+
+        # Timeline row (phase tracker + ETA)
+        self.phase_labels: list[QLabel] = []
+        timeline_row = QHBoxLayout()
+        timeline_row.setSpacing(10)
+
+        for phase in PHASES:
+            label = QLabel(phase)
+            label.setObjectName("phaseStep")
+            label.setProperty("active", False)
+            label.setCursor(Qt.PointingHandCursor)
+            label.setToolTip(f"Phase: {phase}")
+            self.phase_labels.append(label)
+            timeline_row.addWidget(label)
+
+        timeline_row.addStretch(1)
+        self.phase_eta = QLabel("ETA: --")
+        self.phase_eta.setObjectName("phaseEta")
+        timeline_row.addWidget(self.phase_eta)
+
+        outer.addLayout(timeline_row)
 
         # Create sections (FR microcopy)
         # 1. CAP (Etape + Cible)
@@ -28,13 +51,16 @@ class RoadmapWidget(QFrame):
         self.risks = self._section("ALERTES", "roadmapSectionRisks")
 
         # Layout: Mission | En Cours | A Venir | Risques
-        layout.addWidget(self.mission, 2)  # Give more space to mission
-        layout.addWidget(self._separator())
-        layout.addWidget(self.focus, 2)
-        layout.addWidget(self._separator())
-        layout.addWidget(self.upcoming, 2)
-        layout.addWidget(self._separator())
-        layout.addWidget(self.risks, 1)
+        sections_row = QHBoxLayout()
+        sections_row.setSpacing(0)
+        sections_row.addWidget(self.mission, 2)
+        sections_row.addWidget(self._separator())
+        sections_row.addWidget(self.focus, 2)
+        sections_row.addWidget(self._separator())
+        sections_row.addWidget(self.upcoming, 2)
+        sections_row.addWidget(self._separator())
+        sections_row.addWidget(self.risks, 1)
+        outer.addLayout(sections_row)
 
     def _separator(self) -> QFrame:
         line = QFrame()
@@ -68,7 +94,7 @@ class RoadmapWidget(QFrame):
         self.upcoming.findChild(QLabel, "roadmapSectionItems").setText("\n".join(f"- {item}" for item in next_items) or "-")
         self.risks.findChild(QLabel, "roadmapSectionItems").setText("\n".join(f"- {item}" for item in risks) or "-")
 
-    def set_state(self, phase: str, objective: str, next_items: list[str]) -> None:
+    def set_state(self, phase: str, objective: str, next_items: list[str], eta: str | None = None) -> None:
         # Cap column combines Etape & Cible
         lines: list[str] = []
         if phase:
@@ -77,3 +103,15 @@ class RoadmapWidget(QFrame):
             lines.append(f"Cible: {objective}")
         
         self.mission.findChild(QLabel, "roadmapSectionItems").setText("\n".join(lines) or "-")
+
+        # Phase tracker
+        active_phase = phase.strip() if phase else ""
+        for label in self.phase_labels:
+            label.setProperty("active", label.text() == active_phase)
+            label.style().unpolish(label)
+            label.style().polish(label)
+
+        if eta:
+            self.phase_eta.setText(f"ETA: {eta}")
+        else:
+            self.phase_eta.setText("ETA: --")

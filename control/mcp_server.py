@@ -561,6 +561,8 @@ async def handle_update_agent_state(arguments: dict[str, Any]) -> list[TextConte
                     agent.blockers = _normalize_blockers(blockers_raw)
                 if has_eta:
                     agent.eta_minutes = eta_minutes
+                if current_task:
+                    agent.current_task = current_task
         else:
             # Create new agent
             engine = _normalize_engine(
@@ -583,6 +585,7 @@ async def handle_update_agent_state(arguments: dict[str, Any]) -> list[TextConte
                 heartbeat=_utc_now_iso(),
                 status=status,
                 blockers=blockers,
+                current_task=current_task or "",
             )
             project.agents.append(agent)
 

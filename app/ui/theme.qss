@@ -132,6 +132,23 @@ QFrame#roadmap {
     border-radius: 8px;
 }
 
+QLabel#phaseStep {
+    color: #5E6167;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+QLabel#phaseStep[active="true"] {
+    color: #2C5DFF;
+    font-weight: 700;
+}
+
+QLabel#phaseEta {
+    color: #5E6167;
+    font-size: 11px;
+    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+}
+
 QLabel#roadmapTimeline {
     color: #5E6167;
     font-weight: 600;
@@ -186,7 +203,47 @@ QLabel#agentPhase {
 }
 
 QLabel#agentStatus {
+    color: #1C1C1C;
+    background-color: #E8E2D9;
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+QLabel#agentStatus[status="executing"] {
+    background-color: #DDF3F3;
+    color: #0F766E;
+}
+
+QLabel#agentStatus[status="planning"] {
+    background-color: #E8EAFD;
+    color: #1E40AF;
+}
+
+QLabel#agentStatus[status="verifying"] {
+    background-color: #FEF3C7;
+    color: #92400E;
+}
+
+QLabel#agentStatus[status="blocked"] {
+    background-color: #FDE2E2;
+    color: #B91C1C;
+}
+
+QLabel#agentStatus[status="error"] {
+    background-color: #FEE2E2;
+    color: #B91C1C;
+}
+
+QLabel#agentStatus[status="completed"] {
+    background-color: #DCFCE7;
+    color: #166534;
+}
+
+QLabel#agentTask {
     color: #5E6167;
+    font-size: 12px;
 }
 
 QProgressBar#agentProgress {
@@ -263,6 +320,14 @@ QListWidget {
 QListWidget::item {
     padding: 6px 8px;
     color: #1C1C1C;
+}
+
+QListWidget#chatGlobalList {
+    background-color: #FFFFFF;
+}
+
+QListWidget#chatThreadList {
+    background-color: #FFFFFF;
 }
 
 /* Inputs */
