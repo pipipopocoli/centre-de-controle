@@ -24,6 +24,28 @@ Does not:
 ./.venv/bin/python scripts/auto_mode.py --project demo --interval 5
 ```
 
+## Recommended (scale-friendly)
+Only perform clipboard/open once per cycle and print the prompt in the terminal:
+```
+./.venv/bin/python scripts/auto_mode.py --project demo --interval 5 --max-actions 1 --print-prompt
+```
+Notes:
+- All requests are still written to inbox files.
+- Clipboard/open/notify/print only happen for the first N requests per cycle.
+
+## Data dir resolution
+Auto-mode prints the resolved projects root at startup:
+```
+Auto-mode using projects root: /Users/<you>/Library/Application Support/Cockpit/projects
+```
+
+You can override it:
+- `--data-dir repo` (use repo `control/projects`)
+- `--data-dir app` (force App Support)
+- `--data-dir /full/path/to/projects`
+
+If you pass the Cockpit base dir, `/projects` is appended automatically.
+
 ## Verify
 ```
 tail -n 1 ~/Library/Application\\ Support/Cockpit/projects/demo/runs/inbox/agent-1.ndjson
@@ -37,4 +59,4 @@ tail -n 1 ~/Library/Application\\ Support/Cockpit/projects/demo/runs/inbox/agent
 - If notifications do not show: allow Terminal notifications in macOS settings.
 - If `open -a Codex` fails: find the app name in Finder and pass `--codex-app "<Exact Name>"`.
 - If you want dev data dir: pass `--data-dir /Users/oliviercloutier/Desktop/Cockpit/control/projects` (not recommended for packaged app).
-
+- If clipboard looks empty: run with `--print-prompt` and copy the prompt directly from the terminal.

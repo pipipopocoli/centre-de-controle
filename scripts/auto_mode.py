@@ -24,6 +24,7 @@ from typing import Any
 
 DEFAULT_PROJECT = "demo"
 MAX_PROCESSED_IDS = 5000
+ROOT_DIR = Path(__file__).resolve().parents[1]
 
 
 def _utc_now_iso() -> str:
@@ -31,10 +32,36 @@ def _utc_now_iso() -> str:
 
 
 def _default_projects_root() -> Path:
+    return Path.home() / "Library" / "Application Support" / "Cockpit" / "projects"
+
+
+def _normalize_projects_root(path: Path) -> Path:
+    # If user points at the Cockpit base dir, prefer the /projects subdir.
+    if path.name == "Cockpit":
+        return path / "projects"
+    if path.name != "projects" and (path / "projects").exists():
+        return path / "projects"
+    return path
+
+
+def _resolve_projects_root(data_dir: str | None) -> Path:
+    # Priority:
+    # 1) explicit --data-dir (including special values)
+    # 2) COCKPIT_DATA_DIR env
+    # 3) App Support default
+    if data_dir:
+        lowered = data_dir.lower().strip()
+        if lowered in {"repo", "dev"}:
+            return ROOT_DIR / "control" / "projects"
+        if lowered in {"appsupport", "app"}:
+            return _default_projects_root()
+        return _normalize_projects_root(Path(data_dir).expanduser())
+
     env_value = os.environ.get("COCKPIT_DATA_DIR")
     if env_value:
-        return Path(env_value).expanduser()
-    return Path.home() / "Library" / "Application Support" / "Cockpit" / "projects"
+        return _normalize_projects_root(Path(env_value).expanduser())
+
+    return _default_projects_root()
 
 
 def _read_ndjson(path: Path) -> list[dict[str, Any]]:
@@ -155,6 +182,8 @@ def _dispatch_once(
     do_open: bool,
     do_clipboard: bool,
     do_notify: bool,
+    max_actions: int,
+    print_prompt: bool,
     codex_app: str,
     ag_app: str,
 ) -> dict[str, int]:
@@ -165,6 +194,7 @@ def _dispatch_once(
 
     dispatched = 0
     skipped = 0
+    actions_used = 0
 
     for payload in _read_ndjson(requests_path):
         request_id = str(payload.get("request_id") or "").strip()
@@ -190,12 +220,19 @@ def _dispatch_once(
         platform = _agent_platform(agent_id)
         app_to_open = codex_app if platform == "codex" else ag_app
 
-        if do_clipboard:
-            _copy_to_clipboard(prompt)
-        if do_open:
-            _open_app(app_to_open)
-        if do_notify:
-            _notify("Cockpit auto-mode", f"Copied task for @{agent_id} and opened {app_to_open}")
+        if max_actions > 0 and actions_used < max_actions:
+            if do_clipboard:
+                _copy_to_clipboard(prompt)
+            if do_open:
+                _open_app(app_to_open)
+            if do_notify:
+                _notify(
+                    "Cockpit auto-mode",
+                    f"Copied task for @{agent_id} and opened {app_to_open}",
+                )
+            if print_prompt:
+                print(prompt)
+            actions_used += 1
 
         processed.append(request_id)
         processed_set.add(request_id)
@@ -208,23 +245,43 @@ def _dispatch_once(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Auto-mode runner for Cockpit run requests.")
     parser.add_argument("--project", default=None, help="Project id (default: COCKPIT_PROJECT_ID or demo)")
-    parser.add_argument("--data-dir", default=None, help="Projects root (default: App Support)")
+    parser.add_argument(
+        "--data-dir",
+        default=None,
+        help=(
+            "Projects root (default: App Support). Special values: repo, app. "
+            "If you pass the Cockpit base dir, /projects will be appended."
+        ),
+    )
     parser.add_argument("--interval", type=float, default=5.0, help="Polling interval in seconds")
     parser.add_argument("--once", action="store_true", help="Run once and exit")
     parser.add_argument("--no-open", action="store_true", help="Do not open apps")
     parser.add_argument("--no-clipboard", action="store_true", help="Do not copy to clipboard")
     parser.add_argument("--no-notify", action="store_true", help="Do not send macOS notifications")
+    parser.add_argument(
+        "--max-actions",
+        type=int,
+        default=1,
+        help="Max clipboard/open/notify actions per cycle (default: 1)",
+    )
+    parser.add_argument(
+        "--print-prompt",
+        action="store_true",
+        help="Print the prompt to stdout when actions are triggered",
+    )
     parser.add_argument("--codex-app", default="Codex", help="App name for Codex (open -a)")
     parser.add_argument("--ag-app", default="Antigravity", help="App name for Antigravity (open -a)")
 
     args = parser.parse_args()
 
     project_id = args.project or os.environ.get("COCKPIT_PROJECT_ID") or DEFAULT_PROJECT
-    projects_root = Path(args.data_dir).expanduser() if args.data_dir else _default_projects_root()
+    projects_root = _resolve_projects_root(args.data_dir)
 
     do_open = not args.no_open
     do_clipboard = not args.no_clipboard
     do_notify = not args.no_notify
+
+    print(f"Auto-mode using projects root: {projects_root}")
 
     if args.once:
         stats = _dispatch_once(
@@ -233,6 +290,8 @@ def main() -> int:
             do_open=do_open,
             do_clipboard=do_clipboard,
             do_notify=do_notify,
+            max_actions=max(0, args.max_actions),
+            print_prompt=args.print_prompt,
             codex_app=args.codex_app,
             ag_app=args.ag_app,
         )
@@ -246,6 +305,8 @@ def main() -> int:
             do_open=do_open,
             do_clipboard=do_clipboard,
             do_notify=do_notify,
+            max_actions=max(0, args.max_actions),
+            print_prompt=args.print_prompt,
             codex_app=args.codex_app,
             ag_app=args.ag_app,
         )
@@ -256,4 +317,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
