@@ -4,6 +4,24 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 PHASES = ["Plan", "Implement", "Test", "Review", "Ship"]
+PHASE_DISPLAY = {
+    "Plan": "CONCEPTION",
+    "Implement": "CODE",
+    "Test": "TEST",
+    "Review": "VALIDATION",
+    "Ship": "DEPLOIEMENT",
+}
+PHASE_ALIASES = {label: key for key, label in PHASE_DISPLAY.items()}
+
+
+def normalize_phase_key(phase: str) -> str:
+    value = (phase or "").strip()
+    return PHASE_ALIASES.get(value, value)
+
+
+def phase_display_label(phase: str) -> str:
+    key = normalize_phase_key(phase)
+    return PHASE_DISPLAY.get(key, key)
 
 
 class RoadmapWidget(QFrame):
@@ -18,16 +36,18 @@ class RoadmapWidget(QFrame):
 
         # Timeline row (phase tracker + ETA)
         self.phase_labels: list[QLabel] = []
+        self.phase_keys: list[str] = []
         timeline_row = QHBoxLayout()
         timeline_row.setSpacing(10)
 
         for phase in PHASES:
-            label = QLabel(phase)
+            label = QLabel(phase_display_label(phase))
             label.setObjectName("phaseStep")
             label.setProperty("active", False)
             label.setCursor(Qt.PointingHandCursor)
             label.setToolTip(f"Phase: {phase}")
             self.phase_labels.append(label)
+            self.phase_keys.append(phase)
             timeline_row.addWidget(label)
 
         timeline_row.addStretch(1)
@@ -98,16 +118,16 @@ class RoadmapWidget(QFrame):
         # Cap column combines Etape & Cible
         lines: list[str] = []
         if phase:
-            lines.append(f"Etape: {phase}")
+            lines.append(f"Etape: {phase_display_label(phase)}")
         if objective:
             lines.append(f"Cible: {objective}")
         
         self.mission.findChild(QLabel, "roadmapSectionItems").setText("\n".join(lines) or "-")
 
         # Phase tracker
-        active_phase = phase.strip() if phase else ""
-        for label in self.phase_labels:
-            label.setProperty("active", label.text() == active_phase)
+        active_phase = normalize_phase_key(phase)
+        for key, label in zip(self.phase_keys, self.phase_labels):
+            label.setProperty("active", key == active_phase)
             label.style().unpolish(label)
             label.style().polish(label)
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -71,15 +72,15 @@ def _slugify(text: str) -> str:
 
 def _next_issue_number(issues_dir: Path) -> int:
     max_num = 0
+    pattern = re.compile(r"^ISSUE-(\d{4})(?:-|$)")
     if issues_dir.exists():
         for path in issues_dir.glob("ISSUE-*.md"):
             stem = path.stem
-            parts = stem.split("-", 1)
-            if len(parts) < 2:
+            match = pattern.match(stem)
+            if not match:
                 continue
-            number = parts[1]
-            if number.isdigit():
-                max_num = max(max_num, int(number))
+            number = int(match.group(1))
+            max_num = max(max_num, number)
     return max_num + 1
 
 
@@ -122,22 +123,46 @@ class BrainManager:
         return project_id
 
     def run_intake(self, project_id: str, repo_path: Path) -> IntakeResult:
-        intake = scan_repo(repo_path)
-        profile = ensure_profile(project_id, intake.get("stack") or [])
-        questions = build_questions(intake)
-        plan = build_plan(intake)
+        if not repo_path.exists():
+            raise FileNotFoundError(f"Repository path not found: {repo_path}")
+        if not repo_path.is_dir():
+            raise NotADirectoryError(f"Path is not a directory: {repo_path}")
 
-        self._write_intake_files(project_id, intake, profile, questions, plan)
-        self._write_issue_files(project_id, plan)
-        self._post_intake_message(project_id, intake, questions)
-        self._update_state(project_id, intake, plan)
+        try:
+            intake = scan_repo(repo_path)
+            if not intake:
+                raise ValueError("Repo scan returned empty data")
+            
+            profile = ensure_profile(project_id, intake.get("stack") or [])
+            questions = build_questions(intake)
+            plan = build_plan(intake) or {"summary": "No plan generated", "tasks": []}
 
-        return IntakeResult(
-            project_id=project_id,
-            intake=intake,
-            questions=questions,
-            plan=plan,
-        )
+            self._write_intake_files(project_id, intake, profile, questions, plan)
+            self._write_issue_files(project_id, plan)
+            self._post_intake_message(project_id, intake, questions)
+            self._update_state(project_id, intake, plan)
+
+            return IntakeResult(
+                project_id=project_id,
+                intake=intake,
+                questions=questions,
+                plan=plan,
+            )
+        except Exception as e:
+            # Fallback/Safety: Ensure project state is at least valid enough to debug
+            error_msg = f"Brain Manager Intake Failed: {e}"
+            append_chat_message(
+                project_id,
+                {
+                    "timestamp": _utc_now_iso(),
+                    "author": "system",
+                    "text": error_msg,
+                    "tags": ["error", "intake"],
+                    "mentions": ["operator"],
+                },
+            )
+            # Re-raise so caller knows it failed
+            raise
 
     def _write_intake_files(
         self,
