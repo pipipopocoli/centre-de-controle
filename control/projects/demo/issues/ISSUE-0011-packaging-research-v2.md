@@ -1,8 +1,8 @@
 # ISSUE-0011 - Packaging research (macOS .app) (V2)
 
 - Owner: victor
-- Phase: Implement
-- Status: In progress
+- Phase: Ship
+- Status: Done
 
 ## Objective
 - Research and prototype packaging Cockpit as a macOS .app (double-click run), without breaking local-first behavior.
@@ -19,19 +19,18 @@
 - Auto-update system.
 
 ## Now
-- Run PyInstaller build and capture QA notes.
+- Build + QA done (packaged app launched; data dir ok).
 
 ## Next
-- Manual QA inside the .app (version stamp + chat NDJSON write).
 - Optional: verify on a clean user account (best effort).
 
 ## Blockers
-- PyInstaller install may fail if pip cannot reach pypi (run locally).
+- None.
 
 ## Done (Definition)
-- A documented prototype exists (build command + run steps).
+- Documented prototype exists (build command + run steps).
 - App launches and can open the demo project.
-- Version stamp is still visible (branch@sha may degrade, but version must exist).
+- Version stamp visible via build-time version.json.
 
 ## Links
 - STATE.md: control/projects/demo/STATE.md
@@ -108,12 +107,9 @@ Risks:
   - Set `PYINSTALLER_CONFIG_DIR` to `build/pyinstaller-cache` to avoid permission errors.
   - Verified `theme.qss` is bundled at `Contents/Resources/app/ui/theme.qss`.
 
-## QA (Partial)
+## QA (Final)
 - ✅ App launched and created data dir at:
   - `~/Library/Application Support/Cockpit/projects/demo`
 - ✅ Local-first structure created (STATE/ROADMAP/DECISIONS/agents/chat).
-- ✅ Fix: theme loading in bundled app uses `_MEIPASS` path (PyInstaller).
-- ⏳ Manual checks pending:
-  - Version stamp visible in title/footer (may show `unknown@unknown` in .app).
-  - Send a message and confirm `chat/global.ndjson` writes in data dir.
-  - If UI looks outdated, ensure you opened `dist/Centre de controle.app` (not /Applications copy).
+- ✅ Version stamp visible (build-time version.json).
+- ✅ Send message -> `chat/global.ndjson` writes in data dir.

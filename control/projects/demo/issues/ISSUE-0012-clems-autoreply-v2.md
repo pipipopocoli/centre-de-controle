@@ -1,8 +1,8 @@
 # ISSUE-0012 - Clems auto-reply + steps clarity (V2.1)
 
 - Owner: clems
-- Phase: Review
-- Status: Review
+- Phase: Ship
+- Status: Done
 
 ## Objective
 - Make Clems respond to operator messages and clarify next steps in the UI.
@@ -19,13 +19,12 @@
 - Cross-project memory.
 
 ## Now
-- Auto-reply and reminders implemented.
+- Auto-reply + reminders working in app.
 - Personas split into agents/ files.
-- QA pending in app.
+- QA done (no reply loops).
 
 ## Next
-- QA in app: send message -> Clems replies.
-- Verify reminders and phase/steps display.
+- None.
 
 ## Blockers
 - None.
@@ -42,5 +41,4 @@
 - PR:
 
 ## Risks
-- Reply loops if message filters are wrong.
-- Reminders become noisy.
+- Reminders may become noisy if misused.

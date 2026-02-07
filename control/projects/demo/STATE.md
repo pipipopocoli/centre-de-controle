@@ -1,26 +1,22 @@
 # State
 ## Phase
-- Review
+- Ship
 ## Objective
-- V2.2: packaging prototype + QA + roadmap clarity
+- V2.3 release: dispatcher + packaging + roadmap microcopy
 ## Now
-- QA Clems auto-reply + steps clarity (ISSUE-0012)
-- Parallel delegation shipped (agent-N) (ISSUE-0014)
-- Packaging prototype build + QA (ISSUE-0011)
-- Roadmap clarity review (ISSUE-0013)
+- Release validation complete (packaged app + version stamp + data dir)
+- Dispatcher auto-mode running (run requests -> inbox)
+- Microcopy applied (CAP/FOCUS/SUITE/ALERTES)
 ## Next
-- Close ISSUE-0012 after QA
-- Close ISSUE-0011 after .app QA
+- Snapshot release (final screenshot + release note)
+- Optional: implement Leo's extended roadmap wording (later)
 ## In Progress
-- ISSUE-0012 clems auto-reply
-- ISSUE-0011 packaging research
-- ISSUE-0013 roadmap clarity
+- Release snapshot
 ## Blockers
-- PyInstaller install failed (pip could not reach pypi)
+- None
 ## Risks
-- Packaging drag (PySide6 bundling can be time-consuming)
+- Packaging drift if build steps change
 - Memory contamination (cross-project) if retrieval is not scoped
-- Runtime demo artifacts (tests modify state/chat) -> keep deterministic baseline
 ## Links
 - ROADMAP.md
 - DECISIONS.md

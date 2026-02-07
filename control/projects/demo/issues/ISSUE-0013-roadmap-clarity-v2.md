@@ -1,8 +1,8 @@
 # ISSUE-0013 - Roadmap clarity + UI QA (V2.2)
 
 - Owner: leo
-- Phase: Plan
-- Status: Todo
+- Phase: Ship
+- Status: Done
 
 ## Objective
 - Improve clarity of the roadmap/timeline panel and confirm UI parity in packaged app.
@@ -18,10 +18,10 @@
 - New layout system.
 
 ## Now
-- Define 2-3 copy options for the roadmap panel.
+- Microcopy options delivered + applied (CAP/FOCUS/SUITE/ALERTES).
 
 ## Next
-- Validate in packaged app once available.
+- Optional: broader wording overhaul (later).
 
 ## Blockers
 - Need packaged app build for final QA.
