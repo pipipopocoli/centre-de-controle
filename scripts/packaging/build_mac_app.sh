@@ -14,25 +14,30 @@ if [[ ! -x "$VENV_PY" ]]; then
   echo "ERROR: python venv not found at: $ROOT_DIR/venv/bin/python or $ROOT_DIR/.venv/bin/python" >&2
   exit 1
 fi
+VENV_BIN="$(dirname "$VENV_PY")"
+export PATH="$VENV_BIN:$PATH"
 
 BRANCH="$(git -C "$ROOT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")"
 SHA="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")"
-DIRTY="false"
-if [[ -n "$(git -C "$ROOT_DIR" status --porcelain 2>/dev/null)" ]]; then
-  DIRTY="true"
+DIRTY_FLAG=""
+if [[ -n "$(git -C "$ROOT_DIR" status --porcelain --untracked-files=no 2>/dev/null)" ]]; then
+  DIRTY_FLAG="*"
 fi
+
+VERSION_FILE="$ROOT_DIR/build/version.json"
+mkdir -p "$(dirname "$VERSION_FILE")"
 
 "$VENV_PY" - <<PY
 import json
 from pathlib import Path
 
-root = Path("$ROOT_DIR")
 payload = {
     "branch": "$BRANCH",
     "sha": "$SHA",
-    "dirty": "$DIRTY" == "true",
+    "dirty": "$DIRTY_FLAG",
+    "stamp": "$BRANCH@$SHA$DIRTY_FLAG",
 }
-target = root / "app" / "version.json"
+target = Path("$VERSION_FILE")
 target.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 print(f"Wrote version stamp: {target}")
 PY
@@ -42,7 +47,8 @@ pyinstaller \
   --windowed \
   --name "${APP_NAME}" \
   --add-data "app/ui/theme.qss:app/ui" \
-  --add-data "app/version.json:app" \
+  --add-data "build/version.json:app" \
+  --collect-submodules PySide6 \
   app/main.py
 
 echo "Built: dist/${APP_NAME}.app"

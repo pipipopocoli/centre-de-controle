@@ -21,15 +21,22 @@ Output:
 - dist/Centre de controle.app
 
 Version stamp:
-- The build script writes `app/version.json` with branch/sha/dirty.
-- The app reads this file when git is unavailable inside the bundle.
+- The build script writes `build/version.json` with branch/sha/dirty.
+- The app reads the bundled `app/version.json` when git is unavailable inside the bundle.
 
 Notes:
 - The build script sets `PYINSTALLER_CONFIG_DIR=build/pyinstaller-cache` to avoid permissions errors in
   `~/Library/Application Support/pyinstaller`.
+- If you see Qt plugin errors, keep `--collect-submodules PySide6` in the build command.
+- Version stamp is written at build time to `build/version.json` and bundled into the app as `app/version.json`.
+- The `*` indicates a dirty repo **at build time**, not runtime.
 - If you see "python: command not found", use the venv command above.
 If the app launches with the *old* UI, ensure you're opening:
 - `dist/Centre de controle.app` (not a previously installed copy in /Applications).
+If you distribute outside your dev machine, codesign the app:
+```
+codesign --deep --force --options runtime --sign "Developer ID Application: <NAME>" dist/<App>.app
+```
 
 ## QA checklist
 - Launch the .app
