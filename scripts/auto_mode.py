@@ -14,232 +14,20 @@ Default data dir (projects root) is macOS App Support:
 from __future__ import annotations
 
 import argparse
-import json
 import os
-import subprocess
+import sys
 import time
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
-DEFAULT_PROJECT = "demo"
-MAX_PROCESSED_IDS = 5000
 ROOT_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT_DIR))
 
-
-def _utc_now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-
-
-def _default_projects_root() -> Path:
-    return Path.home() / "Library" / "Application Support" / "Cockpit" / "projects"
-
-
-def _normalize_projects_root(path: Path) -> Path:
-    # If user points at the Cockpit base dir, prefer the /projects subdir.
-    if path.name == "Cockpit":
-        return path / "projects"
-    if path.name != "projects" and (path / "projects").exists():
-        return path / "projects"
-    return path
-
-
-def _resolve_projects_root(data_dir: str | None) -> Path:
-    # Priority:
-    # 1) explicit --data-dir (including special values)
-    # 2) COCKPIT_DATA_DIR env
-    # 3) App Support default
-    if data_dir:
-        lowered = data_dir.lower().strip()
-        if lowered in {"repo", "dev"}:
-            return ROOT_DIR / "control" / "projects"
-        if lowered in {"appsupport", "app"}:
-            return _default_projects_root()
-        return _normalize_projects_root(Path(data_dir).expanduser())
-
-    env_value = os.environ.get("COCKPIT_DATA_DIR")
-    if env_value:
-        return _normalize_projects_root(Path(env_value).expanduser())
-
-    return _default_projects_root()
-
-
-def _read_ndjson(path: Path) -> list[dict[str, Any]]:
-    if not path.exists():
-        return []
-    items: list[dict[str, Any]] = []
-    for raw in path.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line:
-            continue
-        try:
-            payload = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(payload, dict):
-            items.append(payload)
-    return items
-
-
-def _append_ndjson(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(payload) + "\n")
-
-
-def _load_state(path: Path) -> list[str]:
-    if not path.exists():
-        return []
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return []
-    if not isinstance(payload, dict):
-        return []
-    processed = payload.get("processed")
-    if not isinstance(processed, list):
-        return []
-    return [str(item) for item in processed if str(item).strip()]
-
-
-def _save_state(path: Path, processed: list[str]) -> None:
-    trimmed = processed[-MAX_PROCESSED_IDS:]
-    payload = {
-        "processed": trimmed,
-        "updated_at": _utc_now_iso(),
-    }
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-
-
-def _agent_platform(agent_id: str) -> str:
-    # Locked mapping:
-    # - victor, agent-1, agent-3, ... -> Codex
-    # - leo, agent-2, agent-4, ... -> Antigravity
-    if agent_id == "leo":
-        return "antigravity"
-    if agent_id == "victor":
-        return "codex"
-    if agent_id.startswith("agent-"):
-        try:
-            n = int(agent_id.split("-", 1)[1])
-        except (IndexError, ValueError):
-            return "codex"
-        return "codex" if (n % 2 == 1) else "antigravity"
-    # default unknown to codex
-    return "codex"
-
-
-def _format_prompt(project_id: str, payload: dict[str, Any]) -> str:
-    agent_id = str(payload.get("agent_id") or "").strip()
-    created_at = str(payload.get("created_at") or "")
-    source = str(payload.get("source") or "")
-    msg = payload.get("message") or {}
-    author = str((msg.get("author") if isinstance(msg, dict) else "") or "")
-    text = str((msg.get("text") if isinstance(msg, dict) else "") or "")
-
-    return (
-        f"[Cockpit auto-mode]\\n"
-        f"Project: {project_id}\\n"
-        f"Target: @{agent_id}\\n"
-        f"Created: {created_at} (source={source})\\n"
-        f"From: {author}\\n\\n"
-        f"Task:\\n{text}\\n\\n"
-        "Instructions:\\n"
-        "- Do the task above.\\n"
-        "- Report back in Cockpit using cockpit.post_message.\\n"
-        "- Update your state with cockpit.update_agent_state (phase/percent/status).\\n"
-    )
-
-
-def _copy_to_clipboard(text: str) -> None:
-    # pbcopy exists on macOS.
-    subprocess.run(["pbcopy"], input=text, text=True, check=False)
-
-
-def _open_app(app_name: str) -> None:
-    subprocess.run(["open", "-a", app_name], check=False)
-
-
-def _notify(title: str, message: str) -> None:
-    # Best-effort macOS notification.
-    script = f'display notification \"{message}\" with title \"{title}\"'
-    subprocess.run(["osascript", "-e", script], check=False)
-
-
-def _paths(projects_root: Path, project_id: str) -> tuple[Path, Path, Path]:
-    project_dir = projects_root / project_id
-    requests_path = project_dir / "runs" / "requests.ndjson"
-    inbox_dir = project_dir / "runs" / "inbox"
-    state_path = project_dir / "runs" / "auto_mode_state.json"
-    return requests_path, inbox_dir, state_path
-
-
-def _dispatch_once(
-    projects_root: Path,
-    project_id: str,
-    *,
-    do_open: bool,
-    do_clipboard: bool,
-    do_notify: bool,
-    max_actions: int,
-    print_prompt: bool,
-    codex_app: str,
-    ag_app: str,
-) -> dict[str, int]:
-    requests_path, inbox_dir, state_path = _paths(projects_root, project_id)
-
-    processed = _load_state(state_path)
-    processed_set = set(processed)
-
-    dispatched = 0
-    skipped = 0
-    actions_used = 0
-
-    for payload in _read_ndjson(requests_path):
-        request_id = str(payload.get("request_id") or "").strip()
-        agent_id = str(payload.get("agent_id") or "").strip()
-        source = str(payload.get("source") or "").strip()
-
-        if not request_id or not agent_id:
-            skipped += 1
-            continue
-        if source == "reminder":
-            skipped += 1
-            continue
-        if request_id in processed_set:
-            skipped += 1
-            continue
-
-        # 1) write inbox
-        inbox_path = inbox_dir / f"{agent_id}.ndjson"
-        _append_ndjson(inbox_path, payload)
-
-        # 2) prompt + actions
-        prompt = _format_prompt(project_id, payload)
-        platform = _agent_platform(agent_id)
-        app_to_open = codex_app if platform == "codex" else ag_app
-
-        if max_actions > 0 and actions_used < max_actions:
-            if do_clipboard:
-                _copy_to_clipboard(prompt)
-            if do_open:
-                _open_app(app_to_open)
-            if do_notify:
-                _notify(
-                    "Cockpit auto-mode",
-                    f"Copied task for @{agent_id} and opened {app_to_open}",
-                )
-            if print_prompt:
-                print(prompt)
-            actions_used += 1
-
-        processed.append(request_id)
-        processed_set.add(request_id)
-        dispatched += 1
-
-    _save_state(state_path, processed)
-    return {"dispatched": dispatched, "skipped": skipped}
+from scripts.auto_mode_core import (  # noqa: E402
+    DEFAULT_PROJECT,
+    dispatch_once,
+    load_config,
+    resolve_projects_root,
+)
 
 
 def main() -> int:
@@ -258,60 +46,67 @@ def main() -> int:
     parser.add_argument("--no-open", action="store_true", help="Do not open apps")
     parser.add_argument("--no-clipboard", action="store_true", help="Do not copy to clipboard")
     parser.add_argument("--no-notify", action="store_true", help="Do not send macOS notifications")
+    parser.add_argument("--config", default=None, help="Path to auto-mode config JSON")
     parser.add_argument(
         "--max-actions",
         type=int,
-        default=1,
-        help="Max clipboard/open/notify actions per cycle (default: 1)",
+        default=None,
+        help="Override max clipboard/open/notify actions per cycle",
     )
     parser.add_argument(
         "--print-prompt",
         action="store_true",
         help="Print the prompt to stdout when actions are triggered",
     )
-    parser.add_argument("--codex-app", default="Codex", help="App name for Codex (open -a)")
-    parser.add_argument("--ag-app", default="Antigravity", help="App name for Antigravity (open -a)")
-
     args = parser.parse_args()
 
     project_id = args.project or os.environ.get("COCKPIT_PROJECT_ID") or DEFAULT_PROJECT
-    projects_root = _resolve_projects_root(args.data_dir)
+    projects_root = resolve_projects_root(args.data_dir)
 
     do_open = not args.no_open
     do_clipboard = not args.no_clipboard
     do_notify = not args.no_notify
 
+    config_path = Path(args.config).expanduser() if args.config else None
+    config, resolved = load_config(config_path, projects_root, project_id)
+    max_actions = args.max_actions if args.max_actions is not None else int(config.get("max_actions", 1))
+
+    config_hint = str(resolved) if resolved else "(default config)"
     print(f"Auto-mode using projects root: {projects_root}")
+    print(f"Config: {config_hint}")
+    print(f"Max actions per cycle: {max_actions}")
 
     if args.once:
-        stats = _dispatch_once(
+        stats = dispatch_once(
             projects_root,
             project_id,
             do_open=do_open,
             do_clipboard=do_clipboard,
             do_notify=do_notify,
-            max_actions=max(0, args.max_actions),
+            max_actions=max(0, max_actions),
             print_prompt=args.print_prompt,
-            codex_app=args.codex_app,
-            ag_app=args.ag_app,
+            config=config,
         )
-        print(f"Dispatched: {stats['dispatched']} | Skipped: {stats['skipped']}")
+        print(
+            f"Dispatched: {stats['dispatched']} | Skipped: {stats['skipped']} | Actions: {stats['actions_used']}"
+        )
         return 0
 
     while True:
-        stats = _dispatch_once(
+        stats = dispatch_once(
             projects_root,
             project_id,
             do_open=do_open,
             do_clipboard=do_clipboard,
             do_notify=do_notify,
-            max_actions=max(0, args.max_actions),
+            max_actions=max(0, max_actions),
             print_prompt=args.print_prompt,
-            codex_app=args.codex_app,
-            ag_app=args.ag_app,
+            config=config,
         )
         if stats["dispatched"]:
-            print(f"Dispatched: {stats['dispatched']} | Skipped: {stats['skipped']}")
+            print(
+                f"Dispatched: {stats['dispatched']} | Skipped: {stats['skipped']} | Actions: {stats['actions_used']}"
+            )
         time.sleep(max(args.interval, 0.5))
 
 
