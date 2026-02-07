@@ -5,6 +5,7 @@
 - V2.2: packaging prototype + QA + roadmap clarity
 ## Now
 - QA Clems auto-reply + steps clarity (ISSUE-0012)
+- Parallel delegation enabled (agent-N) (ISSUE-0014)
 - Packaging prototype build + QA (ISSUE-0011)
 - Roadmap clarity review (ISSUE-0013)
 ## Next
@@ -14,6 +15,7 @@
 - ISSUE-0012 clems auto-reply
 - ISSUE-0011 packaging research
 - ISSUE-0013 roadmap clarity
+- ISSUE-0014 parallel delegation
 ## Blockers
 - PyInstaller install failed (pip could not reach pypi)
 ## Risks

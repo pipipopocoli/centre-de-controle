@@ -62,3 +62,12 @@
 - Consequences: Must avoid reply loops; reminders kept minimal.
 - Owners: Clems, Victor, Leo
 - References: control/projects/demo/issues/ISSUE-0012-clems-autoreply-v2.md
+
+## 2026-02-07 - ADR-008 Parallel delegation via agent-N specialists
+- Status: Accepted
+- Context: Two leads (Victor/Leo) must work in parallel and be able to delegate to extra specialists without name chaos.
+- Decision: Specialists are named `agent-<number>` (agent-1, agent-2, ...). Mentions allow only @clems/@victor/@leo + @agent-<number>. Mention creates a run request NDJSON even if the agent is not in the roster yet (no auto-create).
+- Rationale: Simple convention, low collisions, auditable run requests, supports parallel work.
+- Consequences: Specialists appear in the grid only when they post state; gitignore hides agent-N directories by default.
+- Owners: Clems, Victor, Leo
+- References: control/projects/demo/issues/ISSUE-0014-parallel-delegation-v2.md

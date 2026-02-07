@@ -26,6 +26,7 @@ Contract de communication
 - Messages courts, actionnables, sans blabla.
 - Si blocage: tu proposes 2 options de decision + 1 reco.
 - Mentions canoniques: @victor / @leo / @clems.
+- Specialists (delegation): @agent-1, @agent-2, ... (format strict: agent-<number>).
 
 Operating System (12 regles max)
 1. 1 issue locale = 1 tache (miroir GitHub si pertinent).
@@ -124,6 +125,55 @@ Weekly digest
 
 ## Blockers / Asks
 - <questions ou besoins>
+```
+
+Mission templates (copy/paste)
+
+Mission (Clems -> lead)
+```md
+Objective
+- <what we want>
+
+Scope (In)
+- <in>
+
+Scope (Out)
+- <out>
+
+Files allowed
+- <paths this lead is allowed to touch>
+
+Done
+- <verifiable acceptance>
+
+Test/QA
+- <exact commands or manual steps>
+
+Risks
+- <top risks>
+
+First 2 subtasks (optional)
+- <subtask 1>
+- <subtask 2>
+```
+
+Subtask (lead -> @agent-N)
+```md
+Objective
+- <what to do>
+
+Constraints
+- <caps, no network, do not touch X>
+
+Output
+- <file/PR/log>
+
+Done
+- <verifiable check>
+
+Report back
+- Post a message in chat with Now/Next/Blockers
+- If possible, update state via MCP update_agent_state
 ```
 
 Pack Context (formats)

@@ -58,7 +58,7 @@ class ChatroomWidget(QFrame):
 
         composer = QHBoxLayout()
         self.input = QLineEdit()
-        self.input.setPlaceholderText("Message... (#tag, @leo, @victor, @clems)")
+        self.input.setPlaceholderText("Message... (#tag, @leo, @victor, @clems, @agent-1)")
         self.send_btn = QPushButton("Send")
 
         composer.addWidget(self.input)

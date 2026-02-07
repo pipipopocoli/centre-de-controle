@@ -282,7 +282,8 @@ class MainWindow(QMainWindow):
 
         ack = "Recu. Je m en occupe."
         if mentions:
-            ack += " Je ping: " + " ".join(f"@{m}" for m in mentions)
+            action = "Action: ping " + " ".join(f"@{m}" for m in mentions)
+            return f"{ack}\n{action}", False
         question = "Peux tu preciser l objectif, le scope, et la deadline?"
         return f"{ack}\n{question}", True
 
@@ -370,6 +371,8 @@ class MainWindow(QMainWindow):
                 request_id = req.get("request_id")
                 if not request_id or request_id in self._clems_reminded_requests:
                     continue
+                if req.get("source") != "mention":
+                    continue
                 created_at = self._parse_iso(str(req.get("created_at", "")))
                 agent_id = req.get("agent_id")
                 if not created_at or not agent_id:
@@ -379,7 +382,7 @@ class MainWindow(QMainWindow):
                 replied = False
                 for msg in reversed(global_messages[-200:]):
                     msg_time = self._parse_iso(str(msg.get("timestamp", "")))
-                    if not msg_time or msg_time <= created_at:
+                    if not msg_time or msg_time < created_at:
                         continue
                     if msg.get("author") == agent_id:
                         replied = True

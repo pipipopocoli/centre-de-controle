@@ -395,6 +395,7 @@ def record_mentions(project_id: str, payload: dict[str, Any]) -> None:
 
     timestamp = payload.get("timestamp") or _utc_now_iso()
     author = payload.get("author") or payload.get("agent_id") or "operator"
+    event = payload.get("event") or ""
     message_id = payload.get("message_id")
     text = payload.get("text") or payload.get("content") or ""
     tags = payload.get("tags") or []
@@ -403,7 +404,41 @@ def record_mentions(project_id: str, payload: dict[str, Any]) -> None:
     project = get_project(project_id)
     updated = False
 
+    source = "reminder" if event == "clems_reminder" else "mention"
+
     for mention in mentions:
+        request_id_base = (
+            str(timestamp)
+            .replace(":", "")
+            .replace("-", "")
+            .replace("+", "")
+            .replace("Z", "")
+            .replace("T", "")
+        )
+        request_id = f"runreq_{request_id_base}_{mention}"
+        if message_id:
+            request_id = f"{request_id}_{message_id}"
+
+        append_run_request(
+            project_id,
+            {
+                "request_id": request_id,
+                "project_id": project_id,
+                "agent_id": mention,
+                "status": "queued",
+                "source": source,
+                "created_at": timestamp,
+                "message": {
+                    "message_id": message_id,
+                    "thread_id": thread_id,
+                    "author": author,
+                    "text": text,
+                    "tags": tags,
+                    "mentions": mentions,
+                },
+            },
+        )
+
         agent = next((a for a in project.agents if a.agent_id == mention), None)
         if agent is None:
             continue
@@ -426,53 +461,22 @@ def record_mentions(project_id: str, payload: dict[str, Any]) -> None:
             },
         )
 
-        request_id_base = (
-            str(timestamp)
-            .replace(":", "")
-            .replace("-", "")
-            .replace("+", "")
-            .replace("Z", "")
-            .replace("T", "")
-        )
-        request_id = f"runreq_{request_id_base}_{mention}"
-        if message_id:
-            request_id = f"{request_id}_{message_id}"
-
-        append_run_request(
-            project_id,
-            {
-                "request_id": request_id,
-                "project_id": project_id,
-                "agent_id": mention,
-                "status": "queued",
-                "source": "mention",
-                "created_at": timestamp,
-                "message": {
-                    "message_id": message_id,
-                    "thread_id": thread_id,
-                    "author": author,
-                    "text": text,
-                    "tags": tags,
-                    "mentions": mentions,
-                },
-            },
-        )
-
     if updated:
         save_project(project)
 
-    ack_text = "Mentions: " + " ".join(f"@{m}" for m in mentions)
-    append_chat_message(
-        project_id,
-        {
-            "timestamp": _utc_now_iso(),
-            "author": "system",
-            "text": ack_text,
-            "tags": [],
-            "mentions": [],
-            "event": "mention_ack",
-        },
-    )
+    if author == "operator":
+        ack_text = "Mentions: " + " ".join(f"@{m}" for m in mentions)
+        append_chat_message(
+            project_id,
+            {
+                "timestamp": _utc_now_iso(),
+                "author": "system",
+                "text": ack_text,
+                "tags": [],
+                "mentions": [],
+                "event": "mention_ack",
+            },
+        )
 
 
 def load_chat_global(project_id: str, limit: int = 200) -> list[dict[str, Any]]:

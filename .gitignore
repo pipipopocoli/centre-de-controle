@@ -14,3 +14,6 @@ dist/
 *.spec
 **/memory.proposed.md
 **/runs/*.ndjson
+control/projects/**/agents/agent-*/
+control/projects/**/chat/threads/
+control/projects/**/packs/
