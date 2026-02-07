@@ -11,5 +11,6 @@ build/
 dist/
 *.egg-info/
 *.app/
+*.spec
 **/memory.proposed.md
 **/runs/*.ndjson

@@ -19,13 +19,11 @@
 - Auto-update system.
 
 ## Now
-- Data dir fallback added (COCKPIT_DATA_DIR -> repo control/projects -> ~/Library/Application Support/Cockpit/projects).
-- Packaging doc + build script added (PyInstaller prototype).
-- Need local PyInstaller install + build run.
+- Run PyInstaller build and capture QA notes.
 
 ## Next
-- Run PyInstaller build and verify .app behavior (QA checklist).
-- Capture any plugin errors and update docs with fixes.
+- Manual QA inside the .app (version stamp + chat NDJSON write).
+- Optional: verify on a clean user account (best effort).
 
 ## Blockers
 - PyInstaller install may fail if pip cannot reach pypi (run locally).
@@ -100,3 +98,19 @@ Risks:
 ## Recommendation (Draft)
 - Start with **PyInstaller** for the V2 prototype: fastest path to a working `.app`.
 - Re-evaluate Briefcase/Nuitka only if PyInstaller proves unstable.
+
+## Prototype Attempt (Local)
+- Install: `./.venv/bin/python -m pip install pyinstaller`
+- Build: `PATH="$PWD/.venv/bin:$PATH" scripts/packaging/build_mac_app.sh`
+- Output: `dist/Centre de controle.app`
+- Notes:
+  - Build script uses `pyinstaller` CLI + `--noconfirm`.
+  - Set `PYINSTALLER_CONFIG_DIR` to `build/pyinstaller-cache` to avoid permission errors.
+
+## QA (Partial)
+- ✅ App launched and created data dir at:
+  - `~/Library/Application Support/Cockpit/projects/demo`
+- ✅ Local-first structure created (STATE/ROADMAP/DECISIONS/agents/chat).
+- ⏳ Manual checks pending:
+  - Version stamp visible in title/footer (may show `unknown@unknown` in .app).
+  - Send a message and confirm `chat/global.ndjson` writes in data dir.
