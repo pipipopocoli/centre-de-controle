@@ -28,6 +28,14 @@ Does not:
 - Automatically create a new Antigravity/Codex thread (no API/CLI integration).
 - Automatically press Send (no AppleScript auto-send).
 
+## Run-loop KPI snapshot fields
+- `stale_queued_count`: Number of external open requests older than 24h.
+- `reminder_noise_pct`: Percent of external open requests currently in `reminded` status.
+- `close_rate_24h`: Percent of external dispatched requests in the last 24h that reached `closed_reason=reply_received`.
+- `dispatch_latency_p95`: P95 dispatch latency in seconds for external requests dispatched in the last 24h. `null` when no valid sample is available.
+- `dispatch_latency_samples_24h`: Count of valid latency samples used for p95.
+- `dispatch_latency_excluded_negative_24h`: Count of dispatched requests excluded from p95 because `dispatched_at < created_at`.
+
 ## Run once
 ```
 ./.venv/bin/python scripts/auto_mode.py --project demo --once

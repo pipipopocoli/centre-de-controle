@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import math
 import os
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -9,7 +11,7 @@ from typing import Any
 
 MAX_PROCESSED_IDS = 5000
 MAX_REQUEST_AGE_HOURS = 24
-RUNTIME_SCHEMA_VERSION = 2
+RUNTIME_SCHEMA_VERSION = 3
 LIFECYCLE_STATUS_ORDER = {
     "queued": 0,
     "dispatched": 1,
@@ -18,6 +20,18 @@ LIFECYCLE_STATUS_ORDER = {
     "closed": 4,
 }
 OPEN_REQUEST_STATUSES = {"queued", "dispatched", "reminded"}
+DEFAULT_DISPATCH_COUNTERS = {
+    "ticks": 0,
+    "dispatched_total": 0,
+    "skipped_total": 0,
+    "skipped_invalid": 0,
+    "skipped_reminder": 0,
+    "skipped_old": 0,
+    "skipped_duplicate": 0,
+    "last_tick_at": None,
+    "last_stats": {},
+}
+EXTERNAL_AGENT_RE = re.compile(r"^agent-(\d+)$")
 
 
 @dataclass(frozen=True)
@@ -154,20 +168,49 @@ def _normalize_runtime_request(request_id: str, payload: Any) -> dict[str, Any]:
         "reminder_count": max(reminder_count, 0),
         "reply_message_id": str(payload.get("reply_message_id") or "").strip() or None,
         "replied_at": str(payload.get("replied_at") or "").strip() or None,
+        "closed_at": str(payload.get("closed_at") or "").strip() or None,
         "closed_reason": str(payload.get("closed_reason") or "").strip() or None,
         "updated_at": str(payload.get("updated_at") or "").strip() or None,
     }
 
 
-def _load_state(path: Path) -> tuple[list[str], dict[str, dict[str, Any]]]:
-    if not path.exists():
-        return [], {}
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return [], {}
+def _normalize_counters(payload: Any) -> dict[str, Any]:
+    base = dict(DEFAULT_DISPATCH_COUNTERS)
     if not isinstance(payload, dict):
-        return [], {}
+        return base
+    for key in (
+        "ticks",
+        "dispatched_total",
+        "skipped_total",
+        "skipped_invalid",
+        "skipped_reminder",
+        "skipped_old",
+        "skipped_duplicate",
+    ):
+        try:
+            base[key] = max(int(payload.get(key, 0)), 0)
+        except (TypeError, ValueError):
+            base[key] = 0
+    last_tick = payload.get("last_tick_at")
+    base["last_tick_at"] = str(last_tick).strip() or None if last_tick is not None else None
+    last_stats = payload.get("last_stats")
+    base["last_stats"] = last_stats if isinstance(last_stats, dict) else {}
+    return base
+
+
+def _load_state(path: Path) -> tuple[list[str], dict[str, dict[str, Any]], dict[str, Any]]:
+    try:
+        if not path.exists():
+            return [], {}, _normalize_counters(None)
+
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (PermissionError, Exception) as e:
+        print(f"Warning: Failed to load auto_mode state {path}: {e}")
+        return [], {}, _normalize_counters(None)
+
+    if not isinstance(payload, dict):
+        return [], {}, _normalize_counters(None)
+
     processed = payload.get("processed")
     if not isinstance(processed, list):
         processed_ids: list[str] = []
@@ -183,7 +226,8 @@ def _load_state(path: Path) -> tuple[list[str], dict[str, dict[str, Any]]]:
                 continue
             requests[rid] = _normalize_runtime_request(rid, request_payload)
 
-    return processed_ids, requests
+    counters = _normalize_counters(payload.get("counters"))
+    return processed_ids, requests, counters
 
 
 def _trim_processed(processed: list[str]) -> list[str]:
@@ -199,7 +243,12 @@ def _trim_processed(processed: list[str]) -> list[str]:
     return deduped[-MAX_PROCESSED_IDS:]
 
 
-def _save_state(path: Path, processed: list[str], requests: dict[str, dict[str, Any]]) -> None:
+def _save_state(
+    path: Path,
+    processed: list[str],
+    requests: dict[str, dict[str, Any]],
+    counters: dict[str, Any] | None = None,
+) -> None:
     trimmed = _trim_processed(processed)
     normalized_requests: dict[str, dict[str, Any]] = {}
     for request_id, payload in requests.items():
@@ -207,10 +256,12 @@ def _save_state(path: Path, processed: list[str], requests: dict[str, dict[str, 
         if not rid:
             continue
         normalized_requests[rid] = _normalize_runtime_request(rid, payload)
+    normalized_counters = _normalize_counters(counters)
     payload = {
         "schema_version": RUNTIME_SCHEMA_VERSION,
         "processed": trimmed,
         "requests": normalized_requests,
+        "counters": normalized_counters,
         "updated_at": _utc_now_iso(),
     }
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -232,6 +283,13 @@ def _agent_platform(agent_id: str) -> str:
             return "codex"
         return "codex" if (n % 2 == 1) else "antigravity"
     return "codex"
+
+
+def is_external_agent(agent_id: str) -> bool:
+    value = str(agent_id or "").strip().lower()
+    if value in {"victor", "leo"}:
+        return True
+    return bool(EXTERNAL_AGENT_RE.match(value))
 
 
 def format_prompt(project_id: str, payload: dict[str, Any]) -> str:
@@ -264,6 +322,10 @@ def _paths(projects_root: Path, project_id: str, state_path: Path | None) -> tup
     return requests_path, inbox_dir, resolved_state
 
 
+def kpi_snapshots_path(projects_root: Path, project_id: str) -> Path:
+    return projects_root / project_id / "runs" / "kpi_snapshots.ndjson"
+
+
 def load_runtime_state(
     projects_root: Path,
     project_id: str,
@@ -271,13 +333,101 @@ def load_runtime_state(
     state_path: Path | None = None,
 ) -> dict[str, Any]:
     _, _, resolved_state = _paths(projects_root, project_id, state_path)
-    processed, requests = _load_state(resolved_state)
+    processed, requests, counters = _load_state(resolved_state)
     return {
         "schema_version": RUNTIME_SCHEMA_VERSION,
         "processed": _trim_processed(processed),
         "requests": requests,
+        "counters": counters,
         "state_path": str(resolved_state),
     }
+
+
+def load_dispatch_counters(
+    projects_root: Path,
+    project_id: str,
+    *,
+    state_path: Path | None = None,
+) -> dict[str, Any]:
+    runtime = load_runtime_state(projects_root, project_id, state_path=state_path)
+    counters = runtime.get("counters")
+    return _normalize_counters(counters)
+
+
+def record_dispatch_counters(
+    projects_root: Path,
+    project_id: str,
+    *,
+    dispatched: int,
+    skipped: int,
+    skipped_invalid: int,
+    skipped_reminder: int,
+    skipped_old: int,
+    skipped_duplicate: int,
+    actions_used: int,
+    state_path: Path | None = None,
+) -> dict[str, Any]:
+    _, _, resolved_state = _paths(projects_root, project_id, state_path)
+    processed, requests, counters = _load_state(resolved_state)
+    now_iso = _utc_now_iso()
+
+    counters["ticks"] = int(counters.get("ticks") or 0) + 1
+    counters["dispatched_total"] = int(counters.get("dispatched_total") or 0) + max(int(dispatched), 0)
+    counters["skipped_total"] = int(counters.get("skipped_total") or 0) + max(int(skipped), 0)
+    counters["skipped_invalid"] = int(counters.get("skipped_invalid") or 0) + max(int(skipped_invalid), 0)
+    counters["skipped_reminder"] = int(counters.get("skipped_reminder") or 0) + max(int(skipped_reminder), 0)
+    counters["skipped_old"] = int(counters.get("skipped_old") or 0) + max(int(skipped_old), 0)
+    counters["skipped_duplicate"] = int(counters.get("skipped_duplicate") or 0) + max(int(skipped_duplicate), 0)
+    counters["last_tick_at"] = now_iso
+    counters["last_stats"] = {
+        "timestamp": now_iso,
+        "dispatched": max(int(dispatched), 0),
+        "skipped": max(int(skipped), 0),
+        "skipped_invalid": max(int(skipped_invalid), 0),
+        "skipped_reminder": max(int(skipped_reminder), 0),
+        "skipped_old": max(int(skipped_old), 0),
+        "skipped_duplicate": max(int(skipped_duplicate), 0),
+        "actions_used": max(int(actions_used), 0),
+    }
+
+    _save_state(resolved_state, processed, requests, counters)
+    return {
+        "updated": True,
+        "state_path": str(resolved_state),
+        "counters": _normalize_counters(counters),
+    }
+
+
+def dispatch_once_with_counters(
+    projects_root: Path,
+    project_id: str,
+    *,
+    max_actions: int = 1,
+    codex_app: str = "Codex",
+    ag_app: str = "Antigravity",
+    state_path: Path | None = None,
+) -> DispatchResult:
+    result = dispatch_once(
+        projects_root,
+        project_id,
+        max_actions=max_actions,
+        codex_app=codex_app,
+        ag_app=ag_app,
+        state_path=state_path,
+    )
+    record_dispatch_counters(
+        projects_root,
+        project_id,
+        dispatched=result.dispatched_count,
+        skipped=result.skipped_count,
+        skipped_invalid=result.skipped_invalid,
+        skipped_reminder=result.skipped_reminder,
+        skipped_old=result.skipped_old,
+        skipped_duplicate=result.skipped_duplicate,
+        actions_used=len(result.actions),
+        state_path=state_path,
+    )
+    return result
 
 
 def mark_request_reminded(
@@ -290,7 +440,7 @@ def mark_request_reminded(
     state_path: Path | None = None,
 ) -> dict[str, Any]:
     _, _, resolved_state = _paths(projects_root, project_id, state_path)
-    processed, requests = _load_state(resolved_state)
+    processed, requests, counters = _load_state(resolved_state)
     rid = str(request_id).strip()
     if not rid or rid not in requests:
         return {"updated": False, "reason": "missing_request"}
@@ -303,16 +453,53 @@ def mark_request_reminded(
     request["updated_at"] = now_iso
     if reminder_count >= max_reminders:
         request["status"] = _advance_status(request.get("status"), "closed")
+        request["closed_at"] = request.get("closed_at") or now_iso
         request["closed_reason"] = "max_reminders_reached"
     else:
         request["status"] = _advance_status(request.get("status"), "reminded")
     requests[rid] = request
-    _save_state(resolved_state, processed, requests)
+    _save_state(resolved_state, processed, requests, counters)
     return {
         "updated": True,
         "request_id": rid,
         "status": request.get("status"),
         "reminder_count": reminder_count,
+    }
+
+
+def mark_request_closed(
+    projects_root: Path,
+    project_id: str,
+    request_id: str,
+    *,
+    closed_reason: str = "completed",
+    closed_at: str | None = None,
+    state_path: Path | None = None,
+) -> dict[str, Any]:
+    _, _, resolved_state = _paths(projects_root, project_id, state_path)
+    processed, requests, counters = _load_state(resolved_state)
+    rid = str(request_id).strip()
+    if not rid or rid not in requests:
+        return {"updated": False, "reason": "missing_request"}
+
+    now_iso = closed_at or _utc_now_iso()
+    request = requests[rid]
+    prev_status = _normalize_status(request.get("status"))
+    next_status = _advance_status(prev_status, "closed")
+    if next_status != "closed":
+        return {"updated": False, "reason": "status_regression_blocked", "status": prev_status}
+    request["status"] = "closed"
+    request["closed_at"] = str(request.get("closed_at") or "").strip() or now_iso
+    reason = str(closed_reason).strip()
+    request["closed_reason"] = reason or request.get("closed_reason") or "completed"
+    request["updated_at"] = now_iso
+    requests[rid] = request
+    _save_state(resolved_state, processed, requests, counters)
+    return {
+        "updated": True,
+        "request_id": rid,
+        "status": request.get("status"),
+        "closed_reason": request.get("closed_reason"),
     }
 
 
@@ -326,7 +513,7 @@ def mark_agent_replied(
     state_path: Path | None = None,
 ) -> str | None:
     _, _, resolved_state = _paths(projects_root, project_id, state_path)
-    processed, requests = _load_state(resolved_state)
+    processed, requests, counters = _load_state(resolved_state)
     target_agent = str(agent_id).strip()
     if not target_agent:
         return None
@@ -358,7 +545,7 @@ def mark_agent_replied(
     target["replied_at"] = now_iso
     target["updated_at"] = now_iso
     requests[request_id] = target
-    _save_state(resolved_state, processed, requests)
+    _save_state(resolved_state, processed, requests, counters)
     return request_id
 
 
@@ -427,6 +614,214 @@ def iter_reminder_candidates(
     return candidates
 
 
+def _close_stale_runtime_requests(
+    requests: dict[str, dict[str, Any]],
+    *,
+    now_utc: datetime,
+) -> None:
+    cutoff = timedelta(hours=MAX_REQUEST_AGE_HOURS)
+    now_iso = now_utc.replace(microsecond=0).isoformat()
+    for request_id, payload in list(requests.items()):
+        if not isinstance(payload, dict):
+            continue
+        status = _normalize_status(payload.get("status"))
+        if status not in OPEN_REQUEST_STATUSES:
+            continue
+        created_at = (
+            _parse_iso(str(payload.get("dispatched_at") or ""))
+            or _parse_iso(str(payload.get("created_at") or ""))
+        )
+        if not created_at:
+            continue
+        if (now_utc - created_at) <= cutoff:
+            continue
+        payload["request_id"] = request_id
+        payload["status"] = "closed"
+        payload["closed_at"] = str(payload.get("closed_at") or "").strip() or now_iso
+        payload["closed_reason"] = str(payload.get("closed_reason") or "").strip() or "stale_request"
+        payload["updated_at"] = now_iso
+        requests[request_id] = payload
+
+
+def _filter_external(requests: dict[str, dict[str, Any]], external_only: bool) -> list[dict[str, Any]]:
+    values = [item for item in requests.values() if isinstance(item, dict)]
+    if not external_only:
+        return values
+    return [item for item in values if is_external_agent(str(item.get("agent_id") or ""))]
+
+
+def _percentile_nearest_rank(values: list[float], percentile: float) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    rank = math.ceil((float(percentile) / 100.0) * len(ordered))
+    index = max(min(rank - 1, len(ordered) - 1), 0)
+    return ordered[index]
+
+
+def compute_run_loop_kpi(
+    projects_root: Path,
+    project_id: str,
+    *,
+    now: datetime | None = None,
+    window_hours: int = 24,
+    external_only: bool = True,
+) -> dict[str, Any]:
+    runtime = load_runtime_state(projects_root, project_id)
+    requests = runtime.get("requests", {})
+    if not isinstance(requests, dict):
+        requests = {}
+
+    now_utc = now or datetime.now(timezone.utc)
+    window = timedelta(hours=max(int(window_hours), 1))
+    cutoff = now_utc - window
+
+    request_values = _filter_external(requests, external_only)
+
+    open_external = 0
+    open_reminded = 0
+    stale_queued_count = 0
+    dispatched_external_24h = 0
+    closed_reply_received_24h = 0
+    dispatch_latency_samples: list[float] = []
+    dispatch_latency_excluded_negative_24h = 0
+
+    for payload in request_values:
+        status = _normalize_status(payload.get("status"))
+        created_at = _parse_iso(str(payload.get("dispatched_at") or "")) or _parse_iso(
+            str(payload.get("created_at") or "")
+        )
+        created_at_raw = _parse_iso(str(payload.get("created_at") or ""))
+
+        if status in OPEN_REQUEST_STATUSES:
+            open_external += 1
+            if status == "reminded":
+                open_reminded += 1
+            if created_at and (now_utc - created_at) > timedelta(hours=MAX_REQUEST_AGE_HOURS):
+                stale_queued_count += 1
+
+        dispatched_at = _parse_iso(str(payload.get("dispatched_at") or ""))
+        if dispatched_at and dispatched_at >= cutoff:
+            dispatched_external_24h += 1
+            if created_at_raw:
+                latency_seconds = (dispatched_at - created_at_raw).total_seconds()
+                if latency_seconds < 0:
+                    dispatch_latency_excluded_negative_24h += 1
+                else:
+                    dispatch_latency_samples.append(latency_seconds)
+
+        closed_at = _parse_iso(str(payload.get("closed_at") or ""))
+        closed_reason = str(payload.get("closed_reason") or "").strip().lower()
+        if closed_reason == "reply_received" and closed_at and closed_at >= cutoff:
+            closed_reply_received_24h += 1
+
+    reminder_noise_pct = (open_reminded / max(open_external, 1)) * 100.0
+    close_rate_24h = (closed_reply_received_24h / max(dispatched_external_24h, 1)) * 100.0
+    dispatch_latency_p95 = _percentile_nearest_rank(dispatch_latency_samples, 95.0)
+
+    return {
+        "computed_at": now_utc.replace(microsecond=0).isoformat(),
+        "window_hours": int(window_hours),
+        "external_only": bool(external_only),
+        "open_external_total": open_external,
+        "open_reminded_external": open_reminded,
+        "dispatched_external_24h": dispatched_external_24h,
+        "closed_reply_received_24h": closed_reply_received_24h,
+        "stale_queued_count": stale_queued_count,
+        "reminder_noise_pct": round(reminder_noise_pct, 2),
+        "close_rate_24h": round(close_rate_24h, 2),
+        "dispatch_latency_p95": None if dispatch_latency_p95 is None else round(dispatch_latency_p95, 2),
+        "dispatch_latency_samples_24h": len(dispatch_latency_samples),
+        "dispatch_latency_excluded_negative_24h": dispatch_latency_excluded_negative_24h,
+    }
+
+
+def _last_snapshot_timestamp(path: Path) -> datetime | None:
+    if not path.exists():
+        return None
+    for raw in reversed(path.read_text(encoding="utf-8").splitlines()):
+        line = raw.strip()
+        if not line:
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict):
+            continue
+        ts = _parse_iso(str(payload.get("timestamp") or ""))
+        if ts:
+            return ts
+    return None
+
+
+def emit_kpi_snapshot(
+    projects_root: Path,
+    project_id: str,
+    *,
+    snapshot_path: Path | None = None,
+    post_chat: bool = True,
+    min_interval_minutes: int = 25,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    now_utc = now or datetime.now(timezone.utc)
+    path = snapshot_path or kpi_snapshots_path(projects_root, project_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    last_ts = _last_snapshot_timestamp(path)
+    min_interval = timedelta(minutes=max(int(min_interval_minutes), 0))
+    if last_ts and min_interval.total_seconds() > 0:
+        age = now_utc - last_ts
+        if age < min_interval:
+            return {
+                "emitted": False,
+                "reason": "min_interval",
+                "snapshot_path": str(path),
+                "last_snapshot_at": last_ts.replace(microsecond=0).isoformat(),
+                "age_seconds": int(age.total_seconds()),
+            }
+
+    kpi = compute_run_loop_kpi(projects_root, project_id, now=now_utc, window_hours=24, external_only=True)
+    snapshot = {
+        "timestamp": now_utc.replace(microsecond=0).isoformat(),
+        "project_id": project_id,
+        **kpi,
+    }
+    _append_ndjson(path, snapshot)
+
+    if post_chat:
+        latency_p95 = snapshot.get("dispatch_latency_p95")
+        latency_samples = int(snapshot.get("dispatch_latency_samples_24h") or 0)
+        if latency_p95 is None:
+            dispatch_latency_text = f"- dispatch_latency_p95=n/a (n={latency_samples})"
+        else:
+            dispatch_latency_text = f"- dispatch_latency_p95={float(latency_p95):.2f}s (n={latency_samples})"
+        text = (
+            "KPI snapshot run-loop:\n"
+            f"- stale_queued_count={snapshot['stale_queued_count']}\n"
+            f"- reminder_noise_pct={snapshot['reminder_noise_pct']:.2f}\n"
+            f"- close_rate_24h={snapshot['close_rate_24h']:.2f}\n"
+            f"{dispatch_latency_text}"
+        )
+        chat_payload = {
+            "message_id": f"msg_{now_utc.strftime('%Y%m%d_%H%M%S')}_system",
+            "timestamp": snapshot["timestamp"],
+            "author": "system",
+            "text": text,
+            "tags": ["kpi", "run-loop"],
+            "mentions": [],
+            "event": "kpi_snapshot",
+        }
+        chat_path = projects_root / project_id / "chat" / "global.ndjson"
+        _append_ndjson(chat_path, chat_payload)
+
+    return {
+        "emitted": True,
+        "snapshot_path": str(path),
+        "snapshot": snapshot,
+    }
+
+
 def dispatch_once(
     projects_root: Path,
     project_id: str,
@@ -442,9 +837,11 @@ def dispatch_once(
     """
     requests_path, inbox_dir, resolved_state = _paths(projects_root, project_id, state_path)
 
-    processed, requests = _load_state(resolved_state)
+    processed, requests, counters = _load_state(resolved_state)
     processed_set = set(processed)
     now_utc = datetime.now(timezone.utc)
+
+    _close_stale_runtime_requests(requests, now_utc=now_utc)
 
     dispatched = 0
     skipped_invalid = 0
@@ -463,9 +860,25 @@ def dispatch_once(
         if not request_id or not agent_id:
             skipped_invalid += 1
             continue
+        if request_id in processed_set:
+            skipped_duplicate += 1
+            continue
+
         if source == "reminder":
+            reminder_state = requests.get(request_id) or _normalize_runtime_request(request_id, {})
+            reminder_state["request_id"] = request_id
+            reminder_state["agent_id"] = agent_id
+            reminder_state["created_at"] = created_at_raw or reminder_state.get("created_at") or _utc_now_iso()
+            reminder_state["status"] = "closed"
+            reminder_state["closed_at"] = str(reminder_state.get("closed_at") or "").strip() or _utc_now_iso()
+            reminder_state["closed_reason"] = str(reminder_state.get("closed_reason") or "").strip() or "reminder_event"
+            reminder_state["updated_at"] = _utc_now_iso()
+            requests[request_id] = reminder_state
+            processed.append(request_id)
+            processed_set.add(request_id)
             skipped_reminder += 1
             continue
+
         created_at = _parse_iso(created_at_raw)
         if created_at and (now_utc - created_at) > timedelta(hours=MAX_REQUEST_AGE_HOURS):
             existing = requests.get(request_id) or _normalize_runtime_request(request_id, {})
@@ -473,13 +886,13 @@ def dispatch_once(
             existing["agent_id"] = agent_id
             existing["created_at"] = created_at_raw or existing.get("created_at") or _utc_now_iso()
             existing["status"] = _advance_status(existing.get("status"), "closed")
+            existing["closed_at"] = str(existing.get("closed_at") or "").strip() or _utc_now_iso()
             existing["closed_reason"] = "stale_request"
             existing["updated_at"] = _utc_now_iso()
             requests[request_id] = existing
+            processed.append(request_id)
+            processed_set.add(request_id)
             skipped_old += 1
-            continue
-        if request_id in processed_set:
-            skipped_duplicate += 1
             continue
 
         request_state = requests.get(request_id) or _normalize_runtime_request(request_id, {})
@@ -514,7 +927,7 @@ def dispatch_once(
         processed_set.add(request_id)
         dispatched += 1
 
-    _save_state(resolved_state, processed, requests)
+    _save_state(resolved_state, processed, requests, counters)
     skipped_count = skipped_invalid + skipped_reminder + skipped_old + skipped_duplicate
     return DispatchResult(
         dispatched_count=dispatched,
