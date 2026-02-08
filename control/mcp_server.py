@@ -26,7 +26,9 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
 from app.data.model import AgentState, PHASES, ProjectData  # noqa: E402
+from app.data.paths import PROJECTS_DIR  # noqa: E402
 from app.data.store import (  # noqa: E402
+    append_agent_journal,
     append_chat_message,
     append_thread_message,
     get_project,
@@ -34,7 +36,13 @@ from app.data.store import (  # noqa: E402
     record_mentions,
     save_project,
 )
+from app.services.auto_mode import (  # noqa: E402
+    is_external_agent,
+    mark_agent_replied,
+    mark_request_closed,
+)
 from app.services.chat_parser import parse_mentions  # noqa: E402
+from app.services.brain_manager import BrainManager  # noqa: E402
 
 try:
     from mcp.server import Server
@@ -448,7 +456,75 @@ async def handle_post_message(arguments: dict[str, Any]) -> list[TextContent]:
             append_thread_message(project_id, tag, message_payload)
         if thread_id:
             append_thread_message(project_id, str(thread_id), message_payload)
-        record_mentions(project_id, message_payload)
+        try:
+            record_mentions(project_id, message_payload)
+        except Exception as e:
+            logger.warning(f"Failed to record mentions: {e}")
+
+        auto_plan_result = None
+        if agent_id == "operator":
+            try:
+                manager = BrainManager()
+                auto_plan_result = manager.apply_operator_answers(
+                    project_id=project_id,
+                    content=content,
+                    tags=tags,
+                    metadata=metadata if isinstance(metadata, dict) else {},
+                )
+            except Exception:
+                logger.exception("Failed to process operator answers for project=%s", project_id)
+
+        if is_external_agent(agent_id):
+            try:
+                request_id = mark_agent_replied(
+                    PROJECTS_DIR,
+                    project_id,
+                    agent_id,
+                    reply_message_id=message_id,
+                    replied_at=timestamp,
+                )
+                if request_id:
+                    close_result = mark_request_closed(
+                        PROJECTS_DIR,
+                        project_id,
+                        request_id,
+                        closed_reason="reply_received",
+                        closed_at=timestamp,
+                    )
+                    append_agent_journal(
+                        project_id,
+                        agent_id,
+                        {
+                            "timestamp": timestamp,
+                            "event": "reply_ack",
+                            "message_id": message_id,
+                            "request_id": request_id,
+                            "from": agent_id,
+                        },
+                    )
+                    if close_result.get("status") == "closed":
+                        append_agent_journal(
+                            project_id,
+                            agent_id,
+                            {
+                                "timestamp": timestamp,
+                                "event": "request_closed",
+                                "request_id": request_id,
+                                "reason": "reply_received",
+                                "from": agent_id,
+                            },
+                        )
+
+                await handle_update_agent_state(
+                    {
+                        "agent_id": agent_id,
+                        "project_id": project_id,
+                        "status": "executing",
+                        "heartbeat": True,
+                    }
+                )
+            except Exception:
+                logger.exception("Failed to sync reply lifecycle for project=%s agent=%s", project_id, agent_id)
 
         result = {
             "message_id": message_id,
@@ -456,6 +532,8 @@ async def handle_post_message(arguments: dict[str, Any]) -> list[TextContent]:
             "status": "posted",
             "thread_url": f"cockpit://messages/{message_id}"
         }
+        if auto_plan_result:
+            result["auto_plan"] = auto_plan_result
 
         return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
