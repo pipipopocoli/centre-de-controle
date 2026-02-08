@@ -1,22 +1,24 @@
 # State
 ## Phase
-- Plan
+- Test
 ## Objective
-- V3 Project Intake + Plan/Issues + UI clarity
+- Verify runloop lifecycle queued -> dispatched -> replied/done with close_rate_24h >= 90%
 ## Now
-- Implement Brain Manager service and intake flow
-- UI clarity upgrades (status, task, timeline, chat)
+- agent-3 lifecycle verification done on 3 e2e tests
+- close_rate_24h gate validated on KPI scenario
 ## Next
-- Issue generation + assignments
-- BrainFS profile integration
+- Monitor runloop after push and rerun e2e after auto_mode changes
+- Keep stale/reminder checks active
 ## In Progress
-- Brain Manager core
+- Runloop stabilization and verification
 ## Blockers
 - None
 ## Risks
-- Intake scope creep (keep scan lightweight)
-- UI overload if too dense
+- Runloop regressions if lifecycle hooks drift in mcp/auto_mode
+- Reminder noise can rise if inbox dedupe drifts
 ## Links
 - ROADMAP.md
 - DECISIONS.md
-- Issues: control/projects/demo/issues/
+- tests/verify_auto_mode.py
+- tests/verify_run_loop_kpi.py
+- tests/verify_agent_loop.py
