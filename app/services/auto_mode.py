@@ -134,6 +134,10 @@ def _agent_platform(agent_id: str) -> str:
     return "codex"
 
 
+def agent_platform(agent_id: str) -> str:
+    return _agent_platform(agent_id)
+
+
 def format_prompt(project_id: str, payload: dict[str, Any]) -> str:
     agent_id = str(payload.get("agent_id") or "").strip()
     created_at = str(payload.get("created_at") or "")
@@ -144,6 +148,8 @@ def format_prompt(project_id: str, payload: dict[str, Any]) -> str:
 
     return (
         f"[Cockpit auto-mode]\\n"
+        f"PROJECT LOCK: {project_id}\\n"
+        "Do not execute for another project.\\n"
         f"Project: {project_id}\\n"
         f"Target: @{agent_id}\\n"
         f"Created: {created_at} (source={source})\\n"
@@ -227,4 +233,3 @@ def dispatch_once(
 
     _save_state(resolved_state, processed)
     return DispatchResult(dispatched_count=dispatched, skipped_count=skipped, actions=actions)
-
