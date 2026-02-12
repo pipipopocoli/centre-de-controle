@@ -92,6 +92,10 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(central)
 
+        initial_project_row: int | None = None
+        if projects and project.project_id in projects:
+            initial_project_row = projects.index(project.project_id)
+
         self.sidebar.project_list.currentTextChanged.connect(self.on_project_selected)
         self.chatroom.send_btn.clicked.connect(self.on_send_message)
         self.chatroom.input.returnPressed.connect(self.on_send_message)
@@ -101,10 +105,15 @@ class MainWindow(QMainWindow):
         self.chatroom.ping_btn.clicked.connect(self.on_ping_agents)
         self.sidebar.auto_mode.toggle.toggled.connect(self.on_auto_mode_toggled)
         self.sidebar.auto_mode.run_once_btn.clicked.connect(self.on_auto_mode_run_once)
-        if projects and project.project_id in projects:
-            self.sidebar.project_list.setCurrentRow(projects.index(project.project_id))
 
         self.brain_manager = BrainManager()
+
+        # Runtime chat/reminder state must exist before first load_project().
+        self._clems_seen: set[str] = set()
+        self._clems_reminded_requests: set[str] = set()
+        self._clems_pending_question_at: str | None = None
+        self._clems_pinged_operator: bool = False
+        self._clems_last_agent_ack_key: str | None = None
 
         # Auto-mode: default ON (can be overridden per project via settings.json).
         self.auto_mode_enabled = True
@@ -119,18 +128,16 @@ class MainWindow(QMainWindow):
         self.auto_mode_timer.timeout.connect(self.run_auto_mode_tick)
 
         self.load_project(project)
+        if initial_project_row is not None:
+            self.sidebar.project_list.blockSignals(True)
+            self.sidebar.project_list.setCurrentRow(initial_project_row)
+            self.sidebar.project_list.blockSignals(False)
         self.run_auto_mode_tick()
 
         self.refresh_timer = QTimer(self)
         self.refresh_timer.setInterval(5000)
         self.refresh_timer.timeout.connect(self.refresh_project)
         self.refresh_timer.start()
-
-        self._clems_seen: set[str] = set()
-        self._clems_reminded_requests: set[str] = set()
-        self._clems_pending_question_at: str | None = None
-        self._clems_pinged_operator: bool = False
-        self._clems_last_agent_ack_key: str | None = None
 
         self.reminder_timer = QTimer(self)
         self.reminder_timer.setInterval(60000)
