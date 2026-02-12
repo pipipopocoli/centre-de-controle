@@ -15,10 +15,14 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from app.services.auto_mode import dispatch_once as dispatch_once_core
+from app.services.auto_mode import agent_platform
+from app.services.auto_mode import dispatch_once_with_counters as dispatch_once_core
+from app.services.auto_mode import load_runtime_state
 from app.services.auto_mode import resolve_projects_root as resolve_projects_root_core
+from app.services.auto_send import SendRoute
+from app.services.auto_send import send_action as auto_send_action
 
-DEFAULT_PROJECT = "demo"
+DEFAULT_PROJECT = "cockpit"
 
 
 def resolve_projects_root(data_dir: str | None) -> Path:
@@ -95,7 +99,7 @@ def dispatch_once(
     max_actions: int,
     print_prompt: bool,
     config: dict[str, Any],
-) -> dict[str, int]:
+) -> dict[str, Any]:
     app_map = config.get("app_map") or {}
     if not isinstance(app_map, dict):
         app_map = {}
@@ -110,19 +114,57 @@ def dispatch_once(
         ag_app=ag_app,
     )
 
+    require_window_match = bool(config.get("require_window_match", False))
+    sent_count = 0
+    fallback_count = 0
+    send_statuses: dict[str, int] = {}
+
     for action in result.actions:
-        if do_clipboard:
-            _copy_to_clipboard(action.prompt_text)
-        if do_open:
-            _open_app(action.app_to_open)
+        sent = False
+        status = ""
+
+        if do_open and do_clipboard:
+            route = SendRoute(
+                project_id=project_id,
+                agent_id=action.agent_id,
+                platform=agent_platform(action.agent_id),
+                app_name=action.app_to_open,
+                window_title_contains=action.app_to_open,
+                require_window_match=require_window_match,
+            )
+            send_result = auto_send_action(action, route, dry_run=False)
+            status = str(send_result.status or "")
+            send_statuses[status] = send_statuses.get(status, 0) + 1
+            sent = bool(send_result.sent)
+
+        if sent:
+            sent_count += 1
+        else:
+            fallback_count += 1
+            if do_clipboard:
+                _copy_to_clipboard(action.prompt_text)
+            if do_open:
+                _open_app(action.app_to_open)
+
         if do_notify:
             _notify("Cockpit auto-mode", action.notify_text)
         if print_prompt:
             print(action.prompt_text)
 
+    runtime = load_runtime_state(projects_root, project_id)
+
     return {
         "dispatched": result.dispatched_count,
         "skipped": result.skipped_count,
+        "skipped_invalid": result.skipped_invalid,
+        "skipped_reminder": result.skipped_reminder,
+        "skipped_old": result.skipped_old,
+        "skipped_wrong_project": result.skipped_wrong_project,
+        "skipped_duplicate": result.skipped_duplicate,
         "actions_used": len(result.actions),
+        "sent_actions": sent_count,
+        "fallback_actions": fallback_count,
+        "send_statuses": send_statuses,
+        "state_path": str(runtime.get("state_path") or ""),
+        "counters_path": str(runtime.get("state_path") or ""),
     }
-

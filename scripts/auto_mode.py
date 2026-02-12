@@ -22,6 +22,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
+from app.services.auto_mode import emit_kpi_snapshot  # noqa: E402
 from scripts.auto_mode_core import (  # noqa: E402
     DEFAULT_PROJECT,
     dispatch_once,
@@ -29,10 +30,13 @@ from scripts.auto_mode_core import (  # noqa: E402
     resolve_projects_root,
 )
 
+NO_DISPATCH_LOG_EVERY = 12
+KPI_EMIT_INTERVAL_SECONDS = 1800
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Auto-mode runner for Cockpit run requests.")
-    parser.add_argument("--project", default=None, help="Project id (default: COCKPIT_PROJECT_ID or demo)")
+    parser.add_argument("--project", default=None, help="Project id (default: COCKPIT_PROJECT_ID or cockpit)")
     parser.add_argument(
         "--data-dir",
         default=None,
@@ -88,11 +92,21 @@ def main() -> int:
             config=config,
         )
         print(
-            f"Dispatched: {stats['dispatched']} | Skipped: {stats['skipped']} | Actions: {stats['actions_used']}"
+            "Dispatched: "
+            f"{stats['dispatched']} | "
+            f"Skipped: {stats['skipped']} "
+            f"(invalid={stats['skipped_invalid']}, reminder={stats['skipped_reminder']}, "
+            f"old={stats['skipped_old']}, wrong_project={stats['skipped_wrong_project']}, duplicate={stats['skipped_duplicate']}) | "
+            f"Actions: {stats['actions_used']} "
+            f"(sent={stats.get('sent_actions', 0)}, fallback={stats.get('fallback_actions', 0)}) | "
+            f"State: {stats.get('state_path', '')}"
         )
         return 0
 
+    tick_count = 0
+    next_kpi_emit_at = time.monotonic()
     while True:
+        tick_count += 1
         stats = dispatch_once(
             projects_root,
             project_id,
@@ -103,10 +117,29 @@ def main() -> int:
             print_prompt=args.print_prompt,
             config=config,
         )
-        if stats["dispatched"]:
+        should_log = bool(stats["dispatched"]) or (tick_count % NO_DISPATCH_LOG_EVERY == 0)
+        if should_log:
             print(
-                f"Dispatched: {stats['dispatched']} | Skipped: {stats['skipped']} | Actions: {stats['actions_used']}"
+                "Dispatched: "
+                f"{stats['dispatched']} | "
+                f"Skipped: {stats['skipped']} "
+                f"(invalid={stats['skipped_invalid']}, reminder={stats['skipped_reminder']}, "
+                f"old={stats['skipped_old']}, wrong_project={stats['skipped_wrong_project']}, duplicate={stats['skipped_duplicate']}) | "
+                f"Actions: {stats['actions_used']} "
+                f"(sent={stats.get('sent_actions', 0)}, fallback={stats.get('fallback_actions', 0)}) | "
+                f"State: {stats.get('state_path', '')}"
             )
+        now_mono = time.monotonic()
+        if now_mono >= next_kpi_emit_at:
+            snapshot = emit_kpi_snapshot(
+                projects_root,
+                project_id,
+                post_chat=True,
+                min_interval_minutes=25,
+            )
+            if snapshot.get("emitted"):
+                print(f"KPI snapshot emitted: {snapshot.get('snapshot_path', '')}")
+            next_kpi_emit_at = now_mono + KPI_EMIT_INTERVAL_SECONDS
         time.sleep(max(args.interval, 0.5))
 
 
