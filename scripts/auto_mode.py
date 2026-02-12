@@ -32,7 +32,7 @@ from scripts.auto_mode_core import (  # noqa: E402
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Auto-mode runner for Cockpit run requests.")
-    parser.add_argument("--project", default=None, help="Project id (default: COCKPIT_PROJECT_ID or demo)")
+    parser.add_argument("--project", default=None, help="Project id (default: COCKPIT_PROJECT_ID or cockpit)")
     parser.add_argument(
         "--data-dir",
         default=None,
@@ -88,7 +88,9 @@ def main() -> int:
             config=config,
         )
         print(
-            f"Dispatched: {stats['dispatched']} | Skipped: {stats['skipped']} | Actions: {stats['actions_used']}"
+            f"Dispatched: {stats['dispatched']} | Skipped: {stats['skipped']} | "
+            f"Actions: {stats['actions_used']} (sent={stats.get('sent_actions', 0)}, "
+            f"fallback={stats.get('fallback_actions', 0)}) | State: {stats.get('state_path', '')}"
         )
         return 0
 
@@ -105,7 +107,9 @@ def main() -> int:
         )
         if stats["dispatched"]:
             print(
-                f"Dispatched: {stats['dispatched']} | Skipped: {stats['skipped']} | Actions: {stats['actions_used']}"
+                f"Dispatched: {stats['dispatched']} | Skipped: {stats['skipped']} | "
+                f"Actions: {stats['actions_used']} (sent={stats.get('sent_actions', 0)}, "
+                f"fallback={stats.get('fallback_actions', 0)}) | State: {stats.get('state_path', '')}"
             )
         time.sleep(max(args.interval, 0.5))
 
