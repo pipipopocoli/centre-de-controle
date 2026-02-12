@@ -39,6 +39,29 @@ def test_post_message():
     print(f"  ✅ Message posted: {data['message_id']}")
 
 
+def test_post_message_ids_are_unique():
+    """Test message_id uniqueness for rapid consecutive posts."""
+    print("Testing: cockpit.post_message uniqueness")
+
+    arguments = {
+        "agent_id": "test_agent_uniq",
+        "content": "message id uniqueness check",
+        "priority": "normal",
+        "tags": ["#test"],
+        "metadata": {"project_id": "demo"}
+    }
+
+    from control.mcp_server import handle_post_message
+
+    first = asyncio.run(handle_post_message(arguments))
+    second = asyncio.run(handle_post_message(arguments))
+
+    data_first = json.loads(first[0].text)
+    data_second = json.loads(second[0].text)
+    assert data_first["message_id"] != data_second["message_id"]
+    print(f"  ✅ Message ids unique: {data_first['message_id']} != {data_second['message_id']}")
+
+
 def test_read_state():
     """Test read_state tool."""
     print("Testing: cockpit.read_state")
@@ -157,6 +180,7 @@ def main():
     
     tests = [
         test_post_message,
+        test_post_message_ids_are_unique,
         test_read_state,
         test_update_agent_state,
         test_request_run,
