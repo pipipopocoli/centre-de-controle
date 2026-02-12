@@ -16,6 +16,7 @@ import asyncio
 import json
 import logging
 import os
+import secrets
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -395,6 +396,13 @@ def _normalize_tags(tags: Any) -> list[str]:
     return sorted(normalized)
 
 
+def _new_message_id(agent_id: str) -> str:
+    agent_fragment = str(agent_id or "agent")[:8]
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
+    suffix = secrets.token_hex(2)
+    return f"msg_{ts}_{agent_fragment}_{suffix}"
+
+
 def _infer_project_id(arguments: dict[str, Any]) -> str | None:
     project_id = arguments.get("project_id")
     if isinstance(project_id, str) and project_id.strip():
@@ -425,7 +433,7 @@ async def handle_post_message(arguments: dict[str, Any]) -> list[TextContent]:
         if not project_id:
             return [TextContent(type="text", text=json.dumps({"error": "Missing project_id (or metadata.project_id / COCKPIT_PROJECT_ID)"}))]
 
-        message_id = f"msg_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{agent_id[:8]}"
+        message_id = _new_message_id(agent_id)
         timestamp = _utc_now_iso()
 
         mentions = parse_mentions(content)
