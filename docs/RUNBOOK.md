@@ -40,6 +40,25 @@ source venv/bin/activate
 python control/mcp_server.py
 ```
 
+## Runtime Drift Recovery (App Support canonical)
+
+Strict inbox prune (with archive backup):
+
+```bash
+cd /Users/oliviercloutier/Desktop/Cockpit
+./.venv/bin/python scripts/auto_mode_inbox_prune.py --project cockpit --data-dir app --agent victor
+```
+
+Dry-run first:
+
+```bash
+cd /Users/oliviercloutier/Desktop/Cockpit
+./.venv/bin/python scripts/auto_mode_inbox_prune.py --project cockpit --data-dir app --agent victor --dry-run
+```
+
+Rollback:
+- Restore the latest file from `~/Library/Application Support/Cockpit/projects/<project>/runs/inbox/archive/`.
+
 ## UI Layout (fixed)
 
 - **Sidebar (left)**: Projects list + `New Project` button.
