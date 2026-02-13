@@ -1,6 +1,6 @@
 # Auto-mode (In-App + CLI)
 
-Auto-mode turns Cockpit run requests into actionable inbox items and helps you launch the right app.
+Auto-mode turns Cockpit run requests into actionable inbox items and routes execution without API keys.
 
 ## In the app (recommended)
 In the packaged app, auto-mode is ON by default and runs in the background for the currently selected project.
@@ -10,23 +10,26 @@ Where:
 
 What it does:
 - When you mention `@agent-1`, Cockpit writes a run request.
-- Auto-mode consumes it, writes it to the agent inbox, and (at most once per cycle) copies a ready-to-paste prompt + opens Codex/Antigravity.
+- Auto-mode consumes it, writes it to the agent inbox, then routes execution:
+  - Codex agents: headless `codex exec`.
+  - Antigravity agents: supervised `antigravity chat` launch.
 
 Notes:
-- It does not auto-create threads and does not auto-press Send.
+- It does not mark Antigravity work as completed until MCP reply is received.
 - It ignores reminders (`source=reminder`) to avoid loops.
+- Prompt envelopes carry `PROJECT LOCK: <project_id>`.
 
 ## What this does (and what it does not)
 Does:
 - Read: `~/Library/Application Support/Cockpit/projects/<project>/runs/requests.ndjson`
 - Write: `~/Library/Application Support/Cockpit/projects/<project>/runs/inbox/<agent>.ndjson`
 - Dedup: `~/Library/Application Support/Cockpit/projects/<project>/runs/auto_mode_state.json`
-- Copy a ready-to-paste prompt to clipboard
-- Open the target app (Codex or Antigravity)
+- Execute headless for Codex requests
+- Launch supervised sessions for Antigravity requests
 
 Does not:
-- Automatically create a new Antigravity/Codex thread (no API/CLI integration).
-- Automatically press Send (no AppleScript auto-send).
+- Pretend Antigravity completed without a real reply.
+- Execute requests for another project id.
 
 ## Run-loop KPI snapshot fields
 - `stale_queued_count`: Number of external open requests older than 24h.
@@ -38,22 +41,22 @@ Does not:
 
 ## Run once
 ```
-./.venv/bin/python scripts/auto_mode.py --project demo --once
+./.venv/bin/python scripts/auto_mode.py --project cockpit --once
 ```
 
 ## Run continuously
 ```
-./.venv/bin/python scripts/auto_mode.py --project demo --interval 5
+./.venv/bin/python scripts/auto_mode.py --project cockpit --interval 5
 ```
 
 ## Recommended (scale-friendly)
-Only perform clipboard/open once per cycle and print the prompt in the terminal:
+Run one action per cycle and print prompt envelopes:
 ```
-./.venv/bin/python scripts/auto_mode.py --project demo --interval 5 --max-actions 1 --print-prompt
+./.venv/bin/python scripts/auto_mode.py --project cockpit --interval 5 --max-actions 1 --print-prompt
 ```
 Notes:
 - All requests are still written to inbox files.
-- Clipboard/open/notify/print only happen for the first N requests per cycle.
+- Execution/launch/notify/print only happen for the first N requests per cycle.
 
 ## Data dir resolution
 Auto-mode prints the resolved projects root at startup:
@@ -70,7 +73,7 @@ If you pass the Cockpit base dir, `/projects` is appended automatically.
 
 ## Verify
 ```
-tail -n 1 ~/Library/Application\\ Support/Cockpit/projects/demo/runs/inbox/agent-1.ndjson
+tail -n 1 ~/Library/Application\\ Support/Cockpit/projects/cockpit/runs/inbox/agent-1.ndjson
 ```
 
 ## Mapping (locked defaults)
@@ -79,9 +82,9 @@ tail -n 1 ~/Library/Application\\ Support/Cockpit/projects/demo/runs/inbox/agent
 
 ## Troubleshooting
 - If notifications do not show: allow Terminal notifications in macOS settings.
-- If `open -a Codex` fails: find the app name in Finder and pass `--codex-app "<Exact Name>"`.
+- If Codex runs fail: run `codex exec --help` in terminal to verify local install/login.
 - If you want dev data dir: pass `--data-dir /Users/oliviercloutier/Desktop/Cockpit/control/projects` (not recommended for packaged app).
-- If clipboard looks empty: run with `--print-prompt` and copy the prompt directly from the terminal.
+- If Antigravity launch fails: verify CLI exists at `/Applications/Antigravity.app/Contents/Resources/app/bin/antigravity`.
 
 ## QA checklist (8 agents)
 - Turn Auto-mode ON.
@@ -89,4 +92,4 @@ tail -n 1 ~/Library/Application\\ Support/Cockpit/projects/demo/runs/inbox/agent
 - Verify inbox files exist, e.g.:
 - `~/Library/Application Support/Cockpit/projects/<project>/runs/inbox/agent-1.ndjson`
 - `~/Library/Application Support/Cockpit/projects/<project>/runs/inbox/agent-2.ndjson`
-- Verify only 1 copy/open action happens per cycle (the rest is inbox-only).
+- Verify only 1 execution/launch action happens per cycle (the rest is inbox-only).

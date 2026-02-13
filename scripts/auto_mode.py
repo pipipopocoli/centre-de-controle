@@ -96,9 +96,10 @@ def main() -> int:
             f"{stats['dispatched']} | "
             f"Skipped: {stats['skipped']} "
             f"(invalid={stats['skipped_invalid']}, reminder={stats['skipped_reminder']}, "
-            f"old={stats['skipped_old']}, wrong_project={stats['skipped_wrong_project']}, duplicate={stats['skipped_duplicate']}) | "
+            f"old={stats['skipped_old']}, wrong_project={stats['skipped_wrong_project']}, "
+            f"internal={stats.get('skipped_internal_agent', 0)}, duplicate={stats['skipped_duplicate']}) | "
             f"Actions: {stats['actions_used']} "
-            f"(sent={stats.get('sent_actions', 0)}, fallback={stats.get('fallback_actions', 0)}) | "
+            f"(executed={stats.get('executed_actions', 0)}, launched={stats.get('launched_actions', 0)}) | "
             f"State: {stats.get('state_path', '')}"
         )
         return 0
@@ -124,9 +125,10 @@ def main() -> int:
                 f"{stats['dispatched']} | "
                 f"Skipped: {stats['skipped']} "
                 f"(invalid={stats['skipped_invalid']}, reminder={stats['skipped_reminder']}, "
-                f"old={stats['skipped_old']}, wrong_project={stats['skipped_wrong_project']}, duplicate={stats['skipped_duplicate']}) | "
+                f"old={stats['skipped_old']}, wrong_project={stats['skipped_wrong_project']}, "
+                f"internal={stats.get('skipped_internal_agent', 0)}, duplicate={stats['skipped_duplicate']}) | "
                 f"Actions: {stats['actions_used']} "
-                f"(sent={stats.get('sent_actions', 0)}, fallback={stats.get('fallback_actions', 0)}) | "
+                f"(executed={stats.get('executed_actions', 0)}, launched={stats.get('launched_actions', 0)}) | "
                 f"State: {stats.get('state_path', '')}"
             )
         now_mono = time.monotonic()

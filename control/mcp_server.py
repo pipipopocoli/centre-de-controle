@@ -418,6 +418,11 @@ def _infer_project_id(arguments: dict[str, Any]) -> str | None:
     return None
 
 
+def _is_relayed_auto_mode_prompt(content: str) -> bool:
+    lowered = str(content or "").lower()
+    return "[cockpit auto-mode]" in lowered and "project lock:" in lowered
+
+
 # Tool implementations
 async def handle_post_message(arguments: dict[str, Any]) -> list[TextContent]:
     """Handle cockpit.post_message tool call."""
@@ -436,7 +441,7 @@ async def handle_post_message(arguments: dict[str, Any]) -> list[TextContent]:
         message_id = f"msg_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{agent_id[:8]}"
         timestamp = _utc_now_iso()
 
-        mentions = parse_mentions(content)
+        mentions = [] if _is_relayed_auto_mode_prompt(content) else parse_mentions(content)
         message_payload = {
             "message_id": message_id,
             "timestamp": timestamp,

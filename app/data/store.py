@@ -79,6 +79,22 @@ def ensure_project_structure(project_id: str, project_name: str | None = None) -
             "interval_seconds": 5,
             "max_actions": 1,
         },
+        "automation": {
+            "execution_mode": "codex_headless_ag_supervised",
+            "codex": {
+                "enabled": True,
+            },
+            "antigravity": {
+                "enabled": True,
+                "supervised_only": True,
+                "mode": "agent",
+                "reuse_window": True,
+                "cli_path": "/Applications/Antigravity.app/Contents/Resources/app/bin/antigravity",
+            },
+            "timeouts": {
+                "codex_seconds": 900,
+            },
+        },
         "github": {
             "repo": "",
         },
@@ -415,6 +431,11 @@ def record_mentions(project_id: str, payload: dict[str, Any]) -> None:
     text = payload.get("text") or payload.get("content") or ""
     tags = payload.get("tags") or []
     thread_id = payload.get("thread_id")
+    lowered_text = str(text).lower()
+
+    # Never fan out relayed auto-mode envelopes back into run requests.
+    if "[cockpit auto-mode]" in lowered_text and "project lock:" in lowered_text:
+        return
 
     project = get_project(project_id)
     updated = False
@@ -422,6 +443,9 @@ def record_mentions(project_id: str, payload: dict[str, Any]) -> None:
     source = "reminder" if event == "clems_reminder" else "mention"
 
     for mention in mentions:
+        if str(mention).strip().lower() == "clems":
+            # Clems is internal orchestrator; no external run request.
+            continue
         request_id_base = (
             str(timestamp)
             .replace(":", "")

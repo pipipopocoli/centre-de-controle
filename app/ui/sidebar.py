@@ -33,9 +33,29 @@ class AutoModePanel(QFrame):
         self.dir_label.setObjectName("autoModeInfo")
         self.dir_label.setWordWrap(True)
         
-        self.microcopy = QLabel("Mentions -> inbox. Auto copie/ouvre 1 mission par cycle.")
+        self.microcopy = QLabel("Mentions -> inbox. Codex executes headless. Antigravity is supervised launch.")
         self.microcopy.setObjectName("autoModeMicrocopy")
         self.microcopy.setWordWrap(True)
+
+        self.execution_mode = QLabel("Execution Mode: codex_headless_ag_supervised")
+        self.execution_mode.setObjectName("autoModeInfo")
+        self.execution_mode.setWordWrap(True)
+
+        self.execution_state = QLabel("Execution: enabled")
+        self.execution_state.setObjectName("autoModeInfo")
+        self.execution_state.setWordWrap(True)
+
+        self.last_executed = QLabel("Last executed: -")
+        self.last_executed.setObjectName("autoModeInfo")
+
+        self.last_launched = QLabel("Last launched: -")
+        self.last_launched.setObjectName("autoModeInfo")
+
+        self.pending_supervised = QLabel("Pending supervised: 0")
+        self.pending_supervised.setObjectName("autoModeInfo")
+
+        self.pending = QLabel("Pending: 0")
+        self.pending.setObjectName("autoModeInfo")
 
         self.last_dispatch = QLabel("Last: -")
         self.last_dispatch.setObjectName("autoModeInfo")
@@ -51,6 +71,12 @@ class AutoModePanel(QFrame):
         layout.addLayout(header_row)
         layout.addWidget(self.dir_label)
         layout.addWidget(self.microcopy)
+        layout.addWidget(self.execution_mode)
+        layout.addWidget(self.execution_state)
+        layout.addWidget(self.last_executed)
+        layout.addWidget(self.last_launched)
+        layout.addWidget(self.pending_supervised)
+        layout.addWidget(self.pending)
         layout.addWidget(self.last_dispatch)
         layout.addWidget(self.last_error)
         layout.addWidget(self.run_once_btn)
@@ -69,9 +95,32 @@ class AutoModePanel(QFrame):
 
     def set_last_dispatch(self, text: str) -> None:
         self.last_dispatch.setText(f"Last: {text}")
+        self.last_executed.setText(f"Last executed: {text}")
 
     def set_last_error(self, text: str) -> None:
         self.last_error.setText(text)
+
+    def set_execution_mode(self, value: str) -> None:
+        self.execution_mode.setText(f"Execution Mode: {value}")
+
+    def set_execution_state(self, codex_enabled: bool, ag_enabled: bool, ag_supervised_only: bool) -> None:
+        codex_state = "ON" if codex_enabled else "OFF"
+        ag_state = "ON" if ag_enabled else "OFF"
+        ag_note = "supervised" if ag_supervised_only else "direct"
+        self.execution_state.setText(f"Execution: codex={codex_state}, ag={ag_state} ({ag_note})")
+
+    def set_last_executed(self, text: str) -> None:
+        self.last_executed.setText(f"Last executed: {text}")
+        self.last_dispatch.setText(f"Last: {text}")
+
+    def set_last_launched(self, text: str) -> None:
+        self.last_launched.setText(f"Last launched: {text}")
+
+    def set_pending_supervised(self, value: int) -> None:
+        self.pending_supervised.setText(f"Pending supervised: {max(int(value), 0)}")
+
+    def set_pending(self, value: int) -> None:
+        self.pending.setText(f"Pending: {max(int(value), 0)}")
 
 
 class SidebarWidget(QWidget):

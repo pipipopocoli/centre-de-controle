@@ -27,12 +27,17 @@ def _write_ndjson(path: Path, payload: dict) -> None:
 def main() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         projects_root = Path(tmp) / "projects"
-        project_id = "demo"
+        project_id = "cockpit"
         requests_path = projects_root / project_id / "runs" / "requests.ndjson"
         now = datetime.now(timezone.utc)
 
         reqs = [
-            ("runreq_test_001", "agent-1", "msg_test_001", "Ping @agent-1 test"),
+            (
+                "runreq_test_001",
+                "agent-1",
+                "msg_test_001",
+                "[Cockpit auto-mode]\nProject: demo\nTask:\nPing @agent-1 test\nInstructions:\n- old",
+            ),
             ("runreq_test_002", "agent-2", "msg_test_002", "Ping @agent-2 test"),
             ("runreq_test_003", "agent-3", "msg_test_003", "Ping @agent-3 test"),
         ]
@@ -61,6 +66,26 @@ def main() -> int:
         _write_ndjson(
             requests_path,
             {
+                "request_id": "runreq_test_internal_clems",
+                "project_id": project_id,
+                "agent_id": "clems",
+                "status": "queued",
+                "source": "mention",
+                "created_at": now.replace(microsecond=0).isoformat(),
+                "message": {
+                    "message_id": "msg_internal_clems",
+                    "thread_id": None,
+                    "author": "operator",
+                    "text": "@clems ping",
+                    "tags": [],
+                    "mentions": ["clems"],
+                },
+            },
+        )
+
+        _write_ndjson(
+            requests_path,
+            {
                 "request_id": "runreq_test_reminder",
                 "project_id": project_id,
                 "agent_id": "agent-4",
@@ -84,7 +109,17 @@ def main() -> int:
         assert len(result_1.actions) == 1, f"expected max_actions=1, got {len(result_1.actions)}"
         assert result_1.actions[0].agent_id == "agent-1", "expected first action to be agent-1"
         assert result_1.skipped_reminder == 1, f"expected 1 reminder skip, got {result_1.skipped_reminder}"
+        assert result_1.skipped_internal_agent == 1, "internal agents must be skipped from external dispatch"
         assert result_1.skipped_old == 0, f"expected no old skip, got {result_1.skipped_old}"
+        assert (
+            "PROJECT LOCK: cockpit" in result_1.actions[0].prompt_text
+        ), "prompt must include explicit project lock"
+        assert (
+            "Task:\\nPing @agent-1 test" in result_1.actions[0].prompt_text
+        ), "nested auto-mode envelopes must be flattened to latest task body"
+        assert (
+            "PROJECT LOCK: cockpit" not in result_1.actions[0].prompt_text.split("Task:\\n", 1)[-1]
+        ), "nested auto-mode envelopes must be sanitized in task body"
 
         for _request_id, agent_id, _msg_id, _text in reqs:
             inbox = projects_root / project_id / "runs" / "inbox" / f"{agent_id}.ndjson"
@@ -96,12 +131,15 @@ def main() -> int:
         assert state.exists(), "state file not created"
         runtime = load_runtime_state(projects_root, project_id)
         assert "processed" in runtime and "requests" in runtime, "runtime state missing required fields"
-        assert len(runtime["processed"]) == 3, "processed ids should track only dispatched requests"
+        assert len(runtime["processed"]) == 5, "processed ids should include dispatched + skipped closure events"
         for request_id, payload in runtime["requests"].items():
             if request_id not in {"runreq_test_001", "runreq_test_002", "runreq_test_003"}:
                 continue
             assert payload.get("status") == "dispatched", "newly dispatched requests must be marked dispatched"
             assert int(payload.get("reminder_count") or 0) == 0, "initial reminder_count should be 0"
+        clems_request = runtime["requests"]["runreq_test_internal_clems"]
+        assert clems_request.get("status") == "closed", "internal clems request must close immediately"
+        assert clems_request.get("closed_reason") == "internal_agent_not_dispatchable"
 
         # Second run should not duplicate inbox entries and should produce no actions.
         result_2 = dispatch_once(projects_root, project_id, max_actions=1)
@@ -123,7 +161,7 @@ def main() -> int:
         assert replied_request == "runreq_test_002", f"unexpected replied request: {replied_request}"
         runtime_after_reply = load_runtime_state(projects_root, project_id)
         assert runtime_after_reply["requests"]["runreq_test_002"]["status"] == "replied"
-        assert len(runtime_after_reply["processed"]) == 3, "mark_agent_replied must not alter processed ids"
+        assert len(runtime_after_reply["processed"]) == 5, "mark_agent_replied must not alter processed ids"
 
         # Reminder candidates must respect age/cooldown and close after max reminders.
         future_31m = now + timedelta(minutes=31)

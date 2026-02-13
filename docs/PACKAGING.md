@@ -1,63 +1,65 @@
 # Packaging (macOS .app)
 
-Goal: build a local-first macOS .app that runs without a venv and keeps data outside the bundle.
+Goal: produce a runnable app bundle with tree icon, install it in `/Applications`, and publish a demo release to Google Drive.
 
 ## Data directory
-Order of precedence:
-- COCKPIT_DATA_DIR (projects root)
-- Repo local: control/projects (if present)
-- Default: ~/Library/Application Support/Cockpit/projects
+Runtime projects root order:
+- `COCKPIT_DATA_DIR` (if set)
+- repo local `control/projects` (dev mode)
+- default `~/Library/Application Support/Cockpit/projects`
 
-## PyInstaller prototype (recommended)
-
-Install:
-- ./.venv/bin/python -m pip install pyinstaller
-- (fallback) python3 -m pip install pyinstaller
-
-Build (windowed .app):
-- PATH="$PWD/.venv/bin:$PATH" scripts/packaging/build_mac_app.sh
-
-Output:
-- dist/Centre de controle.app
-- scripts/packaging/assets/centre-de-controle.icns (if icon pipeline succeeds or fallback is used)
-
-Icon pipeline (manual):
-- scripts/packaging/build_icon_icns.sh
-- scripts/packaging/build_icon_icns.sh /absolute/path/to/source.png
-
-Icon source default:
-- docs/images/centre-de-controle.png
-
-Version stamp:
-- The build script writes `build/version.json` with branch/sha/dirty.
-- The app reads the bundled `app/version.json` when git is unavailable inside the bundle.
-
-Notes:
-- The build script sets `PYINSTALLER_CONFIG_DIR=build/pyinstaller-cache` to avoid permissions errors in
-  `~/Library/Application Support/pyinstaller`.
-- If you see Qt plugin errors, keep `--collect-submodules PySide6` in the build command.
-- Version stamp is written at build time to `build/version.json` and bundled into the app as `app/version.json`.
-- The `*` indicates a dirty repo **at build time**, not runtime.
-- If you see "python: command not found", use the venv command above.
-- The icon pipeline requires macOS tools `sips` and `iconutil`.
-- If `sips` or `iconutil` are missing, build continues and prints a warning.
-- If icon generation fails, the script reuses `assets/Cockpit.icns` when available.
-If the app launches with the *old* UI, ensure you're opening:
-- `dist/Centre de controle.app` (not a previously installed copy in /Applications).
-If you distribute outside your dev machine, codesign the app:
+## 1) Generate local tree icon (no API)
+```bash
+cd /Users/oliviercloutier/Desktop/Cockpit
+./.venv/bin/python scripts/packaging/generate_tree_icon.py --out /Users/oliviercloutier/Desktop/Cockpit/assets/tree-icon.png
 ```
-codesign --deep --force --options runtime --sign "Developer ID Application: <NAME>" dist/<App>.app
+
+## 2) Build `.app` with PyInstaller
+Install dependency if needed:
+```bash
+./.venv/bin/python -m pip install pyinstaller
 ```
+
+Build:
+```bash
+cd /Users/oliviercloutier/Desktop/Cockpit
+COCKPIT_ICON_SOURCE=/Users/oliviercloutier/Desktop/Cockpit/assets/tree-icon.png scripts/packaging/build_mac_app.sh
+```
+
+Expected output:
+- `/Users/oliviercloutier/Desktop/Cockpit/dist/Centre de controle.app`
+- `/Users/oliviercloutier/Desktop/Cockpit/assets/Cockpit.icns`
+
+## 3) Install app in `/Applications`
+```bash
+rm -rf "/Applications/Centre de controle.app"
+cp -R "/Users/oliviercloutier/Desktop/Cockpit/dist/Centre de controle.app" "/Applications/"
+touch /Applications
+killall Finder || true
+killall Dock || true
+```
+
+## 4) Publish demo release to Google Drive
+```bash
+cd /Users/oliviercloutier/Desktop/Cockpit
+scripts/release/publish_demo_to_drive.sh \
+  --app "/Users/oliviercloutier/Desktop/Cockpit/dist/Centre de controle.app" \
+  --drive-root "/Users/oliviercloutier/Library/CloudStorage/GoogleDrive-oliviier.cloutier@gmail.com/Mon disque/Cockpit/releases"
+```
+
+This creates a versioned folder:
+- `v3.6.1_<YYYYMMDD_HHMMSS>_<shortsha>/`
+- contains `.app`, `.zip`, and `release_manifest.txt`
+- old versions are kept
 
 ## QA checklist
-- Launch the .app
-- Verify version stamp is visible (or fallback string)
-- Verify Finder + Dock icon is custom (not default Python icon)
-- Open demo project (auto-created if missing)
-- Send a chat message and confirm NDJSON writes to the data dir
-- Verify UI layout (Paper Ops) and chat buttons are not clipped
+- Launch from `/Applications/Centre de controle.app`
+- Confirm custom tree icon in Finder + Dock
+- Confirm version stamp is visible
+- Confirm chat + automation panel render correctly
+- Mention `@victor` (headless codex path) and `@leo` (AG supervised path)
 
-## Notes / Risks
-- Qt plugins can be finicky; if the app opens blank, verify PyInstaller collected Qt plugins.
-- Version stamp will show unknown@unknown if version.json is missing and git is not available inside the bundle.
-- Build artifacts can be large; use dist/ cleanup as needed.
+## Notes
+- Build script uses `build/version.json` for build-time stamp (`branch@sha` + optional `*` dirty flag).
+- Icon conversion uses `scripts/packaging/build_icon_icns.sh` and macOS tools `sips` + `iconutil`.
+- If icon conversion fails, the script falls back to existing `assets/Cockpit.icns` if present.

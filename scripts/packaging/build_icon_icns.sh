@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SOURCE_PNG="${1:-$ROOT_DIR/docs/images/centre-de-controle.png}"
 ASSETS_DIR="$ROOT_DIR/scripts/packaging/assets"
 ICONSET_DIR="$ASSETS_DIR/centre-de-controle.iconset"
-OUT_ICNS="$ASSETS_DIR/centre-de-controle.icns"
+OUT_ICNS="${2:-$ASSETS_DIR/centre-de-controle.icns}"
 LEGACY_ICNS="$ROOT_DIR/assets/Cockpit.icns"
 
 fallback_icon() {
@@ -42,6 +42,7 @@ fi
 rm -rf "$ICONSET_DIR"
 mkdir -p "$ICONSET_DIR"
 mkdir -p "$ASSETS_DIR"
+mkdir -p "$(dirname "$OUT_ICNS")"
 
 if ! sips -z 16 16 "$SOURCE_PNG" --out "$ICONSET_DIR/icon_16x16.png" >/dev/null; then fallback_icon || exit 1; exit 0; fi
 if ! sips -z 32 32 "$SOURCE_PNG" --out "$ICONSET_DIR/icon_16x16@2x.png" >/dev/null; then fallback_icon || exit 1; exit 0; fi

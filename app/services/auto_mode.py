@@ -12,6 +12,7 @@ from typing import Any
 MAX_PROCESSED_IDS = 5000
 MAX_REQUEST_AGE_HOURS = 24
 RUNTIME_SCHEMA_VERSION = 3
+MAX_TASK_TEXT_CHARS = 800
 LIFECYCLE_STATUS_ORDER = {
     "queued": 0,
     "dispatched": 1,
@@ -27,7 +28,13 @@ DEFAULT_DISPATCH_COUNTERS = {
     "skipped_invalid": 0,
     "skipped_reminder": 0,
     "skipped_old": 0,
+    "skipped_wrong_project": 0,
     "skipped_duplicate": 0,
+    "skipped_internal_agent": 0,
+    "runner_codex_success": 0,
+    "runner_codex_fail": 0,
+    "runner_ag_launch": 0,
+    "runner_ag_pending": 0,
     "last_tick_at": None,
     "last_stats": {},
 }
@@ -37,7 +44,10 @@ EXTERNAL_AGENT_RE = re.compile(r"^agent-(\d+)$")
 @dataclass(frozen=True)
 class AutoModeAction:
     request_id: str
+    project_id: str
     agent_id: str
+    platform: str
+    execution_mode: str
     prompt_text: str
     app_to_open: str
     notify_text: str
@@ -50,7 +60,9 @@ class DispatchResult:
     skipped_invalid: int
     skipped_reminder: int
     skipped_old: int
+    skipped_wrong_project: int
     skipped_duplicate: int
+    skipped_internal_agent: int
     actions: list[AutoModeAction]
 
 
@@ -164,6 +176,12 @@ def _normalize_runtime_request(request_id: str, payload: Any) -> dict[str, Any]:
         "status": _normalize_status(payload.get("status", "queued")),
         "created_at": str(payload.get("created_at") or "").strip() or None,
         "dispatched_at": str(payload.get("dispatched_at") or "").strip() or None,
+        "execution_mode": str(payload.get("execution_mode") or "").strip() or None,
+        "runner": str(payload.get("runner") or "").strip() or None,
+        "launched_at": str(payload.get("launched_at") or "").strip() or None,
+        "completed_at": str(payload.get("completed_at") or "").strip() or None,
+        "completion_source": str(payload.get("completion_source") or "").strip() or None,
+        "last_error": str(payload.get("last_error") or "").strip() or None,
         "last_reminder_at": str(payload.get("last_reminder_at") or "").strip() or None,
         "reminder_count": max(reminder_count, 0),
         "reply_message_id": str(payload.get("reply_message_id") or "").strip() or None,
@@ -185,7 +203,13 @@ def _normalize_counters(payload: Any) -> dict[str, Any]:
         "skipped_invalid",
         "skipped_reminder",
         "skipped_old",
+        "skipped_wrong_project",
         "skipped_duplicate",
+        "skipped_internal_agent",
+        "runner_codex_success",
+        "runner_codex_fail",
+        "runner_ag_launch",
+        "runner_ag_pending",
     ):
         try:
             base[key] = max(int(payload.get(key, 0)), 0)
@@ -285,11 +309,32 @@ def _agent_platform(agent_id: str) -> str:
     return "codex"
 
 
+def agent_platform(agent_id: str) -> str:
+    return _agent_platform(agent_id)
+
+
 def is_external_agent(agent_id: str) -> bool:
     value = str(agent_id or "").strip().lower()
     if value in {"victor", "leo"}:
         return True
     return bool(EXTERNAL_AGENT_RE.match(value))
+
+
+def _sanitize_task_text(raw_text: str) -> str:
+    text = str(raw_text or "").replace("\r\n", "\n").replace("\r", "\n").strip()
+    if "[Cockpit auto-mode]" in text:
+        if "Task:\n" in text:
+            text = text.split("Task:\n", 1)[-1]
+        elif "Task:" in text:
+            text = text.split("Task:", 1)[-1]
+        if "Instructions:\n" in text:
+            text = text.split("Instructions:\n", 1)[0]
+        elif "Instructions:" in text:
+            text = text.split("Instructions:", 1)[0]
+        text = text.strip()
+    if len(text) > MAX_TASK_TEXT_CHARS:
+        text = text[:MAX_TASK_TEXT_CHARS].rstrip()
+    return text
 
 
 def format_prompt(project_id: str, payload: dict[str, Any]) -> str:
@@ -298,10 +343,12 @@ def format_prompt(project_id: str, payload: dict[str, Any]) -> str:
     source = str(payload.get("source") or "")
     msg = payload.get("message") or {}
     author = str((msg.get("author") if isinstance(msg, dict) else "") or "")
-    text = str((msg.get("text") if isinstance(msg, dict) else "") or "")
+    text = _sanitize_task_text(str((msg.get("text") if isinstance(msg, dict) else "") or ""))
 
     return (
         f"[Cockpit auto-mode]\\n"
+        f"PROJECT LOCK: {project_id}\\n"
+        "Do not execute for another project.\\n"
         f"Project: {project_id}\\n"
         f"Target: @{agent_id}\\n"
         f"Created: {created_at} (source={source})\\n"
@@ -363,7 +410,9 @@ def record_dispatch_counters(
     skipped_invalid: int,
     skipped_reminder: int,
     skipped_old: int,
+    skipped_wrong_project: int,
     skipped_duplicate: int,
+    skipped_internal_agent: int,
     actions_used: int,
     state_path: Path | None = None,
 ) -> dict[str, Any]:
@@ -377,7 +426,13 @@ def record_dispatch_counters(
     counters["skipped_invalid"] = int(counters.get("skipped_invalid") or 0) + max(int(skipped_invalid), 0)
     counters["skipped_reminder"] = int(counters.get("skipped_reminder") or 0) + max(int(skipped_reminder), 0)
     counters["skipped_old"] = int(counters.get("skipped_old") or 0) + max(int(skipped_old), 0)
+    counters["skipped_wrong_project"] = int(counters.get("skipped_wrong_project") or 0) + max(
+        int(skipped_wrong_project), 0
+    )
     counters["skipped_duplicate"] = int(counters.get("skipped_duplicate") or 0) + max(int(skipped_duplicate), 0)
+    counters["skipped_internal_agent"] = int(counters.get("skipped_internal_agent") or 0) + max(
+        int(skipped_internal_agent), 0
+    )
     counters["last_tick_at"] = now_iso
     counters["last_stats"] = {
         "timestamp": now_iso,
@@ -386,7 +441,9 @@ def record_dispatch_counters(
         "skipped_invalid": max(int(skipped_invalid), 0),
         "skipped_reminder": max(int(skipped_reminder), 0),
         "skipped_old": max(int(skipped_old), 0),
+        "skipped_wrong_project": max(int(skipped_wrong_project), 0),
         "skipped_duplicate": max(int(skipped_duplicate), 0),
+        "skipped_internal_agent": max(int(skipped_internal_agent), 0),
         "actions_used": max(int(actions_used), 0),
     }
 
@@ -423,7 +480,9 @@ def dispatch_once_with_counters(
         skipped_invalid=result.skipped_invalid,
         skipped_reminder=result.skipped_reminder,
         skipped_old=result.skipped_old,
+        skipped_wrong_project=result.skipped_wrong_project,
         skipped_duplicate=result.skipped_duplicate,
+        skipped_internal_agent=result.skipped_internal_agent,
         actions_used=len(result.actions),
         state_path=state_path,
     )
@@ -500,6 +559,80 @@ def mark_request_closed(
         "request_id": rid,
         "status": request.get("status"),
         "closed_reason": request.get("closed_reason"),
+    }
+
+
+def update_request_execution(
+    projects_root: Path,
+    project_id: str,
+    request_id: str,
+    *,
+    agent_id: str | None = None,
+    execution_mode: str | None = None,
+    runner: str | None = None,
+    launched: bool = False,
+    completed: bool = False,
+    completion_source: str | None = None,
+    close_request: bool = False,
+    closed_reason: str | None = None,
+    error: str | None = None,
+    at: str | None = None,
+    state_path: Path | None = None,
+) -> dict[str, Any]:
+    _, _, resolved_state = _paths(projects_root, project_id, state_path)
+    processed, requests, counters = _load_state(resolved_state)
+    rid = str(request_id).strip()
+    if not rid:
+        return {"updated": False, "reason": "missing_request_id"}
+
+    request = requests.get(rid) or _normalize_runtime_request(rid, {})
+    now_iso = at or _utc_now_iso()
+
+    if agent_id is not None:
+        request["agent_id"] = str(agent_id).strip()
+    if execution_mode:
+        request["execution_mode"] = str(execution_mode).strip()
+    if runner:
+        request["runner"] = str(runner).strip()
+    if launched:
+        request["launched_at"] = str(request.get("launched_at") or "").strip() or now_iso
+    if completed:
+        request["completed_at"] = now_iso
+    if completion_source:
+        request["completion_source"] = str(completion_source).strip()
+    if error:
+        request["last_error"] = str(error).strip()
+    if close_request:
+        request["status"] = "closed"
+        request["closed_at"] = str(request.get("closed_at") or "").strip() or now_iso
+        request["closed_reason"] = str(closed_reason or request.get("closed_reason") or "runner_completed").strip()
+
+    request["updated_at"] = now_iso
+    requests[rid] = _normalize_runtime_request(rid, request)
+
+    runner_key = str(runner or "").strip().lower()
+    if runner_key == "codex":
+        if close_request and not error:
+            counters["runner_codex_success"] = int(counters.get("runner_codex_success") or 0) + 1
+        else:
+            counters["runner_codex_fail"] = int(counters.get("runner_codex_fail") or 0) + 1
+    elif runner_key == "antigravity" and launched:
+        counters["runner_ag_launch"] = int(counters.get("runner_ag_launch") or 0) + 1
+
+    counters["runner_ag_pending"] = sum(
+        1
+        for payload in requests.values()
+        if isinstance(payload, dict)
+        and str(payload.get("execution_mode") or "").strip() == "antigravity_supervised"
+        and _normalize_status(payload.get("status")) in OPEN_REQUEST_STATUSES
+    )
+
+    _save_state(resolved_state, processed, requests, counters)
+    return {
+        "updated": True,
+        "request_id": rid,
+        "status": requests[rid].get("status"),
+        "state_path": str(resolved_state),
     }
 
 
@@ -847,7 +980,9 @@ def dispatch_once(
     skipped_invalid = 0
     skipped_reminder = 0
     skipped_old = 0
+    skipped_wrong_project = 0
     skipped_duplicate = 0
+    skipped_internal_agent = 0
     actions_used = 0
     actions: list[AutoModeAction] = []
 
@@ -856,12 +991,27 @@ def dispatch_once(
         agent_id = str(payload.get("agent_id") or "").strip()
         source = str(payload.get("source") or "").strip()
         created_at_raw = str(payload.get("created_at") or "").strip()
+        payload_project_id = str(payload.get("project_id") or "").strip()
 
         if not request_id or not agent_id:
             skipped_invalid += 1
             continue
         if request_id in processed_set:
             skipped_duplicate += 1
+            continue
+        if payload_project_id and payload_project_id != project_id:
+            wrong_state = requests.get(request_id) or _normalize_runtime_request(request_id, {})
+            wrong_state["request_id"] = request_id
+            wrong_state["agent_id"] = agent_id
+            wrong_state["created_at"] = created_at_raw or wrong_state.get("created_at") or _utc_now_iso()
+            wrong_state["status"] = "closed"
+            wrong_state["closed_at"] = str(wrong_state.get("closed_at") or "").strip() or _utc_now_iso()
+            wrong_state["closed_reason"] = "wrong_project"
+            wrong_state["updated_at"] = _utc_now_iso()
+            requests[request_id] = wrong_state
+            processed.append(request_id)
+            processed_set.add(request_id)
+            skipped_wrong_project += 1
             continue
 
         if source == "reminder":
@@ -894,12 +1044,29 @@ def dispatch_once(
             processed_set.add(request_id)
             skipped_old += 1
             continue
+        if not is_external_agent(agent_id):
+            internal_state = requests.get(request_id) or _normalize_runtime_request(request_id, {})
+            internal_state["request_id"] = request_id
+            internal_state["agent_id"] = agent_id
+            internal_state["created_at"] = created_at_raw or internal_state.get("created_at") or _utc_now_iso()
+            internal_state["status"] = "closed"
+            internal_state["closed_at"] = str(internal_state.get("closed_at") or "").strip() or _utc_now_iso()
+            internal_state["closed_reason"] = "internal_agent_not_dispatchable"
+            internal_state["updated_at"] = _utc_now_iso()
+            requests[request_id] = internal_state
+            processed.append(request_id)
+            processed_set.add(request_id)
+            skipped_internal_agent += 1
+            continue
 
         request_state = requests.get(request_id) or _normalize_runtime_request(request_id, {})
+        platform = _agent_platform(agent_id)
+        execution_mode = "codex_headless" if platform == "codex" else "antigravity_supervised"
         request_state["request_id"] = request_id
         request_state["agent_id"] = agent_id
         request_state["created_at"] = created_at_raw or request_state.get("created_at") or _utc_now_iso()
         request_state["dispatched_at"] = _utc_now_iso()
+        request_state["execution_mode"] = execution_mode
         request_state["status"] = _advance_status(request_state.get("status"), "dispatched")
         request_state["updated_at"] = _utc_now_iso()
         requests[request_id] = request_state
@@ -910,12 +1077,14 @@ def dispatch_once(
 
         if max_actions > 0 and actions_used < max_actions:
             prompt = format_prompt(project_id, payload)
-            platform = _agent_platform(agent_id)
             app_to_open = codex_app if platform == "codex" else ag_app
             actions.append(
                 AutoModeAction(
                     request_id=request_id,
+                    project_id=project_id,
                     agent_id=agent_id,
+                    platform=platform,
+                    execution_mode=execution_mode,
                     prompt_text=prompt,
                     app_to_open=app_to_open,
                     notify_text=f"Copied task for @{agent_id} and opened {app_to_open}",
@@ -928,13 +1097,22 @@ def dispatch_once(
         dispatched += 1
 
     _save_state(resolved_state, processed, requests, counters)
-    skipped_count = skipped_invalid + skipped_reminder + skipped_old + skipped_duplicate
+    skipped_count = (
+        skipped_invalid
+        + skipped_reminder
+        + skipped_old
+        + skipped_wrong_project
+        + skipped_duplicate
+        + skipped_internal_agent
+    )
     return DispatchResult(
         dispatched_count=dispatched,
         skipped_count=skipped_count,
         skipped_invalid=skipped_invalid,
         skipped_reminder=skipped_reminder,
         skipped_old=skipped_old,
+        skipped_wrong_project=skipped_wrong_project,
         skipped_duplicate=skipped_duplicate,
+        skipped_internal_agent=skipped_internal_agent,
         actions=actions,
     )

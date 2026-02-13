@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -36,12 +35,13 @@ from app.services.brain_manager import BrainManager
 from app.services.chat_parser import parse_mentions, parse_tags
 from app.services.pack_context import build_pack_context, write_pack_context
 from app.services.auto_mode import (
-    dispatch_once as auto_mode_dispatch_once,
+    dispatch_once_with_counters as auto_mode_dispatch_once,
     iter_reminder_candidates,
     load_runtime_state,
     mark_agent_replied,
     mark_request_reminded,
 )
+from app.services.execution_router import route_action
 from app.ui.agents_grid import AgentsGridWidget
 from app.ui.chatroom import ChatroomWidget
 from app.ui.roadmap import RoadmapWidget
@@ -125,6 +125,11 @@ class MainWindow(QMainWindow):
         self.auto_mode_codex_app = "Codex"
         self.auto_mode_ag_app = "Antigravity"
         self.auto_mode_last_error: str | None = None
+        self.automation_execution_mode = "codex_headless_ag_supervised"
+        self.automation_codex_enabled = True
+        self.automation_antigravity_enabled = True
+        self.automation_antigravity_supervised_only = True
+        self.automation_codex_timeout_seconds = 900
 
         self.auto_mode_timer = QTimer(self)
         self.auto_mode_timer.setInterval(self.auto_mode_interval_seconds * 1000)
@@ -152,9 +157,11 @@ class MainWindow(QMainWindow):
         prev_project_id = self.current_project_id
         self.current_project_id = project.project_id
         if prev_project_id != self.current_project_id:
-            self.sidebar.auto_mode.set_last_dispatch("-")
+            self.sidebar.auto_mode.set_last_executed("-")
+            self.sidebar.auto_mode.set_last_launched("-")
             self.sidebar.auto_mode.set_last_error("")
             self.sidebar.auto_mode.set_pending(0)
+            self.sidebar.auto_mode.set_pending_supervised(0)
         self.roadmap.set_roadmap(
             project.roadmap.get("now", []),
             project.roadmap.get("next", []),
@@ -165,6 +172,7 @@ class MainWindow(QMainWindow):
         self.agents_grid.set_agents(project.agents)
         self._sync_auto_mode_from_settings(project)
         self.sidebar.auto_mode.set_pending(self._count_fresh_pending_requests())
+        self.sidebar.auto_mode.set_pending_supervised(self._count_supervised_pending_requests())
         self.refresh_chat()
 
     def on_project_selected(self, project_id: str) -> None:
@@ -340,6 +348,10 @@ class MainWindow(QMainWindow):
         auto_mode = settings.get("auto_mode") if isinstance(settings.get("auto_mode"), dict) else {}
         interval_seconds = auto_mode.get("interval_seconds", 5)
         max_actions = auto_mode.get("max_actions", 1)
+        automation = settings.get("automation") if isinstance(settings.get("automation"), dict) else {}
+        codex_cfg = automation.get("codex") if isinstance(automation.get("codex"), dict) else {}
+        ag_cfg = automation.get("antigravity") if isinstance(automation.get("antigravity"), dict) else {}
+        timeout_cfg = automation.get("timeouts") if isinstance(automation.get("timeouts"), dict) else {}
 
         try:
             interval_seconds = int(interval_seconds)
@@ -356,8 +368,24 @@ class MainWindow(QMainWindow):
         self.auto_mode_enabled = bool(enabled)
         self.auto_mode_interval_seconds = interval_seconds
         self.auto_mode_max_actions = max_actions
+        self.automation_execution_mode = str(
+            automation.get("execution_mode") or "codex_headless_ag_supervised"
+        ).strip() or "codex_headless_ag_supervised"
+        self.automation_codex_enabled = bool(codex_cfg.get("enabled", True))
+        self.automation_antigravity_enabled = bool(ag_cfg.get("enabled", True))
+        self.automation_antigravity_supervised_only = bool(ag_cfg.get("supervised_only", True))
+        try:
+            self.automation_codex_timeout_seconds = max(int(timeout_cfg.get("codex_seconds", 900)), 30)
+        except (TypeError, ValueError):
+            self.automation_codex_timeout_seconds = 900
 
         self.sidebar.auto_mode.set_enabled(self.auto_mode_enabled)
+        self.sidebar.auto_mode.set_execution_mode(self.automation_execution_mode)
+        self.sidebar.auto_mode.set_execution_state(
+            self.automation_codex_enabled,
+            self.automation_antigravity_enabled,
+            self.automation_antigravity_supervised_only,
+        )
         self.auto_mode_timer.setInterval(self.auto_mode_interval_seconds * 1000)
         if self.auto_mode_enabled and not self.auto_mode_timer.isActive():
             self.auto_mode_timer.start()
@@ -380,6 +408,28 @@ class MainWindow(QMainWindow):
             settings["auto_mode"] = auto_mode
         auto_mode["interval_seconds"] = int(self.auto_mode_interval_seconds)
         auto_mode["max_actions"] = int(self.auto_mode_max_actions)
+
+        automation = settings.get("automation")
+        if not isinstance(automation, dict):
+            automation = {}
+            settings["automation"] = automation
+        automation["execution_mode"] = self.automation_execution_mode
+        codex_cfg = automation.get("codex")
+        if not isinstance(codex_cfg, dict):
+            codex_cfg = {}
+            automation["codex"] = codex_cfg
+        codex_cfg["enabled"] = bool(self.automation_codex_enabled)
+        ag_cfg = automation.get("antigravity")
+        if not isinstance(ag_cfg, dict):
+            ag_cfg = {}
+            automation["antigravity"] = ag_cfg
+        ag_cfg["enabled"] = bool(self.automation_antigravity_enabled)
+        ag_cfg["supervised_only"] = bool(self.automation_antigravity_supervised_only)
+        timeouts = automation.get("timeouts")
+        if not isinstance(timeouts, dict):
+            timeouts = {}
+            automation["timeouts"] = timeouts
+        timeouts["codex_seconds"] = int(self.automation_codex_timeout_seconds)
 
         self._save_settings_json(self.current_project_id, settings)
 
@@ -416,32 +466,55 @@ class MainWindow(QMainWindow):
             return
 
         self.sidebar.auto_mode.set_pending(self._count_fresh_pending_requests())
+        self.sidebar.auto_mode.set_pending_supervised(self._count_supervised_pending_requests())
 
-        # Apply at most max_actions actions (already capped).
+        latest_error: str | None = None
+        settings = self._load_settings_json(self.current_project_id)
+
         for action in result.actions:
-            QApplication.clipboard().setText(action.prompt_text)
-            completed = subprocess.run(
-                ["open", "-a", action.app_to_open],
-                capture_output=True,
-                text=True,
-                check=False,
+            execution = route_action(
+                action,
+                self.current_project_id,
+                projects_root=PROJECTS_DIR,
+                settings=settings,
+                dry_run=False,
             )
-            if completed.returncode != 0:
-                self.auto_mode_last_error = (completed.stderr or completed.stdout or "open failed").strip()
-                self.sidebar.auto_mode.set_last_error(f"Open error: {self.auto_mode_last_error}")
-            else:
-                self.sidebar.auto_mode.set_last_error("")
             now = datetime.now().strftime("%H:%M:%S")
-            self.sidebar.auto_mode.set_last_dispatch(f"{now} @{action.agent_id} -> {action.app_to_open}")
+            if execution.runner == "codex":
+                self.sidebar.auto_mode.set_last_executed(
+                    f"{now} @{action.agent_id} ({execution.status})"
+                )
+            elif execution.runner == "antigravity":
+                self.sidebar.auto_mode.set_last_launched(
+                    f"{now} @{action.agent_id} ({execution.status})"
+                )
+            if execution.error:
+                latest_error = execution.error
+
+        self.sidebar.auto_mode.set_pending(self._count_fresh_pending_requests())
+        self.sidebar.auto_mode.set_pending_supervised(self._count_supervised_pending_requests())
+
+        if latest_error:
+            self.auto_mode_last_error = latest_error
+            self.sidebar.auto_mode.set_last_error(f"Runner error: {latest_error}")
+        else:
+            self.auto_mode_last_error = None
+            self.sidebar.auto_mode.set_last_error("")
 
         # If there was dispatch activity but no action (max_actions=0), still update status.
         if not result.actions and result.dispatched_count:
             now = datetime.now().strftime("%H:%M:%S")
-            self.sidebar.auto_mode.set_last_dispatch(f"{now} dispatched {result.dispatched_count}")
+            self.sidebar.auto_mode.set_last_executed(
+                f"{now} queued {result.dispatched_count} (no execution action)"
+            )
         elif not result.actions and not result.dispatched_count and manual:
             now = datetime.now().strftime("%H:%M:%S")
-            self.sidebar.auto_mode.set_last_dispatch(
-                f"{now} no-op (skipped: reminder={result.skipped_reminder}, old={result.skipped_old}, duplicate={result.skipped_duplicate})"
+            self.sidebar.auto_mode.set_last_executed(
+                (
+                    f"{now} no-op (skipped: reminder={result.skipped_reminder}, old={result.skipped_old}, "
+                    f"wrong_project={result.skipped_wrong_project}, duplicate={result.skipped_duplicate}, "
+                    f"internal={result.skipped_internal_agent})"
+                )
             )
 
     def _make_message_id(self, author: str) -> str:
@@ -630,6 +703,23 @@ class MainWindow(QMainWindow):
             if created_at and now - created_at > timedelta(hours=24):
                 continue
             pending += 1
+        return pending
+
+    def _count_supervised_pending_requests(self) -> int:
+        if not self.current_project_id:
+            return 0
+        runtime = load_runtime_state(PROJECTS_DIR, self.current_project_id)
+        requests = runtime.get("requests", {})
+        if not isinstance(requests, dict):
+            return 0
+        pending = 0
+        for req in requests.values():
+            if not isinstance(req, dict):
+                continue
+            execution_mode = str(req.get("execution_mode") or "").strip()
+            status = str(req.get("status") or "").strip().lower()
+            if execution_mode == "antigravity_supervised" and status in {"queued", "dispatched", "reminded"}:
+                pending += 1
         return pending
 
     def check_reminders(self) -> None:

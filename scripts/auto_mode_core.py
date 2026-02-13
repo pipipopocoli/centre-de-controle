@@ -15,12 +15,10 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from app.services.auto_mode import agent_platform
 from app.services.auto_mode import dispatch_once_with_counters as dispatch_once_core
 from app.services.auto_mode import load_runtime_state
 from app.services.auto_mode import resolve_projects_root as resolve_projects_root_core
-from app.services.auto_send import SendRoute
-from app.services.auto_send import send_action as auto_send_action
+from app.services.execution_router import route_action
 
 DEFAULT_PROJECT = "cockpit"
 
@@ -114,33 +112,26 @@ def dispatch_once(
         ag_app=ag_app,
     )
 
-    require_window_match = bool(config.get("require_window_match", False))
-    sent_count = 0
-    fallback_count = 0
+    executed_count = 0
+    launched_count = 0
     send_statuses: dict[str, int] = {}
+    dry_run = not do_open and not do_clipboard
 
     for action in result.actions:
-        sent = False
-        status = ""
-
-        if do_open and do_clipboard:
-            route = SendRoute(
-                project_id=project_id,
-                agent_id=action.agent_id,
-                platform=agent_platform(action.agent_id),
-                app_name=action.app_to_open,
-                window_title_contains=action.app_to_open,
-                require_window_match=require_window_match,
-            )
-            send_result = auto_send_action(action, route, dry_run=False)
-            status = str(send_result.status or "")
-            send_statuses[status] = send_statuses.get(status, 0) + 1
-            sent = bool(send_result.sent)
-
-        if sent:
-            sent_count += 1
-        else:
-            fallback_count += 1
+        execution = route_action(
+            action,
+            project_id,
+            projects_root=projects_root,
+            settings=config,
+            dry_run=dry_run,
+        )
+        status = str(execution.status or "")
+        send_statuses[status] = send_statuses.get(status, 0) + 1
+        if execution.closed:
+            executed_count += 1
+        if execution.launched and not execution.closed:
+            launched_count += 1
+        if execution.error:
             if do_clipboard:
                 _copy_to_clipboard(action.prompt_text)
             if do_open:
@@ -161,9 +152,10 @@ def dispatch_once(
         "skipped_old": result.skipped_old,
         "skipped_wrong_project": result.skipped_wrong_project,
         "skipped_duplicate": result.skipped_duplicate,
+        "skipped_internal_agent": result.skipped_internal_agent,
         "actions_used": len(result.actions),
-        "sent_actions": sent_count,
-        "fallback_actions": fallback_count,
+        "executed_actions": executed_count,
+        "launched_actions": launched_count,
         "send_statuses": send_statuses,
         "state_path": str(runtime.get("state_path") or ""),
         "counters_path": str(runtime.get("state_path") or ""),
