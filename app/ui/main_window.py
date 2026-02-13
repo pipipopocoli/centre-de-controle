@@ -114,7 +114,10 @@ class MainWindow(QMainWindow):
         self.sidebar.auto_mode.toggle.toggled.connect(self.on_auto_mode_toggled)
         self.sidebar.auto_mode.run_once_btn.clicked.connect(self.on_auto_mode_run_once)
         if projects and project.project_id in projects:
+            # Avoid firing project change callbacks before auto-mode/timers are initialized.
+            self.sidebar.project_list.blockSignals(True)
             self.sidebar.project_list.setCurrentRow(projects.index(project.project_id))
+            self.sidebar.project_list.blockSignals(False)
 
         self.brain_manager = BrainManager()
 
@@ -135,6 +138,11 @@ class MainWindow(QMainWindow):
         self.auto_mode_timer.setInterval(self.auto_mode_interval_seconds * 1000)
         self.auto_mode_timer.timeout.connect(self.run_auto_mode_tick)
 
+        self._clems_seen: set[str] = set()
+        self._clems_pending_question_at: str | None = None
+        self._clems_pinged_operator: bool = False
+        self._clems_last_agent_ack_key: str | None = None
+
         self.load_project(project)
         self.run_auto_mode_tick()
 
@@ -142,11 +150,6 @@ class MainWindow(QMainWindow):
         self.refresh_timer.setInterval(5000)
         self.refresh_timer.timeout.connect(self.refresh_project)
         self.refresh_timer.start()
-
-        self._clems_seen: set[str] = set()
-        self._clems_pending_question_at: str | None = None
-        self._clems_pinged_operator: bool = False
-        self._clems_last_agent_ack_key: str | None = None
 
         self.reminder_timer = QTimer(self)
         self.reminder_timer.setInterval(60000)

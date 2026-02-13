@@ -407,6 +407,59 @@ def append_run_request(project_id: str, payload: dict[str, Any]) -> None:
     _append_ndjson(run_requests_path(project_id), payload)
 
 
+def mark_agent_requests_done(project_id: str, agent_id: str, responded_at: str | None = None) -> int:
+    """
+    Mark the most recent open run request for an agent as replied/closed in requests.ndjson.
+
+    This keeps lifecycle files coherent for UI pending counters and reminders.
+    """
+    path = run_requests_path(project_id)
+    if not path.exists():
+        return 0
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines:
+        return 0
+
+    now_iso = responded_at or _utc_now_iso()
+    target_agent = str(agent_id or "").strip()
+    if not target_agent:
+        return 0
+
+    updated = 0
+    # newest first: close only one open request per reply to avoid collapsing history.
+    for index in range(len(lines) - 1, -1, -1):
+        raw = lines[index].strip()
+        if not raw:
+            continue
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict):
+            continue
+
+        if str(payload.get("agent_id") or "").strip() != target_agent:
+            continue
+
+        status = str(payload.get("status") or "").strip().lower()
+        if status not in {"queued", "dispatched", "reminded"}:
+            continue
+
+        payload["status"] = "closed"
+        payload["responded_at"] = now_iso
+        payload["closed_at"] = payload.get("closed_at") or now_iso
+        payload["closed_reason"] = payload.get("closed_reason") or "reply_received"
+        lines[index] = json.dumps(payload)
+        updated = 1
+        break
+
+    if updated:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return updated
+
+
 def agent_journal_path(project_id: str, agent_id: str) -> Path:
     return project_dir(project_id) / "agents" / agent_id / "journal.ndjson"
 
