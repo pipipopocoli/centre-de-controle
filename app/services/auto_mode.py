@@ -200,15 +200,15 @@ def _build_requests_index(requests_path: Path) -> dict[str, dict[str, Any]]:
     return index
 
 
-def _load_state(path: Path) -> tuple[list[str], dict[str, dict[str, Any]]]:
+def _load_state(path: Path) -> tuple[list[str], dict[str, dict[str, Any]], dict[str, Any]]:
     if not path.exists():
-        return [], {}
+        return [], {}, {}
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
-        return [], {}
+        return [], {}, {}
     if not isinstance(payload, dict):
-        return [], {}
+        return [], {}, {}
 
     processed_raw = payload.get("processed")
     if isinstance(processed_raw, list):
@@ -225,10 +225,19 @@ def _load_state(path: Path) -> tuple[list[str], dict[str, dict[str, Any]]]:
                 continue
             requests[rid] = _normalize_runtime_request(rid, request_payload)
 
-    return _trim_processed(processed), requests
+    counters = payload.get("counters")
+    if not isinstance(counters, dict):
+        counters = {}
+
+    return _trim_processed(processed), requests, counters
 
 
-def _save_state(path: Path, processed: list[str], requests: dict[str, dict[str, Any]]) -> None:
+def _save_state(
+    path: Path,
+    processed: list[str],
+    requests: dict[str, dict[str, Any]],
+    counters: dict[str, Any] | None = None,
+) -> None:
     trimmed = _trim_processed(processed)
     normalized_requests: dict[str, dict[str, Any]] = {}
     for request_id, payload in requests.items():
@@ -237,10 +246,12 @@ def _save_state(path: Path, processed: list[str], requests: dict[str, dict[str, 
             continue
         normalized_requests[rid] = _normalize_runtime_request(rid, payload)
 
+    normalized_counters = counters if isinstance(counters, dict) else {}
     payload = {
         "schema_version": RUNTIME_SCHEMA_VERSION,
         "processed": trimmed,
         "requests": normalized_requests,
+        "counters": normalized_counters,
         "updated_at": _utc_now_iso(),
     }
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -334,13 +345,14 @@ def load_runtime_state(
     state_path: Path | None = None,
 ) -> dict[str, Any]:
     requests_path, _, resolved_state = _paths(projects_root, project_id, state_path)
-    processed, requests = _load_state(resolved_state)
+    processed, requests, counters = _load_state(resolved_state)
     requests_index = _build_requests_index(requests_path)
     _recover_missing_processed_entries(processed, requests, requests_index)
     return {
         "schema_version": RUNTIME_SCHEMA_VERSION,
         "processed": _trim_processed(processed),
         "requests": requests,
+        "counters": counters,
         "state_path": str(resolved_state),
     }
 
@@ -360,7 +372,7 @@ def dispatch_once(
     """
     requests_path, inbox_dir, resolved_state = _paths(projects_root, project_id, state_path)
 
-    processed, requests = _load_state(resolved_state)
+    processed, requests, counters = _load_state(resolved_state)
     requests_index = _build_requests_index(requests_path)
     _recover_missing_processed_entries(processed, requests, requests_index)
 
@@ -442,5 +454,5 @@ def dispatch_once(
         processed_set.add(request_id)
         dispatched += 1
 
-    _save_state(resolved_state, processed, requests)
+    _save_state(resolved_state, processed, requests, counters)
     return DispatchResult(dispatched_count=dispatched, skipped_count=skipped, actions=actions)
