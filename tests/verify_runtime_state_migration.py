@@ -23,6 +23,7 @@ def _write_legacy_state(path: Path, request_ids: list[str]) -> None:
         json.dumps(
             {
                 "processed": request_ids,
+                "counters": {"ticks": 42, "last_tick_at": "2026-02-12T11:00:00+00:00"},
                 "updated_at": "2026-02-12T00:00:00+00:00",
             },
             indent=2,
@@ -87,6 +88,9 @@ def main() -> int:
         assert isinstance(processed, list)
         requests_map = payload.get("requests")
         assert isinstance(requests_map, dict)
+        counters = payload.get("counters")
+        assert isinstance(counters, dict)
+        assert counters.get("ticks") == 42
 
         processed_set = set(processed)
         assert processed_set <= set(requests_map.keys()), "every processed id must exist in runtime requests map"
