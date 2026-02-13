@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 MAX_PROCESSED_IDS = 5000
+RUNTIME_SCHEMA_VERSION = 3
+LIFECYCLE_STATUSES = {"queued", "dispatched", "reminded", "replied", "closed"}
+EXTERNAL_AGENT_RE = re.compile(r"^agent-(\d+)$")
 
 
 @dataclass(frozen=True)
@@ -67,6 +71,11 @@ def resolve_projects_root(data_dir: str | None, env: dict[str, str] | None = Non
 
     env_value = (env.get("COCKPIT_DATA_DIR") or "").strip()
     if env_value:
+        lowered = env_value.lower()
+        if lowered in {"repo", "dev"}:
+            return root_dir / "control" / "projects"
+        if lowered in {"appsupport", "app"}:
+            return _default_projects_root()
         return _normalize_projects_root(Path(env_value).expanduser())
 
     return _default_projects_root()
@@ -95,26 +104,174 @@ def _append_ndjson(path: Path, payload: dict[str, Any]) -> None:
         handle.write(json.dumps(payload) + "\n")
 
 
-def _load_state(path: Path) -> list[str]:
+def _trim_processed(processed: list[str]) -> list[str]:
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for request_id in reversed(processed):
+        rid = str(request_id).strip()
+        if not rid or rid in seen:
+            continue
+        seen.add(rid)
+        deduped.append(rid)
+    deduped.reverse()
+    return deduped[-MAX_PROCESSED_IDS:]
+
+
+def _normalize_status(value: Any) -> str:
+    status = str(value or "").strip().lower()
+    if status not in LIFECYCLE_STATUSES:
+        return "queued"
+    return status
+
+
+def _is_external_agent(agent_id: str) -> bool:
+    value = str(agent_id or "").strip().lower()
+    if value in {"victor", "leo"}:
+        return True
+    return bool(EXTERNAL_AGENT_RE.match(value))
+
+
+def _normalize_runtime_request(request_id: str, payload: Any) -> dict[str, Any]:
+    source: dict[str, Any] = payload if isinstance(payload, dict) else {}
+    reminder_count = source.get("reminder_count", 0)
+    try:
+        reminder_count = int(reminder_count)
+    except (TypeError, ValueError):
+        reminder_count = 0
+
+    return {
+        "request_id": request_id,
+        "agent_id": str(source.get("agent_id") or "").strip(),
+        "status": _normalize_status(source.get("status")),
+        "created_at": str(source.get("created_at") or "").strip() or None,
+        "dispatched_at": str(source.get("dispatched_at") or "").strip() or None,
+        "last_reminder_at": str(source.get("last_reminder_at") or "").strip() or None,
+        "reminder_count": max(reminder_count, 0),
+        "reply_message_id": str(source.get("reply_message_id") or "").strip() or None,
+        "replied_at": str(source.get("replied_at") or "").strip() or None,
+        "closed_at": str(source.get("closed_at") or "").strip() or None,
+        "closed_reason": str(source.get("closed_reason") or "").strip() or None,
+        "updated_at": str(source.get("updated_at") or "").strip() or None,
+    }
+
+
+def _legacy_closed_reason(request_payload: dict[str, Any], agent_id: str) -> str:
+    source = str(request_payload.get("source") or "").strip().lower()
+    if source == "reminder":
+        return "reminder_event"
+    if not _is_external_agent(agent_id):
+        return "internal_agent_not_dispatchable"
+    return "legacy_processed"
+
+
+def _closed_runtime_entry(
+    request_id: str,
+    *,
+    request_payload: dict[str, Any] | None,
+    closed_reason: str,
+    default_agent_id: str = "",
+) -> dict[str, Any]:
+    now_iso = _utc_now_iso()
+    payload = request_payload or {}
+    agent_id = str(payload.get("agent_id") or default_agent_id or "").strip()
+    created_at = str(payload.get("created_at") or "").strip() or now_iso
+
+    runtime_entry = _normalize_runtime_request(
+        request_id,
+        {
+            "agent_id": agent_id,
+            "status": "closed",
+            "created_at": created_at,
+            "closed_at": now_iso,
+            "closed_reason": closed_reason,
+            "updated_at": now_iso,
+        },
+    )
+    return runtime_entry
+
+
+def _build_requests_index(requests_path: Path) -> dict[str, dict[str, Any]]:
+    index: dict[str, dict[str, Any]] = {}
+    for payload in _read_ndjson(requests_path):
+        request_id = str(payload.get("request_id") or "").strip()
+        if not request_id:
+            continue
+        index[request_id] = payload
+    return index
+
+
+def _load_state(path: Path) -> tuple[list[str], dict[str, dict[str, Any]]]:
     if not path.exists():
-        return []
+        return [], {}
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
-        return []
+        return [], {}
     if not isinstance(payload, dict):
-        return []
-    processed = payload.get("processed")
-    if not isinstance(processed, list):
-        return []
-    return [str(item) for item in processed if str(item).strip()]
+        return [], {}
+
+    processed_raw = payload.get("processed")
+    if isinstance(processed_raw, list):
+        processed = [str(item).strip() for item in processed_raw if str(item).strip()]
+    else:
+        processed = []
+
+    requests_raw = payload.get("requests")
+    requests: dict[str, dict[str, Any]] = {}
+    if isinstance(requests_raw, dict):
+        for request_id, request_payload in requests_raw.items():
+            rid = str(request_id).strip()
+            if not rid:
+                continue
+            requests[rid] = _normalize_runtime_request(rid, request_payload)
+
+    return _trim_processed(processed), requests
 
 
-def _save_state(path: Path, processed: list[str]) -> None:
-    trimmed = processed[-MAX_PROCESSED_IDS:]
-    payload = {"processed": trimmed, "updated_at": _utc_now_iso()}
+def _save_state(path: Path, processed: list[str], requests: dict[str, dict[str, Any]]) -> None:
+    trimmed = _trim_processed(processed)
+    normalized_requests: dict[str, dict[str, Any]] = {}
+    for request_id, payload in requests.items():
+        rid = str(request_id).strip()
+        if not rid:
+            continue
+        normalized_requests[rid] = _normalize_runtime_request(rid, payload)
+
+    payload = {
+        "schema_version": RUNTIME_SCHEMA_VERSION,
+        "processed": trimmed,
+        "requests": normalized_requests,
+        "updated_at": _utc_now_iso(),
+    }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def _recover_missing_processed_entries(
+    processed: list[str],
+    requests: dict[str, dict[str, Any]],
+    requests_index: dict[str, dict[str, Any]],
+) -> None:
+    for request_id in processed:
+        if request_id in requests:
+            continue
+        request_payload = requests_index.get(request_id)
+        if request_payload:
+            agent_id = str(request_payload.get("agent_id") or "").strip()
+            reason = _legacy_closed_reason(request_payload, agent_id)
+            requests[request_id] = _closed_runtime_entry(
+                request_id,
+                request_payload=request_payload,
+                closed_reason=reason,
+                default_agent_id=agent_id,
+            )
+            continue
+
+        requests[request_id] = _closed_runtime_entry(
+            request_id,
+            request_payload=None,
+            closed_reason="legacy_processed",
+        )
 
 
 def _agent_platform(agent_id: str) -> str:
@@ -170,6 +327,24 @@ def _paths(projects_root: Path, project_id: str, state_path: Path | None) -> tup
     return requests_path, inbox_dir, resolved_state
 
 
+def load_runtime_state(
+    projects_root: Path,
+    project_id: str,
+    *,
+    state_path: Path | None = None,
+) -> dict[str, Any]:
+    requests_path, _, resolved_state = _paths(projects_root, project_id, state_path)
+    processed, requests = _load_state(resolved_state)
+    requests_index = _build_requests_index(requests_path)
+    _recover_missing_processed_entries(processed, requests, requests_index)
+    return {
+        "schema_version": RUNTIME_SCHEMA_VERSION,
+        "processed": _trim_processed(processed),
+        "requests": requests,
+        "state_path": str(resolved_state),
+    }
+
+
 def dispatch_once(
     projects_root: Path,
     project_id: str,
@@ -185,7 +360,10 @@ def dispatch_once(
     """
     requests_path, inbox_dir, resolved_state = _paths(projects_root, project_id, state_path)
 
-    processed = _load_state(resolved_state)
+    processed, requests = _load_state(resolved_state)
+    requests_index = _build_requests_index(requests_path)
+    _recover_missing_processed_entries(processed, requests, requests_index)
+
     processed_set = set(processed)
 
     dispatched = 0
@@ -196,17 +374,50 @@ def dispatch_once(
     for payload in _read_ndjson(requests_path):
         request_id = str(payload.get("request_id") or "").strip()
         agent_id = str(payload.get("agent_id") or "").strip()
-        source = str(payload.get("source") or "").strip()
+        source = str(payload.get("source") or "").strip().lower()
 
         if not request_id or not agent_id:
             skipped += 1
             continue
-        if source == "reminder":
-            skipped += 1
-            continue
+
         if request_id in processed_set:
+            # Guardrail: legacy states may have processed ids with missing runtime entries.
+            if request_id not in requests:
+                reason = _legacy_closed_reason(payload, agent_id)
+                requests[request_id] = _closed_runtime_entry(
+                    request_id,
+                    request_payload=payload,
+                    closed_reason=reason,
+                    default_agent_id=agent_id,
+                )
             skipped += 1
             continue
+
+        if source == "reminder":
+            requests[request_id] = _closed_runtime_entry(
+                request_id,
+                request_payload=payload,
+                closed_reason="reminder_event",
+                default_agent_id=agent_id,
+            )
+            processed.append(request_id)
+            processed_set.add(request_id)
+            skipped += 1
+            continue
+
+        request_created_at = str(payload.get("created_at") or "").strip() or _utc_now_iso()
+        now_iso = _utc_now_iso()
+
+        requests[request_id] = _normalize_runtime_request(
+            request_id,
+            {
+                "agent_id": agent_id,
+                "status": "dispatched",
+                "created_at": request_created_at,
+                "dispatched_at": now_iso,
+                "updated_at": now_iso,
+            },
+        )
 
         # Always write inbox (scale-friendly)
         inbox_path = inbox_dir / f"{agent_id}.ndjson"
@@ -231,5 +442,5 @@ def dispatch_once(
         processed_set.add(request_id)
         dispatched += 1
 
-    _save_state(resolved_state, processed)
+    _save_state(resolved_state, processed, requests)
     return DispatchResult(dispatched_count=dispatched, skipped_count=skipped, actions=actions)
