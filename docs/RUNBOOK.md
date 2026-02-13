@@ -17,7 +17,9 @@ python -m pip install -r requirements.txt
 
 Version check:
 - The window title shows: `Centre de controle - <branch>@<sha><*dirty>`
-- Sidebar footer shows the same stamp plus `Data: control/projects`
+- Sidebar footer shows the same stamp plus the active data root path.
+- Expected default is `~/Library/Application Support/Cockpit/projects`.
+- Use `COCKPIT_DATA_DIR=repo` only for explicit repo-local dev sessions.
 
 ## V1 Local Dev Release (Phase 3)
 
