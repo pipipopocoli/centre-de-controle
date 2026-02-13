@@ -17,4 +17,7 @@ if [[ ! -x "$VENV_PY" ]]; then
   exit 1
 fi
 
+# Canonical runtime default is App Support unless explicitly overridden.
+export COCKPIT_DATA_DIR="${COCKPIT_DATA_DIR:-app}"
+
 exec "$VENV_PY" app/main.py

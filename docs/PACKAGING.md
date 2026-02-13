@@ -4,9 +4,10 @@ Goal: build a local-first macOS .app that runs without a venv and keeps data out
 
 ## Data directory
 Order of precedence:
-- COCKPIT_DATA_DIR (projects root)
-- Repo local: control/projects (if present)
-- Default: ~/Library/Application Support/Cockpit/projects
+- COCKPIT_DATA_DIR=repo|dev -> control/projects (dev only)
+- COCKPIT_DATA_DIR=app|appsupport -> ~/Library/Application Support/Cockpit/projects
+- COCKPIT_DATA_DIR=<absolute path> -> explicit projects root
+- No env var -> ~/Library/Application Support/Cockpit/projects (canonical default)
 
 ## PyInstaller prototype (recommended)
 

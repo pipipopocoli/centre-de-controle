@@ -18,12 +18,19 @@ def _normalize_projects_dir(path: Path) -> Path:
 
 def _resolve_projects_dir() -> Path:
     env_value = os.environ.get("COCKPIT_DATA_DIR")
-    if env_value:
-        return _normalize_projects_dir(Path(env_value).expanduser())
     local_projects = ROOT_DIR / "control" / "projects"
-    if local_projects.exists():
-        return local_projects
-    return Path.home() / "Library" / "Application Support" / "Cockpit" / "projects"
+    default_projects = Path.home() / "Library" / "Application Support" / "Cockpit" / "projects"
+
+    if env_value:
+        lowered = env_value.strip().lower()
+        if lowered in {"repo", "dev"}:
+            return local_projects
+        if lowered in {"app", "appsupport"}:
+            return default_projects
+        return _normalize_projects_dir(Path(env_value).expanduser())
+
+    # Canonical runtime default: App Support.
+    return default_projects
 
 
 PROJECTS_DIR = _resolve_projects_dir()
