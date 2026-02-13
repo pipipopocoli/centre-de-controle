@@ -63,6 +63,14 @@ def main() -> int:
 
         state = projects_root / project_id / "runs" / "auto_mode_state.json"
         assert state.exists(), "state file not created"
+        state_payload = json.loads(state.read_text(encoding="utf-8"))
+        assert state_payload.get("schema_version") == 3, "runtime schema must be v3"
+
+        processed = state_payload.get("processed")
+        assert isinstance(processed, list), "processed list missing"
+        requests_map = state_payload.get("requests")
+        assert isinstance(requests_map, dict), "requests map missing"
+        assert len(requests_map) >= len(processed), "requests map should cover processed ids"
 
         # Second run should not duplicate inbox entries and should produce no actions.
         result_2 = dispatch_once(projects_root, project_id, max_actions=1)
