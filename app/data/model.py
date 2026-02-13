@@ -20,6 +20,9 @@ class AgentState:
     status: str | None
     blockers: list[str]
     current_task: str | None = None
+    level: int = 2
+    lead_id: str | None = None
+    role: str | None = None
 
 
 @dataclass

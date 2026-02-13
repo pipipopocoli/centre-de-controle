@@ -58,6 +58,11 @@ def _status_label(status: str | None) -> tuple[str, str]:
         "idle": ("En attente", "idle"),
         "planning": ("Planifie", "planning"),
         "executing": ("En cours", "executing"),
+        "pinged": ("Ping envoye", "pinged"),
+        "queued": ("En file", "planning"),
+        "dispatched": ("Distribue", "executing"),
+        "reminded": ("Rappel", "verifying"),
+        "replied": ("Repondu", "completed"),
         "verifying": ("Verification", "verifying"),
         "blocked": ("Bloque", "blocked"),
         "error": ("Erreur", "error"),
@@ -108,9 +113,10 @@ class AgentCard(QFrame):
 
         # Task line
         task_text = state.current_task.strip() if state.current_task else "-"
-        self.task_label = QLabel(f"Tache: {task_text}")
+        self.task_label = QLabel(f"Mission: {task_text}")
         self.task_label.setObjectName("agentTask")
         self.task_label.setWordWrap(True)
+        self.task_label.setProperty("active", status_key in {"executing", "planning", "verifying", "pinged"})
 
         # Progress
         self.progress = QProgressBar()
@@ -172,10 +178,39 @@ class AgentsGridWidget(QFrame):
                 item.widget().deleteLater()
 
         columns = 3
-        for idx, agent in enumerate(agents):
-            row = idx // columns
-            col = idx % columns
-            self.grid.addWidget(AgentCard(agent), row, col)
+        grouped: dict[int, list[AgentState]] = {0: [], 1: [], 2: []}
+        for agent in agents:
+            level = agent.level if isinstance(agent.level, int) else 2
+            if level not in grouped:
+                level = 2
+            grouped[level].append(agent)
+
+        section_titles = {
+            0: "L0 - Orchestration",
+            1: "L1 - Leads",
+            2: "L2 - Specialists",
+        }
+
+        row = 0
+        for level in (0, 1, 2):
+            section_agents = sorted(grouped.get(level, []), key=lambda a: a.name.lower())
+            if not section_agents:
+                continue
+
+            header = QLabel(section_titles[level])
+            header.setObjectName("agentsGroupHeader")
+            self.grid.addWidget(header, row, 0, 1, columns)
+            row += 1
+
+            col = 0
+            for agent in section_agents:
+                self.grid.addWidget(AgentCard(agent), row, col)
+                col += 1
+                if col >= columns:
+                    col = 0
+                    row += 1
+            if col != 0:
+                row += 1
 
         if not agents:
             empty = QLabel("No agents yet")

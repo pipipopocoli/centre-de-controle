@@ -2,7 +2,8 @@
 """Memory compaction tool (local-first, deterministic).
 
 Usage:
-  ./.venv/bin/python scripts/compact_memory.py --project demo --agent clems
+  ./.venv/bin/python scripts/compact_memory.py --project cockpit --agent clems
+  ./.venv/bin/python scripts/compact_memory.py --project demo --agent clems --projects-root control/projects
 """
 from __future__ import annotations
 
@@ -12,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
+APP_SUPPORT_PROJECTS_ROOT = Path.home() / "Library" / "Application Support" / "Cockpit" / "projects"
 
 MAX_LINES = 120
 MAX_ITEMS = 5
@@ -135,8 +136,15 @@ def _format_signal(payload: dict[str, Any], default_author: str) -> tuple[str | 
     return None, f"{author}: {text}"
 
 
-def build_memory_proposal(project_id: str, agent_id: str) -> str:
-    project_dir = ROOT_DIR / "control" / "projects" / project_id
+def _resolve_projects_root(projects_root: Path | None) -> Path:
+    if projects_root is None:
+        return APP_SUPPORT_PROJECTS_ROOT
+    return projects_root.expanduser().resolve()
+
+
+def build_memory_proposal(project_id: str, agent_id: str, projects_root: Path | None = None) -> str:
+    root = _resolve_projects_root(projects_root)
+    project_dir = root / project_id
     agent_dir = project_dir / "agents" / agent_id
 
     memory_path = agent_dir / "memory.md"
@@ -217,8 +225,14 @@ def build_memory_proposal(project_id: str, agent_id: str) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
-def write_memory_proposal(project_id: str, agent_id: str, content: str) -> Path:
-    path = ROOT_DIR / "control" / "projects" / project_id / "agents" / agent_id / "memory.proposed.md"
+def write_memory_proposal(
+    project_id: str,
+    agent_id: str,
+    content: str,
+    projects_root: Path | None = None,
+) -> Path:
+    root = _resolve_projects_root(projects_root)
+    path = root / project_id / "agents" / agent_id / "memory.proposed.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
     return path
@@ -228,10 +242,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Memory compaction tool")
     parser.add_argument("--project", required=True)
     parser.add_argument("--agent", required=True)
+    parser.add_argument(
+        "--projects-root",
+        default=None,
+        help=(
+            "Projects root path. Default is App Support "
+            "(~/Library/Application Support/Cockpit/projects)."
+        ),
+    )
     args = parser.parse_args()
+    projects_root = Path(args.projects_root).expanduser() if args.projects_root else None
 
-    content = build_memory_proposal(args.project, args.agent)
-    path = write_memory_proposal(args.project, args.agent, content)
+    content = build_memory_proposal(args.project, args.agent, projects_root=projects_root)
+    path = write_memory_proposal(args.project, args.agent, content, projects_root=projects_root)
     line_count = len(content.strip().splitlines())
     print(f"Wrote {path}")
     print(f"Lines: {line_count}")

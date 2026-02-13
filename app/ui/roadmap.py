@@ -12,10 +12,30 @@ PHASE_DISPLAY = {
     "Ship": "DEPLOIEMENT",
 }
 PHASE_ALIASES = {label: key for key, label in PHASE_DISPLAY.items()}
+PHASE_ALIASES.update(
+    {
+        "CONCEPTION": "Plan",
+        "CODE": "Implement",
+        "TEST": "Test",
+        "VALIDATION": "Review",
+        "DEPLOIEMENT": "Ship",
+    }
+)
 
 
 def normalize_phase_key(phase: str) -> str:
     value = (phase or "").strip()
+    lowered = value.lower()
+    if lowered in {"plan", "planning"}:
+        return "Plan"
+    if lowered in {"implement", "implementation", "code"}:
+        return "Implement"
+    if lowered in {"test", "qa", "testing"}:
+        return "Test"
+    if lowered in {"review", "validation", "verify", "verifying"}:
+        return "Review"
+    if lowered in {"ship", "release", "deploiement", "deploy"}:
+        return "Ship"
     return PHASE_ALIASES.get(value, value)
 
 
