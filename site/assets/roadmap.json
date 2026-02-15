@@ -1,0 +1,182 @@
+[
+    {
+        "id": "p0",
+        "name": "Phase 0: Le Grand Merge (Socle)",
+        "status": "done",
+        "start": 0,
+        "duration": 2,
+        "color": "#2da44e",
+        "details": [
+            {
+                "task": "F1: Atomic Write (L'Airbag)",
+                "dod": "Zero data loss on crash",
+                "test": "repro_atomic_write.py"
+            },
+            {
+                "task": "F2: 12-Item Cap (Le Limiteur)",
+                "dod": "Hard truncation > 12 items",
+                "test": "test_task_cap.py"
+            },
+            {
+                "task": "F3: Gatekeeper (Le Videur)",
+                "dod": "Blocks run if no project_id",
+                "test": "test_gatekeeper.py"
+            },
+            {
+                "task": "F4: Bible Parser (Le Radar)",
+                "dod": "UI shows Risks/Skills from docs",
+                "test": "test_bible_parsing.py"
+            }
+        ]
+    },
+    {
+        "id": "p1",
+        "name": "Phase 1: Orchestration",
+        "status": "active",
+        "start": 2,
+        "duration": 3,
+        "color": "#0969da",
+        "details": [
+            {
+                "task": "Agent Registry JSON",
+                "dod": "Single source of truth",
+                "test": "verify_registry_load.py"
+            },
+            {
+                "task": "SOUL.md Loading",
+                "dod": "Personality injection successful",
+                "test": "test_soul_loader.py"
+            },
+            {
+                "task": "Skills Versioning",
+                "dod": "Hash comparison on load",
+                "test": "test_skill_integrity.py"
+            }
+        ]
+    },
+    {
+        "id": "p2",
+        "name": "Phase 2: Dispatch Durable",
+        "status": "pending",
+        "start": 5,
+        "duration": 4,
+        "color": "#8250df",
+        "details": [
+            {
+                "task": "Persistent Task Queue",
+                "dod": "SQLite backed queue",
+                "test": "test_queue_persistence.py"
+            },
+            {
+                "task": "Task Manager UI",
+                "dod": "Real-time 'Airport' view",
+                "test": "visual_qc_dashboard.py"
+            },
+            {
+                "task": "Event Log",
+                "dod": "Structured immutable log",
+                "test": "test_event_logger.py"
+            }
+        ]
+    },
+    {
+        "id": "p3",
+        "name": "Phase 3: Mémoire Prog.",
+        "status": "pending",
+        "start": 9,
+        "duration": 5,
+        "color": "#bf3989",
+        "details": [
+            {
+                "task": "FTS5 Implementation",
+                "dod": "Keyword search < 50ms",
+                "test": "benchmark_search.py"
+            },
+            {
+                "task": "Context Packer",
+                "dod": "Smart trim > 4k tokens",
+                "test": "test_context_packer.py"
+            },
+            {
+                "task": "Vector Fallback",
+                "dod": "ChromaDB setup if needed",
+                "test": "integration_test_vector.py"
+            }
+        ]
+    },
+    {
+        "id": "p4",
+        "name": "Phase 4: Platform Router",
+        "status": "pending",
+        "start": 14,
+        "duration": 6,
+        "color": "#bc8cff",
+        "details": [
+            {
+                "task": "Multi-Runtime Switch",
+                "dod": "Codex <-> Antigravity <-> Ollama",
+                "test": "test_provider_switch.py"
+            },
+            {
+                "task": "Circuit Breaker",
+                "dod": "Stop calls after 3 fails",
+                "test": "test_circuit_breaker.py"
+            },
+            {
+                "task": "Budget Enforcement",
+                "dod": "Hard limit tokens/day",
+                "test": "test_budget_limits.py"
+            }
+        ]
+    },
+    {
+        "id": "p5",
+        "name": "Phase 5: Sécurité",
+        "status": "pending",
+        "start": 20,
+        "duration": 4,
+        "color": "#cf222e",
+        "details": [
+            {
+                "task": "Capability System",
+                "dod": "Granular permissions enforced",
+                "test": "test_permission_denial.py"
+            },
+            {
+                "task": "Sandbox Profiles",
+                "dod": "Docker/WASM isolation",
+                "test": "test_sandbox_escape.py"
+            },
+            {
+                "task": "Secrets Redaction",
+                "dod": "No plaintext API keys in logs",
+                "test": "scan_logs_for_secrets.py"
+            }
+        ]
+    },
+    {
+        "id": "p6",
+        "name": "Phase 6: Puissance",
+        "status": "pending",
+        "start": 24,
+        "duration": 8,
+        "color": "#1f883d",
+        "details": [
+            {
+                "task": "Local Vector Store",
+                "dod": "Full semantic search",
+                "test": "measure_recall.py"
+            },
+            {
+                "task": "Ollama Integration",
+                "dod": "100% Local LLM support",
+                "test": "test_ollama_ping.py"
+            },
+            {
+                "task": "Eval Harness",
+                "dod": "Auto-regression check",
+                "test": "run_full_suite.py"
+            }
+        ]
+    }
+]

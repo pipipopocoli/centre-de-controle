@@ -1,0 +1,16 @@
+{
+  "name": "site",
+  "version": "1.0.0",
+  "description": "Ce dossier contient le \"Site de Lancement\" complet pour le projet Cockpit V2. Il est conçu pour être **100% autonome et offline-first**.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "vercel": "^50.17.1"
+  }
+}

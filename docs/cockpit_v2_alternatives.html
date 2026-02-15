@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Cockpit V2 — Master Spec & Alternatives</title>
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-light.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 45px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background: #fff;
+        }
+
+        .markdown-body {
+            max-width: 1100px;
+        }
+
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 2em 0;
+            background: #f6f8fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #f6f8fa;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #fafbfc;
+        }
+
+        h1 {
+            border-bottom: 3px solid #2ea44f;
+            padding-bottom: 12px;
+            margin-top: 2em;
+        }
+
+        h1.part-title {
+            border-bottom: none;
+            background: #f6f8fa;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            margin-top: 60px;
+            color: #24292f;
+        }
+
+        h2 {
+            border-bottom: 2px solid #eaecef;
+            padding-bottom: 8px;
+            margin-top: 2em;
+        }
+
+        h3 {
+            color: #24292f;
+        }
+
+        code {
+            background: #eff1f3;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #f6f8fa;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        blockquote {
+            border-left: 4px solid #2ea44f;
+            padding: 8px 16px;
+            background: #f0fff4;
+            margin: 1em 0;
+        }
+
+        .phase-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.85em;
+            color: white;
+            margin-right: 8px;
+        }
+
+        .phase-1 {
+            background: #2ea44f;
+        }
+
+        .phase-2 {
+            background: #d29922;
+        }
+
+        .phase-3 {
+            background: #cf222e;
+        }
+
+        /* Alternatives Colors */
+        .phase-leo {
+            background: #FFD700;
+            color: #333;
+        }
+
+        .phase-victor {
+            background: #4A90E2;
+        }
+
+        .phase-a11 {
+            background: #E74C3C;
+        }
+
+        .phase-a4 {
+            background: #00FF9D;
+            color: #333;
+        }
+
+        @media print {
+            body {
+                padding: 20px;
+            }
+
+            .mermaid {
+                break-inside: avoid;
+            }
+
+            #print-btn {
+                display: none !important;
+            }
+        }
+
+        #print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #2ea44f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            font-size: 14px;
+        }
+
+        #print-btn:hover {
+            background: #2c974b;
+        }
+    </style>
+</head>
+
+<body class="markdown-body">
+    <button id="print-btn" onclick="window.print()">🖨️ Imprimer en PDF</button>
+
+    <!-- HEADER GLOBAL -->
+    <div style="text-align:center; margin-bottom: 60px;">
+        <h1 style="border:none; margin-top:0;">🏗️ COCKPIT V2 — MASTER DOCUMENT</h1>
+        <p style="color:#666; font-size:1.2em;">Base Spec + Alternatives + Merge Plan</p>
+    </div>
+
+    <!-- PARTIE 1 : BASE SPEC -->
+    <h1 class="part-title">PARTIE 1 : LE PLAN INITIAL (V2 REF)</h1>
+    <blockquote>
+        <strong>Document de référence (L1 Leo)</strong><br>
+        Ce plan définit l'architecture cible, les plugins, et la roadmap de base.
+    </blockquote>
+
+    <h2>1. Contexte & Justification</h2>
+
+    <h3>1.1 Les 5 Murs de la V1</h3>
+    <table>
+        <tr>
+            <th>#</th>
+            <th>Mur</th>
+            <th>Preuve dans le code</th>
+            <th>Impact</th>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td><strong>Agents hardcodés</strong></td>
+            <td><code>auto_mode.py:296</code> — <code>_agent_platform()</code> = if/else statique</td>
+            <td>🔴 Impossible d'ajouter un agent sans modifier Python</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td><strong>Pas de mémoire cross-projet</strong></td>
+            <td><code>brainfs.py:63</code> — <code>load_profile()</code> lit UN profil par projet</td>
+            <td>🔴 Amnésie entre projets</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td><strong>Skills décoratives</strong></td>
+            <td><code>brainfs.py:19</code> — <code>load_skills()</code> → jamais injecté dans le prompt</td>
+            <td>🟡 Les compétences ne changent rien</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td><strong>Dispatch fragile</strong></td>
+            <td><code>auto_mode.py:458</code> — 1 requête à la fois, synchrone</td>
+            <td>🔴 Requête perdue si crash</td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td><strong>Single Runtime</strong></td>
+            <td><code>auto_mode.py:296</code> — 5/7 agents sur Codex</td>
+            <td>🔴 80% bloqué si Codex down</td>
+        </tr>
+    </table>
+
+    <h3>1.2 Architecture Cible</h3>
+    <div class="mermaid">
+        graph TB
+        classDef ui fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+        classDef service fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+        classDef data fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+        classDef runtime fill:#fce4ec,stroke:#c62828,stroke-width:2px;
+
+        subgraph "🖥️ UI Layer"
+        UI1["Qt Desktop"]:::ui
+        UI2["Task Manager"]:::ui
+        UI3["Org Chart"]:::ui
+        end
+
+        subgraph "⚙️ Service Layer"
+        S1["Agent Registry"]:::service
+        S2["Platform Router"]:::service
+        S3["Memory Engine"]:::service
+        S4["Skill Loader"]:::service
+        end
+
+        subgraph "📦 Data Layer"
+        D1["agents_registry.json"]:::data
+        D2["brainfs/souls/"]:::data
+        D3["brainfs/library/"]:::data
+        D4["brainfs/memory/"]:::data
+        end
+
+        subgraph "🚀 Runtimes"
+        R1["Codex"]:::runtime
+        R2["Antigravity"]:::runtime
+        R3["Gemini"]:::runtime
+        R4["Ollama (local)"]:::runtime
+        end
+
+        UI1 --> S1
+        UI2 --> S1
+        UI3 --> S1
+        S1 --> D1
+        S4 --> D2
+        S4 --> D3
+        S3 --> D4
+        S2 --> R1
+        S2 --> R2
+        S2 --> R3
+        S2 --> R4
+    </div>
+
+    <hr>
+
+    <h2>2. Les 5 Plugins (Base)</h2>
+
+    <h3><span class="phase-badge phase-1">PHASE 1</span> Plugin 1 : Agent Registry & Hiérarchie</h3>
+    <p><strong>Solution :</strong> Un fichier <code>brainfs/agents_registry.json</code> — source de vérité unique pour
+        tous les agents.</p>
+    <div class="mermaid">
+        graph TD
+        classDef l0 fill:#4a148c,stroke:#fff,stroke-width:2px,color:#fff;
+        classDef l1 fill:#1565c0,stroke:#fff,stroke-width:2px,color:#fff;
+        classDef l2 fill:#2e7d32,stroke:#fff,stroke-width:2px,color:#fff;
+
+        C["👨‍✈️ Clems (L0)<br />Orchestrator"]:::l0
+        V["🛠️ Victor (L1)<br />Backend Lead"]:::l1
+        L["🎨 Léo (L1)<br />UI/UX Lead"]:::l1
+        A1["👷 Agent-1 (L2)<br />Python Worker"]:::l2
+        A3["👷 Agent-3 (L2)<br />Test Worker"]:::l2
+        A2["👨‍🎨 Agent-2 (L2)<br />CSS Worker"]:::l2
+        A4["👨‍🎨 Agent-4 (L2)<br />Design Worker"]:::l2
+
+        C --> V
+        C --> L
+        V --> A1
+        V --> A3
+        L --> A2
+        L --> A4
+    </div>
+
+    <h3><span class="phase-badge phase-1">PHASE 1</span> Plugin 2 : SOUL.md & Skills Dynamiques</h3>
+    <p><strong>Solution :</strong> Injection de contexte (<code>SOUL.md</code>) et compétences (<code>SKILL.md</code>)
+        au runtime.</p>
+    <div class="mermaid">
+        sequenceDiagram
+        participant AM as Auto-Mode
+        participant REG as Agent Registry
+        participant SOUL as brainfs/souls/
+        participant LIB as brainfs/library/
+        participant RT as Runtime (Codex)
+
+        AM->>REG: Quel agent pour cette tâche ?
+        REG-->>AM: Victor (skills: python, testing)
+        AM->>SOUL: Charger victor.md
+        SOUL-->>AM: "Tu es Victor, puriste du code..."
+        AM->>LIB: Charger python-expert/SKILL.md
+        LIB-->>AM: "Utilise pathlib, type hints..."
+        AM->>RT: Prompt = SOUL + SKILLS + TÂCHE
+        RT-->>AM: Résultat ✅
+    </div>
+
+    <!-- Skipping Plugins 3,4,5 detailed views for brevity as requested, but keeping basics -->
+    <h3><span class="phase-badge phase-1">PHASE 1</span> Plugin 3 : Task Manager Simplifié</h3>
+    <p>Un tableau de bord type "Aéroport" pour visualiser qui fait quoi en temps réel.</p>
+
+    <h3><span class="phase-badge phase-2">PHASE 2</span> Plugin 4 : Platform Router</h3>
+    <p>Distribution intelligente des tâches vers Codex, Antigravity, ou Ollama selon la disponibilité et le coût.</p>
+
+    <h3><span class="phase-badge phase-2">PHASE 2</span> Plugin 5 : Mémoire Progressive</h3>
+    <p>Phase A: SQLite FTS5 (Mots-clés). Phase B: ChromaDB (Sémantique).</p>
+
+    <hr>
+
+    <!-- PARTIE 2 : ALTERNATIVES -->
+    <h1 class="part-title">PARTIE 2 : LES ALTERNATIVES (L3 CHALLENGERS)</h1>
+    <blockquote style="border-left-color: #d29922; background: #fffbef;">
+        <strong>Analyse Comparative</strong><br>
+        Voici ce que les autres agents (Victor, A11, A4) proposent d'ajouter ou de modifier à ce plan de base.
+    </blockquote>
+
+    <h2>1. La Proposition VICTOR (Architecture & Risque)</h2>
+
+    <h3>1.1 Le Mur de la Peur (Risk Wall)</h3>
+    <p><strong>Problème :</strong> On construit trop vite, on casse tout, et on ne sait pas revenir en arrière.</p>
+    <table>
+        <tr>
+            <th>Mur</th>
+            <th>Preuve dans le code</th>
+            <th>Impact</th>
+        </tr>
+        <tr>
+            <td><strong>Pas de Backup</strong></td>
+            <td><code>session_manager.py</code> — écrase <code>ui_session.json</code> à chaque write</td>
+            <td>🔴 Corruption = Perte totale de l'état</td>
+        </tr>
+        <tr>
+            <td><strong>Pas de Rollback</strong></td>
+            <td><code>git</code> — commits "WIP" mélangés</td>
+            <td>🔴 Impossible de revert une feature sans tout casser</td>
+        </tr>
+    </table>
+
+    <h3>1.2 Solution : "Implementation Lots"</h3>
+    <div class="mermaid">
+        graph LR
+        A[Lot A: Core] --> B[Lot B: Data]
+        B --> C[Lot C: UI]
+        C --> D[Lot D: Polish]
+
+        style A fill:#e3f2fd,stroke:#1565c0
+        style B fill:#e3f2fd,stroke:#1565c0
+        style C fill:#e3f2fd,stroke:#1565c0
+        style D fill:#e3f2fd,stroke:#1565c0
+    </div>
+
+    <table>
+        <tr>
+            <th>Plugin</th>
+            <th>Action</th>
+            <th>Valeur</th>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-victor">VICTOR</span> <strong>Session Snapshots</strong></td>
+            <td>Backup <code>ui_session.json.bak</code> avant écriture</td>
+            <td>🛡️ Résilience (Crash-proof)</td>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-victor">VICTOR</span> <strong>Severity Matrix</strong></td>
+            <td>Tagger chaque issue (Sev1, Sev2, Sev3)</td>
+            <td>⚖️ Priorisation objective</td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <h2>2. La Proposition AGENT-11 (Faisabilité & Scope)</h2>
+
+    <h3>2.1 Le Mur de la Complexité</h3>
+    <p><strong>Problème :</strong> On veut tout faire (Vector DB, LLM local, Voice Mode) et on ne finit rien.</p>
+    <table>
+        <tr>
+            <th>Mur</th>
+            <th>Preuve</th>
+            <th>Impact</th>
+        </tr>
+        <tr>
+            <td><strong>Feature Bloat</strong></td>
+            <td><code>ROADMAP.md</code> — 35 items "High Priority"</td>
+            <td>🔴 Rien ne sera livré à 100%</td>
+        </tr>
+        <tr>
+            <td><strong>Scope Creep</strong></td>
+            <td>Demandes utilisateur "ah et aussi ça..."</td>
+            <td>🔴 Épuisement de l'équipe (ou des tokens)</td>
+        </tr>
+    </table>
+
+    <h3>2.2 Solution : "The Pruning Shears"</h3>
+    <div class="mermaid">
+        graph TD
+        I[Idée] --> G{Gate: Is it Essential?}
+        G -->|Non| T[Trash]
+        G -->|Oui| L[List of 12]
+        L --> D[Done]
+
+        style G fill:#ffcdd2,stroke:#c62828
+        style L fill:#c8e6c9,stroke:#2e7d32
+    </div>
+
+    <table>
+        <tr>
+            <th>Plugin</th>
+            <th>Action</th>
+            <th>Valeur</th>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-a11">A11</span> <strong>Strict 12-Item List</strong></td>
+            <td>Hardcap (<code>MAX_WIP=12</code>) dans <code>task.md</code></td>
+            <td>🎯 Focus absolu</td>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-a11">A11</span> <strong>Anti-Complexity Gate</strong></td>
+            <td>Rejet automatique si > 3 fichiers touchés</td>
+            <td>✂️ Simplicité forcée</td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <h2>3. La Proposition AGENT-4 (Contrôle & Déterminisme)</h2>
+
+    <h3>3.1 Le Mur de l'Entropie</h3>
+    <p><strong>Problème :</strong> Les transitions d'état sont floues. "Done" veut dire "Coded" pour l'un, "Deployed"
+        pour l'autre.</p>
+    <table>
+        <tr>
+            <th>Mur</th>
+            <th>Preuve</th>
+            <th>Impact</th>
+        </tr>
+        <tr>
+            <td><strong>Flou Artistique</strong></td>
+            <td><code>task.md</code> — [x] coché sans lien vers la preuve</td>
+            <td>🔴 Faux positifs ("C'est fini" -> Bug en prod)</td>
+        </tr>
+        <tr>
+            <td><strong>Drift</strong></td>
+            <td>Fichiers modifiés sans ticket associé</td>
+            <td>🔴 Code orphelin</td>
+        </tr>
+    </table>
+
+    <h3>3.2 Solution : "The Token Matrix"</h3>
+
+    <table>
+        <tr>
+            <th>Plugin</th>
+            <th>Action</th>
+            <th>Valeur</th>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-a4">A4</span> <strong>Evidence Links</strong></td>
+            <td>Obligation de <code>[Ref](file://...)</code> pour tout [x]</td>
+            <td>🔗 Traçabilité totale</td>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-a4">A4</span> <strong>Gate Scripts</strong></td>
+            <td><code>verify_X.sh</code> pour chaque feature</td>
+            <td>🤖 Validation binaire (Pass/Fail)</td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <h2>4. La Proposition LEO (UX & Workflow) - Version L3</h2>
+
+    <h3>4.1 Le Mur de la Confusion</h3>
+    <p><strong>Problème :</strong> L'opérateur (humain) est perdu. "Qu'est-ce qui est urgent ? Qui attend quoi ?"</p>
+
+    <h3>4.2 Solution : "The Operating System"</h3>
+    <div class="mermaid">
+        graph TD
+        U[User] -->|Ouvre Cockpit| D[Dashboard]
+        D -->|60 Secondes| S[Status Clair]
+        S -->|Click| A[Action Immédiate]
+
+        style D fill:#fff9c4,stroke:#fbc02d
+    </div>
+
+    <table>
+        <tr>
+            <th>Plugin</th>
+            <th>Action</th>
+            <th>Valeur</th>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-leo">LEO</span> <strong>Skills Ops Panel</strong></td>
+            <td>Widget visuel (Sync/Memory status)</td>
+            <td>👁️ Visibilité Système (Déjà codé!)</td>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-leo">LEO</span> <strong>Urgency Ranking</strong></td>
+            <td>Trier auto par Age + Sev</td>
+            <td>🚦 Charge mentale réduite</td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <!-- PARTIE 3 : MERGE PLAN -->
+    <h1 class="part-title">PARTIE 3 : THE MERGE PLAN</h1>
+
+    <p>Pour le Spec V2 Final, voici les éléments <strong>indispensables</strong> à fusionner dans le master plan.</p>
+
+    <table>
+        <tr>
+            <th>Source</th>
+            <th>Feature</th>
+            <th>Justification</th>
+            <th>Effort</th>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-victor">VICTOR</span></td>
+            <td><strong>Session Snapshots</strong></td>
+            <td>Indispensable protecteur contre les corruptions JSON.</td>
+            <td>Faible (1h)</td>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-a11">A11</span></td>
+            <td><strong>The 12-Item Cap</strong></td>
+            <td>Nécessaire pour éviter la mort par roadmap infinie.</td>
+            <td>Nul (Process)</td>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-a4">A4</span></td>
+            <td><strong>Verification Gates</strong></td>
+            <td>Scripts de test auto (comme <code>verify_skills_ops.py</code>) pour chaque feature.</td>
+            <td>Moyen (par feature)</td>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-leo">LEO</span></td>
+            <td><strong>Urgency UI</strong></td>
+            <td>Trier la liste des tâches (Task Manager) par urgence.</td>
+            <td>Moyen (UI)</td>
+        </tr>
+    </table>
+
+    <blockquote>
+        <strong>Conclusion :</strong> On garde l'Architecture de Leo (V2 Spec), on la sécurise avec les Snapshots de
+        Victor, on la scope avec la Rigueur d'Agent 11, et on la valide avec les Gates d'Agent 4.
+    </blockquote>
+
+</body>
+
+</html>

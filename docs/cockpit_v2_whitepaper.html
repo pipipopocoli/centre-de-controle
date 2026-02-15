@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cockpit V2 : La Vision Organisme</title>
+    <!-- GitHub Markdown CSS for clean typography -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-light.min.css">
+    <!-- Mermaid.js for diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            background-color: #ffffff;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 2em 0;
+            background-color: #f6f8fa;
+            padding: 20px;
+            border-radius: 6px;
+        }
+        h1, h2, h3 { border-bottom: 1px solid #eaecef; padding-bottom: .3em; }
+        @media print {
+            body { padding: 0; margin: 0; }
+            .markdown-body { padding: 20px; max-width: 100%; }
+            .mermaid { break-inside: avoid; }
+            /* Hide the print button when printing */
+            #print-btn { display: none !important; }
+        }
+        #print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #2ea44f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        #print-btn:hover { background: #2c974b; }
+    </style>
+</head>
+<body class="markdown-body">
+    <button id="print-btn" onclick="window.print()">🖨️ Imprimer en PDF</button>
+
+    <h1>📘 Cockpit V2 : La Vision "Organisme" (Vulgarisation Détaillée)</h1>
+    <blockquote>
+        <p><strong>Pour :</strong> Olivier<br>
+        <strong>Objectif :</strong> Comprendre l'architecture V2 sans se noyer dans le code Python.<br>
+        <strong>Format :</strong> Guide Visuel & Conceptuel</p>
+    </blockquote>
+    <hr>
+
+    <h2>1. Le Changement de Paradigme</h2>
+    <p><strong>De l'Outil à l'Organisme</strong></p>
+    <p>Actuellement, Cockpit fonctionne comme une <strong>Boîte à Outils</strong>.</p>
+    <ul>
+        <li>Quand tu ouvres la boîte, les outils sont là (Victor, Léo).</li>
+        <li>Quand tu la fermes, ils cessent d'exister.</li>
+        <li>Si tu prends un marteau pour planter un clou sur le Projet A, il ne se "souvient" pas comment il a fait quand tu ouvres le Projet B.</li>
+    </ul>
+    <p>La Vision V2 transforme Cockpit en un <strong>Organisme Vivant</strong>.</p>
+    <ul>
+        <li>Les agents ont une <strong>mémoire</strong>.</li>
+        <li>Ils apprennent des <strong>compétences</strong> (Skills).</li>
+        <li>Ils travaillent en <strong>équipe hiérarchisée</strong>.</li>
+    </ul>
+
+    <h3>Représentation Visuelle</h3>
+    <div class="mermaid">
+graph TD
+    subgraph "V1 : La Boîte à Outils (Actuel)"
+        U1[👤 Olivier] --> T1[🛠️ Outil Victor]
+        U1 --> T2[🎨 Outil Léo]
+        T1 -.->|Oublie tout| U1
+        T2 -.->|Oublie tout| U1
+    end
+
+    subgraph "V2 : L'Organisme (Futur)"
+        U2[👤 Olivier] --> C[🧠 Cerveau Central (Clems)]
+        C -->|Délègue| M[🤝 Managers (Léo/Victor)]
+        M -->|Exécutent| W[🤖 Workers (Agents X)]
+        W -->|Apprennent| KB[(📚 Mémoire Partagée)]
+        KB -->|Informe| C
+    end
+    </div>
+
+    <hr>
+
+    <h2>2. L'Architecture "OpenClaw" Expliquée</h2>
+    <p><strong>Pourquoi c'est le modèle à suivre</strong></p>
+    <p>Imagine OpenClaw non pas comme un logiciel, mais comme une <strong>Usine Autonome</strong>.</p>
+    <ol>
+        <li><strong>Le Contremaître (Task Manager) :</strong> Il ne dort jamais. Il surveille qui travaille, combien ça coûte, et si quelqu'un est bloqué.</li>
+        <li><strong>Les Fiches de Poste (SOUL.md) :</strong> Chaque employé a un dossier qui explique <em>qui il est</em>, pas juste <em>ce qu'il fait</em>.<br>
+            <em>Exemple :</em> "Tu es Victor. Tu es un puriste du code. Tu détestes le code sale. Tu vérifies toujours deux fois."</li>
+        <li><strong>L'Atelier de Formation (Skill Store) :</strong> Quand un nouvel ouvrier arrive, il va à la bibliothèque et télécharge "Savoir souder" ou "Savoir peindre". Il n'est pas né avec.</li>
+    </ol>
+    <p><strong>Dans Cockpit V2 :</strong><br>On veut cette <em>structure</em> (Usine), mais gardée <em>propre et simple</em> (Bureau).</p>
+
+    <hr>
+
+    <h2>3. La Mémoire : Comment ça marche ? (Vector Store)</h2>
+    <p>C'est souvent le concept le plus flou. Comparons-le à une <strong>Bibliothèque</strong>.</p>
+    <h3>Mémoire Traditionnelle (Ce qu'on a)</h3>
+    <p>C'est le <strong>"Ctrl+F"</strong> (Recherche par mot-clé).</p>
+    <ul>
+        <li>Tu cherches "Bug Permission".</li>
+        <li>Il trouve tous les fichiers où il y a écrit exactement "Bug" et "Permission".</li>
+        <li><em>Problème :</em> Si tu as écrit "Erreur d'accès", il ne trouve rien.</li>
+    </ul>
+    <h3>Mémoire Vectorielle (Ce qu'on veut)</h3>
+    <p>C'est le <strong>"Bibliothécaire Intelligent"</strong> (Recherche Sémantique).</p>
+    <ul>
+        <li>Chaque document est transformé en <strong>coordonnées GPS</strong> (vecteurs).</li>
+        <li>Les concepts proches sont stockés physiquement à côté.
+            <ul>
+                <li>"Permission" est garé à côté de "Accès".</li>
+                <li>"Bug" est garé à côté de "Erreur".</li>
+            </ul>
+        </li>
+        <li>Tu demandes : "On a déjà eu des soucis pour écrire des fichiers ?"</li>
+        <li>Le Bibliothécaire regarde dans la zone "Problèmes d'écriture" et te sort le doc "Bug Permission", même si les mots ne sont pas identiques.</li>
+    </ul>
+
+    <div class="mermaid">
+graph TD
+    Query["❓ Question :<br/>'Impossible d'écrire le fichier'"]
+    
+    subgraph "Espace Vectoriel (Le Cerveau)"
+        P1["📄 Doc A : Permission Denied"]
+        P2["📄 Doc B : Access Error"]
+        P3["📄 Doc C : Recette de cuisine"]
+        
+        P1 <-->|Proche| P2
+        P2 <-->|Loin| P3
+    end
+    
+    Query -->|Attiré par sens| P1
+    Query -->|Attiré par sens| P2
+    P1 --> Answer["💡 Réponse :<br/>C'est sûrement un problème de Sandbox macOS"]
+    </div>
+
+    <hr>
+
+    <h2>4. La Pyramide de Commandement (L0, L1, L2)</h2>
+    <p><strong>Pourquoi on ne peut pas juste avoir "plein d'agents"</strong></p>
+    <p>Si tu mets 10 personnes dans une pièce sans chef, c'est le chaos. Pour les IA, c'est pareil.</p>
+    
+    <h3>Niveau 0 : Le Stratège (Clems)</h3>
+    <ul>
+        <li><strong>Rôle :</strong> Il ne met pas les mains dans le cambouis. Il a la vision globale.</li>
+        <li><strong>Analogie :</strong> L'Architecte en Chef.</li>
+        <li><strong>Job :</strong> Il reçoit ta demande ("Refais le site"), la découpe en gros morceaux, et la donne à ses lieutenants.</li>
+    </ul>
+
+    <h3>Niveau 1 : Les Lieutenants (Victor & Léo)</h3>
+    <ul>
+        <li><strong>Rôle :</strong> Ils sont experts d'un domaine. Ils supervisent la qualité.</li>
+        <li><strong>Analogie :</strong> Chef de Chantier (Victor) et Directeur Artistique (Léo).</li>
+        <li><strong>Job :</strong> Ils prennent le gros morceau ("Refais le backend"), le découpent en tâches précises ("Créer API", "Optimiser DB"), et vérifient que c'est bien fait.</li>
+    </ul>
+
+    <h3>Niveau 2 : Les Ouvriers Spécialisés (Agent-1, Agent-2...)</h3>
+    <ul>
+        <li><strong>Rôle :</strong> Ils exécutent. Vite et bien.</li>
+        <li><strong>Analogie :</strong> Maçon, Électricien, Peintre.</li>
+        <li><strong>Job :</strong> Ils font une chose à la fois. Ils n'ont pas besoin de connaître tout le projet. Ils ont juste besoin de leur compétence (<code>[Python]</code>, <code>[CSS]</code>).</li>
+    </ul>
+
+    <div class="mermaid">
+graph TD
+    classDef l0 fill:#4a148c,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef l1 fill:#1565c0,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef l2 fill:#2e7d32,stroke:#fff,stroke-width:2px,color:#fff;
+
+    L0["👨‍✈️ Clems (L0)<br/>Stratégie"]:::l0
+    L1A["🛠️ Victor (L1)<br/>Qualité Code"]:::l1
+    L1B["🎨 Léo (L1)<br/>Qualité Visuelle"]:::l1
+    
+    L2A["👷 Agent-1<br/>(Python Worker)"]:::l2
+    L2B["👷 Agent-3<br/>(Test Worker)"]:::l2
+    L2C["👨‍🎨 Agent-2<br/>(CSS Worker)"]:::l2
+    L2D["👨‍🎨 Agent-4<br/>(Icon Worker)"]:::l2
+
+    L0 --> L1A
+    L0 --> L1B
+    L1A --> L2A
+    L1A --> L2B
+    L1B --> L2C
+    L1B --> L2D
+    </div>
+
+    <hr>
+
+    <h2>5. Le "Task Manager" Simplifié</h2>
+    <p><strong>Arrêter de piloter à l'aveugle</strong></p>
+    <p>Aujourd'hui, quand tu lances "Auto-Mode", c'est une boîte noire. Tu espères que ça marche.<br>
+    Le Task Manager V2, c'est ton <strong>Tableau de Bord</strong>.</p>
+    <p>Imagine un écran à l'aéroport :</p>
+    <ul>
+        <li><strong>VOL AF123 (Clems)</strong> : 🟢 EN VOL (Orchestration en cours)</li>
+        <li><strong>VOL DL456 (Victor)</strong> : 🟡 RETARDÉ (Attend validation)</li>
+        <li><strong>VOL BA789 (Léo)</strong> : 🔵 ATTERRI (Tâche terminée)</li>
+    </ul>
+    <p>Plus besoin de demander "Tu fais quoi ?". C'est affiché.</p>
+    <ul>
+        <li><strong>En Mission :</strong> L'agent travaille activement.</li>
+        <li><strong>En Attente :</strong> L'agent a fini et attend une instruction.</li>
+        <li><strong>Au Repos :</strong> L'agent est libre.</li>
+    </ul>
+
+    <hr>
+
+    <h2>6. Pourquoi Codex est un Risque ? (Le point "Q9")</h2>
+    <p>Actuellement, 5 agents sur 7 sont "hébergés" chez Codex (le moteur d'exécution actuel).<br>
+    C'est comme si toute ton entreprise reposait sur <strong>un seul serveur</strong>.</p>
+    <ul>
+        <li>Si le serveur plante 💥, 80% de ta boîte s'arrête.</li>
+        <li>Si le serveur est lent 🐢, tout le monde ralentit.</li>
+    </ul>
+    <p><strong>La solution V2 : Le Routeur Intelligent.</strong></p>
+    <ul>
+        <li>Si Codex est occupé, on envoie la tâche à Antigravity.</li>
+        <li>Si c'est une petite tâche facile, on l'envoie à un petit modèle local (gratuit).</li>
+        <li>Si c'est une tâche complexe, on paye pour le modèle "Luxe".</li>
+    </ul>
+    <p>C'est ça, la vraie robustesse.</p>
+
+    <hr>
+
+    <h2>🔍 Conclusion : Ce que tu vas voir changer</h2>
+    <ol>
+        <li><strong>L'Organisation :</strong> Tu verras une hiérarchie claire. Clems te parle, Victor parle à Clems.</li>
+        <li><strong>La Compétence :</strong> Les agents ne diront plus "Je ne sais pas faire". Ils diront "Attends, je télécharge le module React".</li>
+        <li><strong>La Mémoire :** Ils arrêteront de refaire les mêmes erreurs d'un projet à l'autre.</li>
+    </ol>
+
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</body>
+</html>

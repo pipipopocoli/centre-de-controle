@@ -1,0 +1,79 @@
+[
+    {
+        "time": "00:00",
+        "agent": "Clems",
+        "action": "PLAN",
+        "msg": "Analyzing request: 'Fix broken login button'. Reading auth.py...",
+        "tokens": 120
+    },
+    {
+        "time": "00:02",
+        "agent": "Clems",
+        "action": "TOOL",
+        "msg": "search_code('login button', 'app/ui/login.py')",
+        "tokens": 45
+    },
+    {
+        "time": "00:05",
+        "agent": "System",
+        "action": "OUTPUT",
+        "msg": "Found 3 matches in app/ui/login.py:42",
+        "tokens": 300
+    },
+    {
+        "time": "00:08",
+        "agent": "Clems",
+        "action": "DELEGATE",
+        "msg": "Assigning task to Victor (Backend): 'Patch auth validation logic'.",
+        "tokens": 80
+    },
+    {
+        "time": "00:10",
+        "agent": "Victor",
+        "action": "THINK",
+        "msg": "Loading skill 'py-expert'. Checking capability 'fs:write'. Allowed.",
+        "tokens": 150
+    },
+    {
+        "time": "00:15",
+        "agent": "Victor",
+        "action": "TOOL",
+        "msg": "patch_file('app/auth/validator.py', diff=...)",
+        "tokens": 600
+    },
+    {
+        "time": "00:18",
+        "agent": "Gatekeeper",
+        "action": "AUDIT",
+        "msg": "Reviewing diff... Atomic write engaged. Backup created.",
+        "tokens": 0
+    },
+    {
+        "time": "00:20",
+        "agent": "System",
+        "action": "SUCCESS",
+        "msg": "File updated. Running tests...",
+        "tokens": 50
+    },
+    {
+        "time": "00:25",
+        "agent": "Victor",
+        "action": "TOOL",
+        "msg": "run_test('tests/test_auth.py')",
+        "tokens": 60
+    },
+    {
+        "time": "00:30",
+        "agent": "System",
+        "action": "PASS",
+        "msg": "Tests passed: 4/4. Time: 0.4s.",
+        "tokens": 0
+    },
+    {
+        "time": "00:32",
+        "agent": "Clems",
+        "action": "DONE",
+        "msg": "Mission accomplished. Adding entry to Memory.",
+        "tokens": 100
+    }
+]

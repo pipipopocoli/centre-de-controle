@@ -1,0 +1,93 @@
+{
+    "taxonomy": [
+        {
+            "id": "t1",
+            "name": "Read-only Intelligence",
+            "perms": "fs:read",
+            "icon": "👀",
+            "desc": "Mapping, Search, Logs. Risk: Low."
+        },
+        {
+            "id": "t2",
+            "name": "Safe Write",
+            "perms": "fs:write (workspace)",
+            "icon": "✍️",
+            "desc": "Docs, Tests, Refactor. Risk: Medium."
+        },
+        {
+            "id": "t3",
+            "name": "Shell Restricted",
+            "perms": "shell (allowlist)",
+            "icon": "🐚",
+            "desc": "Linter, Tests, Git. Risk: High."
+        },
+        {
+            "id": "t4",
+            "name": "Networked",
+            "perms": "net:egress (whitelist)",
+            "icon": "🌐",
+            "desc": "Fetch docs, API calls. Risk: High."
+        },
+        {
+            "id": "t5",
+            "name": "Secrets-aware",
+            "perms": "env:secrets",
+            "icon": "🔑",
+            "desc": "Deploy, Publish. Risk: Critical."
+        }
+    ],
+    "mvp_skills": [
+        {
+            "name": "Repo Navigator",
+            "type": "t1",
+            "trust": "Tier 0"
+        },
+        {
+            "name": "Search FTS",
+            "type": "t1",
+            "trust": "Tier 0"
+        },
+        {
+            "name": "Patch Builder",
+            "type": "t2",
+            "trust": "Tier 0"
+        },
+        {
+            "name": "Test Runner",
+            "type": "t3",
+            "trust": "Tier 1"
+        },
+        {
+            "name": "Lint/Format",
+            "type": "t3",
+            "trust": "Tier 1"
+        },
+        {
+            "name": "Doc Writer",
+            "type": "t2",
+            "trust": "Tier 1"
+        }
+    ],
+    "sources": [
+        {
+            "name": "Local-First",
+            "desc": "Wrappers around trusted binaries (git, rg)",
+            "trust": "High"
+        },
+        {
+            "name": "Workspace",
+            "desc": "Project-specific scripts (.cockpit/skills)",
+            "trust": "Medium"
+        },
+        {
+            "name": "Registries",
+            "desc": "External markets (ClawHub)",
+            "trust": "Untrusted"
+        },
+        {
+            "name": "MCP",
+            "desc": "Model Context Protocol servers",
+            "trust": "Variable"
+        }
+    ]
+}

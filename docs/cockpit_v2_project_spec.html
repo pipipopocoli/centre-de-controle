@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Cockpit V2 — Projet Technique Complet</title>
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-light.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 45px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background: #fff;
+        }
+
+        .markdown-body {
+            max-width: 1100px;
+        }
+
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 2em 0;
+            background: #f6f8fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #f6f8fa;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #fafbfc;
+        }
+
+        h1 {
+            border-bottom: 3px solid #2ea44f;
+            padding-bottom: 12px;
+        }
+
+        h2 {
+            border-bottom: 2px solid #eaecef;
+            padding-bottom: 8px;
+            margin-top: 2em;
+        }
+
+        h3 {
+            color: #24292f;
+        }
+
+        code {
+            background: #eff1f3;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #f6f8fa;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        blockquote {
+            border-left: 4px solid #2ea44f;
+            padding: 8px 16px;
+            background: #f0fff4;
+            margin: 1em 0;
+        }
+
+        .phase-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.85em;
+            color: white;
+            margin-right: 8px;
+        }
+
+        .phase-1 {
+            background: #2ea44f;
+        }
+
+        .phase-2 {
+            background: #d29922;
+        }
+
+        .phase-3 {
+            background: #cf222e;
+        }
+
+        @media print {
+            body {
+                padding: 20px;
+            }
+
+            .mermaid {
+                break-inside: avoid;
+            }
+
+            #print-btn {
+                display: none !important;
+            }
+        }
+
+        #print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #2ea44f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            font-size: 14px;
+        }
+
+        #print-btn:hover {
+            background: #2c974b;
+        }
+    </style>
+</head>
+
+<body class="markdown-body">
+    <button id="print-btn" onclick="window.print()">🖨️ Imprimer en PDF</button>
+
+    <h1>🏗️ Projet Cockpit V2 — Spécification Technique Complète</h1>
+    <blockquote>
+        <strong>Document de référence pour Clems (Orchestrator L0)</strong><br>
+        <strong>Auteur :</strong> Léo (Agent L1 — Recherche & Architecture)<br>
+        <strong>Date :</strong> 2026-02-13<br>
+        <strong>Statut :</strong> Validé par Olivier — Prêt pour implémentation
+    </blockquote>
+
+    <hr>
+
+    <h2>1. Contexte & Justification</h2>
+
+    <h3>1.1 Les 5 Murs de la V1</h3>
+    <table>
+        <tr>
+            <th>#</th>
+            <th>Mur</th>
+            <th>Preuve dans le code</th>
+            <th>Impact</th>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td><strong>Agents hardcodés</strong></td>
+            <td><code>auto_mode.py:296</code> — <code>_agent_platform()</code> = if/else statique</td>
+            <td>🔴 Impossible d'ajouter un agent sans modifier Python</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td><strong>Pas de mémoire cross-projet</strong></td>
+            <td><code>brainfs.py:63</code> — <code>load_profile()</code> lit UN profil par projet</td>
+            <td>🔴 Amnésie entre projets</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td><strong>Skills décoratives</strong></td>
+            <td><code>brainfs.py:19</code> — <code>load_skills()</code> → jamais injecté dans le prompt</td>
+            <td>🟡 Les compétences ne changent rien</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td><strong>Dispatch fragile</strong></td>
+            <td><code>auto_mode.py:458</code> — 1 requête à la fois, synchrone</td>
+            <td>🔴 Requête perdue si crash</td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td><strong>Single Runtime</strong></td>
+            <td><code>auto_mode.py:296</code> — 5/7 agents sur Codex</td>
+            <td>🔴 80% bloqué si Codex down</td>
+        </tr>
+    </table>
+
+    <h3>1.2 Architecture Cible</h3>
+    <div class="mermaid">
+        graph TB
+        classDef ui fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+        classDef service fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+        classDef data fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+        classDef runtime fill:#fce4ec,stroke:#c62828,stroke-width:2px;
+
+        subgraph "🖥️ UI Layer"
+        UI1["Qt Desktop"]:::ui
+        UI2["Task Manager"]:::ui
+        UI3["Org Chart"]:::ui
+        end
+
+        subgraph "⚙️ Service Layer"
+        S1["Agent Registry"]:::service
+        S2["Platform Router"]:::service
+        S3["Memory Engine"]:::service
+        S4["Skill Loader"]:::service
+        end
+
+        subgraph "📦 Data Layer"
+        D1["agents_registry.json"]:::data
+        D2["brainfs/souls/"]:::data
+        D3["brainfs/library/"]:::data
+        D4["brainfs/memory/"]:::data
+        end
+
+        subgraph "🚀 Runtimes"
+        R1["Codex"]:::runtime
+        R2["Antigravity"]:::runtime
+        R3["Gemini"]:::runtime
+        R4["Ollama (local)"]:::runtime
+        end
+
+        UI1 --> S1
+        UI2 --> S1
+        UI3 --> S1
+        S1 --> D1
+        S4 --> D2
+        S4 --> D3
+        S3 --> D4
+        S2 --> R1
+        S2 --> R2
+        S2 --> R3
+        S2 --> R4
+    </div>
+
+    <hr>
+
+    <h2>2. Les 5 Plugins</h2>
+
+    <!-- PLUGIN 1 -->
+    <h3><span class="phase-badge phase-1">PHASE 1</span> Plugin 1 : Agent Registry & Hiérarchie</h3>
+
+    <p><strong>Pourquoi :</strong> On ne peut pas ajouter un agent sans modifier le code Python.
+        <code>_agent_platform()</code> est un if/else hardcodé.</p>
+    <p><strong>Solution :</strong> Un fichier <code>brainfs/agents_registry.json</code> — source de vérité unique pour
+        tous les agents.</p>
+
+    <pre><code>{
+  "agents": {
+    "clems":  { "level": 0, "role": "Orchestrator",    "platform": "antigravity", "manages": ["victor","leo"] },
+    "victor": { "level": 1, "role": "Backend Lead",     "platform": "codex",       "manages": ["agent-1","agent-3"] },
+    "leo":    { "level": 1, "role": "UI/UX Lead",       "platform": "antigravity", "manages": ["agent-2","agent-4"] },
+    "agent-1":{ "level": 2, "role": "Python Worker",    "platform": "codex",       "manages": [] }
+  }
+}</code></pre>
+
+    <p><strong>Hiérarchie résultante :</strong></p>
+    <div class="mermaid">
+        graph TD
+        classDef l0 fill:#4a148c,stroke:#fff,stroke-width:2px,color:#fff;
+        classDef l1 fill:#1565c0,stroke:#fff,stroke-width:2px,color:#fff;
+        classDef l2 fill:#2e7d32,stroke:#fff,stroke-width:2px,color:#fff;
+
+        C["👨‍✈️ Clems (L0)<br />Orchestrator"]:::l0
+        V["🛠️ Victor (L1)<br />Backend Lead"]:::l1
+        L["🎨 Léo (L1)<br />UI/UX Lead"]:::l1
+        A1["👷 Agent-1 (L2)<br />Python Worker"]:::l2
+        A3["👷 Agent-3 (L2)<br />Test Worker"]:::l2
+        A2["👨‍🎨 Agent-2 (L2)<br />CSS Worker"]:::l2
+        A4["👨‍🎨 Agent-4 (L2)<br />Design Worker"]:::l2
+
+        C --> V
+        C --> L
+        V --> A1
+        V --> A3
+        L --> A2
+        L --> A4
+    </div>
+
+    <table>
+        <tr>
+            <th>Fichier</th>
+            <th>Action</th>
+            <th>Effort</th>
+        </tr>
+        <tr>
+            <td><code>brainfs/agents_registry.json</code></td>
+            <td>CRÉER</td>
+            <td>1h</td>
+        </tr>
+        <tr>
+            <td><code>app/services/brainfs.py</code></td>
+            <td>MODIFIER — ajouter <code>load_agent_registry()</code></td>
+            <td>2h</td>
+        </tr>
+        <tr>
+            <td><code>app/services/auto_mode.py</code></td>
+            <td>MODIFIER — <code>_agent_platform()</code> → lookup registry</td>
+            <td>3h</td>
+        </tr>
+        <tr>
+            <td><code>app/data/model.py</code></td>
+            <td>MODIFIER — ajouter <code>level</code>, <code>parent_id</code></td>
+            <td>1h</td>
+        </tr>
+        <tr>
+            <td><code>app/ui/agents_grid.py</code></td>
+            <td>MODIFIER — grouper par niveau</td>
+            <td>4h</td>
+        </tr>
+    </table>
+
+    <!-- PLUGIN 2 -->
+    <h3><span class="phase-badge phase-1">PHASE 1</span> Plugin 2 : SOUL.md & Skills Dynamiques</h3>
+
+    <p><strong>Pourquoi :</strong> Les agents n'ont pas de personnalité. <code>skills.json</code> n'est jamais injecté
+        dans les prompts.</p>
+    <p><strong>Solution :</strong></p>
+    <ul>
+        <li><strong>SOUL.md</strong> = fiche d'identité de chaque agent (ton, règles, mémoire)</li>
+        <li><strong>Skill Library</strong> = <code>brainfs/library/</code> avec des dossiers par compétence contenant
+            <code>SKILL.md</code></li>
+    </ul>
+
+    <p><strong>Flux d'injection :</strong></p>
+    <div class="mermaid">
+        sequenceDiagram
+        participant AM as Auto-Mode
+        participant REG as Agent Registry
+        participant SOUL as brainfs/souls/
+        participant LIB as brainfs/library/
+        participant RT as Runtime (Codex)
+
+        AM->>REG: Quel agent pour cette tâche ?
+        REG-->>AM: Victor (skills: python, testing)
+        AM->>SOUL: Charger victor.md
+        SOUL-->>AM: "Tu es Victor, puriste du code..."
+        AM->>LIB: Charger python-expert/SKILL.md
+        LIB-->>AM: "Utilise pathlib, type hints..."
+        AM->>LIB: Charger testing-pytest/SKILL.md
+        LIB-->>AM: "Toujours écrire un test d'abord..."
+        AM->>RT: Prompt = SOUL + SKILLS + TÂCHE
+        RT-->>AM: Résultat ✅
+    </div>
+
+    <table>
+        <tr>
+            <th>Fichier</th>
+            <th>Action</th>
+            <th>Effort</th>
+        </tr>
+        <tr>
+            <td><code>brainfs/souls/clems.md</code></td>
+            <td>CRÉER</td>
+            <td>1h</td>
+        </tr>
+        <tr>
+            <td><code>brainfs/souls/victor.md</code></td>
+            <td>CRÉER</td>
+            <td>1h</td>
+        </tr>
+        <tr>
+            <td><code>brainfs/souls/leo.md</code></td>
+            <td>CRÉER</td>
+            <td>1h</td>
+        </tr>
+        <tr>
+            <td><code>brainfs/library/python-expert/SKILL.md</code></td>
+            <td>CRÉER</td>
+            <td>2h</td>
+        </tr>
+        <tr>
+            <td><code>brainfs/library/qt-styling/SKILL.md</code></td>
+            <td>CRÉER</td>
+            <td>2h</td>
+        </tr>
+        <tr>
+            <td><code>app/services/brainfs.py</code></td>
+            <td>MODIFIER — <code>load_soul()</code>, <code>load_skills_for_agent()</code></td>
+            <td>3h</td>
+        </tr>
+        <tr>
+            <td><code>app/services/auto_mode.py</code></td>
+            <td>MODIFIER — <code>format_prompt()</code> injecte SOUL + Skills</td>
+            <td>3h</td>
+        </tr>
+    </table>
+
+    <!-- PLUGIN 3 -->
+    <h3><span class="phase-badge phase-1">PHASE 1</span> Plugin 3 : Task Manager Simplifié</h3>
+
+    <p><strong>Pourquoi :</strong> L'auto-mode est une boîte noire. Aucune visibilité sur qui fait quoi.</p>
+    <p><strong>Solution :</strong> Un tableau (type "panneau d'aéroport") dans l'UI.</p>
+
+    <table>
+        <tr>
+            <th>Agent</th>
+            <th>Statut</th>
+            <th>Mission</th>
+            <th>Depuis</th>
+        </tr>
+        <tr>
+            <td>👨‍✈️ Clems</td>
+            <td>🟢 En Mission</td>
+            <td>Orchestration projet V2</td>
+            <td>2 min</td>
+        </tr>
+        <tr>
+            <td>🛠️ Victor</td>
+            <td>🟡 En Attente</td>
+            <td>Attend review Olivier</td>
+            <td>15 min</td>
+        </tr>
+        <tr>
+            <td>🎨 Léo</td>
+            <td>⚪ Au Repos</td>
+            <td>—</td>
+            <td>—</td>
+        </tr>
+        <tr>
+            <td>👷 Agent-1</td>
+            <td>🟢 En Mission</td>
+            <td>Fix CI pipeline</td>
+            <td>8 min</td>
+        </tr>
+    </table>
+
+    <p><strong>Pas de tokens. Pas de coûts.</strong> (Phase 3 si nécessaire.)</p>
+
+    <table>
+        <tr>
+            <th>Fichier</th>
+            <th>Action</th>
+            <th>Effort</th>
+        </tr>
+        <tr>
+            <td><code>app/ui/task_manager.py</code></td>
+            <td>CRÉER — widget <code>QTableWidget</code></td>
+            <td>4h</td>
+        </tr>
+        <tr>
+            <td><code>app/ui/sidebar.py</code></td>
+            <td>MODIFIER — ajouter entrée "Mission Control"</td>
+            <td>2h</td>
+        </tr>
+        <tr>
+            <td><code>app/main.py</code></td>
+            <td>MODIFIER — intégrer dans le stack central</td>
+            <td>2h</td>
+        </tr>
+    </table>
+
+    <!-- PLUGIN 4 -->
+    <h3><span class="phase-badge phase-2">PHASE 2</span> Plugin 4 : Platform Router (Multi-Runtime)</h3>
+
+    <p><strong>Pourquoi :</strong> 5/7 agents dépendent de Codex. Single point of failure.</p>
+    <p><strong>Solution :</strong> Un routeur qui distribue les tâches au bon runtime avec fallback automatique.</p>
+
+    <div class="mermaid">
+        graph LR
+        classDef provider fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+
+        D["Auto-Mode<br />Dispatch"] --> R["🔀 Platform<br />Router"]
+        R -->|Primaire| C["Codex"]:::provider
+        R -->|Fallback| A["Antigravity"]:::provider
+        R -->|Local| O["Ollama"]:::provider
+        R -->|Cloud| G["Gemini"]:::provider
+
+        C -->|Si échec| R
+        A -->|Si échec| R
+    </div>
+
+    <table>
+        <tr>
+            <th>Fichier</th>
+            <th>Action</th>
+            <th>Effort</th>
+        </tr>
+        <tr>
+            <td><code>app/services/platform_router.py</code></td>
+            <td>CRÉER — interface <code>RuntimeProvider</code> + Router</td>
+            <td>5h</td>
+        </tr>
+        <tr>
+            <td><code>app/services/providers/codex.py</code></td>
+            <td>CRÉER — wrapper existant</td>
+            <td>3h</td>
+        </tr>
+        <tr>
+            <td><code>app/services/providers/antigravity.py</code></td>
+            <td>CRÉER — wrapper existant</td>
+            <td>2h</td>
+        </tr>
+        <tr>
+            <td><code>app/services/providers/ollama.py</code></td>
+            <td>CRÉER — nouveau</td>
+            <td>4h</td>
+        </tr>
+        <tr>
+            <td><code>app/services/auto_mode.py</code></td>
+            <td>MODIFIER — utiliser Router au lieu de <code>_agent_platform()</code></td>
+            <td>4h</td>
+        </tr>
+    </table>
+
+    <!-- PLUGIN 5 -->
+    <h3><span class="phase-badge phase-2">PHASE 2</span> Plugin 5 : Mémoire Progressive</h3>
+
+    <p><strong>Pourquoi :</strong> Les agents oublient tout entre les sessions. Pas de recherche cross-projet.</p>
+
+    <p><strong>Étape A (Phase 2) — SQLite FTS5 :</strong> Recherche par mots-clés (0 dépendance externe).</p>
+    <p><strong>Étape B (Phase 3) — ChromaDB :</strong> Recherche sémantique (comprend le sens, pas juste les mots).</p>
+
+    <div class="mermaid">
+        graph TD
+        classDef now fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px;
+        classDef next fill:#fff9c4,stroke:#f9a825,stroke-width:2px;
+        classDef later fill:#ffcdd2,stroke:#c62828,stroke-width:2px;
+
+        S1["📝 Phase 2<br />SQLite FTS5<br />(Mots-clés)"]:::now
+        S2["🧠 Phase 3<br />ChromaDB<br />(Sémantique)"]:::next
+        S3["🤖 Phase 3+<br />Meta-Mémoire<br />(L'agent apprend des patterns)"]:::later
+
+        S1 -->|"Si insuffisant"| S2
+        S2 -->|"Scale"| S3
+    </div>
+
+    <table>
+        <tr>
+            <th>Fichier</th>
+            <th>Action</th>
+            <th>Effort</th>
+        </tr>
+        <tr>
+            <td><code>brainfs/memory/</code></td>
+            <td>CRÉER (dossier)</td>
+            <td>—</td>
+        </tr>
+        <tr>
+            <td><code>app/services/memory_engine.py</code></td>
+            <td>CRÉER — <code>index()</code>, <code>search()</code>, <code>learn_pattern()</code></td>
+            <td>4h</td>
+        </tr>
+        <tr>
+            <td><code>app/data/store.py</code></td>
+            <td>MODIFIER — hook indexation auto</td>
+            <td>2h</td>
+        </tr>
+        <tr>
+            <td><code>app/services/auto_mode.py</code></td>
+            <td>MODIFIER — indexation post-dispatch</td>
+            <td>2h</td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <h2>3. Prérequis Hardware</h2>
+
+    <h3>3.1 Configuration actuelle (Mac d'Olivier)</h3>
+    <table>
+        <tr>
+            <th>Composant</th>
+            <th>Minimum</th>
+            <th>Recommandé</th>
+            <th>Rôle</th>
+        </tr>
+        <tr>
+            <td><strong>CPU</strong></td>
+            <td>Apple M1</td>
+            <td>Apple M2 Pro / M3</td>
+            <td>Qt + SQLite FTS</td>
+        </tr>
+        <tr>
+            <td><strong>RAM</strong></td>
+            <td>8 GB</td>
+            <td>16 GB</td>
+            <td>Qt + 3 agents Codex simultanés</td>
+        </tr>
+        <tr>
+            <td><strong>Stockage</strong></td>
+            <td>10 GB libres</td>
+            <td>50 GB SSD</td>
+            <td>Projets + brainfs + memory</td>
+        </tr>
+        <tr>
+            <td><strong>Réseau</strong></td>
+            <td>Connexion stable</td>
+            <td>Fibre</td>
+            <td>Appels API Codex/AG/Gemini</td>
+        </tr>
+    </table>
+    <blockquote>✅ <strong>Un MacBook Pro M1/M2 16 GB suffit pour tout sauf le Vector Store lourd.</strong></blockquote>
+
+    <h3>3.2 Si Ollama (LLM local)</h3>
+    <table>
+        <tr>
+            <th>Modèle</th>
+            <th>Taille</th>
+            <th>RAM requise</th>
+            <th>Qualité</th>
+            <th>Vitesse</th>
+        </tr>
+        <tr>
+            <td><code>llama3.2:3b</code></td>
+            <td>2 GB</td>
+            <td>4 GB</td>
+            <td>⭐⭐</td>
+            <td>⚡⚡⚡</td>
+        </tr>
+        <tr>
+            <td><code>llama3.2:7b</code></td>
+            <td>4 GB</td>
+            <td>8 GB</td>
+            <td>⭐⭐⭐</td>
+            <td>⚡⚡</td>
+        </tr>
+        <tr>
+            <td><code>codellama:13b</code></td>
+            <td>7 GB</td>
+            <td>16 GB</td>
+            <td>⭐⭐⭐⭐</td>
+            <td>⚡</td>
+        </tr>
+        <tr>
+            <td><code>deepseek-coder:6.7b</code></td>
+            <td>4 GB</td>
+            <td>8 GB</td>
+            <td>⭐⭐⭐⭐ (code)</td>
+            <td>⚡⚡</td>
+        </tr>
+    </table>
+
+    <h3>3.3 Serveur Privé — Est-ce nécessaire ?</h3>
+    <blockquote><strong>NON, pas pour l'instant.</strong> Le Mac d'Olivier suffit pour tout sauf un modèle 70B+.
+    </blockquote>
+
+    <p><strong>Si on décide d'en prendre un (plus tard) :</strong></p>
+    <table>
+        <tr>
+            <th>Type</th>
+            <th>Fournisseur</th>
+            <th>Spécifications</th>
+            <th>Prix/mois</th>
+            <th>Cas d'usage</th>
+        </tr>
+        <tr>
+            <td>VPS simple</td>
+            <td>Hetzner / OVH</td>
+            <td>4 vCPU, 16 GB RAM, 100 GB SSD</td>
+            <td>~20-30 €</td>
+            <td>Cron jobs, mémoire centralisée</td>
+        </tr>
+        <tr>
+            <td>GPU Cloud</td>
+            <td>Lambda Labs / Vast.ai</td>
+            <td>1x RTX 4090, 24 GB VRAM</td>
+            <td>~100-300 €</td>
+            <td>LLM local gros (70B)</td>
+        </tr>
+        <tr>
+            <td><strong>🍎 Mac Mini M4</strong></td>
+            <td>Apple</td>
+            <td>M4, 24 GB unifiée, 512 GB</td>
+            <td><strong>~800 € (achat unique)</strong></td>
+            <td>LLM local, 0 coût récurrent</td>
+        </tr>
+    </table>
+    <blockquote>💡 <strong>Recommandation :</strong> Si tu veux un serveur, achète un <strong>Mac Mini M4 24
+            GB</strong>. Achat unique, silencieux, fait tourner tout 24/7.</blockquote>
+
+    <hr>
+
+    <h2>4. Roadmap Résumée</h2>
+
+    <div class="mermaid">
+        gantt
+        title Cockpit V2 — Roadmap
+        dateFormat YYYY-MM-DD
+
+        section Phase 1 (Fondations)
+        Agent Registry :p1a, 2026-02-17, 3d
+        SOUL.md + Skills :p1b, 2026-02-17, 5d
+        Task Manager MVP :p1c, 2026-02-24, 5d
+        Tests Phase 1 :p1d, 2026-03-03, 3d
+
+        section Phase 2 (Intelligence)
+        Memory Engine (FTS5) :p2a, 2026-03-06, 5d
+        Platform Router :p2b, 2026-03-13, 7d
+        Org Chart widget :p2c, 2026-03-20, 4d
+        Tests Phase 2 :p2d, 2026-03-24, 3d
+
+        section Phase 3 (Puissance)
+        ChromaDB :p3a, 2026-04-01, 7d
+        Ollama Provider :p3b, 2026-04-08, 4d
+        Cost Tracking :p3c, 2026-04-14, 5d
+    </div>
+
+    <table>
+        <tr>
+            <th>Phase</th>
+            <th>Durée</th>
+            <th>Effort</th>
+            <th>Résultat</th>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-1">PHASE 1</span></td>
+            <td>2 semaines</td>
+            <td>~30h</td>
+            <td>Agents identifiés, Skills, Task Manager MVP</td>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-2">PHASE 2</span></td>
+            <td>4 semaines</td>
+            <td>~31h</td>
+            <td>Mémoire FTS, Platform Router, Org Chart</td>
+        </tr>
+        <tr>
+            <td><span class="phase-badge phase-3">PHASE 3</span></td>
+            <td>8 semaines</td>
+            <td>~34h</td>
+            <td>Vector Store, LLM local, Coûts</td>
+        </tr>
+        <tr style="font-weight:bold;">
+            <td></td>
+            <td>~3 mois</td>
+            <td>~95h</td>
+            <td>Cockpit V2 complet</td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <h2>5. Risques & Mitigations</h2>
+    <table>
+        <tr>
+            <th>#</th>
+            <th>Risque</th>
+            <th>Probabilité</th>
+            <th>Impact</th>
+            <th>Mitigation</th>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td>Permissions macOS</td>
+            <td>Élevée</td>
+            <td>🔴</td>
+            <td>Stocker dans le dossier projet</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>ChromaDB trop lourd</td>
+            <td>Faible</td>
+            <td>🟡</td>
+            <td>SQLite FTS5 comme plan B permanent</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>Ollama = trop de RAM</td>
+            <td>Moyenne</td>
+            <td>🟡</td>
+            <td>Modèles < 7B, décharger après usage</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td>Prompt trop long</td>
+            <td>Moyenne</td>
+            <td>🔴</td>
+            <td>Budget token par section</td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td>Migration auto_mode casse le dispatch</td>
+            <td>Élevée</td>
+            <td>🔴</td>
+            <td>Feature flags + tests avant merge</td>
+        </tr>
+        <tr>
+            <td>6</td>
+            <td>Codex rate limiting</td>
+            <td>Moyenne</td>
+            <td>🟡</td>
+            <td>Platform Router + fallback + queue</td>
+        </tr>
+    </table>
+
+    <hr>
+    <blockquote>
+        <strong>Ce document est la feuille de route complète pour Cockpit V2.</strong><br>
+        Clems peut l'utiliser pour distribuer les tâches, phase par phase.<br>
+        Aucun codage ne commence avant validation par Olivier.
+    </blockquote>
+
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</body>
+
+</html>

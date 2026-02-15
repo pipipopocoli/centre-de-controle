@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cockpit V2 — Mission Control</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <!-- NAV -->
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="#" class="nav-brand">🚀 Cockpit V2</a>
+            <div class="nav-links">
+                <a href="#arch" class="nav-link">Architecture</a>
+                <a href="#roadmap" class="nav-link">Roadmap</a>
+                <a href="#skills" class="nav-link">Skills</a>
+                <a href="#simulation" class="nav-link marker-green">Simulation</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 1. HERO -->
+    <header class="hero">
+        <div class="container">
+            <span class="badge badge-tier0">Système Local-First</span>
+            <h1>Orchestrer 7 agents.<br>Sans perdre le contrôle.</h1>
+            <p class="hero-subtitle">
+                Fini le "Chatbot" boîte noire. Cockpit V2 est une <strong>plateforme d'ingénierie</strong> qui
+                transforme le code génératif en processus fiable, auditable et sécurisé.
+            </p>
+            <div class="hero-buttons">
+                <a href="#simulation" class="btn btn-primary" id="btn-hero-sim">Simuler un Run (Offline)</a>
+                <a href="#roadmap" class="btn btn-secondary">Voir le Gantt</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- 2. LE PROBLÈME -->
+        <section id="problem">
+            <h2 class="text-center">Pourquoi la V1 a échoué (Les 5 Murs)</h2>
+            <div class="grid-5 grid-4">
+                <div class="card">
+                    <span class="card-icon">🤖</span>
+                    <h4>Hardcoded Agents</h4>
+                    <p>Modifier un rôle impliquait de réécrire le moteur.</p>
+                </div>
+                <div class="card">
+                    <span class="card-icon">🧠</span>
+                    <h4>Amnésie</h4>
+                    <p>Chaque session repartait de zéro ignorait les leçons passées.</p>
+                </div>
+                <div class="card">
+                    <span class="card-icon">👻</span>
+                    <h4>Skills Fantômes</h4>
+                    <p>Des fichiers markdown existaient mais n'étaient jamais lus.</p>
+                </div>
+                <div class="card">
+                    <span class="card-icon">💥</span>
+                    <h4>Crash = Perte</h4>
+                    <p>Une erreur réseau efface tout le contexte de la tâche.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. ARCHITECTURE -->
+        <section id="arch">
+            <h2>Architecture Modulaire</h2>
+            <p>Découplage strict : L'intelligence (LLM) est un plugin. La logique (Services) est stable.</p>
+
+            <div class="grid-2">
+                <div id="arch-svg" class="svg-container"></div>
+                <div>
+                    <h3>Concept Clé : Soul vs Skill</h3>
+                    <p>Dans Cockpit, l'injection de prompt suit une équation stricte :</p>
+                    <div class="card" style="background:#f1f8ff; border-color:#c8e1ff;">
+                        <code
+                            style="font-size:1.1em; font-weight:bold; color:#0969da;">PROMPT = SOUL + SKILLS + TASKS</code>
+                    </div>
+                    <ul style="margin-top:1rem; padding-left:1rem;">
+                        <li><strong>SOUL (Qui je suis)</strong>: Identité, ton, garde-fous éthiques. (ex: <em>Victor,
+                                Backend Lead</em>).</li>
+                        <li><strong>SKILL (Ce que je sais faire)</strong>: Outil technique versionné. (ex:
+                            <em>git-commit, python-test</em>).</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. SIMULATION (NEW) -->
+        <section id="simulation">
+            <h2>Simulateur de Run</h2>
+            <p>Voyez comment Cockpit orchestre une tâche complexe en temps réel.</p>
+
+            <div class="grid-2">
+                <div>
+                    <div class="card" style="height:100%; border-left:4px solid var(--color-accent);">
+                        <h3>Scénario : "Fix Broken Button"</h3>
+                        <p>L'utilisateur signale un bug. Cockpit doit :</p>
+                        <ol>
+                            <li>Scanner le code (FTS)</li>
+                            <li>Déléguer à un expert (Victor)</li>
+                            <li>Appliquer un patch atomique</li>
+                            <li>Vérifier avec `pytest`</li>
+                            <li>Logger le succès</li>
+                        </ol>
+                        <button id="btn-sim-run" class="btn btn-primary" style="width:100%; margin-top:2rem;">▶ Lancer
+                            la Simulation</button>
+
+                        <div style="margin-top:2rem; text-align:center;">
+                            <span style="font-size:3rem; font-weight:800;" id="live-token-count">0</span>
+                            <br><span style="color:#8b949e">Tokens consommés</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="sim-console" id="sim-console-output">
+                    <div style="color:#8b949e; text-align:center; padding-top:40%;">En attente du lancement...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. ROADMAP -->
+        <section id="roadmap">
+            <h2>Roadmap Technique V2
+                <span class="badge badge-tier0" style="vertical-align:middle; font-size:0.5em; margin-left:10px;">EN
+                    COURS</span>
+            </h2>
+            <div class="gantt-wrapper">
+                <div class="gantt-chart">Chargement Gantt...</div>
+                <div class="gantt-details">
+                    <p style="text-align:center; margin-top:1rem; color:#666;">Cliquez sur une phase pour voir les
+                        détails (DoD, Tests, Risques).</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. SKILLS CATALOG -->
+        <section id="skills">
+            <h2>Usine à Skills & Confiance</h2>
+            <p>Nous ne faisons pas confiance aux "Marketplaces". Voici notre modèle de sécurité.</p>
+
+            <div style="display:flex; gap:1rem; margin-bottom:2rem; flex-wrap:wrap;">
+                <span class="badge badge-tier0">Tier 0: Built-in (Signé)</span>
+                <span class="badge badge-tier1">Tier 1: Local (User)</span>
+                <span class="badge badge-tier2">Tier 2: Review (Audit)</span>
+                <span class="badge badge-tier3">Tier 3: Sandbox (Untrusted)</span>
+            </div>
+
+            <div class="grid-3 mb-2" id="skills-taxonomy">
+                <!-- Rendered via JS -->
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h4>📦 MVP Skills (Tier 0/1)</h4>
+                    <div id="skills-mvp"></div>
+                </div>
+                <div class="card">
+                    <h4>🔒 Threat Model</h4>
+                    <table style="width:100%; font-size:0.9em; border-collapse:collapse;">
+                        <tr style="border-bottom:1px solid #eee;">
+                            <th style="text-align:left; padding:4px;">Menace</th>
+                            <th style="text-align:left; padding:4px;">Contrôle</th>
+                        </tr>
+                        <tr>
+                            <td>Prompt Injection</td>
+                            <td><span class="badge badge-tier0">Gatekeeper</span></td>
+                        </tr>
+                        <tr>
+                            <td>Supply Chain</td>
+                            <td><span class="badge badge-tier0">Lockfile Hash</span></td>
+                        </tr>
+                        <tr>
+                            <td>Secrets Exfil</td>
+                            <td><span class="badge badge-tier0">Outbound Filter</span></td>
+                        </tr>
+                        <tr>
+                            <td>rm -rf /</td>
+                            <td><span class="badge badge-tier0">Policy Engine</span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. POURQUOI -->
+        <section id="narrative"
+            style="background:white; padding:3rem; border-radius:12px; border:1px solid var(--color-border);">
+            <h2 style="margin-top:0">Pourquoi Cockpit V2 pour Olivier ?</h2>
+            <p>
+                Vous ne cherchez pas un "meilleur chatbot". Vous cherchez à <strong>industrialiser votre propre
+                    workflow</strong>.
+            </p>
+            <ul>
+                <li><strong>Gouvernance :</strong> Vous définissez <em>qui</em> a le droit de toucher à <em>quels</em>
+                    fichiers.</li>
+                <li><strong>Mémoire :</strong> L'outil ne vous reposera jamais la même question deux fois.</li>
+                <li><strong>Preuve :</strong> Chaque modification de code est accompagnée d'un log de test vert.</li>
+            </ul>
+            <p style="margin-top:1rem; font-weight:bold; color:var(--color-primary);">
+                -> C'est la différence entre un prototype amusant et une plateforme de production.
+            </p>
+        </section>
+
+        <footer>
+            <p>© 2026 Cockpit Project — Construit par Antigravity</p>
+            <p class="mono">offline_mode: active | version: 2.1.0-alpha</p>
+        </footer>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
