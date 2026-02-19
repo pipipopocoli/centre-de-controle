@@ -511,6 +511,68 @@ th { background: #f0ece6; }
 """
 
 
+
+def _slo_verdict_card(project: ProjectData, pending: int, blockers_open: int) -> str:
+    """Render SLO verdict card (GO / HOLD) based on settings targets."""
+    settings = project.settings if isinstance(project.settings, dict) else {}
+    slo = settings.get("slo") if isinstance(settings.get("slo"), dict) else {}
+    targets = slo.get("targets") if isinstance(slo.get("targets"), dict) else {}
+
+    p95 = targets.get("dispatch_p95_ms", 5000)
+    p99 = targets.get("dispatch_p99_ms", 12000)
+    success_min = targets.get("success_rate_min", 0.95)
+
+    # Simple heuristic: GO if no blockers and queue is manageable
+    verdict = "GO" if blockers_open == 0 and pending <= 3 else "HOLD"
+    verdict_color = "#166534" if verdict == "GO" else "#92400E"
+    verdict_bg = "#F0FDF4" if verdict == "GO" else "#FFFBEB"
+    verdict_border = "#BBF7D0" if verdict == "GO" else "#FDE68A"
+    verdict_icon = "&#x2705;" if verdict == "GO" else "&#x26A0;&#xFE0F;"
+
+    return f"""<div class='card' style='background:{verdict_bg}; border: 1px solid {verdict_border};'>
+      <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;'>
+        <div class='muted' style='font-size:11px;'>SLO Verdict</div>
+        <span style='font-size:22px; font-weight:800; color:{verdict_color};'>{verdict_icon} {verdict}</span>
+      </div>
+      <table style='width:100%; font-size:11px; color:#5E6167;'>
+        <tr><td>dispatch p95</td><td style='text-align:right; font-weight:600;'>&le; {p95} ms</td></tr>
+        <tr><td>dispatch p99</td><td style='text-align:right; font-weight:600;'>&le; {p99} ms</td></tr>
+        <tr><td>success rate</td><td style='text-align:right; font-weight:600;'>&ge; {int(success_min * 100)}%</td></tr>
+        <tr><td>open blockers</td><td style='text-align:right; font-weight:600; color:{("#C94B4B" if blockers_open > 0 else "#166534")};'>{blockers_open}</td></tr>
+        <tr><td>pending queue</td><td style='text-align:right; font-weight:600;'>{pending}</td></tr>
+      </table>
+    </div>"""
+
+
+def _cost_panel_card(project: ProjectData) -> str:
+    """Render CAD cost panel from project settings."""
+    settings = project.settings if isinstance(project.settings, dict) else {}
+    cost_cfg = settings.get("cost") if isinstance(settings.get("cost"), dict) else {}
+
+    currency = cost_cfg.get("currency", "CAD")
+    monthly_budget = cost_cfg.get("monthly_budget_cad", 0)
+
+    if monthly_budget <= 0:
+        return """<div class='card'>
+          <div class='muted' style='font-size:11px;'>Co&ucirc;t mensuel</div>
+          <div class='metric' style='color:#5E6167;'>n/a</div>
+          <p class='muted'>Aucun budget configur&eacute;</p>
+        </div>"""
+
+    # Simple cost bar (no actual spend tracking yet — shows budget ceiling)
+    bar_pct = min(100, 100)  # placeholder until telemetry wired
+    bar_color = "#23A6A6" if bar_pct < 80 else ("#F59E0B" if bar_pct < 100 else "#C94B4B")
+
+    return f"""<div class='card'>
+      <div class='muted' style='font-size:11px;'>&#x1F4B0; Co&#xFB;t mensuel ({html.escape(currency)})</div>
+      <div class='metric' style='font-size:20px;'>${monthly_budget:,.0f} <span style='font-size:12px; color:#5E6167;'>/ mois</span></div>
+      <div style='background:#E8E2D9; border-radius:4px; height:8px; margin-top:8px;'>
+        <div style='background:{bar_color}; width:{bar_pct}%; height:100%; border-radius:4px;'></div>
+      </div>
+      <p class='muted' style='margin-top:4px; font-size:10px;'>Budget plafond &mdash; t&eacute;l&eacute;m&eacute;trie non connect&eacute;e</p>
+    </div>"""
+
+
 def _build_project_html(project: ProjectData, mode: str, portfolio: list[ProjectData] | None) -> str:
     state = _state_bundle(project)
     issue = _issue_stats(project.path)
@@ -609,6 +671,11 @@ def _build_project_html(project: ProjectData, mode: str, portfolio: list[Project
     <div class='card'><div class='muted'>Issue progress</div><div class='metric'>{issue['done_pct']}%</div><p class='muted'>{issue['done']} done / {issue['total']} total</p></div>
     <div class='card'><div class='muted'>Open blockers</div><div class='metric'>{blockers_open}</div><p class='muted'>state + blocked agents</p></div>
     <div class='card'><div class='muted'>Pending requests</div><div class='metric'>{pending}</div><p class='muted'>queued/dispatched/reminded</p></div>
+  </div>
+
+  <div class='grid4' style='grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;'>
+    {_slo_verdict_card(project, pending, blockers_open)}
+    {_cost_panel_card(project)}
   </div>
 
   <h2>On est o\u00f9?</h2>
