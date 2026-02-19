@@ -1,28 +1,25 @@
 # State
 
 ## Phase
-- Implement
+- Ship
 
 ## Objective
 - Execute WAVE05 ENHANCED: registry runtime + scoring dispatch + fallback chain + CAD cost + SLO gates.
 
 ## Now
-- Core patches started on `store`, `auto_mode`, `execution_router`, `project_bible`, `project_pilotage`.
-- Wave05 issue map opened (CP-0026..CP-0032).
-- Agent mission pack and dispatch copy created.
-- Tournament capability kept dormant (manual trigger only).
+- Wave05 backend contracts locked on dispatch/router lane.
+- Strict provider chain active: codex -> antigravity -> ollama (flagged by `ollama_enabled`).
+- Cost telemetry schema v2 active in `runs/cost_events.ndjson` (backward compatible keys preserved).
+- Backend verification suite green.
+- `verify_project_bible` green via `.venv` run.
+- Runtime gates green: pending=0 and stale_heartbeats_gt1h=0.
 
 ## Next
-- Run Wave05 verification tests and close regressions.
-- Lock Gate 1: registry + fallback + telemetry artifacts.
-- Lock Gate 2: scoring/backpressure + UI SLO/cost visibility.
+- Operator signoff and merge/ship handoff.
+- Keep 60m gate recheck cadence until release confirmation.
 
 ## In Progress
-- C0 control cadence / runtime hygiene
-- C1 registry runtime (CP-0026/0027)
-- C2 scoring + backpressure (CP-0028/0029)
-- C3 router fallback + cost telemetry (CP-0030/0031)
-- C4 SLO gates + UI evidence (CP-0032)
+- none
 
 ## Blockers
 - none

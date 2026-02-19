@@ -1,0 +1,114 @@
+{
+  "updated_at": "2026-02-19T16:45:43+00:00",
+  "agent_tasks": {
+    "victor": {
+      "current_task": "Wave 1 backend delegation active with @agent-1,@agent-2,@agent-3",
+      "current_phase": "Implement",
+      "metadata": {
+        "project_id": "cockpit",
+        "engine": "CDX"
+      },
+      "updated_at": "2026-02-13T15:17:13.780116+00:00"
+    },
+    "leo": {
+      "current_task": "Wave 1 UI delegation active with @agent-6,@agent-7",
+      "current_phase": "Implement",
+      "metadata": {
+        "project_id": "cockpit",
+        "engine": "AG"
+      },
+      "updated_at": "2026-02-13T15:17:13.787053+00:00"
+    },
+    "clems": {
+      "current_task": "CP-01 orchestration: wave-based delegation and checkpoint gating",
+      "current_phase": "Implement",
+      "metadata": {
+        "project_id": "cockpit",
+        "engine": "CDX"
+      },
+      "updated_at": "2026-02-13T15:16:28.811060+00:00"
+    },
+    "agent-1": {
+      "current_task": "ISSUE-CP-0001 skills catalog fetch cache fallback",
+      "current_phase": "Implement",
+      "metadata": {},
+      "updated_at": "2026-02-13T15:36:58.746289+00:00"
+    },
+    "agent-7": {
+      "current_task": "ISSUE-CP-0012 close+report",
+      "current_phase": "Ship",
+      "metadata": {},
+      "updated_at": "2026-02-13T15:42:33.806231+00:00"
+    },
+    "agent-3": {
+      "current_task": "ISSUE-CP-0003 done - installer wrapper idempotence",
+      "current_phase": "Ship",
+      "metadata": {
+        "source": "CDX"
+      },
+      "updated_at": "2026-02-13T15:50:38.099828+00:00"
+    },
+    "antigravity": {
+      "current_task": "SLO/Cost QA Scenario Matrix",
+      "current_phase": "Review",
+      "metadata": {
+        "now": "QA Completed \u2014 7/7 PASS",
+        "next": "Await review / next assignment",
+        "blockers": "None"
+      },
+      "updated_at": "2026-02-19T16:45:43.288832+00:00"
+    }
+  },
+  "dispatch": {
+    "scoring": {
+      "enabled": true,
+      "weights": {
+        "skill_match": 0.45,
+        "availability": 0.2,
+        "cost": 0.15,
+        "history": 0.2
+      }
+    },
+    "backpressure": {
+      "enabled": true,
+      "queue_target": 3,
+      "max_actions_hard_cap": 5
+    }
+  },
+  "automation": {
+    "router": {
+      "providers_order": [
+        "codex",
+        "antigravity",
+        "ollama"
+      ],
+      "ollama_enabled": false,
+      "ollama_model": "llama3.2"
+    }
+  },
+  "cost": {
+    "currency": "CAD",
+    "monthly_budget_cad": 1200,
+    "provider_rates_cad_per_1k": {
+      "codex": {
+        "input": 0.01,
+        "output": 0.03
+      },
+      "antigravity": {
+        "input": 0.004,
+        "output": 0.01
+      },
+      "ollama": {
+        "input": 0.0,
+        "output": 0.0
+      }
+    }
+  },
+  "slo": {
+    "targets": {
+      "dispatch_p95_ms": 5000,
+      "dispatch_p99_ms": 12000,
+      "success_rate_min": 0.95
+    }
+  }
+}
