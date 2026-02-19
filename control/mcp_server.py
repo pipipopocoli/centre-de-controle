@@ -93,6 +93,7 @@ if not MCP_AVAILABLE:
 
 # Initialize MCP server
 server = Server("cockpit")
+PROJECT_ID_ERROR = "strict_project_routing_violation"
 
 # Tool definitions based on specification
 TOOL_DEFINITIONS = [
@@ -429,9 +430,21 @@ async def handle_post_message(arguments: dict[str, Any]) -> list[TextContent]:
         tags = _normalize_tags(arguments.get("tags"))
         metadata = arguments.get("metadata", {})
 
-        project_id = _infer_project_id(arguments)
+        project_id_raw = arguments.get("project_id")
+        project_id = project_id_raw.strip() if isinstance(project_id_raw, str) and project_id_raw.strip() else None
+        metadata_project_id = None
+        if isinstance(metadata, dict):
+            meta_pid = metadata.get("project_id")
+            if isinstance(meta_pid, str) and meta_pid.strip():
+                metadata_project_id = meta_pid.strip()
+
+        # Strict routing policy:
+        # - top-level project_id is mandatory
+        # - metadata.project_id, when provided, must match project_id
         if not project_id:
-            return [TextContent(type="text", text=json.dumps({"error": "Missing project_id (or metadata.project_id / COCKPIT_PROJECT_ID)"}))]
+            return [TextContent(type="text", text=json.dumps({"error": PROJECT_ID_ERROR}))]
+        if metadata_project_id and metadata_project_id != project_id:
+            return [TextContent(type="text", text=json.dumps({"error": PROJECT_ID_ERROR}))]
 
         message_id = _new_message_id(agent_id)
         timestamp = _utc_now_iso()

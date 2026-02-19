@@ -31,5 +31,6 @@ control/projects/**/chat/global.ndjson
 control/projects/**/chat/threads/
 control/projects/**/packs/
 control/projects/**/runs/auto_mode_state.json
+control/_archive_local/
 brainfs/profiles/*.json
 !brainfs/profiles/template.json

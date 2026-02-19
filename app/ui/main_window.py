@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QMainWindow,
     QSizePolicy,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -34,6 +35,8 @@ from app.services.pack_context import build_pack_context, write_pack_context
 from app.services.auto_mode import dispatch_once as auto_mode_dispatch_once
 from app.ui.agents_grid import AgentsGridWidget
 from app.ui.chatroom import ChatroomWidget
+from app.ui.project_bible import ProjectBibleWidget
+from app.ui.project_pilotage import ProjectPilotageWidget
 from app.ui.roadmap import RoadmapWidget
 from app.ui.sidebar import SidebarWidget
 
@@ -44,6 +47,8 @@ class MainWindow(QMainWindow):
         project: ProjectData,
         projects: list[str] | None = None,
         version_text: str = "",
+        app_stamp: str = "",
+        repo_head: str = "",
         data_dir: str = "",
     ) -> None:
         super().__init__()
@@ -53,6 +58,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(title)
         self.resize(1400, 860)
         self.current_project_id = project.project_id
+        self.app_stamp = app_stamp or version_text
+        self.repo_head = repo_head
 
         central = QWidget()
         outer = QHBoxLayout(central)
@@ -66,13 +73,24 @@ class MainWindow(QMainWindow):
         footer_text = "\n".join(footer_lines) if footer_lines else None
 
         self.sidebar = SidebarWidget(projects=projects, footer_text=footer_text, data_dir=data_dir)
+        self.sidebar.set_runtime_context(self.app_stamp, self.repo_head, self.current_project_id)
         self.sidebar.setFixedWidth(220)
         self.sidebar.new_project_btn.clicked.connect(self.on_new_project)
 
+        # ── Center: tabbed panels ──────────────────────────────────
         self.center = QWidget()
         center_layout = QVBoxLayout(self.center)
-        center_layout.setContentsMargins(12, 12, 12, 12)
-        center_layout.setSpacing(12)
+        center_layout.setContentsMargins(0, 0, 0, 0)
+        center_layout.setSpacing(0)
+
+        self.center_tabs = QTabWidget()
+        self.center_tabs.setObjectName("centerTabs")
+
+        # Tab 1: Overview (Roadmap + Agents)
+        overview = QWidget()
+        overview_layout = QVBoxLayout(overview)
+        overview_layout.setContentsMargins(12, 12, 12, 12)
+        overview_layout.setSpacing(12)
 
         self.roadmap = RoadmapWidget()
         self.roadmap.setFixedHeight(180)
@@ -80,8 +98,20 @@ class MainWindow(QMainWindow):
         self.agents_grid = AgentsGridWidget()
         self.agents_grid.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        center_layout.addWidget(self.roadmap)
-        center_layout.addWidget(self.agents_grid, 1)
+        overview_layout.addWidget(self.roadmap)
+        overview_layout.addWidget(self.agents_grid, 1)
+
+        self.center_tabs.addTab(overview, "Overview")
+
+        # Tab 2: Vulgarisation
+        self.project_bible = ProjectBibleWidget()
+        self.center_tabs.addTab(self.project_bible, "Vulgarisation")
+
+        # Tab 3: Pilotage (with visual timeline)
+        self.project_pilotage = ProjectPilotageWidget()
+        self.center_tabs.addTab(self.project_pilotage, "Pilotage")
+
+        center_layout.addWidget(self.center_tabs)
 
         self.chatroom = ChatroomWidget()
         self.chatroom.setFixedWidth(360)
@@ -127,6 +157,12 @@ class MainWindow(QMainWindow):
         self.auto_mode_timer.setInterval(self.auto_mode_interval_seconds * 1000)
         self.auto_mode_timer.timeout.connect(self.run_auto_mode_tick)
 
+        self._clems_seen: set[str] = set()
+        self._clems_reminded_requests: set[str] = set()
+        self._clems_pending_question_at: str | None = None
+        self._clems_pinged_operator: bool = False
+        self._clems_last_agent_ack_key: str | None = None
+
         self.load_project(project)
         if initial_project_row is not None:
             self.sidebar.project_list.blockSignals(True)
@@ -147,6 +183,7 @@ class MainWindow(QMainWindow):
     def load_project(self, project: ProjectData) -> None:
         prev_project_id = self.current_project_id
         self.current_project_id = project.project_id
+        self.sidebar.set_runtime_context(self.app_stamp, self.repo_head, self.current_project_id)
         if prev_project_id != self.current_project_id:
             self.sidebar.auto_mode.set_last_dispatch("-")
             self.sidebar.auto_mode.set_last_error("")
@@ -158,6 +195,8 @@ class MainWindow(QMainWindow):
         phase, objective, next_items, eta = self._read_state_summary()
         self.roadmap.set_state(phase, objective, next_items, eta=eta)
         self.agents_grid.set_agents(project.agents)
+        self.project_bible.set_project(project, refresh=True)
+        self.project_pilotage.set_project(project, portfolio=[], refresh=True)
         self._sync_auto_mode_from_settings(project)
         self.refresh_chat()
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import fcntl
 import json
 import subprocess
 import sys
@@ -23,6 +24,7 @@ def _resource_path(*parts: str) -> Path:
 
 
 THEME_PATH = _resource_path("app", "ui", "theme.qss")
+LOCK_PATH = Path.home() / ".cache" / "cockpit" / "singleton.lock"
 
 
 def _read_stylesheet(path: Path) -> str:
@@ -71,9 +73,18 @@ def _read_version_json(path: Path) -> str | None:
 
 def _get_version_stamp() -> str:
     version_json = _resource_path("app", "version.json")
-    stamp = _read_version_json(version_json)
-    if stamp:
-        return stamp
+    if getattr(sys, "frozen", False):
+        stamp = _read_version_json(version_json)
+        if stamp:
+            return stamp
+        try:
+            branch = _run_git(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+            sha = _run_git(["git", "rev-parse", "--short", "HEAD"])
+            dirty = _run_git(["git", "status", "--porcelain"])
+            dirty_flag = "*" if dirty else ""
+            return f"{branch}@{sha}{dirty_flag}"
+        except Exception:
+            return "unknown@unknown"
 
     try:
         branch = _run_git(["git", "rev-parse", "--abbrev-ref", "HEAD"])
@@ -82,11 +93,44 @@ def _get_version_stamp() -> str:
         dirty_flag = "*" if dirty else ""
         return f"{branch}@{sha}{dirty_flag}"
     except Exception:
+        stamp = _read_version_json(version_json)
+        if stamp:
+            return stamp
         return "unknown@unknown"
 
 
+def _get_repo_head() -> str:
+    try:
+        branch = _run_git(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+        sha = _run_git(["git", "rev-parse", "--short", "HEAD"])
+        dirty = _run_git(["git", "status", "--porcelain"])
+        dirty_flag = "*" if dirty else ""
+        return f"{branch}@{sha}{dirty_flag}"
+    except Exception:
+        return "unavailable"
+
+
 def main() -> int:
+    # -- Singleton guard: prevent duplicate instances --------------------------
+    LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
+    lock_file = open(LOCK_PATH, "w")  # noqa: SIM115
+    try:
+        fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except (IOError, OSError):
+        from PySide6.QtWidgets import QMessageBox
+
+        _app = QApplication(sys.argv)
+        QMessageBox.warning(
+            None,
+            "Cockpit déjà ouvert",
+            "Une instance du Centre de contrôle est déjà active.\n"
+            "Ferme-la d'abord ou utilise-la.",
+        )
+        lock_file.close()
+        return 1
+
     app = QApplication(sys.argv)
+    app._singleton_lock = lock_file  # type: ignore[attr-defined]  # keep lock alive
     app.setStyleSheet(_read_stylesheet(THEME_PATH))
 
     watcher = QFileSystemWatcher([str(THEME_PATH)])
@@ -96,8 +140,16 @@ def main() -> int:
     project = ensure_demo_project()
     projects = list_projects()
 
-    version_text = _get_version_stamp()
-    window = MainWindow(project, projects=projects, version_text=version_text, data_dir=str(PROJECTS_DIR))
+    app_stamp = _get_version_stamp()
+    repo_head = _get_repo_head()
+    window = MainWindow(
+        project,
+        projects=projects,
+        version_text=app_stamp,
+        app_stamp=app_stamp,
+        repo_head=repo_head,
+        data_dir=str(PROJECTS_DIR),
+    )
     window.show()
     return app.exec()
 

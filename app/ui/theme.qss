@@ -31,6 +31,44 @@ QLabel#versionStamp {
     padding: 6px 8px;
 }
 
+/* Runtime context panel */
+QFrame#runtimeContextPanel {
+    background-color: #FFFFFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 8px;
+}
+
+QLabel#runtimeContextTitle {
+    color: #1C1C1C;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+QLabel#runtimeContextLine {
+    color: #5E6167;
+    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 10px;
+}
+
+QLabel#runtimeMismatch {
+    color: #C94B4B;
+    font-weight: 700;
+    font-size: 11px;
+}
+
+QPushButton#rebuildAppButton {
+    background-color: #FFFFFF;
+    color: #2C5DFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-weight: 700;
+}
+
+QPushButton#rebuildAppButton:hover {
+    background-color: rgba(44, 93, 255, 0.08);
+}
+
 /* Auto-mode panel */
 QFrame#autoModePanel {
     background-color: #FFFFFF;
@@ -179,6 +217,22 @@ QFrame#agentCard {
     border-radius: 8px;
 }
 
+QFrame#agentCard[statusStripe="action"] {
+    border-left: 4px solid #23A6A6;
+}
+
+QFrame#agentCard[statusStripe="waiting"] {
+    border-left: 4px solid #2C5DFF;
+}
+
+QFrame#agentCard[statusStripe="blocked"] {
+    border-left: 4px solid #C94B4B;
+}
+
+QFrame#agentCard[statusStripe="error"] {
+    border-left: 4px solid #C94B4B;
+}
+
 QFrame#agentCard[stale="true"] {
     background-color: #FFF5F5;
     border-color: #C94B4B;
@@ -206,9 +260,9 @@ QLabel#agentStatus {
     color: #1C1C1C;
     background-color: #E8E2D9;
     border-radius: 999px;
-    padding: 2px 8px;
+    padding: 3px 10px;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 QLabel#agentStatus[status="executing"] {
@@ -224,6 +278,11 @@ QLabel#agentStatus[status="planning"] {
 QLabel#agentStatus[status="verifying"] {
     background-color: #FEF3C7;
     color: #92400E;
+}
+
+QLabel#agentStatus[status="waiting"] {
+    background-color: #DBEAFE;
+    color: #1E40AF;
 }
 
 QLabel#agentStatus[status="blocked"] {
@@ -244,6 +303,25 @@ QLabel#agentStatus[status="completed"] {
 QLabel#agentTask {
     color: #5E6167;
     font-size: 12px;
+}
+
+QLabel#agentTaskHeader {
+    color: #5E6167;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+QLabel#agentBlockersHeader {
+    color: #991B1B;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+QLabel#agentBlocker {
+    color: #C94B4B;
+    font-size: 11px;
 }
 
 QProgressBar#agentProgress {

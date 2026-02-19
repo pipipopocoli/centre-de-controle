@@ -18,6 +18,7 @@ from app.data.model import AgentState
 
 
 STALE_SECONDS = 10 * 60
+WAITING_STATUSES = {"pinged", "queued", "dispatched", "reminded"}
 
 
 def _format_age(seconds: float) -> str:
@@ -52,16 +53,20 @@ def _format_heartbeat(heartbeat: str | None) -> tuple[str, bool]:
 
 def _status_label(status: str | None) -> tuple[str, str]:
     if not status:
-        return "En attente", "idle"
+        return "💤 Repos", "idle"
     normalized = status.strip().lower()
+    if normalized in WAITING_STATUSES:
+        return "⏳ Attente reponse", "waiting"
     mapping = {
-        "idle": ("En attente", "idle"),
-        "planning": ("Planifie", "planning"),
-        "executing": ("En cours", "executing"),
-        "verifying": ("Verification", "verifying"),
-        "blocked": ("Bloque", "blocked"),
-        "error": ("Erreur", "error"),
-        "completed": ("Termine", "completed"),
+        "idle": ("💤 Repos", "idle"),
+        "planning": ("🧭 Planifie", "planning"),
+        "executing": ("⚡ En action", "executing"),
+        "verifying": ("🔎 Verification", "verifying"),
+        "blocked": ("🔴 Bloque", "blocked"),
+        "error": ("🔴 Erreur", "error"),
+        "completed": ("✅ Termine", "completed"),
+        "replied": ("💤 Repos", "idle"),
+        "closed": ("💤 Repos", "idle"),
     }
     return mapping.get(normalized, (status, normalized))
 
@@ -97,6 +102,17 @@ class AgentCard(QFrame):
         self.phase_label = QLabel(f"{state.phase}")
         self.phase_label.setObjectName("agentPhase")
         status_text, status_key = _status_label(state.status)
+
+        blockers = [item.strip() for item in (state.blockers or []) if str(item).strip()]
+        if blockers and status_key in {"idle", "completed"}:
+            status_text = "🔴 Bloque (blockers)"
+            status_key = "blocked"
+
+        stripe_key = status_key
+        if status_key in {"executing", "planning", "verifying"}:
+            stripe_key = "action"
+        self.setProperty("statusStripe", stripe_key)
+
         self.status_label = QLabel(status_text)
         self.status_label.setObjectName("agentStatus")
         self.status_label.setProperty("status", status_key)
@@ -107,6 +123,9 @@ class AgentCard(QFrame):
         phase_row.addWidget(self.status_label)
 
         # Task line
+        self.task_header = QLabel("MISSION")
+        self.task_header.setObjectName("agentTaskHeader")
+
         task_text = state.current_task.strip() if state.current_task else "-"
         self.task_label = QLabel(f"Tache: {task_text}")
         self.task_label.setObjectName("agentTask")
@@ -139,7 +158,17 @@ class AgentCard(QFrame):
 
         layout.addLayout(header)
         layout.addLayout(phase_row)
+        layout.addWidget(self.task_header)
         layout.addWidget(self.task_label)
+        if blockers:
+            blockers_header = QLabel("⚠ BLOCKERS")
+            blockers_header.setObjectName("agentBlockersHeader")
+            layout.addWidget(blockers_header)
+            for blocker in blockers[:3]:
+                blocker_label = QLabel(f"• {blocker}")
+                blocker_label.setObjectName("agentBlocker")
+                blocker_label.setWordWrap(True)
+                layout.addWidget(blocker_label)
         layout.addWidget(self.progress)
         layout.addLayout(footer)
 

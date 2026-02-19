@@ -26,6 +26,7 @@ fi
 
 VERSION_FILE="$ROOT_DIR/build/version.json"
 mkdir -p "$(dirname "$VERSION_FILE")"
+THEME_FILE="$ROOT_DIR/app/ui/theme.qss"
 
 "$VENV_PY" - <<PY
 import json
@@ -43,11 +44,12 @@ print(f"Wrote version stamp: {target}")
 PY
 
 pyinstaller \
+  --specpath build \
   --noconfirm \
   --windowed \
   --name "${APP_NAME}" \
-  --add-data "app/ui/theme.qss:app/ui" \
-  --add-data "build/version.json:app" \
+  --add-data "$THEME_FILE:app/ui" \
+  --add-data "$VERSION_FILE:app" \
   --collect-submodules PySide6 \
   app/main.py
 

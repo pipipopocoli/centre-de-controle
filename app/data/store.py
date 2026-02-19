@@ -127,6 +127,27 @@ def list_projects() -> list[str]:
     return sorted([p.name for p in PROJECTS_DIR.iterdir() if p.is_dir()])
 
 
+def resolve_startup_project_id(project_ids: list[str], preferred_project_id: str | None) -> str | None:
+    """
+    Resolve startup project id with deterministic fallback.
+    Priority:
+    1) preferred project id when present
+    2) "cockpit" if available
+    3) first project in provided list
+    4) None when list is empty
+    """
+    if not project_ids:
+        return None
+
+    if preferred_project_id and preferred_project_id in project_ids:
+        return preferred_project_id
+
+    if "cockpit" in project_ids:
+        return "cockpit"
+
+    return project_ids[0]
+
+
 def _parse_simple_roadmap(path: Path) -> dict[str, list[str]]:
     data: dict[str, list[str]] = {"now": [], "next": [], "risks": []}
     if not path.exists():
