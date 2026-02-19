@@ -22,7 +22,7 @@ import secrets
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 # Add parent directory to path for imports
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -145,7 +145,7 @@ TOOL_DEFINITIONS = [
                     "description": "Optional structured metadata",
                 }
             },
-            "required": ["content", "agent_id"]
+            "required": ["content", "agent_id", "project_id"]
         }
     ),
     Tool(
@@ -458,7 +458,7 @@ def _new_message_id(agent_id: str) -> str:
     return f"msg_{ts}_{agent_fragment}_{suffix}"
 
 
-def _infer_project_id(arguments: dict[str, Any]) -> str | None:
+def _infer_project_id(arguments: dict[str, Any]) -> Optional[str]:
     project_id = arguments.get("project_id")
     if isinstance(project_id, str) and project_id.strip():
         return project_id.strip()

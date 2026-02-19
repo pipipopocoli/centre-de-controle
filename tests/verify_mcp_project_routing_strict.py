@@ -14,7 +14,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
 from app.data.store import ensure_demo_project  # noqa: E402
-from control.mcp_server import PROJECT_ID_ERROR, handle_post_message  # noqa: E402
+from control.mcp_server import PROJECT_ID_ERROR, TOOL_DEFINITIONS, handle_post_message  # noqa: E402
 
 
 def _line_count(path: Path) -> int:
@@ -24,6 +24,11 @@ def _line_count(path: Path) -> int:
 
 
 async def _run() -> None:
+    post_tool = next((tool for tool in TOOL_DEFINITIONS if tool.name == "cockpit.post_message"), None)
+    assert post_tool is not None, "post_message tool definition missing"
+    required = post_tool.inputSchema.get("required", [])
+    assert "project_id" in required, "post_message schema must require project_id"
+
     project = ensure_demo_project()
     chat_path = project.path / "chat" / "global.ndjson"
     before = _line_count(chat_path)

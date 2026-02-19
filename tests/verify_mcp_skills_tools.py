@@ -24,6 +24,18 @@ async def _run() -> None:
         }
     )
     listed_payload = json.loads(listed[0].text)
+    listed_expected = {
+        "project_id",
+        "requested_by",
+        "source",
+        "skill_count",
+        "catalog",
+        "warnings",
+        "cache_path",
+        "timestamp",
+        "status",
+    }
+    assert listed_expected.issubset(set(listed_payload.keys()))
     assert listed_payload.get("project_id") == "demo"
     assert isinstance(listed_payload.get("catalog"), list)
     assert "cache_path" in listed_payload
@@ -37,6 +49,18 @@ async def _run() -> None:
         }
     )
     dry_payload = json.loads(dry_sync[0].text)
+    sync_expected = {
+        "requested_by",
+        "requested_skills",
+        "allowed_skills",
+        "rejected_skills",
+        "policy_events",
+        "catalog_source",
+        "catalog_warnings",
+        "status",
+        "error",
+    }
+    assert sync_expected.issubset(set(dry_payload.keys()))
     assert dry_payload.get("dry_run") is True
     assert dry_payload.get("requested") == 2
     assert dry_payload.get("status") in {"ok", "error"}
