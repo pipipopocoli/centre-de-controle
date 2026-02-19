@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from app.data.model import PHASES, ProjectData
+from app.services.cost_telemetry import estimate_monthly_cad_from_path, legacy_monthly_cad_estimate
 
 DEFAULT_VULGARISATION_CONFIG: dict[str, Any] = {
     "stale_warn_hours": 24,
@@ -89,6 +90,23 @@ def _read_json(path: Path) -> dict[str, Any] | list[Any] | None:
     if isinstance(payload, (dict, list)):
         return payload
     return None
+
+
+def _read_ndjson(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            rows.append(payload)
+    return rows
 
 
 def _safe_uri(path: Path) -> str:
@@ -398,10 +416,12 @@ def _build_snapshot(project: ProjectData, config: dict[str, Any]) -> tuple[dict[
 
     skills_lock_path = project_dir / "skills" / "skills.lock.json"
     costs_path = project_dir / "vulgarisation" / "costs.json"
+    cost_events_path = project_dir / "runs" / "cost_events.ndjson"
     verdict_path = project_dir / "eval" / "latest_verdict.json"
+    slo_verdict_path = project_dir / "runs" / "slo_verdict_latest.json"
 
     primary_sources = [state_path, roadmap_path, decisions_path] + issue_paths + agent_state_paths
-    optional_sources = [skills_lock_path, costs_path, verdict_path]
+    optional_sources = [skills_lock_path, costs_path, cost_events_path, verdict_path, slo_verdict_path]
     source_snapshot = _build_source_snapshot(project_dir, primary_sources + optional_sources)
 
     now = _utc_now()
@@ -467,16 +487,36 @@ def _build_snapshot(project: ProjectData, config: dict[str, Any]) -> tuple[dict[
         skill_count = 0
 
     costs_payload = _read_json(costs_path)
-    monthly_cost = "n/a"
-    if isinstance(costs_payload, dict):
-        value = costs_payload.get("api_cost_usd")
-        if isinstance(value, (int, float)):
-            monthly_cost = f"${value:.2f}"
+    legacy_monthly_cad = legacy_monthly_cad_estimate(costs_payload if isinstance(costs_payload, dict) else None)
+    monthly_cost_events_cad, cost_events_count = estimate_monthly_cad_from_path(cost_events_path, now_utc=now)
+    monthly_cost_cad = monthly_cost_events_cad if cost_events_count > 0 else legacy_monthly_cad
+
+    monthly_cost_label = "n/a"
+    if monthly_cost_cad is not None:
+        monthly_cost_label = f"{monthly_cost_cad:.2f} CAD"
 
     verdict_payload = _read_json(verdict_path)
     verdict_label = "unavailable"
     if isinstance(verdict_payload, dict):
         verdict_label = str(verdict_payload.get("verdict") or verdict_payload.get("status") or "unavailable")
+
+    slo_payload = _read_json(slo_verdict_path)
+    slo_verdict = "unavailable"
+    slo_p95 = "n/a"
+    slo_p99 = "n/a"
+    slo_success = "n/a"
+    if isinstance(slo_payload, dict):
+        slo_verdict = str(slo_payload.get("verdict") or "unavailable")
+        metrics = slo_payload.get("metrics") if isinstance(slo_payload.get("metrics"), dict) else {}
+        p95 = metrics.get("dispatch_p95_ms")
+        p99 = metrics.get("dispatch_p99_ms")
+        success = metrics.get("success_rate")
+        if isinstance(p95, (int, float)):
+            slo_p95 = f"{p95:.0f} ms"
+        if isinstance(p99, (int, float)):
+            slo_p99 = f"{p99:.0f} ms"
+        if isinstance(success, (int, float)):
+            slo_success = f"{float(success) * 100:.1f}%"
 
     summary_items = [
         {"label": "Project", "value": project.project_id},
@@ -502,6 +542,7 @@ def _build_snapshot(project: ProjectData, config: dict[str, Any]) -> tuple[dict[
     actions_items = [
         {"label": "Approvals blocked", "value": str(approvals_blocked)},
         {"label": "Release verdict", "value": verdict_label},
+        {"label": "SLO verdict", "value": slo_verdict},
         {
             "label": "Pressure mode",
             "value": "enabled" if pressure_mode else "disabled",
@@ -513,10 +554,17 @@ def _build_snapshot(project: ProjectData, config: dict[str, Any]) -> tuple[dict[
     ]
 
     cost_items = [
-        {"label": "Monthly cost", "value": monthly_cost},
-        {"label": "Cost file", "value": "available" if costs_path.exists() else "unavailable"},
-        {"label": "Warn threshold", "value": f">{int(stale_warn)}h"},
-        {"label": "Critical threshold", "value": f">{int(stale_critical)}h"},
+        {"label": "Currency", "value": "CAD"},
+        {"label": "Monthly estimate", "value": monthly_cost_label},
+        {"label": "Cost events (month)", "value": str(cost_events_count)},
+        {"label": "Legacy cost file", "value": "available" if costs_path.exists() else "unavailable"},
+    ]
+
+    slo_items = [
+        {"label": "Verdict", "value": slo_verdict},
+        {"label": "Dispatch p95", "value": slo_p95},
+        {"label": "Dispatch p99", "value": slo_p99},
+        {"label": "Success rate", "value": slo_success},
     ]
 
     skills_items = [
@@ -541,8 +589,9 @@ def _build_snapshot(project: ProjectData, config: dict[str, Any]) -> tuple[dict[
         "summary": _evidence_entries([state_path, roadmap_path, decisions_path], project_dir),
         "progress": _evidence_entries(issue_paths + agent_state_paths, project_dir),
         "freshness": _evidence_entries([state_path, roadmap_path, decisions_path], project_dir),
-        "actions": _evidence_entries([skills_lock_path, verdict_path], project_dir),
-        "cost": _evidence_entries([costs_path], project_dir),
+        "actions": _evidence_entries([skills_lock_path, verdict_path, slo_verdict_path], project_dir),
+        "cost": _evidence_entries([costs_path, cost_events_path], project_dir),
+        "slo": _evidence_entries([slo_verdict_path], project_dir),
         "skills": _evidence_entries([skills_lock_path] + linked_docs, project_dir),
         "timeline": _evidence_entries(checkpoint_paths + paper_paths + mission_paths, project_dir),
     }
@@ -586,11 +635,20 @@ def _build_snapshot(project: ProjectData, config: dict[str, Any]) -> tuple[dict[
         ),
         _panel_payload(
             panel_id="cost",
-            status="warn" if monthly_cost == "n/a" else "ok",
-            headline="Cost and usage panel",
+            status="warn" if monthly_cost_label == "n/a" else "ok",
+            headline="Cost and budget panel (CAD)",
             items=cost_items,
             fallback_text="Cost data unavailable.",
             evidence_links=evidence["cost"],
+            freshness_hours=age_hours,
+        ),
+        _panel_payload(
+            panel_id="slo",
+            status="ok" if slo_verdict == "GO" else ("warn" if slo_verdict == "HOLD" else "unavailable"),
+            headline="SLO gates verdict",
+            items=slo_items,
+            fallback_text="SLO data unavailable.",
+            evidence_links=evidence["slo"],
             freshness_hours=age_hours,
         ),
         _panel_payload(
@@ -740,10 +798,33 @@ def _render_vulgarisation_html(project: ProjectData, snapshot: dict[str, Any], c
         if isinstance(panel, dict):
             panel_map[str(panel.get("panel_id") or "")] = panel
 
+    def _panel_value(panel_id: str, label: str, default: str = "n/a") -> str:
+        panel = panel_map.get(panel_id)
+        if not isinstance(panel, dict):
+            return default
+        items = panel.get("items")
+        if not isinstance(items, list):
+            return default
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            if str(item.get("label") or "").strip().lower() != label.strip().lower():
+                continue
+            return str(item.get("value") or default)
+        return default
+
+    cost_currency = _panel_value("cost", "Currency", "CAD")
+    cost_monthly = _panel_value("cost", "Monthly estimate", "n/a")
+    cost_events = _panel_value("cost", "Cost events (month)", "0")
+    slo_verdict = _panel_value("slo", "Verdict", "unavailable")
+    slo_p95 = _panel_value("slo", "Dispatch p95", "n/a")
+    slo_p99 = _panel_value("slo", "Dispatch p99", "n/a")
+    slo_success = _panel_value("slo", "Success rate", "n/a")
+
     if bool(snapshot.get("pressure_mode")):
-        order = ["actions", "progress", "freshness", "summary", "cost", "skills", "timeline"]
+        order = ["actions", "slo", "progress", "freshness", "summary", "cost", "skills", "timeline"]
     else:
-        order = ["summary", "progress", "freshness", "actions", "cost", "skills", "timeline"]
+        order = ["summary", "progress", "freshness", "slo", "actions", "cost", "skills", "timeline"]
 
     max_cards = max(1, int(config.get("max_primary_cards", 7)))
     ordered_panels = [panel_map[key] for key in order if key in panel_map][:max_cards]
@@ -943,9 +1024,13 @@ th {{ background: #f0ece6; color: #1c1c1c; }}
     <h2>Cost and usage panel</h2>
     <table>
       <tr><th>Field</th><th>Value</th></tr>
-      <tr><td>Warn threshold</td><td>&gt;24h</td></tr>
-      <tr><td>Critical threshold</td><td>&gt;72h</td></tr>
-      <tr><td>Cost telemetry</td><td>{html.escape('available' if (project.path / 'vulgarisation' / 'costs.json').exists() else 'unavailable')}</td></tr>
+      <tr><td>Currency</td><td>{html.escape(cost_currency)}</td></tr>
+      <tr><td>Monthly estimate</td><td>{html.escape(cost_monthly)}</td></tr>
+      <tr><td>Events this month</td><td>{html.escape(cost_events)}</td></tr>
+      <tr><td>SLO verdict</td><td>{html.escape(slo_verdict)}</td></tr>
+      <tr><td>Dispatch p95</td><td>{html.escape(slo_p95)}</td></tr>
+      <tr><td>Dispatch p99</td><td>{html.escape(slo_p99)}</td></tr>
+      <tr><td>Success rate</td><td>{html.escape(slo_success)}</td></tr>
     </table>
   </section>
 

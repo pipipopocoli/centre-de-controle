@@ -7,6 +7,7 @@ Replaces the dense HTML view with native Qt widgets:
 """
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -26,6 +27,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.data.model import ProjectData
+from app.services.cost_telemetry import estimate_monthly_cad_from_path, legacy_monthly_cad_estimate
 from app.ui.project_timeline import ProjectTimelineWidget, _parse_state_items
 
 # -------------------------------------------------------------------
@@ -201,6 +203,14 @@ class ProjectPilotageWidget(QFrame):
 
         root.addWidget(phase_frame)
 
+        self._health_line = QLabel("SLO: n/a | Cost CAD: n/a")
+        self._health_line.setObjectName("pilotageHealthLine")
+        self._health_line.setStyleSheet(
+            "padding: 6px 10px; background: #FFFFFF; border: 1px solid #D9D3C8; border-radius: 8px; "
+            "font-size: 12px; color: #1C1C1C;"
+        )
+        root.addWidget(self._health_line)
+
         # ── Now / Next / Blockers ───────────────────────────────────
         cols_layout = QHBoxLayout()
         cols_layout.setSpacing(10)
@@ -291,6 +301,35 @@ class ProjectPilotageWidget(QFrame):
         obj_items = state.get("Objective", [])
         obj = obj_items[0] if obj_items else ""
         self._objective_label.setText(f"Cible: {obj}" if obj else "")
+
+        slo_path = project_dir / "runs" / "slo_verdict_latest.json"
+        slo_verdict = "n/a"
+        if slo_path.exists():
+            try:
+                slo_payload = json.loads(_read_text(slo_path))
+            except Exception:
+                slo_payload = {}
+            if isinstance(slo_payload, dict):
+                slo_verdict = str(slo_payload.get("verdict") or "n/a")
+
+        cost_path = project_dir / "runs" / "cost_events.ndjson"
+        monthly_cost, monthly_event_count = estimate_monthly_cad_from_path(cost_path, now_utc=datetime.now(timezone.utc))
+        if monthly_event_count > 0:
+            monthly_cost_label = f"{monthly_cost:.2f}"
+        else:
+            legacy_costs_path = project_dir / "vulgarisation" / "costs.json"
+            legacy_payload: dict | None = None
+            if legacy_costs_path.exists():
+                try:
+                    parsed = json.loads(_read_text(legacy_costs_path))
+                except Exception:
+                    parsed = None
+                if isinstance(parsed, dict):
+                    legacy_payload = parsed
+            legacy_cost = legacy_monthly_cad_estimate(legacy_payload)
+            monthly_cost_label = "n/a" if legacy_cost is None else f"{legacy_cost:.2f}"
+
+        self._health_line.setText(f"SLO: {slo_verdict} | Cost CAD (month): {monthly_cost_label}")
 
         # Now / Next / Blockers
         self._col_now.set_items(state.get("Now", []) + state.get("In Progress", []))
