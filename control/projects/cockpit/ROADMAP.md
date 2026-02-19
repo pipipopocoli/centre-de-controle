@@ -1,37 +1,33 @@
 # Roadmap
 
 ## Vision
-- Ship cockpit implementation continuously, with tournament-v2 feeding improvements in parallel.
+- Ship Cockpit V2 implementation-first with strict runtime control and optional tournament mode preserved dormant.
 
 ## Priorities
-- P0: execute Wave04 chains C0-C4 without breaking runtime control.
-- P1: keep queue/heartbeat gates green throughout execution.
-- P2: keep tournament streams as dormant optional capability.
-- P3: prepare next implementation wave from validated deltas only.
+- P0: WAVE05 backend contracts (registry, scoring, backpressure, fallback).
+- P1: Cost + SLO operator visibility in Pilotage/Vulgarisation.
+- P2: Keep runtime hygiene green while parallel lanes run.
+- P3: Keep tournament trees reusable but non-auto-executed.
 
 ## Sequence
-1. Wave03 closeout lock confirmed (CP-0004/0005/0015).
-2. Wave04 kickoff artifacts published (paper plan + dispatch + gate checklist).
-3. C1 UI ship lock lane and C2 backend contract lane execute in parallel.
-4. C0 control cadence validates gates at T+0, T+120, T+240.
-5. C3 cleanup canonicalization publishes decisions (no destructive cleanup).
-6. C4 finalizes Wave04 dispatch/order and operator packet.
-7. Gate 2 decision publishes ship-ready packet if all chains are green.
+1. Open CP-0026..CP-0032 issue set.
+2. Land registry runtime source of truth and fallback-safe roster loading.
+3. Land scoring + deterministic ranking + queue backpressure cap.
+4. Land execution router chain `codex -> antigravity -> ollama` (flagged).
+5. Emit CAD cost events + monthly estimate.
+6. Emit SLO verdict artifact GO/HOLD from p95/p99/success targets.
+7. Surface SLO/cost in UI and vulgarisation output.
+8. Run gates at T+120 / T+240 / T+360 and close wave packet.
 
 ## Daily control gates
-- pending stale (24h+): must be 0
-- stale heartbeats (1h+): must be <= 2
-- queued runtime requests: must be <= 3
-- wave04 chain coverage: C0/C1/C2/C3/C4 all tracked
+- pending stale (24h+) must be 0
+- stale heartbeats (1h+) must be <= 2
+- queued runtime requests must be <= 3
+- no tournament auto-dispatch during active implementation lanes
 
 ## Active source of truth
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/STATE.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/PAPER_PLAN_WAVE04_PARALLELIZATION_MAX_2026-02-19.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE04_DISPATCH_2026-02-19.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE04_GATE_CHECKLIST_2026-02-19.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/control_snapshot_wave04_t0_2026-02-19.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/queue_recovery_2026-02-19.ndjson
-- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/CP01_UI_QA_EVIDENCE_PACK_2026-02-19.md
-- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/CP01_UI_EVIDENCE_DELTA_P0.md
-- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/BACKLOG_CLEANUP_V2.md
-- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/BACKLOG_TOURNAMENT_PRESERVATION.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE_MAP_WAVE05_CP003X.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE05_DISPATCH_2026-02-19.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/missions/MISSION-VICTOR-WAVE05.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/missions/MISSION-LEO-WAVE05.md
