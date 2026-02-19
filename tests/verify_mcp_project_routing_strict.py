@@ -24,8 +24,8 @@ def _line_count(path: Path) -> int:
 
 
 async def _run() -> None:
-    ensure_demo_project()
-    chat_path = ROOT_DIR / "control" / "projects" / "demo" / "chat" / "global.ndjson"
+    project = ensure_demo_project()
+    chat_path = project.path / "chat" / "global.ndjson"
     before = _line_count(chat_path)
 
     missing = await handle_post_message(

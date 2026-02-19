@@ -4,12 +4,14 @@ Cockpit MCP Server
 ==================
 MCP server for Antigravity ⇄ Cockpit integration.
 
-Implements 5 core tools:
+Implements 7 core tools:
 - cockpit.post_message
 - cockpit.read_state
 - cockpit.update_agent_state
 - cockpit.request_run
 - cockpit.get_quotas
+- cockpit.list_skills_catalog
+- cockpit.sync_skills
 """
 
 import asyncio
@@ -36,6 +38,12 @@ from app.data.store import (  # noqa: E402
     save_project,
 )
 from app.services.chat_parser import parse_mentions  # noqa: E402
+from app.services.skills_catalog import SkillsCatalog  # noqa: E402
+from app.services.skills_installer import (  # noqa: E402
+    summary_to_dict,
+    sync_skills as sync_skills_install,
+)
+from app.services.skills_policy import SkillsPolicy  # noqa: E402
 
 try:
     from mcp.server import Server
@@ -306,6 +314,52 @@ TOOL_DEFINITIONS = [
                 }
             },
             "required": ["agent_id"]
+        }
+    ),
+    Tool(
+        name="cockpit.list_skills_catalog",
+        description="List curated skills catalog for a project with cache/fail-open metadata",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "type": "string",
+                    "description": "Requesting agent identifier"
+                },
+                "project_id": {
+                    "type": "string",
+                    "description": "Target project"
+                }
+            },
+            "required": ["agent_id", "project_id"]
+        }
+    ),
+    Tool(
+        name="cockpit.sync_skills",
+        description="Sync curated skills for a project with dry_run support",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "type": "string",
+                    "description": "Requesting agent identifier"
+                },
+                "project_id": {
+                    "type": "string",
+                    "description": "Target project"
+                },
+                "desired_skills": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional explicit list of skill ids. Defaults to full curated catalog."
+                },
+                "dry_run": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "If true, computes actions without state mutation."
+                }
+            },
+            "required": ["agent_id", "project_id"]
         }
     )
 ]
@@ -749,6 +803,108 @@ async def handle_get_quotas(arguments: dict[str, Any]) -> list[TextContent]:
         return [TextContent(type="text", text=json.dumps({"error": str(e)}))]
 
 
+async def handle_list_skills_catalog(arguments: dict[str, Any]) -> list[TextContent]:
+    """Handle cockpit.list_skills_catalog tool call."""
+    try:
+        agent_id = arguments["agent_id"]
+        project_id = arguments["project_id"]
+        logger.info(f"Listing skills catalog: agent={agent_id}, project={project_id}")
+
+        project = get_project(project_id)
+        adapter = SkillsCatalog(project.path)
+        result = adapter.fetch()
+
+        payload = {
+            "status": "ok" if result.catalog is not None else "degraded",
+            "project_id": project_id,
+            "requested_by": agent_id,
+            "source": result.source,
+            "skill_count": result.skill_count,
+            "catalog": result.catalog or [],
+            "warnings": result.warnings,
+            "cache_path": str(adapter.cache_path),
+            "timestamp": _utc_now_iso(),
+        }
+        return [TextContent(type="text", text=json.dumps(payload, indent=2))]
+    except Exception as e:
+        logger.error(f"Error in list_skills_catalog: {e}", exc_info=True)
+        return [TextContent(type="text", text=json.dumps({"error": str(e)}))]
+
+
+async def handle_sync_skills(arguments: dict[str, Any]) -> list[TextContent]:
+    """Handle cockpit.sync_skills tool call."""
+    try:
+        agent_id = arguments["agent_id"]
+        project_id = arguments["project_id"]
+        dry_run = bool(arguments.get("dry_run", False))
+        desired_raw = arguments.get("desired_skills")
+        desired_skills = desired_raw if isinstance(desired_raw, list) else []
+
+        logger.info(
+            "Sync skills request: agent=%s project=%s dry_run=%s desired=%s",
+            agent_id,
+            project_id,
+            dry_run,
+            len(desired_skills),
+        )
+
+        project = get_project(project_id)
+        adapter = SkillsCatalog(project.path)
+        catalog_result = adapter.fetch()
+        catalog = catalog_result.catalog
+
+        policy = SkillsPolicy.from_catalog(catalog, fail_open=True)
+
+        catalog_ids = []
+        if isinstance(catalog, list):
+            for entry in catalog:
+                if not isinstance(entry, dict):
+                    continue
+                skill_id = str(entry.get("id") or "").strip()
+                if skill_id:
+                    catalog_ids.append(skill_id)
+
+        requested = [str(skill).strip() for skill in desired_skills if str(skill).strip()]
+        if not requested:
+            requested = sorted(set(catalog_ids))
+
+        decisions = policy.evaluate_batch(requested)
+        allowed = [decision.skill_id for decision in decisions if decision.allowed]
+        rejected = [decision.skill_id for decision in decisions if not decision.allowed]
+
+        summary = sync_skills_install(
+            project_id,
+            allowed,
+            projects_root=project.path.parent,
+            catalog=catalog,
+            dry_run=dry_run,
+        )
+
+        payload = summary_to_dict(summary)
+        payload["requested_by"] = agent_id
+        payload["requested_skills"] = requested
+        payload["allowed_skills"] = allowed
+        payload["rejected_skills"] = rejected
+        payload["policy_events"] = [
+            {
+                "timestamp": event.timestamp,
+                "event_type": event.event_type,
+                "skill_id": event.skill_id,
+                "detail": event.detail,
+            }
+            for event in policy.events
+        ]
+        payload["catalog_source"] = catalog_result.source
+        payload["catalog_warnings"] = catalog_result.warnings
+        payload["cache_path"] = str(adapter.cache_path)
+        payload["timestamp"] = _utc_now_iso()
+        payload["status"] = "ok" if summary.error is None else "error"
+        return [TextContent(type="text", text=json.dumps(payload, indent=2))]
+    except Exception as e:
+        logger.error(f"Error in sync_skills: {e}", exc_info=True)
+        return [TextContent(type="text", text=json.dumps({"error": str(e)}))]
+
+
 def _serialize_project(project: ProjectData, scope: str) -> dict[str, Any]:
     """Serialize project data based on scope."""
     data = {
@@ -823,6 +979,10 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         return await handle_request_run(arguments)
     elif name == "cockpit.get_quotas":
         return await handle_get_quotas(arguments)
+    elif name == "cockpit.list_skills_catalog":
+        return await handle_list_skills_catalog(arguments)
+    elif name == "cockpit.sync_skills":
+        return await handle_sync_skills(arguments)
     else:
         return [TextContent(type="text", text=json.dumps({"error": f"Unknown tool: {name}"}))]
 
