@@ -9,13 +9,14 @@
 ## Now
 - V2-WAVE-03 core issues closed: CP-0004/CP-0005/CP-0015 are `Status: Done`.
 - Live gates @2026-02-19T14:33:32+00:00: pending_stale_gt24h=0, stale_heartbeats_gt1h=0, queued_runtime_requests=0, cp_wave03_issues_done=3/3.
+- MCP closeout validation locked: isolated tests green, routing strict checks green, and skills payload regression keys verified.
 - Runtime control evidence published: `control_snapshot_2026-02-19.md` + `queue_recovery_2026-02-19.ndjson`.
 - Tournament capability preserved and dormant (manual operator activation only).
 
 ## Next
-- Run final closeout proof review and lock ship-readiness checklist.
+- Publish ship-ready operator signoff packet with verification links and final status.
 - Recheck control gates on 60m cadence and keep queue/heartbeat gates green.
-- Publish ship-ready operator packet with verification links and final status.
+- Keep MCP smoke checks in isolated mode on each closeout revalidation cycle.
 
 ## In Progress
 - Wave03 closeout review sync (state + roadmap + source links)

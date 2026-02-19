@@ -14,7 +14,8 @@
 2. CP-0005 complete: MCP skills tools delivered and payload compatibility locked.
 3. CP-0015 complete: QA evidence pack published for checkpoint closeout.
 4. Runtime queue/heartbeat gates swept and closeout snapshot locked (2026-02-19).
-5. Move from Review to Ship after final operator signoff packet.
+5. Backend/control closeout validation complete: MCP routing/tools checks locked and payload non-regression confirmed.
+6. Move from Review to Ship after final operator signoff packet.
 
 ## Daily control gates
 - pending stale (24h+): must be 0
