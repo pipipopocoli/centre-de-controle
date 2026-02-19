@@ -18,7 +18,7 @@ from app.data.model import AgentState
 
 
 STALE_SECONDS = 10 * 60
-WAITING_STATUSES = {"pinged", "queued", "dispatched", "reminded"}
+WAITING_STATUSES = {"pinged", "queued", "dispatched", "reminded", "waiting_reconfirm"}
 
 
 def _format_age(seconds: float) -> str:
@@ -108,10 +108,8 @@ class AgentCard(QFrame):
             status_text = "🔴 Bloque (blockers)"
             status_key = "blocked"
 
-        stripe_key = status_key
-        if status_key in {"executing", "planning", "verifying"}:
-            stripe_key = "action"
-        self.setProperty("statusStripe", stripe_key)
+        # Left-border stripe driven by QSS property
+        self.setProperty("statusStripe", status_key)
 
         self.status_label = QLabel(status_text)
         self.status_label.setObjectName("agentStatus")

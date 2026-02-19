@@ -233,6 +233,10 @@ QFrame#agentCard[statusStripe="error"] {
     border-left: 4px solid #C94B4B;
 }
 
+QFrame#agentCard[statusStripe="rest"] {
+    border-left: 4px solid #D9D3C8;
+}
+
 QFrame#agentCard[stale="true"] {
     background-color: #FFF5F5;
     border-color: #C94B4B;

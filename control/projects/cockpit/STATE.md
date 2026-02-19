@@ -1,33 +1,32 @@
 # State
 
 ## Phase
-- Implement
+- Review
 
 ## Objective
-- Execute V2-WAVE-03 (implementation-first) and close CP-0004/CP-0005/CP-0015 without tournament blocking.
+- Lock V2-WAVE-03 closeout proof and ship readiness without tournament blocking.
 
 ## Now
-- V2-WAVE-03 launched with owner map: @victor (backend), @leo (UI), @clems (control gates).
-- CP-0004 implemented: deterministic `memory.index.json` generation for core roles.
-- CP-0005 implemented: MCP tools `cockpit.list_skills_catalog` and `cockpit.sync_skills` with dry_run.
-- CP-0015 completed: QA evidence pack + degraded-state capture fallback published.
+- V2-WAVE-03 core issues closed: CP-0004/CP-0005/CP-0015 are `Status: Done`.
+- Live gates @2026-02-19T14:33:32+00:00: pending_stale_gt24h=0, stale_heartbeats_gt1h=0, queued_runtime_requests=0, cp_wave03_issues_done=3/3.
+- Runtime control evidence published: `control_snapshot_2026-02-19.md` + `queue_recovery_2026-02-19.ndjson`.
 - Tournament capability preserved and dormant (manual operator activation only).
 
 ## Next
-- Run closeout verification suite and lock issue statuses to Done.
-- Reduce runtime queued noise to target gate (`queued <= 3`) and reconfirm stale heartbeats.
-- Publish one dispatch packet snapshot in project runs for operator traceability.
+- Run final closeout proof review and lock ship-readiness checklist.
+- Recheck control gates on 60m cadence and keep queue/heartbeat gates green.
+- Publish ship-ready operator packet with verification links and final status.
 
 ## In Progress
-- V2-WAVE-03 sprint closeout verification (T+6h gate)
-- control gate hygiene sweep (queue + heartbeat)
+- Wave03 closeout review sync (state + roadmap + source links)
+- Ship-readiness proof sweep (gates + issue closure + evidence)
 
 ## Blockers
-- queued runtime requests currently above target sprint gate (`queued <= 3`)
+- none
 
 ## Risks
 - stale loop can return if reminders are not closed with lifecycle rules
-- false green risk if queue backlog is not pruned after mention bursts
+- false green risk if gate checks are not re-run before ship signoff
 - implementation drift if tournament ideas are merged without acceptance gates
 
 ## Gates
@@ -38,8 +37,9 @@
 - implementation_blocked_by_tournament == false
 
 ## Links
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/control_snapshot_2026-02-18.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/queue_recovery_2026-02-18.ndjson
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/control_snapshot_2026-02-19.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/queue_recovery_2026-02-19.ndjson
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R2_RELAUNCH_DISPATCH_2026-02-18.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R2_PROMPTS_TOP4.md
 - /Users/oliviercloutier/Desktop/Cockpit/docs/reports/CP01_UI_QA_EVIDENCE_PACK_2026-02-19.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/CP01_UI_EVIDENCE_DELTA_P0.md

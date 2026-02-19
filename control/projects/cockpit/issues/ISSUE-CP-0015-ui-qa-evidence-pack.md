@@ -38,6 +38,7 @@
 - Evidence: /Users/oliviercloutier/Desktop/Cockpit/docs/reports/CP01_UI_QA_EVIDENCE_PACK_2026-02-19.md
 - Capture: /Users/oliviercloutier/Desktop/Cockpit/docs/reports/cp01-ui-qa/screenshots/cp01_overview_2026-02-19.svg
 - Capture: /Users/oliviercloutier/Desktop/Cockpit/docs/reports/cp01-ui-qa/screenshots/cp01_degraded_profile_missing_2026-02-19.svg
+- Delta matrix: /Users/oliviercloutier/Desktop/Cockpit/docs/reports/CP0015_QA_SCENARIO_MATRIX_DELTA_2026-02-19.md
 - PR: main (V2-WAVE-03)
 
 ## Risks
