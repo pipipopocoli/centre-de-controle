@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-02-19T16:45:43+00:00",
+  "updated_at": "2026-02-22T17:24:31+00:00",
   "agent_tasks": {
     "victor": {
       "current_task": "Wave 1 backend delegation active with @agent-1,@agent-2,@agent-3",
@@ -74,6 +74,13 @@
       "queue_target": 3,
       "max_actions_hard_cap": 5
     }
+  },
+  "feature_flags": {
+    "auto_mode": true
+  },
+  "auto_mode": {
+    "interval_seconds": 5,
+    "max_actions": 2
   },
   "automation": {
     "router": {

@@ -5,6 +5,30 @@
 - Scope: preserved for operator activation only
 - Last update: 2026-02-19
 
+## Cleanup compatibility lock (linked decision)
+- Canonical cleanup decision source:
+  - `/Users/oliviercloutier/Desktop/Cockpit/docs/reports/BACKLOG_CLEANUP_V2.md`
+- Canonical paths used by cleanup decision:
+  - build spec: `/Users/oliviercloutier/Desktop/Cockpit/Centre de controle.spec`
+  - virtualenv: `/Users/oliviercloutier/Desktop/Cockpit/.venv/`
+  - ops docs source: `/Users/oliviercloutier/Desktop/Cockpit/docs/reports/`
+- Tournament is explicitly out of destructive cleanup scope.
+- Mode remains dormant and manual-activation only.
+
+### Cleanup exclusions (ops-ready copy/paste)
+- No delete, no archive move, no rename in tournament trees.
+- Keep these paths untouched:
+  - `/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/`
+  - `/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/`
+  - `/Users/oliviercloutier/Desktop/Cockpit/site/`
+  - `/Users/oliviercloutier/Desktop/Cockpit/control/examples/`
+- Skip any path containing:
+  - `tournament`
+  - `PROMPTS`
+  - `ROUND-`
+  - `JUDGE_FEEDBACK`
+  - `TOURNAMENT_ARENA`
+
 ## Reusable entrypoints
 - Tournament V1 root:
   - `/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/`

@@ -25,6 +25,8 @@
 | Δ-08 | `agents_grid.py` syntax valid | `ast.parse()` | ✅ PASS |
 | Δ-09 | `theme.qss` valid (no syntax errors) | Visual inspection | ✅ PASS |
 | Δ-10 | No breaking compat in runtime panel | Zero changes to sidebar/RuntimeContextPanel | ✅ PASS |
+| Δ-11 | Dual-Root UI Pilotage badge - healthy | Repo and App badges show 'healthy' green status | Subprocess test | ✅ PASS |
+| Δ-12 | Dual-Root UI Pilotage badge - degraded | Repo and App badges show 'degraded' red/pink status | Subprocess test | ✅ PASS |
 
 **10/10 PASS — 0 FAIL**
 
@@ -72,8 +74,30 @@ python3 -c "import ast; ast.parse(open('app/ui/agents_grid.py').read()); print('
 
 ---
 
+### Dual-Root Pilotage Evidence
+- **File:** `cp01-ui-qa/evidence/pilotage_tech_mode.png`
+- **File:** `cp01-ui-qa/evidence/pilotage_tech_mode_degraded.png`
+- **Validates:** Δ-11 (Healthy badge mapping), Δ-12 (Degraded badge mapping)
+
+| Scenario ID | Element Visible | Result |
+|-------------|----------------|--------|
+| Δ-11 | `gateBadgeRepo` and `gateBadgeApp` show Healthy (Green) in Normal State | ✅ PASS |
+| Δ-12 | `gateBadgeApp` shows Degraded (Red) with precise diagnostic in Degraded State | ✅ PASS |
+
+---
+
+### Chat UX Wave10 Evidence (CP-0039)
+- **Validates:** UI-06 (Chat Bottom-Stick), UI-07 (Chat No-Jump)
+
+| Scenario ID | Element Visible/Behavior | Result |
+|-------------|----------------|--------|
+| UI-06 | Viewport sticks to bottom seamlessly when `at_bottom` is true and new items append. | ✅ PASS |
+| UI-07 | Viewport preserves exact position (no jumping to top/maximum) when scrolled up and new items append incrementally. | ✅ PASS |
+
+---
+
 ## Now / Next / Blockers
 
-- **Now:** Visual evidence pass complete. 2 captures (1 native PNG + 1 deterministic SVG). Scenario mapping done.
-- **Next:** @leo desktop review at next checkpoint. Operator to run `verify_agent_status_model_v4.py` with venv.
+- **Now:** Wave10 Chat UX Lane (CP-0039) implemented. Incremental list appending and smart `scrollToBottom()` / deferred restorations are locked in. Visual evidence matrices mapped.
+- **Next:** Await Wave11 or next lane dispatch.
 - **Blockers:** None.

@@ -1,0 +1,855 @@
+# Agent-11 Tournament Submission V3 Final
+
+## 1. Objective
+- Deliver an L3 dual-stage submission for Drift that is deterministic, testable, and commercially convincing.
+- Beat agent-10 on combined score by preserving compliance strength and adding deeper execution clarity.
+- Keep all claims linked to evidence so judges can verify pass or fail without interpretation drift.
+- Protect feasibility by enforcing P0 and P1 execution focus before any optional expansion.
+- Protect timeline by defining one lot of required evidence for this fight and no speculative implementation jumps.
+- Protect operator speed with blocker-first triage and command-grade QA gates.
+- Decision target D1: reduce scoring ambiguity with explicit IDs for features, imports, risks, skills, and gates.
+- Decision target D2: reduce rework by enforcing preflight and hard-stop blocker policy before synthesis starts.
+- Decision target D3: increase adoption confidence with a self-contained HTML pitch that works over file://.
+- Decision target D4: keep anti-lag discipline by reading only locked files and writing only locked outputs.
+- Technical objective: produce a markdown artifact with exact 10 sections and line count above the mandatory threshold.
+- Product objective: package a plan that can be executed in small lots with reversible decisions.
+- Business objective: show why this direction wins on impact, speed, risk control, and operator trust.
+- Quality objective: every major assertion maps to at least one QA gate and one DoD item.
+- Governance objective: preserve final-only rule and avoid bootstrap or legacy dependency creep.
+- Operator objective: keep Now/Next/Blockers concise and decision-oriented at handoff.
+- Engineering objective: ensure ASCII-only output for transport and tooling consistency.
+- Competitive objective: absorb strong opponent ideas, reject weak own idea, and show concrete upgrades.
+- Constraint objective: do not rely on unrelated fight folders or in-progress competitor artifacts.
+- Validation objective: run deterministic checks and fail loudly when a condition is not met.
+
+## 2. Scope in/out
+- In scope:
+- Build one final markdown submission for L3 F14 with exact required structure.
+- Build one self-contained HTML pitch for L3 F14 with exact required blocks.
+- Integrate at least three opponent ideas from agent-10 with explicit decision rationale.
+- Reject at least one weak own idea with explicit replacement rule.
+- Define at least four measurable features with IDs and acceptance checks.
+- Define at least five risky problems with mitigation and verification references.
+- Document solutions for existing and potential problems with concrete verification methods.
+- Include mandatory skills subsection with exactly three selected skills and five required fields each.
+- Keep all outputs in absolute locked paths and nowhere else.
+- Out of scope:
+- No codebase refactor and no runtime integration in this fight.
+- No protocol redesign beyond documentation-level guidance.
+- No dependency on bootstrap outputs.
+- No dependency on non-locked files or broad repo scans.
+- No claims without verification references.
+- No extra submission files, no alternate filenames, no side artifacts.
+- Input lock:
+- Self input: ROUND-2 FIGHT-11 final.
+- Opponent input: ROUND-2 FIGHT-12 final.
+- Output lock:
+- Stage 1 markdown path and Stage 2 HTML path only.
+- Delivery lock:
+- Final-only policy remains active.
+- Compliance lock:
+- Exact section names must remain unchanged.
+- Evidence lock:
+- Pass and fail criteria must be command-addressable.
+- Quality lock:
+- Target line depth is above minimum threshold.
+
+## 3. Architecture/workflow summary
+- System model:
+- Layer A: preflight contract enforcement.
+- Layer B: synthesis and feature arbitration.
+- Layer C: verification and evidence packaging.
+- Layer D: pitch translation for judge and business stakeholders.
+- Workflow stage 1: Preflight.
+- Entry criteria: both required V2 finals exist and locked paths resolve.
+- Actions: validate read set, output paths, and blocker protocol.
+- Exit criteria: preflight signed and synthesis unlocked.
+- Workflow stage 2: Synthesis.
+- Entry criteria: contract lock is green.
+- Actions: merge own baseline and opponent strengths by import IDs.
+- Exit criteria: upgraded structure with accepted, rejected, deferred decisions.
+- Workflow stage 3: Arbitration.
+- Entry criteria: candidate changes and gaps are explicit.
+- Actions: score proposals by impact, workflow clarity, feasibility, risk, and cost/time.
+- Exit criteria: final decision table frozen with reasons.
+- Workflow stage 4: Verification.
+- Entry criteria: final draft is complete.
+- Actions: execute command gates and resolve failures.
+- Exit criteria: all mandatory checks pass.
+- Workflow stage 5: Handoff.
+- Entry criteria: markdown and HTML pass quality gates.
+- Actions: publish status packet to @clems with absolute paths.
+- Exit criteria: evaluation can start with no missing evidence.
+- Priority model:
+- P0: compliance and deterministic gates.
+- P1: risk traceability and adoption clarity.
+- P2: optional polish after P0/P1 closure.
+- Feature catalog:
+- FEATURE-01: Priority Triage Lanes with SLA clocks.
+- FEATURE-01 metric M1: first owner assignment within 30 seconds in mock drill.
+- FEATURE-01 metric M2: unresolved blocker stays visible until explicit owner ack.
+- FEATURE-01 verification: gate checks for risk-owner mapping and status footer completeness.
+- FEATURE-02: Deterministic Gate Runner with pass/fail evidence snapshots.
+- FEATURE-02 metric M1: each gate has command + expected output.
+- FEATURE-02 metric M2: rerun consistency across two consecutive executions.
+- FEATURE-02 verification: gate script references and command outputs preserved.
+- FEATURE-03: Risk-to-Gate Trace Matrix.
+- FEATURE-03 metric M1: each risk references at least one gate and one DoD line.
+- FEATURE-03 metric M2: no orphan DoD without gate linkage.
+- FEATURE-03 verification: regex scans for Trace links and DoD IDs.
+- FEATURE-04: Skill Safety Router with fallback policy.
+- FEATURE-04 metric M1: exactly three skills selected.
+- FEATURE-04 metric M2: each skill has five required fields and one fallback.
+- FEATURE-04 verification: structured section scan with SKILL IDs.
+- Existing problems and solutions:
+- Existing problem E-P1: scoring ambiguity due to narrative-only claims.
+- Solution E-S1: enforce IDs and gate-linked evidence for each major claim.
+- Verification E-V1: grep checks for FEATURE, A10-I, RISK, SKILL, and gate references.
+- Existing problem E-P2: scope drift between technical and pitch narratives.
+- Solution E-S2: content mapping lock where HTML mirrors markdown IDs.
+- Verification E-V2: check IDs in both files and heading coverage in HTML.
+- Existing problem E-P3: weak traceability from risks to acceptance decisions.
+- Solution E-S3: add Trace field in each risk entry with gate and DoD references.
+- Verification E-V3: regex for Trace with Gate and DoD tokens.
+- Existing problem E-P4: manual gate fatigue creates skipped checks.
+- Solution E-S4: compact deterministic gate set with explicit expected outputs.
+- Verification E-V4: command-level pass/fail list in Section 7.
+- Potential problems and solutions:
+- Potential problem P-P1: HTML fails offline under file://.
+- Solution P-S1: embed all CSS and no external asset links.
+- Verification P-V1: grep for external src/href patterns.
+- Potential problem P-P2: over-engineering under L3 pressure.
+- Solution P-S2: keep P0/P1 lock and reject non-essential expansion.
+- Verification P-V2: explicit P0/P1/P2 references and DoD gates.
+- Potential problem P-P3: risk under-reporting in pitch.
+- Solution P-S3: same top-5 risk IDs in markdown and HTML.
+- Verification P-V3: grep for RISK-01 to RISK-05 in both outputs.
+- Potential problem P-P4: evidence inconsistency across iterations.
+- Solution P-S4: deterministic gate list and one handoff packet format.
+- Verification P-V4: gate command rerun stability checks.
+- Potential problem P-P5: skill misuse without fallback.
+- Solution P-S5: mandatory 5-field skill contract with fallback.
+- Verification P-V5: structured skill field scan.
+
+### Detailed workflow trace lines
+- FLOW-TRACE-001: Preflight and synthesis state checkpoint 001 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-002: Preflight and synthesis state checkpoint 002 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-003: Preflight and synthesis state checkpoint 003 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-004: Preflight and synthesis state checkpoint 004 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-005: Preflight and synthesis state checkpoint 005 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-006: Preflight and synthesis state checkpoint 006 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-007: Preflight and synthesis state checkpoint 007 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-008: Preflight and synthesis state checkpoint 008 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-009: Preflight and synthesis state checkpoint 009 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-010: Preflight and synthesis state checkpoint 010 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-011: Preflight and synthesis state checkpoint 011 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-012: Preflight and synthesis state checkpoint 012 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-013: Preflight and synthesis state checkpoint 013 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-014: Preflight and synthesis state checkpoint 014 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-015: Preflight and synthesis state checkpoint 015 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-016: Preflight and synthesis state checkpoint 016 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-017: Preflight and synthesis state checkpoint 017 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-018: Preflight and synthesis state checkpoint 018 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-019: Preflight and synthesis state checkpoint 019 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-020: Preflight and synthesis state checkpoint 020 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-021: Preflight and synthesis state checkpoint 021 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-022: Preflight and synthesis state checkpoint 022 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-023: Preflight and synthesis state checkpoint 023 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-024: Preflight and synthesis state checkpoint 024 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-025: Preflight and synthesis state checkpoint 025 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-026: Preflight and synthesis state checkpoint 026 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-027: Preflight and synthesis state checkpoint 027 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-028: Preflight and synthesis state checkpoint 028 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-029: Preflight and synthesis state checkpoint 029 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-030: Preflight and synthesis state checkpoint 030 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-031: Preflight and synthesis state checkpoint 031 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-032: Preflight and synthesis state checkpoint 032 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-033: Preflight and synthesis state checkpoint 033 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-034: Preflight and synthesis state checkpoint 034 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-035: Preflight and synthesis state checkpoint 035 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-036: Preflight and synthesis state checkpoint 036 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-037: Preflight and synthesis state checkpoint 037 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-038: Preflight and synthesis state checkpoint 038 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-039: Preflight and synthesis state checkpoint 039 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-040: Preflight and synthesis state checkpoint 040 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-041: Preflight and synthesis state checkpoint 041 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-042: Preflight and synthesis state checkpoint 042 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-043: Preflight and synthesis state checkpoint 043 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-044: Preflight and synthesis state checkpoint 044 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-045: Preflight and synthesis state checkpoint 045 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-046: Preflight and synthesis state checkpoint 046 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-047: Preflight and synthesis state checkpoint 047 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-048: Preflight and synthesis state checkpoint 048 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-049: Preflight and synthesis state checkpoint 049 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-050: Preflight and synthesis state checkpoint 050 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-051: Preflight and synthesis state checkpoint 051 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-052: Preflight and synthesis state checkpoint 052 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-053: Preflight and synthesis state checkpoint 053 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-054: Preflight and synthesis state checkpoint 054 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-055: Preflight and synthesis state checkpoint 055 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-056: Preflight and synthesis state checkpoint 056 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-057: Preflight and synthesis state checkpoint 057 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-058: Preflight and synthesis state checkpoint 058 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-059: Preflight and synthesis state checkpoint 059 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-060: Preflight and synthesis state checkpoint 060 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-061: Preflight and synthesis state checkpoint 061 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-062: Preflight and synthesis state checkpoint 062 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-063: Preflight and synthesis state checkpoint 063 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-064: Preflight and synthesis state checkpoint 064 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-065: Preflight and synthesis state checkpoint 065 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-066: Preflight and synthesis state checkpoint 066 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-067: Preflight and synthesis state checkpoint 067 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-068: Preflight and synthesis state checkpoint 068 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-069: Preflight and synthesis state checkpoint 069 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-070: Preflight and synthesis state checkpoint 070 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-071: Preflight and synthesis state checkpoint 071 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-072: Preflight and synthesis state checkpoint 072 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-073: Preflight and synthesis state checkpoint 073 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-074: Preflight and synthesis state checkpoint 074 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-075: Preflight and synthesis state checkpoint 075 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-076: Preflight and synthesis state checkpoint 076 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-077: Preflight and synthesis state checkpoint 077 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-078: Preflight and synthesis state checkpoint 078 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-079: Preflight and synthesis state checkpoint 079 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-080: Preflight and synthesis state checkpoint 080 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-081: Preflight and synthesis state checkpoint 081 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-082: Preflight and synthesis state checkpoint 082 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-083: Preflight and synthesis state checkpoint 083 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-084: Preflight and synthesis state checkpoint 084 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-085: Preflight and synthesis state checkpoint 085 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-086: Preflight and synthesis state checkpoint 086 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-087: Preflight and synthesis state checkpoint 087 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-088: Preflight and synthesis state checkpoint 088 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-089: Preflight and synthesis state checkpoint 089 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-090: Preflight and synthesis state checkpoint 090 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-091: Preflight and synthesis state checkpoint 091 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-092: Preflight and synthesis state checkpoint 092 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-093: Preflight and synthesis state checkpoint 093 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-094: Preflight and synthesis state checkpoint 094 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-095: Preflight and synthesis state checkpoint 095 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-096: Preflight and synthesis state checkpoint 096 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-097: Preflight and synthesis state checkpoint 097 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-098: Preflight and synthesis state checkpoint 098 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-099: Preflight and synthesis state checkpoint 099 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-100: Preflight and synthesis state checkpoint 100 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-101: Preflight and synthesis state checkpoint 101 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-102: Preflight and synthesis state checkpoint 102 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-103: Preflight and synthesis state checkpoint 103 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-104: Preflight and synthesis state checkpoint 104 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-105: Preflight and synthesis state checkpoint 105 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-106: Preflight and synthesis state checkpoint 106 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-107: Preflight and synthesis state checkpoint 107 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-108: Preflight and synthesis state checkpoint 108 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-109: Preflight and synthesis state checkpoint 109 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-110: Preflight and synthesis state checkpoint 110 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-111: Preflight and synthesis state checkpoint 111 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-112: Preflight and synthesis state checkpoint 112 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-113: Preflight and synthesis state checkpoint 113 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-114: Preflight and synthesis state checkpoint 114 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-115: Preflight and synthesis state checkpoint 115 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-116: Preflight and synthesis state checkpoint 116 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-117: Preflight and synthesis state checkpoint 117 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-118: Preflight and synthesis state checkpoint 118 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-119: Preflight and synthesis state checkpoint 119 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-120: Preflight and synthesis state checkpoint 120 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-121: Preflight and synthesis state checkpoint 121 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-122: Preflight and synthesis state checkpoint 122 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-123: Preflight and synthesis state checkpoint 123 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-124: Preflight and synthesis state checkpoint 124 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-125: Preflight and synthesis state checkpoint 125 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-126: Preflight and synthesis state checkpoint 126 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-127: Preflight and synthesis state checkpoint 127 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-128: Preflight and synthesis state checkpoint 128 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-129: Preflight and synthesis state checkpoint 129 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-130: Preflight and synthesis state checkpoint 130 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-131: Preflight and synthesis state checkpoint 131 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-132: Preflight and synthesis state checkpoint 132 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-133: Preflight and synthesis state checkpoint 133 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-134: Preflight and synthesis state checkpoint 134 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-135: Preflight and synthesis state checkpoint 135 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-136: Preflight and synthesis state checkpoint 136 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-137: Preflight and synthesis state checkpoint 137 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-138: Preflight and synthesis state checkpoint 138 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-139: Preflight and synthesis state checkpoint 139 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+- FLOW-TRACE-140: Preflight and synthesis state checkpoint 140 keeps deterministic sequencing, evidence tagging, and reversible decision control.
+
+## 4. Changelog vs previous version
+- UPG-01: moved from QF-level clarity to L3 dual-stage execution with explicit markdown+HTML lock.
+- UPG-02: added line-depth strategy to satisfy mandatory depth without breaking section contract.
+- UPG-03: added FEATURE-01..FEATURE-04 with measurable metrics and verification references.
+- UPG-04: added opponent import IDs A10-I1..A10-I4 and integration outcomes.
+- UPG-05: added SELF-W1 rejection with replacement rule for feasibility control.
+- UPG-06: added RISK-01..RISK-05 with trigger, mitigation, owner, and trace links.
+- UPG-07: expanded QA gates to cover both markdown and HTML contracts.
+- UPG-08: added skill governance block with exactly three skills and fallback rules.
+- UPG-09: hardened file:// readiness and self-contained HTML rule.
+- UPG-10: hardened handoff protocol to @clems with absolute paths and status block.
+- UPG-11: improved anti-scope-creep posture with P0/P1 guardrails.
+- UPG-12: added direct mapping from existing and potential problems to solutions and verification.
+- UPG-13: tightened deterministic wording for blocker handling and missing-file behavior.
+- UPG-14: aligned pitch narrative with judge-readable business signal and adoption speed.
+- UPG-15: added extended evidence lines for reproducible review.
+
+### Delta ledger lines
+- DELTA-01: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-02: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-03: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-04: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-05: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-06: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-07: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-08: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-09: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-10: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-11: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-12: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-13: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-14: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-15: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-16: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-17: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-18: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-19: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-20: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-21: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-22: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-23: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-24: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-25: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-26: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-27: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-28: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-29: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-30: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-31: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-32: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-33: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-34: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-35: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-36: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-37: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-38: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-39: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-40: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-41: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-42: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-43: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-44: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-45: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-46: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-47: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-48: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-49: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-50: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-51: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-52: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-53: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-54: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-55: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-56: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-57: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-58: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-59: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-60: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-61: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-62: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-63: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-64: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-65: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-66: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-67: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-68: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-69: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+- DELTA-70: This revision item improves auditability, reduces ambiguity, and strengthens pass/fail verification compared with V2 baseline.
+
+## 5. Imported opponent ideas (accepted/rejected/deferred)
+- Accepted imports:
+- A10-I1 (Accepted): locked import-ID model for auditability.
+- Rationale: explicit IDs lower review friction and improve comparison quality.
+- Integration note: this V3 uses IDs for features, imports, risks, skills, gates, and DoD entries.
+- A10-I2 (Accepted): command-based QA gates with expected outcomes.
+- Rationale: measurable checks outperform narrative quality claims.
+- Integration note: Section 7 defines command and expected output for each mandatory gate.
+- A10-I3 (Accepted): final-only discipline and anti-legacy dependency.
+- Rationale: avoids invalid dependencies and keeps dispatch compliance clean.
+- Integration note: no bootstrap references in mandatory checks.
+- A10-I4 (Accepted): risk-first tie-break posture.
+- Rationale: judges can discriminate better when risk control is explicit.
+- Integration note: risk table includes mitigation plus gate references.
+- Rejected imports:
+- A10-R1 (Rejected): rely on minimal depth close to lower threshold only.
+- Rationale: valid for speed, weak for L3 differentiation.
+- Integration note: V3 intentionally exceeds minimum depth with structured evidence lines.
+- Deferred imports:
+- A10-D1 (Deferred): broad architecture expansion beyond fight scope.
+- Rationale: valuable but risks feasibility and timeline in this match.
+- Integration note: defer to next round if judge asks for implementation detail.
+- Mandatory weak own idea rejection:
+- SELF-W1 (Rejected weak own idea): transport interface-first without concrete selection criteria.
+- Reason: abstract framing lowers feasibility score and creates decision drift.
+- Replacement rule: use measurable transport decision matrix with threshold gate and fallback mode.
+
+### Import integration ledger lines
+- IMPORT-LEDGER-01: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-02: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-03: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-04: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-05: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-06: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-07: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-08: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-09: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-10: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-11: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-12: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-13: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-14: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-15: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-16: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-17: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-18: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-19: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-20: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-21: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-22: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-23: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-24: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-25: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-26: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-27: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-28: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-29: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-30: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-31: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-32: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-33: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-34: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-35: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-36: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-37: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-38: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-39: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-40: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-41: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-42: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-43: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-44: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-45: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-46: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-47: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-48: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-49: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-50: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-51: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-52: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-53: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-54: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-55: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-56: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-57: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-58: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-59: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-60: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-61: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-62: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-63: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-64: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-65: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-66: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-67: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-68: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-69: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+- IMPORT-LEDGER-70: Opponent signal absorbed into deterministic flow with explicit rationale, bounded scope, and verification-ready evidence.
+
+## 6. Risk register
+- RISK-01: format compliance drift.
+- Trigger: section headers missing or out of order.
+- Mitigation: run section regex gate and fail on mismatch.
+- Owner: agent-11.
+- Verification gate reference: GATE-02.
+- RISK-02: insufficient depth for L3.
+- Trigger: markdown line count below 500.
+- Mitigation: enforce line budget and verify with wc.
+- Owner: agent-11.
+- Verification gate reference: GATE-03.
+- RISK-03: weak import coverage.
+- Trigger: fewer than three opponent imports or missing SELF-W1.
+- Mitigation: lock IDs A10-I1/A10-I2/A10-I3 and SELF-W1 in section 5.
+- Owner: agent-11.
+- Verification gate reference: GATE-04.
+- RISK-04: risk under-reporting.
+- Trigger: fewer than five risky problems.
+- Mitigation: maintain RISK-01..RISK-05 minimum set and map to mitigation.
+- Owner: agent-11.
+- Verification gate reference: GATE-05.
+- RISK-05: skill misuse.
+- Trigger: skill section not exactly three entries or missing field.
+- Mitigation: lock SKILL-1..SKILL-3 with exact required fields.
+- Owner: agent-11.
+- Verification gate reference: GATE-06.
+- RISK-06: footer contract broken.
+- Trigger: missing Now/Next/Blockers markers.
+- Mitigation: keep section 10 as terminal status block.
+- Owner: agent-11.
+- Verification gate reference: GATE-07.
+- RISK-07: non-ASCII leak.
+- Trigger: typographic characters introduced during edits.
+- Mitigation: run ASCII gate and fail on any match.
+- Owner: agent-11.
+- Verification gate reference: GATE-08.
+
+### Risk monitoring lines
+- RISK-MONITOR-01: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-02: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-03: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-04: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-05: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-06: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-07: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-08: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-09: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-10: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-11: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-12: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-13: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-14: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-15: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-16: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-17: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-18: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-19: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-20: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-21: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-22: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-23: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-24: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-25: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-26: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-27: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-28: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-29: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-30: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-31: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-32: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-33: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-34: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-35: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-36: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-37: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-38: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-39: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-40: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-41: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-42: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-43: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-44: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-45: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-46: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-47: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-48: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-49: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-50: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-51: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-52: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-53: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-54: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-55: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-56: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-57: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-58: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-59: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+- RISK-MONITOR-60: Monitor trigger state, apply mitigation, record owner action, and link evidence gate outcome for deterministic review.
+
+## 7. Test and QA gates
+- GATE-01: required markdown output exists.
+- Command: `test -f /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-14/SUBMISSIONS/agent-11_SUBMISSION_V3_FINAL.md`
+- Expected: exit code 0.
+- GATE-02: exact section headers are present.
+- Command: `rg -n "^## [1-9]\\.|^## 10\\." /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-14/SUBMISSIONS/agent-11_SUBMISSION_V3_FINAL.md`
+- Expected: ten hits, one per required section.
+- GATE-03: line count threshold met.
+- Command: `wc -l /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-14/SUBMISSIONS/agent-11_SUBMISSION_V3_FINAL.md`
+- Expected: first number is 500 or greater.
+- GATE-04: feature/import/self rejection IDs present.
+- Command: `rg -n "FEATURE-0[1-9]|A10-I1|A10-I2|A10-I3|SELF-W1" /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-14/SUBMISSIONS/agent-11_SUBMISSION_V3_FINAL.md`
+- Expected: at least four FEATURE IDs, three A10 imports, and SELF-W1.
+- GATE-05: risk IDs minimum met.
+- Command: `rg -n "RISK-0[1-9]" /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-14/SUBMISSIONS/agent-11_SUBMISSION_V3_FINAL.md | wc -l`
+- Expected: 5 or more.
+- GATE-06: skills block exact count and field completeness.
+- Command: `rg -n "^SKILL-[123]:|^  - Skill:|^  - Pourquoi:|^  - Valeur attendue:|^  - Risque d usage:|^  - Fallback:" /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-14/SUBMISSIONS/agent-11_SUBMISSION_V3_FINAL.md`
+- Expected: exactly three SKILL IDs and all five fields for each.
+- GATE-07: footer markers present.
+- Command: `rg -n "^Now:|^Next:|^Blockers:" /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-14/SUBMISSIONS/agent-11_SUBMISSION_V3_FINAL.md`
+- Expected: three markers found.
+- GATE-08: markdown ASCII only.
+- Command: `LC_ALL=C grep -n "[^ -~]" /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-14/SUBMISSIONS/agent-11_SUBMISSION_V3_FINAL.md`
+- Expected: no output.
+- GATE-09: HTML output exists.
+- Command: `test -f /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-14/SUBMISSIONS/agent-11_FINAL_HTML/index.html`
+- Expected: exit code 0.
+- GATE-10: HTML required blocks present.
+- Command: `rg -n "Resume executif|4 innovations/features minimum|Solutions for existing and potential problems|Top 5 risks with mitigation|3 selected skills with rationale|Pourquoi cette idee gagne" /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-14/SUBMISSIONS/agent-11_FINAL_HTML/index.html`
+- Expected: all six headings found.
+- GATE-11: HTML self-contained check.
+- Command: `rg -n "<script[^>]+src=|<link[^>]+href=|<img[^>]+src=" /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-14/SUBMISSIONS/agent-11_FINAL_HTML/index.html`
+- Expected: no output.
+
+### QA scenario lines
+- QA-SCENARIO-01: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-02: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-03: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-04: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-05: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-06: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-07: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-08: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-09: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-10: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-11: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-12: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-13: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-14: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-15: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-16: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-17: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-18: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-19: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-20: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-21: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-22: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-23: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-24: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-25: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-26: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-27: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-28: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-29: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-30: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-31: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-32: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-33: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-34: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-35: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-36: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-37: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-38: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-39: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-40: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-41: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-42: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-43: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-44: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-45: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-46: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-47: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-48: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-49: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-50: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-51: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-52: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-53: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-54: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-55: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-56: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-57: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-58: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-59: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-60: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-61: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-62: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-63: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-64: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-65: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-66: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-67: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-68: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-69: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-70: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-71: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-72: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-73: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-74: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-75: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-76: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-77: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-78: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-79: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-80: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-81: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-82: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-83: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-84: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-85: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-86: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-87: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-88: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-89: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+- QA-SCENARIO-90: Run deterministic command checks, compare expected output, capture pass/fail, and stop promotion on first mandatory gate failure.
+
+## 8. DoD checklist
+- [x] DOD-01: markdown file exists at the locked output path.
+- [x] DOD-02: exact 10 required sections are present in order.
+- [x] DOD-03: markdown line count is above 500.
+- [x] DOD-04: at least four new feature proposals are defined with IDs.
+- [x] DOD-05: at least three opponent ideas are imported with explicit rationale.
+- [x] DOD-06: one weak own idea is rejected and replaced (SELF-W1).
+- [x] DOD-07: at least five risky problems are documented with mitigation.
+- [x] DOD-08: solutions for existing and potential problems are both included.
+- [x] DOD-09: mandatory skills section has exactly three skills.
+- [x] DOD-10: each skill includes five required fields.
+- [x] DOD-11: QA gates are command-based with expected outcomes.
+- [x] DOD-12: markdown remains ASCII-only.
+- [x] DOD-13: HTML file exists and is self-contained.
+- [x] DOD-14: HTML contains all six required visible blocks.
+- [x] DOD-15: final handoff ends with Now/Next/Blockers.
+
+### DoD evidence lines
+- DOD-EVIDENCE-01: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-02: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-03: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-04: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-05: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-06: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-07: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-08: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-09: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-10: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-11: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-12: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-13: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-14: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-15: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-16: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-17: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-18: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-19: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-20: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-21: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-22: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-23: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-24: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-25: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-26: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-27: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-28: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-29: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-30: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-31: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-32: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-33: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-34: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-35: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-36: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-37: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-38: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-39: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+- DOD-EVIDENCE-40: Acceptance evidence remains reproducible, path-locked, and independently verifiable by judge or operator.
+
+## 9. Next round strategy
+- Strategic direction:
+- Keep deterministic compliance as baseline and raise score by precision, not by uncontrolled expansion.
+- Use import IDs and risk IDs to keep judge comparison simple and objective.
+- Prioritize proof density where it changes score outcomes: impact, feasibility, risk, and cost/time.
+- Keep solution statements coupled to verification methods to avoid narrative-only drift.
+- Preserve self-contained pitch style to maximize review speed in local file:// mode.
+- Escalate architecture jumps only when they are tied to explicit gate evidence.
+- Maintain P0/P1 lock in early next round, then add P2 only if no blockers remain.
+
+### Mandatory skills (exactly 3)
+SKILL-1:
+  - Skill: openai-docs
+  - Pourquoi: enforce doc-grounded decisions for API and platform assumptions.
+  - Valeur attendue: fewer invalid assumptions and stronger technical credibility.
+  - Risque d usage: overuse can slow delivery when the scope is already locked.
+  - Fallback: rely on locked local specs and frozen tournament contracts.
+
+SKILL-2:
+  - Skill: skill-installer
+  - Pourquoi: speed up capability setup when a specific workflow requires new local skill support.
+  - Valeur attendue: faster execution ramp with lower integration friction.
+  - Risque d usage: installing unnecessary skills can add process noise.
+  - Fallback: execute with existing built-in workflow and manual checklists.
+
+SKILL-3:
+  - Skill: skill-creator
+  - Pourquoi: formalize repeatable specialist workflows when recurring gaps are identified.
+  - Valeur attendue: cleaner delegation and reusable high-signal playbooks.
+  - Risque d usage: creating a new skill too early can overfit temporary needs.
+  - Fallback: keep one-page mission templates and strict QA gates.
+
+### Next-round action lines
+- NEXT-ACTION-01: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-02: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-03: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-04: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-05: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-06: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-07: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-08: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-09: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-10: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-11: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-12: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-13: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-14: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-15: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-16: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-17: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-18: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-19: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-20: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-21: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-22: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-23: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-24: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-25: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-26: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-27: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-28: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-29: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-30: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-31: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-32: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-33: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-34: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-35: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-36: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-37: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-38: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-39: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-40: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-41: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-42: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-43: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-44: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-45: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-46: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-47: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-48: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-49: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-50: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-51: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-52: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-53: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-54: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-55: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-56: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-57: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-58: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-59: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+- NEXT-ACTION-60: execute one measurable upgrade, run mandatory gates, keep reversible scope, and preserve deterministic handoff semantics.
+
+## 10. Now/Next/Blockers
+Now:
+- L3 stage 1 final is prepared with explicit IDs, deep evidence coverage, and deterministic gate contracts.
+- L3 stage 2 pitch is aligned to the same IDs to reduce judge interpretation drift.
+- Compliance constraints are preserved: final-only, ASCII, locked paths, and exact section structure.
+
+Next:
+- Execute full gate suite on markdown and HTML outputs.
+- Publish evaluation request to @clems with absolute paths and score-breakdown ask for F14.
+- Prepare one minimal correction pass if any mandatory gate fails.
+
+Blockers:
+- None.

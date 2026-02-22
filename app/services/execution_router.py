@@ -38,6 +38,55 @@ class ExecutionResult:
     error: str | None = None
 
 
+ROUTER_STATUS_DISABLED = "disabled"
+ROUTER_STATUS_SKIPPED_WRONG_PROJECT = "skipped_wrong_project"
+ROUTER_STATUS_PROJECT_LOCK_REJECTED = "project_lock_rejected"
+ROUTER_STATUS_POLICY_DENIED = "policy_denied"
+ROUTER_STATUS_DRY_RUN = "dry_run"
+ROUTER_STATUS_FAILED = "failed"
+ROUTER_STATUS_COMPLETED = "completed"
+ROUTER_STATUS_LAUNCHED = "launched"
+ROUTER_STATUS_TIMEOUT = "timeout"
+
+ROUTER_RESULT_STATUS_CONTRACT = frozenset(
+    {
+        ROUTER_STATUS_DISABLED,
+        ROUTER_STATUS_SKIPPED_WRONG_PROJECT,
+        ROUTER_STATUS_PROJECT_LOCK_REJECTED,
+        ROUTER_STATUS_POLICY_DENIED,
+        ROUTER_STATUS_DRY_RUN,
+        ROUTER_STATUS_FAILED,
+        ROUTER_STATUS_COMPLETED,
+        ROUTER_STATUS_LAUNCHED,
+        ROUTER_STATUS_TIMEOUT,
+    }
+)
+
+ROUTER_COMPLETION_SOURCE_PROJECT_LOCK_REJECTED = "project_lock_rejected"
+ROUTER_COMPLETION_SOURCE_POLICY_DENIED = "policy_denied"
+ROUTER_COMPLETION_SOURCE_CODEX_EXEC = "codex_exec"
+ROUTER_COMPLETION_SOURCE_CODEX_EXEC_FAILED = "codex_exec_failed"
+ROUTER_COMPLETION_SOURCE_LAUNCHED_SUPERVISED = "launched_supervised"
+ROUTER_COMPLETION_SOURCE_AG_LAUNCH_FAILED = "ag_launch_failed"
+ROUTER_COMPLETION_SOURCE_OLLAMA_EXEC = "ollama_exec"
+ROUTER_COMPLETION_SOURCE_OLLAMA_EXEC_FAILED = "ollama_exec_failed"
+ROUTER_COMPLETION_SOURCE_ROUTER_ALL_FAILED = "router_all_failed"
+
+ROUTER_COMPLETION_SOURCE_CONTRACT = frozenset(
+    {
+        ROUTER_COMPLETION_SOURCE_PROJECT_LOCK_REJECTED,
+        ROUTER_COMPLETION_SOURCE_POLICY_DENIED,
+        ROUTER_COMPLETION_SOURCE_CODEX_EXEC,
+        ROUTER_COMPLETION_SOURCE_CODEX_EXEC_FAILED,
+        ROUTER_COMPLETION_SOURCE_LAUNCHED_SUPERVISED,
+        ROUTER_COMPLETION_SOURCE_AG_LAUNCH_FAILED,
+        ROUTER_COMPLETION_SOURCE_OLLAMA_EXEC,
+        ROUTER_COMPLETION_SOURCE_OLLAMA_EXEC_FAILED,
+        ROUTER_COMPLETION_SOURCE_ROUTER_ALL_FAILED,
+    }
+)
+
+
 def _record_execution_event(
     projects_root: Path,
     project_id: str,
@@ -224,7 +273,7 @@ def _disabled_result(action: AutoModeAction, project_id: str, provider: str, mes
         launched=False,
         completed=False,
         closed=False,
-        status="disabled",
+        status=ROUTER_STATUS_DISABLED,
         error=message,
     )
 
@@ -255,7 +304,7 @@ def route_action(
             launched=False,
             completed=False,
             closed=False,
-            status="skipped_wrong_project",
+            status=ROUTER_STATUS_SKIPPED_WRONG_PROJECT,
             error=f"action project mismatch: {action.project_id} != {project_id}",
         )
 
@@ -266,14 +315,14 @@ def route_action(
             action.request_id,
             run_id=action.request_id,
             op_name="update_request_execution",
-            tx_suffix="project_lock_rejected",
+            tx_suffix=ROUTER_COMPLETION_SOURCE_PROJECT_LOCK_REJECTED,
             kwargs={
                 "agent_id": action.agent_id,
                 "execution_mode": execution_mode,
                 "runner": "router",
                 "launched": False,
                 "completed": False,
-                "completion_source": "project_lock_rejected",
+                "completion_source": ROUTER_COMPLETION_SOURCE_PROJECT_LOCK_REJECTED,
                 "close_request": False,
                 "error": f"missing project lock for {project_id}",
             },
@@ -282,7 +331,7 @@ def route_action(
             projects_root,
             project_id,
             action.request_id,
-            "project_lock_rejected",
+            ROUTER_COMPLETION_SOURCE_PROJECT_LOCK_REJECTED,
             {"agent_id": action.agent_id, "project_id": project_id},
         )
         return ExecutionResult(
@@ -294,7 +343,7 @@ def route_action(
             launched=False,
             completed=False,
             closed=False,
-            status="project_lock_rejected",
+            status=ROUTER_STATUS_PROJECT_LOCK_REJECTED,
             error=f"missing project lock for {project_id}",
         )
 
@@ -314,14 +363,14 @@ def route_action(
             action.request_id,
             run_id=action.request_id,
             op_name="update_request_execution",
-            tx_suffix="policy_denied",
+            tx_suffix=ROUTER_COMPLETION_SOURCE_POLICY_DENIED,
             kwargs={
                 "agent_id": action.agent_id,
                 "execution_mode": execution_mode,
                 "runner": action.platform,
                 "launched": False,
                 "completed": False,
-                "completion_source": "policy_denied",
+                "completion_source": ROUTER_COMPLETION_SOURCE_POLICY_DENIED,
                 "close_request": False,
                 "error": f"policy_denied:{policy_decision.reason_code}",
             },
@@ -330,7 +379,7 @@ def route_action(
             projects_root,
             project_id,
             action.request_id,
-            "policy_denied",
+            ROUTER_COMPLETION_SOURCE_POLICY_DENIED,
             {
                 "agent_id": action.agent_id,
                 "reason_code": policy_decision.reason_code,
@@ -345,7 +394,7 @@ def route_action(
             launched=False,
             completed=False,
             closed=False,
-            status="policy_denied",
+            status=ROUTER_STATUS_POLICY_DENIED,
             error=policy_decision.reason_code,
         )
 
@@ -359,7 +408,7 @@ def route_action(
             launched=False,
             completed=False,
             closed=False,
-            status="dry_run",
+            status=ROUTER_STATUS_DRY_RUN,
             error=None,
         )
 
@@ -461,14 +510,22 @@ def route_action(
                 action.request_id,
                 run_id=action.request_id,
                 op_name="update_request_execution",
-                tx_suffix="codex_exec" if close_request else "codex_exec_failed",
+                tx_suffix=(
+                    ROUTER_COMPLETION_SOURCE_CODEX_EXEC
+                    if close_request
+                    else ROUTER_COMPLETION_SOURCE_CODEX_EXEC_FAILED
+                ),
                 kwargs={
                     "agent_id": action.agent_id,
                     "execution_mode": "codex_headless",
                     "runner": "codex",
                     "launched": result.launched,
                     "completed": result.completed,
-                    "completion_source": "codex_exec" if close_request else "codex_exec_failed",
+                    "completion_source": (
+                        ROUTER_COMPLETION_SOURCE_CODEX_EXEC
+                        if close_request
+                        else ROUTER_COMPLETION_SOURCE_CODEX_EXEC_FAILED
+                    ),
                     "close_request": close_request,
                     "closed_reason": "runner_completed" if close_request else None,
                     "error": result.error,
@@ -569,14 +626,22 @@ def route_action(
                 action.request_id,
                 run_id=action.request_id,
                 op_name="update_request_execution",
-                tx_suffix="ag_launch" if ag_result.launched else "ag_launch_failed",
+                tx_suffix=(
+                    ROUTER_COMPLETION_SOURCE_LAUNCHED_SUPERVISED
+                    if ag_result.launched
+                    else ROUTER_COMPLETION_SOURCE_AG_LAUNCH_FAILED
+                ),
                 kwargs={
                     "agent_id": action.agent_id,
                     "execution_mode": "antigravity_supervised",
                     "runner": "antigravity",
                     "launched": ag_result.launched,
                     "completed": False,
-                    "completion_source": "launched_supervised" if ag_result.launched else "ag_launch_failed",
+                    "completion_source": (
+                        ROUTER_COMPLETION_SOURCE_LAUNCHED_SUPERVISED
+                        if ag_result.launched
+                        else ROUTER_COMPLETION_SOURCE_AG_LAUNCH_FAILED
+                    ),
                     "close_request": False,
                     "error": ag_result.error,
                     "at": ag_result.finished_at,
@@ -648,14 +713,22 @@ def route_action(
                 action.request_id,
                 run_id=action.request_id,
                 op_name="update_request_execution",
-                tx_suffix="ollama_exec" if close_request else "ollama_exec_failed",
+                tx_suffix=(
+                    ROUTER_COMPLETION_SOURCE_OLLAMA_EXEC
+                    if close_request
+                    else ROUTER_COMPLETION_SOURCE_OLLAMA_EXEC_FAILED
+                ),
                 kwargs={
                     "agent_id": action.agent_id,
                     "execution_mode": "ollama_local",
                     "runner": "ollama",
                     "launched": ollama_result.launched,
                     "completed": ollama_result.completed,
-                    "completion_source": "ollama_exec" if close_request else "ollama_exec_failed",
+                    "completion_source": (
+                        ROUTER_COMPLETION_SOURCE_OLLAMA_EXEC
+                        if close_request
+                        else ROUTER_COMPLETION_SOURCE_OLLAMA_EXEC_FAILED
+                    ),
                     "close_request": close_request,
                     "closed_reason": "runner_completed" if close_request else None,
                     "error": ollama_result.error,
@@ -697,14 +770,14 @@ def route_action(
         action.request_id,
         run_id=action.request_id,
         op_name="update_request_execution",
-        tx_suffix="router_all_failed",
+        tx_suffix=ROUTER_COMPLETION_SOURCE_ROUTER_ALL_FAILED,
         kwargs={
             "agent_id": action.agent_id,
             "execution_mode": execution_mode,
             "runner": "router",
             "launched": False,
             "completed": False,
-            "completion_source": "router_all_failed",
+            "completion_source": ROUTER_COMPLETION_SOURCE_ROUTER_ALL_FAILED,
             "close_request": False,
             "error": last_error or "all providers failed",
         },
@@ -719,6 +792,6 @@ def route_action(
         launched=False,
         completed=False,
         closed=False,
-        status="failed",
+        status=ROUTER_STATUS_FAILED,
         error=last_error or "all providers failed",
     )

@@ -606,6 +606,47 @@ def _build_project_html(project: ProjectData, mode: str, portfolio: list[Project
             "Focus on phase, blockers, next actions, and evidence paths."
         )
 
+    # Duel-Root Gate Subprocesses
+    import subprocess
+    repo_status, repo_issues = "stale", ["check failed"]
+    app_status, app_issues = "stale", ["check failed"]
+
+    script_path = project.path.resolve().parents[1] / "scripts" / "auto_mode_healthcheck.py"
+    if script_path.exists():
+        try:
+            repo_res = subprocess.run([
+                "python3", str(script_path), "--project", project.project_id,
+                "--data-dir", "repo", "--max-open", "3"
+            ], capture_output=True, text=True, timeout=5)
+            if repo_res.returncode == 0 or repo_res.returncode == 1:
+                # Find the JSON output
+                for line in repo_res.stdout.splitlines():
+                    if line.startswith("{"):
+                        data = json.loads(line)
+                        repo_status = data.get("status", "stale")
+                        repo_issues = data.get("issues", [])
+                        break
+        except Exception:
+            pass
+            
+        try:
+            app_res = subprocess.run([
+                "python3", str(script_path), "--project", project.project_id,
+                "--max-open", "3"
+            ], capture_output=True, text=True, timeout=5)
+            if app_res.returncode == 0 or app_res.returncode == 1:
+                for line in app_res.stdout.splitlines():
+                    if line.startswith("{"):
+                        data = json.loads(line)
+                        app_status = data.get("status", "stale")
+                        app_issues = data.get("issues", [])
+                        break
+        except Exception:
+            pass
+
+    repo_issues_str = f" ({', '.join(repo_issues)})" if repo_issues and mode == "tech" else ""
+    app_issues_str = f" ({', '.join(app_issues)})" if app_issues and mode == "tech" else ""
+
     # Now / Next / Blockers report card
     blockers_color = "#C94B4B" if blockers_open > 0 else "#166534"
     blockers_bg = "#FEF2F2" if blockers_open > 0 else "#F0FDF4"
@@ -613,7 +654,14 @@ def _build_project_html(project: ProjectData, mode: str, portfolio: list[Project
   <div class='card' style='background: #FFFBEB; border-left: 4px solid #F59E0B; margin-bottom: 12px;'>
     <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
       <h2 style='margin: 0; font-size: 15px;'>Rapport Now / Next / Blockers</h2>
-      <span class='badge' style='font-size: 10px;'>Cadence: toutes les 2h | {html.escape(_utc_now_iso())}</span>
+      <div style='display: flex; gap: 8px; align-items: center;'>
+        <span class='badge' style='font-size: 10px;'>Cadence: toutes les 2h | {html.escape(_utc_now_iso())}</span>
+      </div>
+    </div>
+    <div style='display: flex; gap: 8px; align-items: center; margin-bottom: 12px;'>
+        <div style='font-size: 11px; font-weight: 600; color: #5E6167;'>Control Gates:</div>
+        <span class='badge' id='gateBadgeRepo' status='{repo_status}'>Repo: {repo_status}{repo_issues_str}</span>
+        <span class='badge' id='gateBadgeApp' status='{app_status}'>App: {app_status}{app_issues_str}</span>
     </div>
     <div class='grid4' style='grid-template-columns: 1fr 1fr 1fr; gap: 8px;'>
       <div style='padding: 8px; background: #FFFFFF; border-radius: 8px; border: 1px solid #E5DED3;'>

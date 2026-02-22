@@ -1,0 +1,165 @@
+
+<html>
+<head>
+<style>
+:root {
+  --bg: #f6f3ee;
+  --fg: #1c1c1c;
+  --line: #d9d3c8;
+  --muted: #5e6167;
+  --ok: #0f766e;
+  --warn: #92400e;
+  --critical: #b91c1c;
+  --panel: #ffffff;
+  --focus: #2c5dff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 14px;
+  font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+a { color: #1d4ed8; }
+a:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
+.skip { position: absolute; left: -999px; top: -999px; }
+.skip:focus { left: 8px; top: 8px; background: #fff; border: 1px solid var(--line); padding: 6px; }
+header { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 10px; }
+h1 { margin: 0; font-size: 22px; color: #2c5dff; }
+.meta { margin-top: 6px; color: var(--muted); font-size: 12px; }
+.chip {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.chip-ok { color: var(--ok); border-color: #99f6e4; background: #f0fdfa; }
+.chip-warn { color: var(--warn); border-color: #fcd34d; background: #fffbeb; }
+.chip-critical { color: var(--critical); border-color: #fecaca; background: #fef2f2; }
+.main-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.card {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 10px;
+}
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.card h3 { margin: 0; font-size: 14px; }
+.kv { margin: 8px 0 0 0; padding-left: 0; list-style: none; }
+.kv li { display: flex; justify-content: space-between; gap: 8px; border-top: 1px dashed #ece6db; padding: 6px 0; font-size: 12px; }
+.k { color: var(--muted); }
+.v { color: var(--fg); font-weight: 600; text-align: right; }
+.evidence { margin: 6px 0 0 16px; font-size: 12px; }
+section { margin-top: 12px; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 10px; }
+section h2 { margin: 0 0 8px 0; font-size: 16px; color: #2c5dff; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th, td { border-bottom: 1px solid #eee9df; padding: 7px; text-align: left; vertical-align: top; }
+th { background: #f0ece6; color: #1c1c1c; }
+.notice { margin-top: 8px; font-size: 12px; color: var(--muted); }
+@media (max-width: 980px) {
+  .main-grid { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+}
+</style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to summary cards</a>
+  <header role="banner">
+    <h1>Vulgarisation - Cockpit (cockpit)</h1>
+    <div class="meta">
+      generated_at: 2026-02-20T17:21:10+00:00
+      | source_snapshot: 92da03928578
+      | pressure_mode: DISABLED
+      | freshness: <span class="chip chip-ok">OK</span>
+      | delta: changed: Delta detected a9fdd434 -&gt; 92da0392 since 2026-02-20T08:21:42+00:00.
+      | stale thresholds: warn &gt;24h / critical &gt;72h
+    </div>
+  </header>
+
+  <main id="main" class="main-grid" role="main" aria-label="Operator summary cards">
+    <article class='card status-ok' tabindex='0'><div class='card-head'><h3>Project summary</h3><span class='chip chip-ok'>OK</span></div><ul class='kv'><li><span class='k'>Project</span><span class='v'>cockpit</span></li><li><span class='k'>Phase</span><span class='v'>Ship</span></li><li><span class='k'>Objective</span><span class='v'>Close Wave06 officially and open Wave07 hardening with runtime control intact.</span></li><li><span class='k'>Next milestone</span><span class='v'>Start Wave07 on two active lanes plus one advisory lane:</span></li></ul><details><summary>Evidence links</summary><ul class='evidence'><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/STATE.md'>STATE.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/ROADMAP.md'>ROADMAP.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/DECISIONS.md'>DECISIONS.md</a></li></ul></details></article><article class='card status-ok' tabindex='0'><div class='card-head'><h3>Nova advisory</h3><span class='chip chip-ok'>OK</span></div><ul class='kv'><li><span class='k'>Role</span><span class='v'>creative_science_lead</span></li><li><span class='k'>Focus</span><span class='v'>creative_science_lead L1 pour vulgarisation et conseil evidence-first.</span></li><li><span class='k'>Angle</span><span class='v'>Transformer signaux runtime en decisions operateur claires et actionnables.</span></li><li><span class='k'>Fallback</span><span class='v'>Source de verite daily: `/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/STATE.md`, `/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/ROADMAP.md`, `/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/DECISIONS.md`.</span></li></ul><details><summary>Evidence links</summary><ul class='evidence'><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/agents/nova/memory.md'>agents/nova/memory.md</a></li></ul></details></article><article class='card status-ok' tabindex='0'><div class='card-head'><h3>Progress panel</h3><span class='chip chip-ok'>OK</span></div><ul class='kv'><li><span class='k'>Open tickets</span><span class='v'>26</span></li><li><span class='k'>Failing tests</span><span class='v'>0</span></li><li><span class='k'>Blockers</span><span class='v'>0</span></li><li><span class='k'>Done tickets</span><span class='v'>24</span></li></ul><details><summary>Evidence links</summary><ul class='evidence'><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0001-skills-catalog-fetch-cache-fallback.md'>issues/ISSUE-CP-0001-skills-catalog-fetch-cache-fallback.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0002-policy-engine-curated-fail-open.md'>issues/ISSUE-CP-0002-policy-engine-curated-fail-open.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0003-installer-wrapper-idempotence.md'>issues/ISSUE-CP-0003-installer-wrapper-idempotence.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0004-memory-index-generator-v2.md'>issues/ISSUE-CP-0004-memory-index-generator-v2.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0005-mcp-tools-skills-catalog-sync.md'>issues/ISSUE-CP-0005-mcp-tools-skills-catalog-sync.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0011-ui-skills-ops-panel.md'>issues/ISSUE-CP-0011-ui-skills-ops-panel.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0012-ui-sync-now-feedback.md'>issues/ISSUE-CP-0012-ui-sync-now-feedback.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0013-ui-observability-badges.md'>issues/ISSUE-CP-0013-ui-observability-badges.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0014-ui-fail-open-network-down-states.md'>issues/ISSUE-CP-0014-ui-fail-open-network-down-states.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0015-ui-integrate-html-docs.md'>issues/ISSUE-CP-0015-ui-integrate-html-docs.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0015-ui-qa-evidence-pack.md'>issues/ISSUE-CP-0015-ui-qa-evidence-pack.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0016-victor-l3-fight15-dual-stage.md'>issues/ISSUE-CP-0016-victor-l3-fight15-dual-stage.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0021-wave04-control-loop-cadence.md'>issues/ISSUE-CP-0021-wave04-control-loop-cadence.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0022-wave04-ui-ship-lock.md'>issues/ISSUE-CP-0022-wave04-ui-ship-lock.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0023-wave04-backend-contract-lock.md'>issues/ISSUE-CP-0023-wave04-backend-contract-lock.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0024-wave04-cleanup-canonicalization.md'>issues/ISSUE-CP-0024-wave04-cleanup-canonicalization.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0025-wave04-dispatch-pack-and-operator-packet.md'>issues/ISSUE-CP-0025-wave04-dispatch-pack-and-operator-packet.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0026-wave05-agent-registry-runtime.md'>issues/ISSUE-CP-0026-wave05-agent-registry-runtime.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0027-wave05-platform-mapping-from-registry.md'>issues/ISSUE-CP-0027-wave05-platform-mapping-from-registry.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0028-wave05-task-scoring-engine.md'>issues/ISSUE-CP-0028-wave05-task-scoring-engine.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0029-wave05-dispatch-backpressure.md'>issues/ISSUE-CP-0029-wave05-dispatch-backpressure.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0030-wave05-router-tiered-fallback.md'>issues/ISSUE-CP-0030-wave05-router-tiered-fallback.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0031-wave05-cost-telemetry-cad.md'>issues/ISSUE-CP-0031-wave05-cost-telemetry-cad.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0032-wave05-slo-gates.md'>issues/ISSUE-CP-0032-wave05-slo-gates.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0033-wave06-nova-global-l1.md'>issues/ISSUE-CP-0033-wave06-nova-global-l1.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0034-wave07-ui-polish.md'>issues/ISSUE-CP-0034-wave07-ui-polish.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/agents/agent-1/state.json'>agents/agent-1/state.json</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/agents/agent-11/state.json'>agents/agent-11/state.json</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/agents/agent-3/state.json'>agents/agent-3/state.json</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/agents/agent-6/state.json'>agents/agent-6/state.json</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/agents/agent-7/state.json'>agents/agent-7/state.json</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/agents/antigravity/state.json'>agents/antigravity/state.json</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/agents/clems/state.json'>agents/clems/state.json</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/agents/leo/state.json'>agents/leo/state.json</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/agents/nova/state.json'>agents/nova/state.json</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/agents/victor/state.json'>agents/victor/state.json</a></li></ul></details></article><article class='card status-ok' tabindex='0'><div class='card-head'><h3>Freshness warnings</h3><span class='chip chip-ok'>OK</span></div><ul class='kv'><li><span class='k'>generated_at</span><span class='v'>2026-02-20T17:21:10+00:00</span></li><li><span class='k'>latest_source_at</span><span class='v'>2026-02-20T16:31:51+00:00</span></li><li><span class='k'>freshness_hours</span><span class='v'>0.82</span></li><li><span class='k'>source_snapshot</span><span class='v'>92da03928578</span></li></ul><details><summary>Evidence links</summary><ul class='evidence'><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/STATE.md'>STATE.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/ROADMAP.md'>ROADMAP.md</a></li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/DECISIONS.md'>DECISIONS.md</a></li></ul></details></article><article class='card status-warn' tabindex='0'><div class='card-head'><h3>SLO gates verdict</h3><span class='chip chip-warn'>WARN</span></div><ul class='kv'><li><span class='k'>Verdict</span><span class='v'>HOLD</span></li><li><span class='k'>Dispatch p95</span><span class='v'>456692000 ms</span></li><li><span class='k'>Dispatch p99</span><span class='v'>456692000 ms</span></li><li><span class='k'>Success rate</span><span class='v'>0.0%</span></li></ul><details><summary>Evidence links</summary><ul class='evidence'><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/slo_verdict_latest.json'>runs/slo_verdict_latest.json</a></li></ul></details></article><article class='card status-ok' tabindex='0'><div class='card-head'><h3>Action rail</h3><span class='chip chip-ok'>OK</span></div><ul class='kv'><li><span class='k'>Approvals blocked</span><span class='v'>0</span></li><li><span class='k'>Release verdict</span><span class='v'>unavailable</span></li><li><span class='k'>SLO verdict</span><span class='v'>HOLD</span></li><li><span class='k'>Pressure mode</span><span class='v'>disabled</span></li><li><span class='k'>Top blocker owner</span><span class='v'>victor -&gt; @agent-2</span></li></ul><details><summary>Evidence links</summary><ul class='evidence'><li>skills/skills.lock.json (missing)</li><li>eval/latest_verdict.json (missing)</li><li><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/slo_verdict_latest.json'>runs/slo_verdict_latest.json</a></li></ul></details></article><article class='card status-warn' tabindex='0'><div class='card-head'><h3>Cost and budget panel (CAD)</h3><span class='chip chip-warn'>WARN</span></div><ul class='kv'><li><span class='k'>Currency</span><span class='v'>CAD</span></li><li><span class='k'>Monthly estimate</span><span class='v'>n/a</span></li><li><span class='k'>Cost events (month)</span><span class='v'>0</span></li><li><span class='k'>Legacy cost file</span><span class='v'>unavailable</span></li></ul><details><summary>Evidence links</summary><ul class='evidence'><li>vulgarisation/costs.json (missing)</li><li>runs/cost_events.ndjson (missing)</li></ul></details></article>
+  </main>
+
+  <section id="project-summary" tabindex="0" aria-label="Project summary">
+    <h2>Project summary</h2>
+    <p class="notice">Action-first summary for 60-second comprehension.</p>
+    <table>
+      <tr><th>Field</th><th>Value</th></tr>
+      <tr><td>Phase</td><td>Ship</td></tr>
+      <tr><td>Objective</td><td>Close Wave06 officially and open Wave07 hardening with runtime control intact.</td></tr>
+      <tr><td>Pressure mode</td><td>DISABLED</td></tr>
+    </table>
+  </section>
+
+  <section id="brief-60s" tabindex="0" aria-label="Brief 60 seconds">
+    <h2>Brief 60s</h2>
+    <p class="notice">On est ou / On va ou / Pourquoi / Comment</p>
+    <table>
+      <tr><th>Question</th><th>Reponse</th></tr>
+      <tr><td>On est ou</td><td>Wave06 verification gates are green: | `./.venv/bin/python tests/verify_wave06_nova.py`</td></tr>
+      <tr><td>On va ou</td><td>Start Wave07 on two active lanes plus one advisory lane: | Lane A (`@victor`): backend hardening + telemetry quality lock.</td></tr>
+      <tr><td>Pourquoi</td><td>dispatch regression if registry and fallback paths diverge | false GO/HOLD if SLO verdict lacks enough latency samples</td></tr>
+      <tr><td>Comment</td><td>Execute gates: pending_stale_gt24h == 0 | stale_heartbeats_gt1h &lt;= 2</td></tr>
+      <tr><td>Delta refresh</td><td>changed: Delta detected a9fdd434 -&gt; 92da0392 since 2026-02-20T08:21:42+00:00.</td></tr>
+    </table>
+  </section>
+
+  <section id="architecture-overview" tabindex="0" aria-label="Architecture overview">
+    <h2>Architecture overview</h2>
+    <p class="notice">Offline pipeline: Inputs -> Snapshot -> Render -> Operator tab.</p>
+    <table>
+      <tr><th>Module</th><th>Contract</th></tr>
+      <tr><td>Snapshot builder</td><td>Deterministic source hash + panel payload contract</td></tr>
+      <tr><td>Renderer</td><td>Offline HTML with evidence links and fallback tables</td></tr>
+      <tr><td>Update action</td><td>Explicit update command, atomic write</td></tr>
+    </table>
+  </section>
+
+  <section id="timeline" tabindex="0" aria-label="Timeline">
+    <h2>Timeline</h2>
+    <p class="notice">Timeline chart fallback table (accessibility safe).</p>
+    <table>
+      <tr><th>Timestamp</th><th>Lane</th><th>Severity</th><th>Event</th><th>Source</th></tr>
+      <tr><td>2026-02-20T16:31:51+00:00</td><td>runtime</td><td>warn</td><td>[lane=runtime severity=warn] Review request runreq_20260220163151.8005850000_clems_msg_20260220_163151_80... | agent=clems source=mention</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:31:51+00:00</td><td>runtime</td><td>warn</td><td>[lane=runtime severity=warn] Review request runreq_20260220163151.8150180000_clems_msg_20260220_163151_81... | agent=clems source=mention</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:30:42+00:00</td><td>runtime</td><td>info</td><td>[lane=runtime severity=info] Review request runreq_20260219173033.6556310000_clems_msg_20260219_173033_65... | agent=clems source=mention</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:30:42+00:00</td><td>runtime</td><td>info</td><td>[lane=runtime severity=info] Review request runreq_20260219173033.6556310000_nova_msg_20260219_173033_655... | agent=nova source=mention</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:30:42+00:00</td><td>runtime</td><td>info</td><td>[lane=runtime severity=info] Review request runreq_20260219173209.4622710000_clems_msg_20260219_173209_46... | agent=clems source=mention</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:30:42+00:00</td><td>runtime</td><td>info</td><td>[lane=runtime severity=info] Review request runreq_20260219173209.4622710000_nova_msg_20260219_173209_461... | agent=nova source=mention</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:30:42+00:00</td><td>runtime</td><td>info</td><td>[lane=runtime severity=info] Review request runreq_20260219175536.3386520000_clems_msg_20260219_175536_33... | agent=clems source=mention</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:30:42+00:00</td><td>runtime</td><td>info</td><td>[lane=runtime severity=info] Review request runreq_20260219175536.3386520000_nova_msg_20260219_175536_337... | agent=nova source=mention</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:30:42+00:00</td><td>runtime</td><td>info</td><td>[lane=runtime severity=info] Review request runreq_20260219175536.3386520000_victor_msg_20260219_175536_3... | agent=victor source=mention</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:30:42+00:00</td><td>runtime</td><td>info</td><td>[lane=runtime severity=info] Review request runreq_20260219175931.5006010000_clems_msg_20260219_175931_50... | agent=clems source=mention</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:30:42+00:00</td><td>runtime</td><td>info</td><td>[lane=runtime severity=info] Review request runreq_20260219175931.5006010000_victor_msg_20260219_175931_5... | agent=victor source=mention</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:30:42+00:00</td><td>runtime</td><td>info</td><td>[lane=runtime severity=info] Review request runreq_202602191805270000_agent-2_msg_20260219_180527_clems c... | agent=agent-2 source=reminder</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:30:42+00:00</td><td>runtime</td><td>info</td><td>[lane=runtime severity=info] Review request runreq_202602191805270000_agent-6_msg_20260219_180527_clems c... | agent=agent-6 source=reminder</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:30:42+00:00</td><td>runtime</td><td>info</td><td>[lane=runtime severity=info] Review request runreq_202602191805270000_agent-7_msg_20260219_180527_clems c... | agent=agent-7 source=reminder</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:30:42+00:00</td><td>runtime</td><td>info</td><td>[lane=runtime severity=info] Review request runreq_202602191826270000_victor_msg_20260219_182627_clems cl... | agent=victor source=reminder</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-20T16:30:42+00:00</td><td>runtime</td><td>info</td><td>[lane=runtime severity=info] Review request runreq_202602191830270000_victor_msg_20260219_183027_clems cl... | agent=victor source=reminder</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/requests.ndjson'>requests.ndjson</a></td></tr><tr><td>2026-02-19T18:04:17+00:00</td><td>runtime</td><td>warn</td><td>[lane=runtime severity=warn] Check slo verdict HOLD | p95_ms=456692000.0 p99_ms=456692000.0 success_rate=0.0</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/slo_verdict_latest.json'>slo_verdict_latest.json</a></td></tr><tr><td>2026-02-19T17:50:20+00:00</td><td>mission</td><td>info</td><td>[lane=mission severity=info] Track mission MISSION-LEO-WAVE07 | mission file updated</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/missions/MISSION-LEO-WAVE07.md'>MISSION-LEO-WAVE07.md</a></td></tr><tr><td>2026-02-19T17:50:18+00:00</td><td>delivery</td><td>warn</td><td>[lane=delivery severity=warn] Review ISSUE-CP-0034-wave07-ui-polish in progress | Wave07 UI Polish | owner=leo | phase=Implementing</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0034-wave07-ui-polish.md'>ISSUE-CP-0034-wave07-ui-polish.md</a></td></tr><tr><td>2026-02-19T17:48:06+00:00</td><td>delivery</td><td>info</td><td>[lane=delivery severity=info] Review ISSUE-CP-0033-wave06-nova-global-l1 done | Wave06 Nova global L1 | owner=victor | phase=Ship</td><td><a href='file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0033-wave06-nova-global-l1.md'>ISSUE-CP-0033-wave06-nova-global-l1.md</a></td></tr>
+    </table>
+  </section>
+
+  <section id="progress-panel" tabindex="0" aria-label="Progress panel">
+    <h2>Progress panel</h2>
+    <p class="notice">Metrics chart fallback table. No color-only critical signal.</p>
+    <table>
+      <tr><th>Metric</th><th>Value</th></tr>
+      <tr><td>Open tickets</td><td>26</td></tr><tr><td>Failing tests</td><td>0</td></tr><tr><td>Blockers</td><td>0</td></tr><tr><td>Approvals blocked</td><td>0</td></tr>
+    </table>
+  </section>
+
+  <section id="cost-usage" tabindex="0" aria-label="Cost and usage panel">
+    <h2>Cost and usage panel</h2>
+    <table>
+      <tr><th>Field</th><th>Value</th></tr>
+      <tr><td>Currency</td><td>CAD</td></tr>
+      <tr><td>Monthly estimate</td><td>n/a</td></tr>
+      <tr><td>Events this month</td><td>0</td></tr>
+      <tr><td>SLO verdict</td><td>HOLD</td></tr>
+      <tr><td>Dispatch p95</td><td>456692000 ms</td></tr>
+      <tr><td>Dispatch p99</td><td>456692000 ms</td></tr>
+      <tr><td>Success rate</td><td>0.0%</td></tr>
+    </table>
+  </section>
+
+  <section id="skill-inventory" tabindex="0" aria-label="Skill inventory">
+    <h2>Skill inventory</h2>
+    <table>
+      <tr><th>Issue</th><th>Owner</th><th>Status</th><th>Objective</th></tr>
+      <tr><td>ISSUE-CP-0001</td><td>victor -&gt; @agent-2</td><td>Done</td><td>Build reliable catalog fetch with local cache and network fallback behavior.</td></tr><tr><td>ISSUE-CP-0002</td><td>victor -&gt; @agent-2</td><td>Done</td><td>Enforce curated-only policy with fail-open behavior and explicit warning logs.</td></tr><tr><td>ISSUE-CP-0003</td><td>victor -&gt; @agent-3</td><td>Done</td><td>Add installer wrapper with idempotent install behavior and dry-run support.</td></tr><tr><td>ISSUE-CP-0004</td><td>victor</td><td>Done</td><td>Generate deterministic `memory.index.json` from project memory/chat/journal signals.</td></tr><tr><td>ISSUE-CP-0005</td><td>victor</td><td>Done</td><td>Add MCP tools `list_skills_catalog` and `sync_skills` with dry_run support.</td></tr><tr><td>ISSUE-CP-0011</td><td>leo</td><td>Done</td><td>Build sidebar panel for Skills Ops status and last sync metadata.</td></tr><tr><td>ISSUE-CP-0012</td><td>leo</td><td>Done</td><td>Add `Sync now` action with immediate user feedback and disabled/loading states.</td></tr><tr><td>ISSUE-CP-0013</td><td>leo</td><td>Done</td><td>Add clear badges for sync health, memory index freshness, and warning states.</td></tr><tr><td>ISSUE-CP-0014</td><td>leo</td><td>Done</td><td>Make fail-open and network-down behavior explicit in UI without blocking workflows.</td></tr><tr><td>ISSUE-CP-0015-ui-integrate-html-docs</td><td></td><td>Todo</td><td>Issue: Integrate HTML Docs (Roadmap &amp; Tournament) into Cockpit UI</td></tr><tr><td>ISSUE-CP-0015</td><td>leo</td><td>Done</td><td>Produce final UI QA evidence pack for CP-01 (screenshots + manual steps + pass/fail).</td></tr><tr><td>ISSUE-CP-0016</td><td>victor</td><td>Done</td><td>Deliver Victor L3 Fight 15 dual-stage outputs (markdown FINAL + self-contained HTML) with tournament compliance.</td></tr><tr><td>ISSUE-CP-0021</td><td>clems</td><td>Done</td><td>Keep runtime gates green on a fixed 60-minute cadence during Wave04.</td></tr><tr><td>ISSUE-CP-0022</td><td>leo</td><td>Done</td><td>Lock UI render and CP-0015 evidence lane for ship readiness.</td></tr><tr><td>ISSUE-CP-0023</td><td>victor</td><td>Done</td><td>Lock backend MCP and memory contracts with deterministic proof.</td></tr><tr><td>ISSUE-CP-0024</td><td>agent-11</td><td>Done</td><td>Decide canonical spec, canonical venv, and canonical V2 docs root.</td></tr><tr><td>ISSUE-CP-0025</td><td>clems</td><td>Done</td><td>Build and lock Wave04 dispatch pack plus ship-ready operator packet.</td></tr><tr><td>ISSUE-CP-0026</td><td>victor</td><td>Done</td><td>Use `/agents/registry.json` as runtime source of truth for roster metadata and provider mapping.</td></tr><tr><td>ISSUE-CP-0027</td><td>agent-1</td><td>Done</td><td>Remove odd/even runtime mapping whenever registry exists.</td></tr><tr><td>ISSUE-CP-0028</td><td>agent-3</td><td>Done</td><td>Add deterministic task-to-agent ranking with weighted scoring.</td></tr><tr><td>ISSUE-CP-0029</td><td>victor</td><td>Done</td><td>Enforce dynamic dispatch cap using queue signal and hard cap guardrail.</td></tr><tr><td>ISSUE-CP-0030</td><td>victor</td><td>Done</td><td>Add provider chain fallback `codex -&gt; antigravity -&gt; ollama` under feature flag.</td></tr><tr><td>ISSUE-CP-0031</td><td>agent-11</td><td>Done</td><td>Emit CAD cost events per execution and expose monthly estimate.</td></tr><tr><td>ISSUE-CP-0032</td><td>leo</td><td>Done</td><td>Compute and display SLO gate verdict GO/HOLD from p95/p99/success metrics.</td></tr><tr><td>ISSUE-CP-0033</td><td>victor</td><td>Done</td><td>Establish Nova as the global L1 agent for creative/scientific reasoning tasks.</td></tr>
+    </table>
+  </section>
+</body>
+</html>

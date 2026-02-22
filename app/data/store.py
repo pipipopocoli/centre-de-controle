@@ -17,9 +17,46 @@ DEFAULT_ROADMAP = {
 }
 
 DEFAULT_AGENT_ROSTER = [
-    {"agent_id": "clems", "name": "Clems", "engine": "CDX"},
-    {"agent_id": "victor", "name": "Victor", "engine": "CDX"},
-    {"agent_id": "leo", "name": "Leo", "engine": "AG"},
+    {
+        "agent_id": "clems",
+        "name": "Clems",
+        "engine": "CDX",
+        "platform": "codex",
+        "level": 0,
+        "lead_id": None,
+        "role": "orchestrator",
+        "skills": [],
+    },
+    {
+        "agent_id": "victor",
+        "name": "Victor",
+        "engine": "CDX",
+        "platform": "codex",
+        "level": 1,
+        "lead_id": "clems",
+        "role": "backend_lead",
+        "skills": [],
+    },
+    {
+        "agent_id": "leo",
+        "name": "Leo",
+        "engine": "AG",
+        "platform": "antigravity",
+        "level": 1,
+        "lead_id": "clems",
+        "role": "ui_lead",
+        "skills": [],
+    },
+    {
+        "agent_id": "nova",
+        "name": "Nova",
+        "engine": "AG",
+        "platform": "antigravity",
+        "level": 1,
+        "lead_id": "clems",
+        "role": "creative_science_lead",
+        "skills": [],
+    },
 ]
 
 
@@ -78,6 +115,40 @@ def ensure_project_structure(project_id: str, project_name: str | None = None) -
         "auto_mode": {
             "interval_seconds": 5,
             "max_actions": 1,
+        },
+        "dispatch": {
+            "scoring": {
+                "enabled": True,
+                "weights": {
+                    "skill_match": 0.45,
+                    "availability": 0.20,
+                    "cost": 0.15,
+                    "history": 0.20,
+                },
+            },
+            "backpressure": {
+                "enabled": True,
+                "queue_target": 3,
+                "max_actions_hard_cap": 5,
+            },
+        },
+        "automation": {
+            "router": {
+                "providers_order": ["codex", "antigravity", "ollama"],
+                "ollama_enabled": False,
+                "ollama_model": "llama3.2",
+            },
+        },
+        "cost": {
+            "currency": "CAD",
+            "monthly_budget_cad": 1200,
+        },
+        "slo": {
+            "targets": {
+                "dispatch_p95_ms": 5000,
+                "dispatch_p99_ms": 12000,
+                "success_rate_min": 0.95,
+            },
         },
         "github": {
             "repo": "",
@@ -229,8 +300,71 @@ def _normalize_engine(engine: Any) -> str:
         return "AG"
     if value in {"cdx", "codex"}:
         return "CDX"
+    if value in {"ollama", "local"}:
+        return "OLLAMA"
     # Canonical engines for the grid are CDX/AG; default unknown to AG.
     return "AG"
+
+
+def _normalize_platform(platform: Any, engine: str) -> str:
+    value = str(platform or "").strip().lower()
+    if value in {"codex", "antigravity", "ollama"}:
+        return value
+    if engine == "AG":
+        return "antigravity"
+    if engine == "OLLAMA":
+        return "ollama"
+    return "codex"
+
+
+def _normalize_level(value: Any, default: int = 2) -> int:
+    try:
+        level = int(value)
+    except (TypeError, ValueError):
+        level = default
+    return max(0, level)
+
+
+def _normalize_role(value: Any, default: str = "specialist") -> str:
+    role = str(value or "").strip()
+    return role if role else default
+
+
+def _normalize_skills(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str):
+        raw = value.strip()
+        return [raw] if raw else []
+    return []
+
+
+def _default_level_lead(agent_id: str) -> tuple[int, str | None]:
+    value = str(agent_id or "").strip().lower()
+    if value == "clems":
+        return 0, None
+    if value in {"victor", "leo", "nova"}:
+        return 1, "clems"
+    if value.startswith("agent-"):
+        try:
+            index = int(value.split("-", 1)[1])
+        except (IndexError, ValueError):
+            return 2, "victor"
+        return 2, ("victor" if (index % 2 == 1) else "leo")
+    return 2, "victor"
+
+
+def _default_role(agent_id: str) -> str:
+    value = str(agent_id or "").strip().lower()
+    if value == "clems":
+        return "orchestrator"
+    if value == "victor":
+        return "backend_lead"
+    if value == "leo":
+        return "ui_lead"
+    if value == "nova":
+        return "creative_science_lead"
+    return "specialist"
 
 
 def _normalize_percent(progress: Any) -> int:
@@ -262,9 +396,98 @@ def _normalize_blockers(blockers: Any) -> list[str]:
     return []
 
 
-def ensure_agent_files(project_id: str, agent_id: str, name: str, engine: str) -> None:
+def _registry_path(project_id: str) -> Path:
+    return project_dir(project_id) / "agents" / "registry.json"
+
+
+def _load_registry(project_id: str) -> dict[str, dict[str, Any]]:
+    path = _registry_path(project_id)
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    out: dict[str, dict[str, Any]] = {}
+    for key, item in payload.items():
+        if not isinstance(item, dict):
+            continue
+        agent_id = str(item.get("agent_id") or key).strip() or str(key).strip()
+        if not agent_id:
+            continue
+        out[agent_id] = item
+    return out
+
+
+def _write_registry(project_id: str, payload: dict[str, dict[str, Any]]) -> None:
+    path = _registry_path(project_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def _default_registry_payload() -> dict[str, dict[str, Any]]:
+    payload: dict[str, dict[str, Any]] = {}
+    for item in DEFAULT_AGENT_ROSTER:
+        payload[item["agent_id"]] = {
+            "agent_id": item["agent_id"],
+            "name": item["name"],
+            "engine": item["engine"],
+            "platform": item["platform"],
+            "level": item["level"],
+            "lead_id": item["lead_id"],
+            "role": item["role"],
+            "skills": list(item.get("skills") or []),
+        }
+    return payload
+
+
+def _registry_missing_defaults(registry: dict[str, dict[str, Any]]) -> bool:
+    if not isinstance(registry, dict):
+        return True
+    required_ids = [str(item.get("agent_id") or "").strip() for item in DEFAULT_AGENT_ROSTER]
+    for agent_id in required_ids:
+        if not agent_id:
+            continue
+        if agent_id not in registry:
+            return True
+    return False
+
+
+def _default_state_files_missing(project_id: str) -> bool:
+    agents_dir = project_dir(project_id) / "agents"
+    required_ids = [str(item.get("agent_id") or "").strip() for item in DEFAULT_AGENT_ROSTER]
+    for agent_id in required_ids:
+        if not agent_id:
+            continue
+        if not (agents_dir / agent_id / "state.json").exists():
+            return True
+    return False
+
+
+def ensure_agent_files(
+    project_id: str,
+    agent_id: str,
+    name: str,
+    engine: str,
+    *,
+    level: int = 2,
+    lead_id: str | None = None,
+    role: str = "specialist",
+    platform: str | None = None,
+    skills: list[str] | None = None,
+) -> None:
     agent_dir = project_dir(project_id) / "agents" / agent_id
     agent_dir.mkdir(parents=True, exist_ok=True)
+
+    default_level, default_lead = _default_level_lead(agent_id)
+    normalized_engine = _normalize_engine(engine)
+    normalized_platform = _normalize_platform(platform, normalized_engine)
+    normalized_level = _normalize_level(level, default=default_level)
+    normalized_role = _normalize_role(role, default=_default_role(agent_id))
+    resolved_lead_id = lead_id if lead_id is not None else default_lead
+    normalized_skills = _normalize_skills(skills or [])
 
     state_path = agent_dir / "state.json"
     _write_json_if_missing(
@@ -272,7 +495,12 @@ def ensure_agent_files(project_id: str, agent_id: str, name: str, engine: str) -
         {
             "agent_id": agent_id,
             "name": name,
-            "engine": engine,
+            "engine": normalized_engine,
+            "platform": normalized_platform,
+            "level": normalized_level,
+            "lead_id": resolved_lead_id,
+            "role": normalized_role,
+            "skills": normalized_skills,
             "phase": PHASES[0],
             "percent": 0,
             "eta_minutes": None,
@@ -289,19 +517,69 @@ def ensure_agent_files(project_id: str, agent_id: str, name: str, engine: str) -
 def ensure_default_roster(project_id: str) -> None:
     agents_dir = project_dir(project_id) / "agents"
     agents_dir.mkdir(parents=True, exist_ok=True)
+    registry = _load_registry(project_id)
+    defaults = _default_registry_payload()
+    registry_changed = False
+    if not registry:
+        registry = defaults
+        registry_changed = True
+    else:
+        for agent_id, default_entry in defaults.items():
+            current = registry.get(agent_id)
+            if not isinstance(current, dict):
+                registry[agent_id] = dict(default_entry)
+                registry_changed = True
+                continue
+            merged = dict(default_entry)
+            merged.update(current)
+            merged["agent_id"] = agent_id
+            if merged != current:
+                registry[agent_id] = merged
+                registry_changed = True
+    if registry_changed:
+        _write_registry(project_id, registry)
+
     for agent in DEFAULT_AGENT_ROSTER:
         ensure_agent_files(
             project_id=project_id,
             agent_id=agent["agent_id"],
             name=agent["name"],
             engine=agent["engine"],
+            level=int(agent.get("level", 2)),
+            lead_id=agent.get("lead_id"),
+            role=str(agent.get("role") or "specialist"),
+            platform=agent.get("platform"),
+            skills=list(agent.get("skills") or []),
+        )
+
+    for agent_id, item in registry.items():
+        ensure_agent_files(
+            project_id=project_id,
+            agent_id=agent_id,
+            name=str(item.get("name") or agent_id),
+            engine=str(item.get("engine") or "CDX"),
+            level=_normalize_level(item.get("level"), default=2),
+            lead_id=str(item.get("lead_id") or "").strip() or None,
+            role=_normalize_role(item.get("role"), default="specialist"),
+            platform=item.get("platform"),
+            skills=_normalize_skills(item.get("skills")),
         )
 
 
 def load_project(project_id: str) -> ProjectData:
     pdir = project_dir(project_id)
-    if pdir.exists():
+    agents_dir = pdir / "agents"
+    registry = _load_registry(project_id) if pdir.exists() else {}
+    has_state_files = False
+    if agents_dir.exists():
+        has_state_files = any((candidate / "state.json").exists() for candidate in agents_dir.iterdir() if candidate.is_dir())
+    if pdir.exists() and (
+        not has_state_files
+        or _registry_missing_defaults(registry)
+        or _default_state_files_missing(project_id)
+    ):
         ensure_default_roster(project_id)
+        registry = _load_registry(project_id)
     settings_path = pdir / "settings.json"
     settings: dict[str, Any] = {}
     if settings_path.exists():
@@ -309,13 +587,15 @@ def load_project(project_id: str) -> ProjectData:
     project_name = settings.get("project_name", project_id.title())
 
     agents: list[AgentState] = []
-    agents_dir = pdir / "agents"
     if agents_dir.exists():
         for agent_folder in sorted([p for p in agents_dir.iterdir() if p.is_dir()]):
             state_path = agent_folder / "state.json"
             if not state_path.exists():
                 continue
             payload = json.loads(state_path.read_text(encoding="utf-8"))
+            registry_entry = registry.get(agent_folder.name) if isinstance(registry, dict) else None
+            if not isinstance(registry_entry, dict):
+                registry_entry = {}
             settings_tasks = settings.get("agent_tasks") if isinstance(settings, dict) else {}
             task_entry = settings_tasks.get(agent_folder.name) if isinstance(settings_tasks, dict) else None
             current_task = None
@@ -324,11 +604,21 @@ def load_project(project_id: str) -> ProjectData:
             if current_task is None:
                 current_task = payload.get("current_task")
 
+            engine = _normalize_engine(
+                payload.get("engine")
+                or payload.get("source")
+                or registry_entry.get("engine")
+            )
+            platform = _normalize_platform(
+                payload.get("platform") or registry_entry.get("platform"),
+                engine,
+            )
+
             agents.append(
                 AgentState(
                     agent_id=payload.get("agent_id", agent_folder.name),
-                    name=payload.get("name", agent_folder.name.title()),
-                    engine=_normalize_engine(payload.get("engine") or payload.get("source")),
+                    name=payload.get("name", registry_entry.get("name", agent_folder.name.title())),
+                    engine=engine,
                     phase=_normalize_phase(payload.get("phase")),
                     percent=_normalize_percent(payload.get("percent", payload.get("progress", 0))),
                     eta_minutes=_normalize_eta(payload.get("eta_minutes")),
@@ -336,6 +626,11 @@ def load_project(project_id: str) -> ProjectData:
                     status=payload.get("status"),
                     blockers=_normalize_blockers(payload.get("blockers")),
                     current_task=str(current_task).strip() if current_task else None,
+                    level=_normalize_level(payload.get("level", registry_entry.get("level", 2)), default=2),
+                    lead_id=str(payload.get("lead_id", registry_entry.get("lead_id")) or "").strip() or None,
+                    role=_normalize_role(payload.get("role", registry_entry.get("role")), default="specialist"),
+                    platform=platform,
+                    skills=_normalize_skills(payload.get("skills", registry_entry.get("skills"))),
                 )
             )
 
@@ -436,6 +731,17 @@ def record_mentions(project_id: str, payload: dict[str, Any]) -> None:
     text = payload.get("text") or payload.get("content") or ""
     tags = payload.get("tags") or []
     thread_id = payload.get("thread_id")
+    context_ref_raw = payload.get("context_ref")
+    context_ref: dict[str, Any] | None = None
+    if isinstance(context_ref_raw, dict):
+        context_ref = {
+            "kind": str(context_ref_raw.get("kind") or "").strip() or "context",
+            "id": str(context_ref_raw.get("id") or "").strip(),
+            "title": str(context_ref_raw.get("title") or "").strip(),
+            "source_path": str(context_ref_raw.get("source_path") or "").strip(),
+            "source_uri": str(context_ref_raw.get("source_uri") or "").strip(),
+            "selected_at": str(context_ref_raw.get("selected_at") or _utc_now_iso()),
+        }
 
     project = get_project(project_id)
     updated = False
@@ -455,6 +761,11 @@ def record_mentions(project_id: str, payload: dict[str, Any]) -> None:
         if message_id:
             request_id = f"{request_id}_{message_id}"
 
+        # Wave07 dedup guard: skip if request_id already exists in queue
+        existing = _read_ndjson(run_requests_path(project_id))
+        if any(str(e.get("request_id", "")) == request_id for e in existing):
+            continue
+
         append_run_request(
             project_id,
             {
@@ -464,6 +775,7 @@ def record_mentions(project_id: str, payload: dict[str, Any]) -> None:
                 "status": "queued",
                 "source": source,
                 "created_at": timestamp,
+                "context_ref": context_ref,
                 "message": {
                     "message_id": message_id,
                     "thread_id": thread_id,
@@ -471,9 +783,11 @@ def record_mentions(project_id: str, payload: dict[str, Any]) -> None:
                     "text": text,
                     "tags": tags,
                     "mentions": mentions,
+                    "context_ref": context_ref,
                 },
             },
         )
+
 
         agent = next((a for a in project.agents if a.agent_id == mention), None)
         if agent is None:
@@ -552,18 +866,32 @@ def save_project(project: ProjectData) -> None:
     Used by MCP server.
     """
     pdir = project.path
-    
+
     # Save settings
     settings_path = pdir / "settings.json"
     project.settings["updated_at"] = _utc_now_iso()
     settings_path.write_text(json.dumps(project.settings, indent=2), encoding="utf-8")
-    
+
     # Save agent states
+    registry_payload = _load_registry(project.project_id)
     for agent in project.agents:
         agent_dir = pdir / "agents" / agent.agent_id
         agent_dir.mkdir(parents=True, exist_ok=True)
-        
+
         state_path = agent_dir / "state.json"
         state_data = asdict(agent)
         state_data["updated_at"] = _utc_now_iso()
         state_path.write_text(json.dumps(state_data, indent=2), encoding="utf-8")
+
+        registry_payload[agent.agent_id] = {
+            "agent_id": agent.agent_id,
+            "name": agent.name,
+            "engine": _normalize_engine(agent.engine),
+            "platform": _normalize_platform(agent.platform, _normalize_engine(agent.engine)),
+            "level": _normalize_level(agent.level, default=2),
+            "lead_id": agent.lead_id,
+            "role": _normalize_role(agent.role, default="specialist"),
+            "skills": _normalize_skills(agent.skills),
+        }
+
+    _write_registry(project.project_id, registry_payload)

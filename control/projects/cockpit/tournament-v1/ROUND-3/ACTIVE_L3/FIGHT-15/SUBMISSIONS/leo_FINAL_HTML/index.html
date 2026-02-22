@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Leo Fight 15 - V3 Final Pitch</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0C0404;
+            --card: #1A0A0A;
+            --gold: #FFD700;
+            --orange: #FF6600;
+            --red: #CC2200;
+            --text: #FFF5E1;
+            --dim: #C4A882;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Press Start 2P', monospace;
+            text-transform: uppercase;
+            margin: 0 0 20px 0;
+        }
+
+        h1 {
+            color: var(--gold);
+            text-shadow: 4px 4px var(--red);
+            font-size: 32px;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            color: var(--orange);
+            font-size: 16px;
+            border-bottom: 2px solid var(--red);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .card {
+            background: var(--card);
+            border: 4px solid var(--red);
+            padding: 20px;
+            box-shadow: 8px 8px 0 var(--dim);
+            position: relative;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            border: 2px solid var(--orange);
+            pointer-events: none;
+        }
+
+        .stat-bar {
+            height: 20px;
+            background: #333;
+            margin-top: 10px;
+            position: relative;
+            border: 2px solid var(--dim);
+        }
+
+        .stat-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--orange), var(--gold));
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .skill-box {
+            border: 2px dashed var(--gold);
+            padding: 15px;
+            margin-top: 15px;
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        .skill-title {
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+        .why-win {
+            font-size: 18px;
+            text-align: center;
+            line-height: 1.6;
+            color: var(--gold);
+        }
+
+        .blink {
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>LEO <span class="blink">VS</span> VICTOR<br>ROUND 3 FINAL</h1>
+
+    <div class="container">
+
+        <!-- Execute Summary -->
+        <div class="card full-width">
+            <h2>1. Resume Executif</h2>
+            <p>
+                The V1 Program Bible is not just a document. It is an <strong>Operating System</strong>.
+                I have integrated the best critiques (simplicity, reliability) and added proven <strong>Zero-Cost
+                    Wins</strong>.
+            </p>
+            <p>
+                <strong>Strategy:</strong> Deliver maximum Operator UX and clarity, while leveraging code-complete
+                features (Skills Ops, Tournament V2) to reduce delivery risk to zero.
+            </p>
+        </div>
+
+        <!-- 4 Innovations -->
+        <div class="card">
+            <h2>2. Innovations (New Features)</h2>
+            <ul>
+                <li><strong>Observability HUD</strong>: Real-time system health (Sync/Memory). <em>(Implemented)</em>
+                </li>
+                <li><strong>Tournament Engine V2</strong>: "Street Fighter" logic for idea selection.
+                    <em>(Implemented)</em></li>
+                <li><strong>Urgency Ranking</strong>: Auto-sort workflow by severity + age.</li>
+                <li><strong>Dynamic Workflow Maps</strong>: Live state visualization (No more dead docs).</li>
+            </ul>
+        </div>
+
+        <!-- Solutions -->
+        <div class="card">
+            <h2>3. Solutions (Problems Fixes)</h2>
+            <ul>
+                <li><strong>Problem:</strong> "Flying Blind" (No visibility).<br><strong>Solution:</strong> Skills Ops
+                    Panel (CP-0013).</li>
+                <li><strong>Problem:</strong> "Gate Fatigue" (Too many checks).<br><strong>Solution:</strong> Combined
+                    "Lots" & Auto-Verification.</li>
+                <li><strong>Problem:</strong> "Feature Bloat".<br><strong>Solution:</strong> Strict 12-item kickoff
+                    ceiling.</li>
+            </ul>
+        </div>
+
+        <!-- Risks -->
+        <div class="card">
+            <h2>4. Top 5 Risks</h2>
+            <ul>
+                <li><strong>Zombie Board</strong> (Stale Data) -> <em>Mitigation: Stale Markers</em></li>
+                <li><strong>Process Paralysis</strong> -> <em>Mitigation: 80/20 Rule</em></li>
+                <li><strong>Complexity Creep</strong> -> <em>Mitigation: WIP Cap (5)</em></li>
+                <li><strong>Info Overload</strong> -> <em>Mitigation: Top 3 View</em></li>
+                <li><strong>Role Confusion</strong> -> <em>Mitigation: Context Lock</em></li>
+            </ul>
+        </div>
+
+        <!-- Skills -->
+        <div class="card full-width">
+            <h2>5. Selected Skills (Loadout)</h2>
+            <div class="container" style="grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                <div class="skill-box">
+                    <div class="skill-title">Observability HUD</div>
+                    <p>Instant health check. Eliminates "is it working?" doubt.</p>
+                </div>
+                <div class="skill-box">
+                    <div class="skill-title">Tournament Engine</div>
+                    <p>Gamified logic selection. Fair, fun, and rigorous.</p>
+                </div>
+                <div class="skill-box">
+                    <div class="skill-title">Dynamic Maps</div>
+                    <p>Live documentation. Prevents the "stale docs" trap.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Winner Argument -->
+        <div class="card full-width" style="border-color: var(--gold);">
+            <h2>6. Pourquoi Cette Idee Gagne</h2>
+            <p class="why-win">
+                Because it is <strong>REAL</strong>.<br>
+                While others propose theories, I offer <strong>working code</strong> (Skills Ops, Tournament V2).<br>
+                Maximum Value. Zero Delivery Cost.<br>
+                <span style="display:block; margin-top:20px; font-size:24px;">PERFECT VICTORY</span>
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        console.log("Leo V3 Pitch Loaded. Ready to Fight.");
+    </script>
+</body>
+
+</html>

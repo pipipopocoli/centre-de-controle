@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nova L3 Pitch - Agent-4</title>
+  <style>
+    :root {
+      --bg: #0f1218;
+      --panel: #171b24;
+      --panel-2: #1f2532;
+      --text: #e8edf6;
+      --muted: #aab6cc;
+      --ok: #57d18c;
+      --warn: #f0c35c;
+      --risk: #ff6f6f;
+      --accent: #6ec6ff;
+      --line: #2e3b52;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      background: linear-gradient(160deg, #0f1218 0%, #121724 50%, #151d2b 100%);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .hero {
+      background: linear-gradient(145deg, #1a2130, #131a26);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    h1, h2, h3 { margin: 0 0 10px; }
+    h1 { font-size: 32px; letter-spacing: .4px; }
+    h2 { font-size: 22px; color: var(--accent); margin-top: 18px; }
+    p { color: var(--muted); line-height: 1.5; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      margin-right: 6px;
+    }
+    .ok { background: rgba(87,209,140,.14); color: var(--ok); }
+    .warn { background: rgba(240,195,92,.14); color: var(--warn); }
+    .risk { background: rgba(255,111,111,.14); color: var(--risk); }
+    ul { margin: 8px 0 0 18px; color: var(--muted); }
+    li { margin: 6px 0; }
+    .kpi {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .kpi .box {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      min-width: 130px;
+    }
+    .kpi .num { font-size: 20px; color: var(--text); font-weight: 700; }
+    .kpi .lbl { font-size: 12px; color: var(--muted); }
+    .footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #8ea2c7;
+      border-top: 1px dashed var(--line);
+      padding-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero" id="executive-summary">
+      <h1>Nova L3 Executive Pitch</h1>
+      <p>
+        Nova delivers a dual-stage L3 package that increases operator throughput, reduces blocker aging,
+        and keeps reliability controls measurable under pressure. The design is optimized for judge readability
+        and direct operational execution.
+      </p>
+      <div class="kpi">
+        <div class="box"><div class="num">4</div><div class="lbl">New L3 Features</div></div>
+        <div class="box"><div class="num">5+</div><div class="lbl">Risky Problems Covered</div></div>
+        <div class="box"><div class="num">3</div><div class="lbl">Skills Selected</div></div>
+        <div class="box"><div class="num">10</div><div class="lbl">Required Sections</div></div>
+      </div>
+    </section>
+
+    <section id="innovations">
+      <h2>Innovations (4 minimum)</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>FEATURE-L3-01 Reliability Token Matrix</h3>
+          <p>Couples severity, retry_budget, stale_after_min, and recovery_lane for deterministic recovery behavior.</p>
+        </article>
+        <article class="card">
+          <h3>FEATURE-L3-02 Decision Packet Compiler</h3>
+          <p>Generates blocker packets with two options and one recommended path to accelerate high-stakes decisions.</p>
+        </article>
+        <article class="card">
+          <h3>FEATURE-L3-03 Evidence Integrity Ledger</h3>
+          <p>Binds done claims to verifiable artifact records and prevents closure without proof.</p>
+        </article>
+        <article class="card">
+          <h3>FEATURE-L3-04 Throughput Budget Guardrail</h3>
+          <p>Keeps ceremony lean by cutting low-signal gates while preserving risk-critical controls.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="problem-solutions">
+      <h2>Solutions for Existing and Potential Problems</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>Ownership Drift</h3>
+          <p>Use one-owner hard lock and explicit DoD artifact requirement before execution starts.</p>
+        </article>
+        <article class="card">
+          <h3>Transition Ambiguity</h3>
+          <p>Enforce canonical checks across Plan, Implement, Test, Review, and Ship before status changes.</p>
+        </article>
+        <article class="card">
+          <h3>Silent Escalation Failure</h3>
+          <p>Compile a standardized blocker packet at 60 minutes with options, recommendation, and fallback.</p>
+        </article>
+        <article class="card">
+          <h3>Hidden Retry Cost</h3>
+          <p>Apply retry budgets and timeout ceilings tied to severity and recovery lane.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="risk-top5">
+      <h2>Top 5 Risks and Mitigation</h2>
+      <div class="grid">
+        <article class="card"><span class="tag risk">RISK-L3-01</span><p>Mapping drift between design and execution. Mitigation: transition assertions plus owner signoff.</p></article>
+        <article class="card"><span class="tag risk">RISK-L3-02</span><p>Gate fatigue and speed regression. Mitigation: throughput budget guardrail and low-signal pruning.</p></article>
+        <article class="card"><span class="tag risk">RISK-L3-03</span><p>Stale signal blind spots. Mitigation: stale_after_min trigger and heartbeat refresh policy.</p></article>
+        <article class="card"><span class="tag risk">RISK-L3-04</span><p>Escalation overload quality drop. Mitigation: packet compiler with structured fallback checks.</p></article>
+        <article class="card"><span class="tag risk">RISK-L3-05</span><p>Ceremony inflation. Mitigation: measurable value gate for every added control.</p></article>
+      </div>
+    </section>
+
+    <section id="skills-rationale">
+      <h2>Three Selected Skills with Rationale</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>SKILL-01 Reliability Budget Design</h3>
+          <p><strong>Pourquoi:</strong> make recovery behavior predictable under stress.</p>
+          <p><strong>Valeur attendue:</strong> fewer hidden failures and better rollback timing.</p>
+          <p><strong>Risque d usage:</strong> too rigid for low-risk flows.</p>
+          <p><strong>Fallback:</strong> keep strict limits only for high severity tiers.</p>
+        </article>
+        <article class="card">
+          <h3>SKILL-02 Operator Readability Compression</h3>
+          <p><strong>Pourquoi:</strong> improve 60-second scan speed and handoff clarity.</p>
+          <p><strong>Valeur attendue:</strong> faster triage and stronger workflow score.</p>
+          <p><strong>Risque d usage:</strong> oversimplification of edge cases.</p>
+          <p><strong>Fallback:</strong> keep concise summary plus detailed annex.</p>
+        </article>
+        <article class="card">
+          <h3>SKILL-03 Escalation Decision Framing</h3>
+          <p><strong>Pourquoi:</strong> increase recommendation quality during blocker escalation.</p>
+          <p><strong>Valeur attendue:</strong> reduced blocker age and cleaner owner decisions.</p>
+          <p><strong>Risque d usage:</strong> recommendation bias under pressure.</p>
+          <p><strong>Fallback:</strong> mandatory counter-option checklist before commit.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="why-this-wins">
+      <h2>Why This Idea Wins</h2>
+      <p>
+        Nova combines high judge readability, deep technical controls, and cost-aware execution.
+        The package is strong on integration quality, measurable feasibility, and operational risk containment.
+        It preserves speed while improving reliability, which maximizes total score under L3 constraints.
+      </p>
+      <div>
+        <span class="tag ok">Impact Focused</span>
+        <span class="tag ok">Workflow Deterministic</span>
+        <span class="tag warn">Cost-Time Guarded</span>
+        <span class="tag risk">Risk Explicit</span>
+      </div>
+    </section>
+
+    <div class="footer">
+      Generated for tournament-v1 ROUND-3 ACTIVE_L3 FIGHT-13. Self-contained single-file HTML for file:// review.
+    </div>
+  </div>
+</body>
+</html>

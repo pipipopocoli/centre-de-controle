@@ -1,0 +1,42 @@
+{
+  "clems": {
+    "agent_id": "clems",
+    "name": "Clems",
+    "engine": "CDX",
+    "platform": "codex",
+    "level": 0,
+    "lead_id": null,
+    "role": "orchestrator",
+    "skills": []
+  },
+  "victor": {
+    "agent_id": "victor",
+    "name": "Victor",
+    "engine": "CDX",
+    "platform": "codex",
+    "level": 1,
+    "lead_id": "clems",
+    "role": "backend_lead",
+    "skills": []
+  },
+  "leo": {
+    "agent_id": "leo",
+    "name": "Leo",
+    "engine": "AG",
+    "platform": "antigravity",
+    "level": 1,
+    "lead_id": "clems",
+    "role": "ui_lead",
+    "skills": []
+  },
+  "nova": {
+    "agent_id": "nova",
+    "name": "Nova",
+    "engine": "AG",
+    "platform": "antigravity",
+    "level": 1,
+    "lead_id": "clems",
+    "role": "creative_science_lead",
+    "skills": []
+  }
+}

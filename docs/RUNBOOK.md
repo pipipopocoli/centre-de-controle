@@ -15,6 +15,25 @@ python -m pip install -r requirements.txt
 ./launch_cockpit.sh
 ```
 
+## Daily launch policy (Wave09)
+
+- During active implementation, use **Dev Live** as source of truth:
+  - `./launch_cockpit.sh`
+- Treat `dist/Centre de controle.app` as a release snapshot only:
+  - rebuild required for new code/UI.
+
+Install a Dock launcher that always opens Dev Live:
+
+```bash
+cd /Users/oliviercloutier/Desktop/Cockpit
+scripts/packaging/install_dev_live_launcher.sh
+```
+
+In app runtime panel:
+- `Mode: DEV LIVE` -> expected for daily implementation.
+- `Mode: RELEASE` -> snapshot build (no code auto-update).
+- In `DEV LIVE`, two dock icons can appear (launcher + python rocket). This is expected.
+
 Version check:
 - The window title shows: `Centre de controle - <branch>@<sha><*dirty>`
 - Sidebar footer shows the same stamp plus the active data root path.

@@ -1,7 +1,7 @@
 # Cockpit Agents - Personas + Operating System + Roundtable
 
 Modele de base (important, et non negociable)
-- Les agents (Clems/Victor/Leo) ont une identite stable.
+- Les agents (Clems/Victor/Leo/Nova) ont une identite stable.
 - La memoire et l'etat sont par projet: `control/projects/<project_id>/...`
   - Etat agent: `control/projects/<project_id>/agents/<agent_id>/state.json`
   - Memoire agent: `control/projects/<project_id>/agents/<agent_id>/memory.md`
@@ -12,6 +12,19 @@ Personas (copy/paste prompts)
 - agents/clems.md
 - agents/victor.md
 - agents/leo.md
+- agents/nova.md
+
+Nova extension (global L1, mandatory)
+- Nova is not only vulgarisation.
+- Nova owns a dual mandate:
+  - operator vulgarisation lane (brief 60s, clarity first),
+  - creative-science RnD lane (code/paper/tech scouting, evidence-first recommendations).
+- At each project phase (Plan/Implement/Test/Review/Ship), Nova must deliver at least one deep research item mapped to:
+  - owner
+  - next action
+  - evidence path
+  - decision tag (adopt/defer/reject).
+- Nova recommendations become actionable only with explicit ack from @clems/@victor/@leo.
 
 Regle: chaque agent maintient son propre fichier persona. AGENTS.md reste l OS + index.
 
@@ -25,7 +38,7 @@ Contract de communication
 - ASCII only (pas d'accents, pas de guillemets typographiques).
 - Messages courts, actionnables, sans blabla.
 - Si blocage: tu proposes 2 options de decision + 1 reco.
-- Mentions canoniques: @victor / @leo / @clems.
+- Mentions canoniques: @victor / @leo / @nova / @clems.
 - Specialists (delegation): @agent-1, @agent-2, ... (format strict: agent-<number>).
 
 Operating System (12 regles max)
@@ -263,7 +276,7 @@ Daily cockpit check (5 minutes)
 1. Lire control/projects/<id>/STATE.md et ROADMAP.md.
 2. Verifier WIP <= 5.
 3. Identifier 1 blocker ou 1 decision du jour.
-4. Demander/collecter Now/Next/Blockers de Victor et Leo.
+4. Demander/collecter Now/Next/Blockers de Victor, Leo et Nova.
 5. Mettre a jour STATE.md et DECISIONS.md si necessaire.
 
 Memory Roadmap (V1/V2/V3)

@@ -50,6 +50,23 @@ QLabel#runtimeContextLine {
     font-size: 10px;
 }
 
+QLabel#runtimeModeBadge {
+    background-color: #E8F1FF;
+    color: #2C5DFF;
+    border: 1px solid #C8D9FF;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 800;
+    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+QLabel#runtimeLiveScope {
+    color: #4B5563;
+    font-size: 10px;
+    line-height: 1.3;
+}
+
 QLabel#runtimeMismatch {
     color: #C94B4B;
     font-weight: 700;
@@ -211,6 +228,15 @@ QFrame#agentsGrid {
     background: transparent;
 }
 
+QLabel#pilotageModeBadge {
+    background-color: #F3F4F6;
+    color: #4B5563;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+}
+
 QFrame#agentCard {
     background-color: #FFFFFF;
     border: 1px solid #D9D3C8;
@@ -307,6 +333,31 @@ QLabel#agentStatus[status="completed"] {
 QLabel#agentTask {
     color: #5E6167;
     font-size: 12px;
+}
+
+QLabel#gateBadgeRepo, QLabel#gateBadgeApp {
+    color: #1C1C1C;
+    background-color: #E8E2D9;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+QLabel#gateBadgeRepo[status="healthy"], QLabel#gateBadgeApp[status="healthy"] {
+    background-color: #DCFCE7;
+    color: #166534;
+}
+
+QLabel#gateBadgeRepo[status="degraded"], QLabel#gateBadgeApp[status="degraded"] {
+    background-color: #FDE2E2;
+    color: #B91C1C;
+}
+
+QLabel#gateBadgeRepo[status="stale"], QLabel#gateBadgeApp[status="stale"] {
+    background-color: #FEF3C7;
+    color: #92400E;
 }
 
 QLabel#agentTaskHeader {
@@ -412,6 +463,37 @@ QListWidget#chatThreadList {
     background-color: #FFFFFF;
 }
 
+QLabel#chatContextBadge {
+    background-color: #E8EAFD;
+    color: #1E40AF;
+    border: 1px solid #C8D9FF;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+QPushButton#chatContextClearButton {
+    background-color: #FFFFFF;
+    color: #5E6167;
+    border: 1px solid #D9D3C8;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+QPushButton#chatContextClearButton:hover {
+    background-color: #F8FAFF;
+    color: #1E40AF;
+}
+
+QPushButton#chatContextClearButton:disabled {
+    color: #9CA3AF;
+    border-color: #E5E7EB;
+    background-color: #F9FAFB;
+}
+
 /* Inputs */
 QLineEdit {
     background-color: #FFFFFF;
@@ -439,6 +521,57 @@ QComboBox {
 
 QComboBox:hover {
     border-color: #CFC7BA;
+}
+
+/* Project bible / vulgarisation */
+QFrame#projectBible {
+    background-color: #FFFFFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 10px;
+}
+
+QLabel#projectBibleTitle {
+    color: #2C5DFF;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+QLabel#projectBibleModeHint {
+    color: #5E6167;
+    font-size: 11px;
+    padding: 2px 2px 6px 2px;
+}
+
+QLabel#projectBibleRuntimeHint {
+    color: #1E40AF;
+    background-color: #F8FAFF;
+    border: 1px solid #D9E2FF;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+    padding: 6px 8px;
+}
+
+QPushButton#bibleActionButton {
+    background-color: #FFFFFF;
+    color: #2C5DFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-weight: 700;
+    font-size: 11px;
+}
+
+QPushButton#bibleActionButton:hover {
+    background-color: #F8FAFF;
+    border-color: #C8D9FF;
+}
+
+QTextBrowser#projectBibleView {
+    background-color: #FFFFFF;
+    border: 1px solid #EEE9DF;
+    border-radius: 8px;
+    padding: 2px;
 }
 
 /* Buttons */
@@ -475,4 +608,80 @@ QScrollBar::handle:vertical {
 
 QScrollBar::handle:vertical:hover {
     background: #B9B2A7;
+}
+
+/* Pilotage / Timeline */
+QFrame#projectTimeline {
+    background-color: #FFFFFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 10px;
+}
+
+QFrame#timelineRouteFrame {
+    background: transparent;
+    border-top: 1px solid #EEE9DF;
+}
+
+QLabel#timelineTitle {
+    color: #1C1C1C;
+}
+
+QLabel#timelineSubtitle {
+    color: #5E6167;
+}
+
+QLabel#timelineStats {
+    color: #5E6167;
+    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+QPushButton#timelineFilterButton {
+    background-color: #FFFFFF;
+    color: #5E6167;
+    border: 1px solid #D9D3C8;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+QPushButton#timelineFilterButton:checked {
+    background-color: #2C5DFF;
+    color: #FFFFFF;
+    border-color: #2C5DFF;
+}
+
+QPushButton#timelineFilterButton:focus {
+    border: 2px solid #1E40AF;
+}
+
+QTableWidget#timelineEventsTable {
+    background-color: #FFFFFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 8px;
+    gridline-color: #EEE9DF;
+    color: #1C1C1C;
+    selection-background-color: #DBEAFE;
+    selection-color: #1E40AF;
+}
+
+QTableWidget#timelineEventsTable::item:selected {
+    background-color: #DBEAFE;
+    color: #1E40AF;
+}
+
+QListWidget#pilotageColumnList {
+    background-color: #FFFFFF;
+    border: 1px solid #EEE9DF;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+QListWidget#pilotageColumnList::item {
+    padding: 5px 6px;
+}
+
+QListWidget#pilotageColumnList::item:selected {
+    background-color: #DBEAFE;
+    color: #1E40AF;
 }

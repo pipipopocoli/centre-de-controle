@@ -62,9 +62,14 @@ def main() -> int:
     assert "Vulgarisation" in html
     assert project.project_id in html
     assert "Project summary" in html
+    assert "Delta refresh" in html
     result = update_vulgarisation(project)
     assert result.snapshot_path.exists()
     assert result.html_path.exists()
+    result_snapshot = json.loads(result.snapshot_path.read_text(encoding="utf-8"))
+    delta_result = result_snapshot.get("delta_since_last_refresh", {})
+    assert isinstance(delta_result, dict), "missing delta_since_last_refresh"
+    assert str(delta_result.get("status") or "").strip() in {"initial", "changed", "unchanged"}
     print("OK: vulgarisation html generation")
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -178,6 +183,58 @@ def main() -> int:
         fallback_snapshot = json.loads(fallback_result.snapshot_path.read_text(encoding="utf-8"))
         assert _panel_value(fallback_snapshot, "cost", "Monthly estimate") == "88.00 CAD"
         assert _panel_value(fallback_snapshot, "cost", "Cost events (month)") == "0"
+
+        partial_dir = Path(tmp) / "brief-partial"
+        _seed_project_files(partial_dir)
+        (partial_dir / "STATE.md").write_text(
+            "# State\n\n## Phase\n- Review\n\n## Objective\n- \n\n## Now\n- \n\n## Blockers\n- \n",
+            encoding="utf-8",
+        )
+        (partial_dir / "ROADMAP.md").write_text(
+            "# Roadmap\n\n## Next\n- \n\n## Risks\n- \n",
+            encoding="utf-8",
+        )
+        partial_project = ProjectData(
+            project_id="brief-partial",
+            name="brief-partial",
+            path=partial_dir,
+            agents=[],
+            roadmap={},
+            settings={},
+        )
+
+        partial_first = update_vulgarisation(partial_project)
+        partial_first_snapshot = json.loads(partial_first.snapshot_path.read_text(encoding="utf-8"))
+        brief_rows = partial_first_snapshot.get("brief_60s")
+        assert isinstance(brief_rows, dict), "brief_60s missing"
+        for key in ("On est ou", "On va ou", "Pourquoi", "Comment"):
+            assert str(brief_rows.get(key) or "").strip(), f"brief row is empty: {key}"
+
+        partial_first_delta = partial_first_snapshot.get("delta_since_last_refresh", {})
+        assert str(partial_first_delta.get("status") or "") == "initial", "first refresh must be initial"
+        assert str(partial_first_delta.get("hint") or "").strip(), "delta hint missing for initial refresh"
+
+        partial_second = update_vulgarisation(partial_project)
+        partial_second_snapshot = json.loads(partial_second.snapshot_path.read_text(encoding="utf-8"))
+        partial_second_delta = partial_second_snapshot.get("delta_since_last_refresh", {})
+        assert str(partial_second_delta.get("status") or "") == "unchanged", "second refresh should be unchanged"
+        assert str(partial_second_delta.get("previous_hash") or "") == str(
+            partial_second_delta.get("current_hash") or ""
+        ), "unchanged delta must keep same hash"
+
+        (partial_dir / "STATE.md").write_text(
+            "# State\n\n## Phase\n- Review\n\n## Objective\n- Lock runbook signal\n\n## Now\n- Validate operator digest\n",
+            encoding="utf-8",
+        )
+        partial_third = update_vulgarisation(partial_project)
+        partial_third_snapshot = json.loads(partial_third.snapshot_path.read_text(encoding="utf-8"))
+        partial_third_delta = partial_third_snapshot.get("delta_since_last_refresh", {})
+        assert str(partial_third_delta.get("status") or "") == "changed", "delta should be changed after source edit"
+        assert str(partial_third_delta.get("previous_hash") or "") != str(
+            partial_third_delta.get("current_hash") or ""
+        ), "changed delta must update hash"
+        partial_html = partial_third.html_path.read_text(encoding="utf-8")
+        assert "Delta refresh" in partial_html
     print("OK: monthly estimator source order verified")
 
     app = QApplication.instance() or QApplication([])

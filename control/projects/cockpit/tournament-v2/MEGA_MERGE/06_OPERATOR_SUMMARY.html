@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MEGA PLAN V2 - Operator Summary</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #141b31;
+      --panel2: #1a2440;
+      --text: #e9efff;
+      --muted: #9bb0d9;
+      --accent: #4fb3ff;
+      --ok: #2dd4bf;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --line: #253255;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif;
+      background: radial-gradient(circle at 15% 0%, #1b2c57 0%, var(--bg) 45%);
+      color: var(--text);
+    }
+    .wrap { max-width: 1260px; margin: 0 auto; padding: 22px; }
+    .hero {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px;
+      background: linear-gradient(135deg, #111a33, #0c1428);
+      margin-bottom: 16px;
+    }
+    h1 { margin: 0; font-size: 30px; }
+    .sub { color: var(--muted); margin-top: 7px; }
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 14px; }
+    .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+    .kpi b { color: var(--accent); display: block; margin-bottom: 6px; }
+    .row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-top: 12px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+    .card h2 { margin: 0 0 10px; font-size: 18px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid var(--line); padding: 7px 6px; text-align: left; vertical-align: top; }
+    th { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .tag { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; font-size: 12px; background: var(--panel2); }
+    .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    .bad { color: var(--bad); }
+    ul { margin: 0; padding-left: 18px; }
+    li { margin: 4px 0; }
+    .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    a { color: var(--accent); text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--panel2); font-size: 12px; }
+    a:hover { text-decoration: underline; }
+    @media (max-width: 1020px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>MEGA PLAN V2 - Layered Hybrid</h1>
+      <div class="sub">One merged plan from six R1 competitors. No overlap. One owner per capability. Ready for stream dispatch.</div>
+      <div class="grid">
+        <div class="kpi"><b>Mode</b>Layered hybrid locked</div>
+        <div class="kpi"><b>Layers</b>7 canonical layers</div>
+        <div class="kpi"><b>Capabilities</b>44 locked capability ids</div>
+        <div class="kpi"><b>Conflicts</b>25 logged, 0 unresolved</div>
+      </div>
+    </section>
+
+    <section class="row">
+      <article class="card">
+        <h2>Layer map</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Layer</th>
+              <th>Owner</th>
+              <th>Mission</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>L1 Reliability</td><td>competitor-r1-a</td><td>deterministic replay and recovery</td><td><span class="tag ok">locked</span></td></tr>
+            <tr><td>L2 Skills governance</td><td>competitor-r1-b</td><td>trust tiers, lockfile, approval gate</td><td><span class="tag ok">locked</span></td></tr>
+            <tr><td>L3 Router orchestration</td><td>competitor-r1-c</td><td>scheduling, fallback, fairness</td><td><span class="tag ok">locked</span></td></tr>
+            <tr><td>L4 Memory isolation</td><td>competitor-r1-d</td><td>project isolation, promotion gate</td><td><span class="tag ok">locked</span></td></tr>
+            <tr><td>L5 Eval harness</td><td>competitor-r1-e</td><td>release gates and calibration</td><td><span class="tag ok">locked</span></td></tr>
+            <tr><td>L6 UX vulgarisation</td><td>competitor-r1-f</td><td>60-second operator clarity</td><td><span class="tag ok">locked</span></td></tr>
+            <tr><td>L7 Resource model</td><td>competitor-r1-b</td><td>budget, cost, capacity</td><td><span class="tag ok">locked</span></td></tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="card">
+        <h2>Execution sequence</h2>
+        <ul>
+          <li><b>P1 (weeks 1-4):</b> contracts and skeleton for L1-L3-L2.</li>
+          <li><b>P2 (weeks 5-8):</b> memory and eval wiring, dual-write and shadow gates.</li>
+          <li><b>P3 (weeks 9-12):</b> hard policy, conformance, release gate hardening.</li>
+          <li><b>P4 (weeks 13-16):</b> UX polish, load tuning, readiness lock.</li>
+        </ul>
+        <h2 style="margin-top:14px;">Top risks</h2>
+        <ul>
+          <li><span class="bad">R1</span> Policy drift across runtimes.</li>
+          <li><span class="warn">R2</span> Replay non-determinism under retries.</li>
+          <li><span class="warn">R3</span> Budget spikes during scale tests.</li>
+          <li><span class="bad">R4</span> Memory contamination via bad promotion.</li>
+          <li><span class="warn">R5</span> Operator overload in incident mode.</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="row">
+      <article class="card">
+        <h2>Go/No-Go gates</h2>
+        <table>
+          <thead>
+            <tr><th>Gate</th><th>Check</th><th>Expected</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>G1</td><td>one owner per capability_id</td><td>pass</td></tr>
+            <tr><td>G2</td><td>constraint compliance</td><td>100 percent</td></tr>
+            <tr><td>G3</td><td>interface coherence</td><td>no duplicate contract truth</td></tr>
+            <tr><td>G4</td><td>traceability</td><td>all decisions mapped to source</td></tr>
+            <tr><td>G5</td><td>stream readiness</td><td>DoD + test gate for each stream</td></tr>
+            <tr><td>G6</td><td>operator readability</td><td>under 60 seconds comprehension</td></tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="card">
+        <h2>Open docs</h2>
+        <div class="links">
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/MEGA_MERGE/00_MERGE_CHARTER.md">00_MERGE_CHARTER.md</a>
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/MEGA_MERGE/01_LAYER_OWNERSHIP_MATRIX.md">01_LAYER_OWNERSHIP_MATRIX.md</a>
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/MEGA_MERGE/02_CAPABILITY_REGISTRY.md">02_CAPABILITY_REGISTRY.md</a>
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/MEGA_MERGE/03_CONFLICT_RESOLUTION_LOG.md">03_CONFLICT_RESOLUTION_LOG.md</a>
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/MEGA_MERGE/04_MEGA_PLAN_V2_FINAL.md">04_MEGA_PLAN_V2_FINAL.md</a>
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/MEGA_MERGE/05_IMPLEMENTATION_PROMPT_PACK.md">05_IMPLEMENTATION_PROMPT_PACK.md</a>
+        </div>
+        <p style="color:var(--muted);margin-top:12px;">Operator note: numeric competitor scoring stays internal. This view is architecture and execution only.</p>
+      </article>
+    </section>
+  </div>
+</body>
+</html>

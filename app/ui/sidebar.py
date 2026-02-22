@@ -92,6 +92,10 @@ class RuntimeContextPanel(QFrame):
         self.project_title.setObjectName("runtimeContextTitle")
         self.project_title.setWordWrap(True)
 
+        self.mode_badge = QLabel("Mode: -")
+        self.mode_badge.setObjectName("runtimeModeBadge")
+        self.mode_badge.setWordWrap(True)
+
         self.app_stamp = QLabel("App stamp: -")
         self.app_stamp.setObjectName("runtimeContextLine")
         self.app_stamp.setWordWrap(True)
@@ -108,6 +112,14 @@ class RuntimeContextPanel(QFrame):
         self.info_line.setObjectName("runtimeContextLine")
         self.info_line.setWordWrap(True)
 
+        self.runtime_root = QLabel("Runtime root: -")
+        self.runtime_root.setObjectName("runtimeContextLine")
+        self.runtime_root.setWordWrap(True)
+
+        self.live_scope = QLabel("Live scope: -")
+        self.live_scope.setObjectName("runtimeLiveScope")
+        self.live_scope.setWordWrap(True)
+
         self.warning = QLabel("")
         self.warning.setObjectName("runtimeMismatch")
         self.warning.setWordWrap(True)
@@ -119,10 +131,13 @@ class RuntimeContextPanel(QFrame):
         self.rebuild_button.clicked.connect(self._open_packaging_guide)
 
         layout.addWidget(self.project_title)
+        layout.addWidget(self.mode_badge)
         layout.addWidget(self.app_stamp)
         layout.addWidget(self.repo_head)
         layout.addWidget(self.project_context)
         layout.addWidget(self.info_line)
+        layout.addWidget(self.runtime_root)
+        layout.addWidget(self.live_scope)
         layout.addWidget(self.warning)
         layout.addWidget(self.rebuild_button)
 
@@ -137,16 +152,47 @@ class RuntimeContextPanel(QFrame):
         match = re.search(r"\b[0-9a-fA-F]{7,40}\b", raw)
         return match.group(0).lower() if match else ""
 
-    def set_context(self, app_stamp: str, repo_head: str, project_id: str) -> None:
+    def set_context(
+        self,
+        app_stamp: str,
+        repo_head: str,
+        project_id: str,
+        *,
+        runtime_mode: str = "",
+        runtime_source: str = "",
+        runtime_root: str = "",
+    ) -> None:
         app_value = str(app_stamp or "").strip() or "-"
         repo_value = str(repo_head or "").strip() or "-"
         project_value = str(project_id or "").strip() or "-"
+        mode_value = str(runtime_mode or "").strip().upper() or "DEV LIVE"
+        source_value = str(runtime_source or "").strip().lower() or "unknown"
+        root_value = str(runtime_root or "").strip() or "-"
+        source_label_map = {
+            "repo": "repo",
+            "appsupport": "appsupport",
+            "custom": "custom",
+            "unknown": "unknown",
+        }
+        source_label = source_label_map.get(source_value, source_value)
 
         self.project_title.setText(f"Project: {project_value}")
+        self.mode_badge.setText(f"Mode: {mode_value}")
         self.app_stamp.setText(f"App stamp: {app_value}")
         self.repo_head.setText(f"Repo head: {repo_value}")
         self.project_context.setText(f"Project context: {project_value}")
         self.info_line.setText(f"stamp:{app_value} | head:{repo_value}")
+        self.runtime_root.setText(f"Runtime root [{source_label}]: {root_value}")
+        if mode_value == "RELEASE":
+            self.live_scope.setText(
+                "Live scope: runtime data only; rebuild to ship new code/UI. "
+                "Single app icon expected in release mode."
+            )
+        else:
+            self.live_scope.setText(
+                "Live scope: data + QSS now; restart app for Python code changes. "
+                "Dev Live may show 2 dock icons (launcher + python rocket) and this is expected."
+            )
 
         app_sha = self._extract_sha(app_value)
         repo_sha = self._extract_sha(repo_value)
@@ -202,5 +248,21 @@ class SidebarWidget(QWidget):
             self.version_label.setWordWrap(True)
             layout.addWidget(self.version_label)
 
-    def set_runtime_context(self, app_stamp: str, repo_head: str, project_id: str) -> None:
-        self.runtime_context.set_context(app_stamp, repo_head, project_id)
+    def set_runtime_context(
+        self,
+        app_stamp: str,
+        repo_head: str,
+        project_id: str,
+        *,
+        runtime_mode: str = "",
+        runtime_source: str = "",
+        runtime_root: str = "",
+    ) -> None:
+        self.runtime_context.set_context(
+            app_stamp,
+            repo_head,
+            project_id,
+            runtime_mode=runtime_mode,
+            runtime_source=runtime_source,
+            runtime_root=runtime_root,
+        )

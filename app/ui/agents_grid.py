@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -72,10 +72,14 @@ def _status_label(status: str | None) -> tuple[str, str]:
 
 
 class AgentCard(QFrame):
+    context_selected = Signal(dict)
+
     def __init__(self, state: AgentState) -> None:
         super().__init__()
+        self._state = state
         self.setObjectName("agentCard")
         self.setFrameShape(QFrame.StyledPanel)
+        self.setCursor(Qt.PointingHandCursor)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 12, 12, 12)
@@ -170,8 +174,21 @@ class AgentCard(QFrame):
         layout.addWidget(self.progress)
         layout.addLayout(footer)
 
+    def mousePressEvent(self, event) -> None:  # noqa: N802
+        payload = {
+            "kind": "agent",
+            "id": str(self._state.agent_id),
+            "title": f"{self._state.name} ({self._state.phase})",
+            "source_path": "",
+            "source_uri": "",
+        }
+        self.context_selected.emit(payload)
+        super().mousePressEvent(event)
+
 
 class AgentsGridWidget(QFrame):
+    context_selected = Signal(dict)
+
     def __init__(self) -> None:
         super().__init__()
         self.setObjectName("agentsGrid")
@@ -202,7 +219,9 @@ class AgentsGridWidget(QFrame):
         for idx, agent in enumerate(agents):
             row = idx // columns
             col = idx % columns
-            self.grid.addWidget(AgentCard(agent), row, col)
+            card = AgentCard(agent)
+            card.context_selected.connect(self.context_selected.emit)
+            self.grid.addWidget(card, row, col)
 
         if not agents:
             empty = QLabel("No agents yet")

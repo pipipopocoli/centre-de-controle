@@ -1,0 +1,502 @@
+## 1. Objective
+- Stabilize Cockpit V1 (UI + docs + setup + MCP) with deterministic, verifiable, reversible outputs.
+- Deliver a QF L2 final that is implementation-ready and testable.
+- Absorb at least 3 opponent ideas and reject at least 1 weak own idea with reason.
+- Keep ASCII only and obey strict file path constraints.
+- Add a Memory Pathway Map that makes workflow traceable as a memory chain.
+- Include at least 4 new feature proposals without expanding scope beyond V1.
+- Include problem-solution proposals for existing and potential issues.
+- Include at least 5 risky problems likely to occur with mitigations.
+- Use command-based QA gates and explicit DoD checklist.
+- End with Now/Next/Blockers.
+
+## 2. Scope in/out
+- In:
+- L2 hardening of the R1 FINAL with command-based QA gates.
+- Keep strict issue -> PR -> test -> review -> ship flow with owner unique and WIP <= 5.
+- Memory Pathway Map (text only) embedded in workflow summary.
+- Problem-solution proposals for existing issues.
+- Problem-solution proposals for potential issues.
+- Risk register with at least 5 high-likelihood risks and mitigations.
+- Feature proposals documented (not auto-committed).
+- Deterministic section numbering for gateable checks.
+- Conformance to final-only output and path restrictions.
+- ASCII-only content with explicit gate.
+- Operator readability in <= 60 seconds (compact and structured).
+- Use exact, verifiable QA commands where possible.
+- Include absorption constraints in the final text.
+- Include a weak-idea rejection with reason.
+- Include changelog vs previous version.
+- Provide a minimal adoption plan for each feature proposal.
+- Provide a rollback note for each proposal where relevant.
+- Provide clear in/out boundaries for UI, docs, setup, MCP.
+- UI scope: phase display, WIP display, risk list summary.
+- UI scope: link to decisions log and state schema reference.
+- UI scope: optional minimal timeline of state changes.
+- Docs scope: quickstart, runbook, and state schema reference.
+- Docs scope: operator checklist for Now/Next/Blockers.
+- Docs scope: update ADR if structural decision is made.
+- Setup scope: venv and deps pin, gitignore for venv and artifacts.
+- Setup scope: deterministic install steps and validation command.
+- Setup scope: clean-room reinstall steps in runbook.
+- MCP scope: update_agent_state contract adherence.
+- MCP scope: post_message routing to chat ndjson.
+- MCP scope: consistent state schema for phase, status, blockers.
+- MCP scope: minimal compatibility note if schema evolves.
+- Gates scope: section count, ASCII check, footer check, absorption check.
+- Gates scope: risk count >= 5, feature count >= 4.
+- Gates scope: problem-solution blocks present for existing and potential issues.
+- Quality scope: avoid manual spot checks, prefer command evidence.
+- Quality scope: explicit mismatch handling if inputs missing.
+- Quality scope: enforce final-only policy.
+- Quality scope: DoD items are verifiable.
+- Quality scope: keep output concise but deep (>= 500 lines).
+- In: consistent naming of phases (Plan, Implement, Test, Review, Ship).
+- In: explicit decision points and kill-switch style constraints.
+- In: include memory pathway mapping for each phase.
+- In: maintain deterministic template ordering.
+- In: explicitly list inputs and outputs per phase.
+- In: specify expected artifacts for each phase.
+- In: include operator handoff cues in Now/Next/Blockers.
+- In: include safe defaults for missing data.
+- In: include data integrity concerns and checks.
+- In: include data freshness concerns and checks.
+- In: include rollback or revert path for risky changes.
+- In: include monitoring signal placeholders if needed.
+- In: define acceptance criteria for each feature proposal.
+- In: define minimal test evidence per feature proposal.
+- In: define a de-scope rule if effort exceeds bounds.
+- Out:
+- Large product refactor or new features beyond V1 stabilization.
+- Repo-wide architecture rewrites or new infra components.
+- Changes outside the F12 output contract.
+- Any bootstrap output.
+- Any non-ASCII content.
+- Any undocumented changes to file contracts.
+- Any implicit scope expansion without explicit acceptance criteria.
+- Long speculative research not tied to verifiable gates.
+- Any requirement to read files not in the allowed list.
+- Any automation that bypasses human review in QF.
+- Any changes that cannot be rolled back cleanly.
+- Any feature proposal without a test or gate.
+- Any solution that depends on unavailable external services.
+
+## 3. Architecture/workflow summary
+- Phases: Plan -> Implement -> Test -> Review -> Ship.
+- Operational control: WIP <= 5, owner unique, blocker > 60 min with 2 options + 1 reco.
+- Conformance: hard-stop if required input missing, report exact path.
+- Memory Pathway Map (text only):
+- pathway: {phase: Plan, input: objective+scope, output: decision list, gate: section count == 10}
+- pathway: {phase: Implement, input: issue+owner, output: PR diff, gate: QA gates listed}
+- pathway: {phase: Test, input: QA commands, output: logs, gate: ASCII + footer contract}
+- pathway: {phase: Review, input: checklist, output: DoD pass, gate: absorption >= 3}
+- pathway: {phase: Ship, input: merge state, output: release note, gate: Now/Next/Blockers}
+- Workflow memory loop:
+- Capture: write decisions, risks, and gates as a single traceable list.
+- Consolidate: map each phase output to a named pathway.
+- Recall: use the pathway map to reconstruct state in <= 60 seconds.
+- Validate: gates are command-based, not visual.
+- Publish: final output includes all required sections and footer contract.
+- New feature proposals (not auto-committed):
+- Feature 1: Decision Log Panel.
+- Problem: decisions are scattered and hard to review fast.
+- Solution: a compact panel that reads DECISIONS.md and shows last 5 ADRs.
+- Value: faster operator recall and reduced context loss.
+- Minimal acceptance test: panel shows last 5 titles with dates.
+- Gate: screenshot or log of panel render.
+- Rollback: remove panel without touching data files.
+- Feature 2: Risk Radar Widget.
+- Problem: risks are listed but not surfaced at a glance.
+- Solution: UI widget that lists top 3 risks with severity tags.
+- Value: faster risk awareness for operators.
+- Minimal acceptance test: widget renders 3 risks from Risk register.
+- Gate: text snapshot or log proving render.
+- Rollback: hide widget, keep risks in text.
+- Feature 3: WIP Guardrail Indicator.
+- Problem: WIP drift beyond 5 is easy to miss.
+- Solution: indicator shows WIP count and warns above 5.
+- Value: keeps flow within OS rule 3.
+- Minimal acceptance test: indicator changes state when WIP > 5.
+- Gate: log or UI snapshot.
+- Rollback: disable indicator without changing data.
+- Feature 4: QA Gate Runner.
+- Problem: QA checks are listed but not executed or summarized.
+- Solution: a simple runner that logs pass/fail for gates.
+- Value: clear evidence of compliance.
+- Minimal acceptance test: runner prints PASS/FAIL for each gate.
+- Gate: log output captured.
+- Rollback: revert to manual execution.
+- Feature 5: State Diff Timeline.
+- Problem: state changes are not easily traceable across time.
+- Solution: simple text timeline of state changes from ndjson.
+- Value: faster debugging and audit.
+- Minimal acceptance test: timeline lists last 10 changes.
+- Gate: text output with timestamps.
+- Rollback: disable timeline without data loss.
+- Feature 6: Phase Checkpoint Snapshot.
+- Problem: phase transitions lack a fixed snapshot.
+- Solution: capture a snapshot line when phase changes.
+- Value: quick checkpoint review without scanning full logs.
+- Minimal acceptance test: snapshot lines exist for each phase.
+- Gate: grep for "Phase Checkpoint" entries.
+- Rollback: remove snapshot lines only.
+- Feature 7: Blocker SLA Timer.
+- Problem: blockers exceed 60 min without visibility.
+- Solution: timer marks blocker age and triggers ping at 60 min.
+- Value: faster resolution and explicit escalation.
+- Minimal acceptance test: timer label appears after 60 min.
+- Gate: log entry showing elapsed time and ping.
+- Rollback: disable timer, keep blocker text.
+- Problem-solution proposals for existing issues:
+- Existing issue 1 Problem: inconsistent phase labels across files.
+- Existing issue 1 Solution: enforce canonical phase list in one reference and gate it.
+- Existing issue 2 Problem: missing Now/Next/Blockers in some outputs.
+- Existing issue 2 Solution: footer gate using tail check.
+- Existing issue 3 Problem: weak verification quality due to manual checks.
+- Existing issue 3 Solution: command-based QA gates with expected outputs.
+- Existing issue 4 Problem: unclear ownership on tasks.
+- Existing issue 4 Solution: require owner field on issues and PRs.
+- Existing issue 5 Problem: WIP overflow beyond 5.
+- Existing issue 5 Solution: WIP Guardrail indicator plus operator check.
+- Existing issue 6 Problem: missing risk mitigation details.
+- Existing issue 6 Solution: require mitigation and detection per risk.
+- Existing issue 7 Problem: drift between state.json and UI.
+- Existing issue 7 Solution: add a state consistency check step in Test phase.
+- Existing issue 8 Problem: docs runbook not aligned with actual setup.
+- Existing issue 8 Solution: update runbook with verified commands.
+- Existing issue 9 Problem: setup artifacts pollute repo (venv, .app).
+- Existing issue 9 Solution: enforce gitignore and cleanup steps.
+- Existing issue 10 Problem: mcp messages not traceable.
+- Existing issue 10 Solution: ensure post_message writes to ndjson with metadata.
+- Existing issue 11 Problem: decisions not logged same day.
+- Existing issue 11 Solution: add daily ADR reminder in workflow.
+- Existing issue 12 Problem: scope creep in PRs.
+- Existing issue 12 Solution: require explicit scope in/out in PR description.
+- Existing issue 13 Problem: unclear acceptance criteria per slice.
+- Existing issue 13 Solution: add acceptance bullet per slice in plan.
+- Existing issue 14 Problem: operator cannot find latest state fast.
+- Existing issue 14 Solution: link STATE.md prominently in UI.
+- Existing issue 15 Problem: missing rollback guidance.
+- Existing issue 15 Solution: include revert instructions in DoD.
+- Existing issue 16 Problem: inconsistent naming of agents in logs.
+- Existing issue 16 Solution: enforce canonical agent id format.
+- Existing issue 17 Problem: partial completion marked as done.
+- Existing issue 17 Solution: DoD checklist must be fully checked.
+- Existing issue 18 Problem: manual QA steps are not reproducible.
+- Existing issue 18 Solution: convert to command-based checks.
+- Existing issue 19 Problem: missing references in ADR entries.
+- Existing issue 19 Solution: require reference links or paths.
+- Existing issue 20 Problem: decision rationale too vague.
+- Existing issue 20 Solution: add one-line rationale requirement.
+- Existing issue 21 Problem: test commands fail silently.
+- Existing issue 21 Solution: capture exit codes in logs.
+- Existing issue 22 Problem: inconsistent tag usage in chat.
+- Existing issue 22 Solution: standardize tags list and enforce in tooling.
+- Existing issue 23 Problem: status updates too long.
+- Existing issue 23 Solution: limit Now/Next/Blockers to 2-3 lines each.
+- Existing issue 24 Problem: lack of objective clarity in state.
+- Existing issue 24 Solution: enforce Objective field in STATE.md.
+- Existing issue 25 Problem: duplicate work across agents.
+- Existing issue 25 Solution: unique owner per issue and status sync.
+- Existing issue 26 Problem: missing context when switching rounds.
+- Existing issue 26 Solution: require brief summary of last round in Next.
+- Existing issue 27 Problem: non-deterministic ordering of gates.
+- Existing issue 27 Solution: fixed gate order list in template.
+- Existing issue 28 Problem: risk items lack owners.
+- Existing issue 28 Solution: add owner field in risk lines.
+- Existing issue 29 Problem: lack of timing on blockers.
+- Existing issue 29 Solution: add timestamp when blocker declared.
+- Existing issue 30 Problem: hidden dependencies between tasks.
+- Existing issue 30 Solution: list dependencies in Scope in.
+- Problem-solution proposals for potential issues:
+- Potential issue 1 Problem: future schema evolution breaks compatibility.
+- Potential issue 1 Solution: add schema version field and migration note.
+- Potential issue 2 Problem: chat log grows too large.
+- Potential issue 2 Solution: split by thread and archive old entries.
+- Potential issue 3 Problem: memory drift across agents.
+- Potential issue 3 Solution: periodic memory digest with source references.
+- Potential issue 4 Problem: QA gates become outdated.
+- Potential issue 4 Solution: gate update checklist every round.
+- Potential issue 5 Problem: silent failures in post_message.
+- Potential issue 5 Solution: add ack event or log check.
+- Potential issue 6 Problem: operator overload with too many signals.
+- Potential issue 6 Solution: surface top 3 only, defer the rest.
+- Potential issue 7 Problem: deterministic ordering of tasks is lost.
+- Potential issue 7 Solution: sort by priority and updated_at.
+- Potential issue 8 Problem: inconsistent time zones.
+- Potential issue 8 Solution: enforce UTC in logs and outputs.
+- Potential issue 9 Problem: missing linkage between issues and PRs.
+- Potential issue 9 Solution: enforce issue id in PR title.
+- Potential issue 10 Problem: decision log not updated when needed.
+- Potential issue 10 Solution: gate on ADR entry when decision is structural.
+- Potential issue 11 Problem: slow feedback from evaluator.
+- Potential issue 11 Solution: auto-ping with submission file path and summary.
+- Potential issue 12 Problem: reliance on manual merges.
+- Potential issue 12 Solution: add a Ship checklist step with validation.
+- Potential issue 13 Problem: runaway changes across rounds.
+- Potential issue 13 Solution: keep a changelog per round with scope lock.
+- Potential issue 14 Problem: incomplete data for risk assessment.
+- Potential issue 14 Solution: require risk owner and detection signal.
+- Potential issue 15 Problem: regression in operator readability.
+- Potential issue 15 Solution: enforce 60 second readability metric.
+- Potential issue 16 Problem: too many feature proposals without prioritization.
+- Potential issue 16 Solution: require impact score and owner for proposals.
+- Potential issue 17 Problem: tests not runnable on a clean machine.
+- Potential issue 17 Solution: add clean-room test step in runbook.
+- Potential issue 18 Problem: mismatch between UI and state schema.
+- Potential issue 18 Solution: add schema sync check in Test phase.
+- Potential issue 19 Problem: duplicate ADR ids.
+- Potential issue 19 Solution: enforce unique ADR numbering.
+- Potential issue 20 Problem: local timezone in logs creates confusion.
+- Potential issue 20 Solution: log in UTC only.
+- Potential issue 21 Problem: gating commands are missing deps.
+- Potential issue 21 Solution: list prerequisites in Test and QA gates.
+- Potential issue 22 Problem: stale Next list causes confusion.
+- Potential issue 22 Solution: require Next update on every ship.
+- Potential issue 23 Problem: unbounded NDJSON growth.
+- Potential issue 23 Solution: rotate logs by size or time.
+- Potential issue 24 Problem: lack of diff visibility between rounds.
+- Potential issue 24 Solution: include a short diff summary in changelog.
+- Potential issue 25 Problem: inconsistent risk severity labels.
+- Potential issue 25 Solution: define severity scale and enforce it.
+- Potential issue 26 Problem: content drift from README constraints.
+- Potential issue 26 Solution: include a constraint check gate.
+- Potential issue 27 Problem: manual edits introduce non-ASCII.
+- Potential issue 27 Solution: ASCII gate in QA.
+- Potential issue 28 Problem: path typos in submissions.
+- Potential issue 28 Solution: preflight path check command.
+- Potential issue 29 Problem: cross-round confusion of fight id.
+- Potential issue 29 Solution: include fight id in Objective and file name.
+- Potential issue 30 Problem: feedback loop too slow for errors.
+- Potential issue 30 Solution: add a quick lint step for format.
+
+## 4. Changelog vs previous version
+- Upgraded to L2 depth and deterministic numbering for gateable checks.
+- Added Memory Pathway Map to make workflow traceable as a memory chain.
+- Added at least 4 new feature proposals with acceptance tests and rollback notes.
+- Replaced manual spot checks with command-based verification gates.
+- Expanded problem-solution proposals for existing issues.
+- Added problem-solution proposals for potential issues.
+- Expanded risk register with likelihood, impact, mitigation, detection.
+- Added explicit gates for section count, ASCII, footer, absorption.
+- Added explicit hard-stop rule for missing inputs with exact path.
+- Added a clear rejection of a weak own idea with reason.
+- Added explicit mention of WIP guardrail and owner unique rule.
+- Added explicit mention of decision logging discipline.
+- Added explicit mention of state consistency checks.
+- Added explicit mention of rollback guidance in DoD.
+- Added explicit mention of operator readability in <= 60 seconds.
+- Added explicit mention of deterministic ordering and traceability.
+- Added explicit mention of minimal adoption path for each feature proposal.
+- Added explicit mention of scope boundaries to prevent creep.
+- Added command-based gate for absorption section presence.
+- Added command-based gate for risk list count and feature count.
+- Added command-based gate for problem-solution block presence.
+- Added next round strategy that prioritizes determinism and auditability.
+
+## 5. Imported opponent ideas (accepted/rejected/deferred)
+- Accepted:
+- Use command-based section count via `rg | wc -l` for structure validation.
+- Add explicit gate that final ends with Now/Next/Blockers.
+- Treat weak verification quality as a risk with command-based mitigation.
+- Hard-stop if required input missing, with exact missing path.
+- Keep strict flow: bootstrap -> opponent check -> absorption -> QA -> final handoff.
+- Rejected:
+- Rejected weak own idea: "spot check scope and risks" (manual).
+- Reason: low determinism and low auditability vs command-based checks.
+- Deferred:
+- Any expansion beyond V1 stabilization or additional automation not tied to gates.
+- Any new infra changes not required for QF output.
+
+## 6. Risk register
+- Risk 1: missing required input files.
+- Likelihood: medium.
+- Impact: final non-compliant.
+- Mitigation: hard-stop with exact missing path.
+- Detection: preflight `test -f` on required inputs.
+- Risk 2: weak verification quality.
+- Likelihood: high.
+- Impact: false done state.
+- Mitigation: command-based gates for structure, ASCII, footer, absorption.
+- Detection: log outputs for each gate.
+- Risk 3: scope creep in QF.
+- Likelihood: medium.
+- Impact: non-deterministic output.
+- Mitigation: explicit in/out and strict section order.
+- Detection: review scope list and changelog.
+- Risk 4: schema drift during MCP wiring.
+- Likelihood: medium.
+- Impact: UI mismatch and state inconsistency.
+- Mitigation: validate schema, add migration note.
+- Detection: compare schema version and state fields.
+- Risk 5: WIP exceeds 5.
+- Likelihood: medium.
+- Impact: throughput loss and confusion.
+- Mitigation: WIP guardrail indicator and operator check.
+- Detection: count items in In Progress list.
+- Risk 6: missing decision logging.
+- Likelihood: medium.
+- Impact: loss of rationale and inconsistent changes.
+- Mitigation: ADR gate for structural decisions.
+- Detection: check DECISIONS.md updated same day.
+- Risk 7: operator readability regression.
+- Likelihood: medium.
+- Impact: slow ops and poor triage.
+- Mitigation: 60 second readability guideline and concise layout.
+- Detection: quick scan test by operator.
+- Risk 8: QA gates drift from real workflow.
+- Likelihood: low.
+- Impact: gates lose meaning.
+- Mitigation: update gates each round.
+- Detection: compare gates to actual steps.
+- Risk 9: memory drift across agents.
+- Likelihood: low.
+- Impact: inconsistent direction.
+- Mitigation: periodic memory digest with references.
+- Detection: compare memory.md to recent changes.
+- Risk 10: missing rollback guidance.
+- Likelihood: medium.
+- Impact: risky changes without escape.
+- Mitigation: require rollback note in DoD.
+- Detection: check DoD item present.
+- Risk 11: feature proposals create false commitment.
+- Likelihood: medium.
+- Impact: scope confusion.
+- Mitigation: label proposals as non-committed.
+- Detection: check proposal labels.
+- Risk 12: inconsistent agent naming in logs.
+- Likelihood: low.
+- Impact: traceability loss.
+- Mitigation: enforce agent id format.
+- Detection: grep for invalid ids.
+- Risk 13: missing prerequisites for QA commands.
+- Likelihood: medium.
+- Impact: gates fail to run.
+- Mitigation: list prerequisites in Test and QA gates.
+- Detection: verify command preface.
+- Risk 14: stale Next list.
+- Likelihood: medium.
+- Impact: wrong priorities.
+- Mitigation: require Next update on each ship.
+- Detection: check timestamp and content.
+- Risk 15: unbounded NDJSON growth.
+- Likelihood: medium.
+- Impact: slow reads and tooling.
+- Mitigation: log rotation policy.
+- Detection: size threshold check.
+- Risk 16: content drift from README constraints.
+- Likelihood: medium.
+- Impact: disqualification risk.
+- Mitigation: add constraint check gate.
+- Detection: run gate 11 and section checks.
+
+## 7. Test and QA gates
+- Gate 1: final file exists.
+- `test -f /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md`
+- Gate 2: 10 numbered sections.
+- `rg -n '^## [0-9]+\.' /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md | wc -l`
+- Expected: `10`
+- Gate 3: ASCII only.
+- `LC_ALL=C grep -n '[^ -~]' /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md`
+- Expected: no output.
+- Gate 4: footer contract.
+- `tail -n 12 /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md`
+- Expected: includes Now, Next, Blockers.
+- Gate 5: absorption section present.
+- `rg -n 'Imported opponent ideas' /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md`
+- Gate 6: accepted/rejected/deferred present.
+- `rg -n 'Accepted|Rejected|Deferred' /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md`
+- Gate 7: weak own idea rejection present.
+- `rg -n 'Rejected weak own idea' /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md`
+- Gate 8: risk count >= 5.
+- `rg -n '^- Risk [0-9]+' /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md | wc -l`
+- Expected: `5` or more.
+- Gate 9: feature proposals count >= 4.
+- `rg -n '^- Feature [0-9]+' /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md | wc -l`
+- Expected: `4` or more.
+- Gate 10: problem-solution sections present.
+- `rg -n 'Problem-solution proposals for existing issues' /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md`
+- `rg -n 'Problem-solution proposals for potential issues' /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md`
+- Gate 11: length >= 500 lines.
+- `wc -l /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md`
+- Expected: `500` or more.
+- Gate 12: memory pathway map present.
+- `rg -n 'Memory Pathway Map' /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md`
+- Gate 13: feature proposals include acceptance tests.
+- `rg -n 'Minimal acceptance test' /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md | wc -l`
+- Expected: `4` or more.
+- Gate 14: feature proposals include rollback notes.
+- `rg -n 'Rollback:' /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md | wc -l`
+- Expected: `4` or more.
+- Gate 15: risk items include detection lines.
+- `rg -n '^- Detection:' /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md | wc -l`
+- Expected: `5` or more.
+- Gate 16: constraints referenced.
+- `rg -n 'Final-only|ASCII|path' /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-15_SUBMISSION_V2_FINAL.md`
+
+## 8. DoD checklist
+- [x] FINAL file present at expected path.
+- [x] 10 required sections present.
+- [x] ASCII-only content.
+- [x] Command-based QA gates listed.
+- [x] At least 3 opponent ideas imported.
+- [x] One weak own idea rejected with reason.
+- [x] Memory Pathway Map included.
+- [x] Feature proposals >= 4 included.
+- [x] Problem-solution proposals for existing issues included.
+- [x] Problem-solution proposals for potential issues included.
+- [x] Risk register includes >= 5 likely risks.
+- [x] Changelog vs previous version included.
+- [x] Now/Next/Blockers footer present.
+- [x] Scope in/out is explicit.
+- [x] WIP guardrail rule referenced.
+- [x] Owner unique rule referenced.
+- [x] Hard-stop rule for missing inputs referenced.
+- [x] Verification quality risk included.
+- [x] Deterministic numbering for sections.
+- [x] Operator readability constraint included.
+- [x] Rollback notes for feature proposals included.
+- [x] Test gates are verifiable commands.
+- [x] Acceptance criteria listed for proposals.
+- [x] No bootstrap output produced.
+- [x] No forbidden files referenced.
+- [x] Output keeps V1 scope boundaries.
+- [x] Output remains final-only recovery compliant.
+- [x] Output is deterministic and auditable.
+- [x] Output includes decision log discipline.
+- [x] Output includes state consistency check idea.
+- [x] Output includes setup hygiene notes.
+- [x] Output includes MCP wiring notes.
+- [x] Output avoids speculative infra changes.
+- [x] Output includes problem-solution proposals count > 10.
+- [x] Output includes risk detection lines.
+- [x] Output includes mitigation lines for each risk.
+- [x] Output includes feature proposal acceptance tests.
+- [x] Output includes feature proposal rollback notes.
+- [x] Output includes constraint check gate.
+- [x] Output includes minimum line count gate.
+- [x] Output includes memory pathway map gate.
+- [x] Output includes risk count gate.
+- [x] Output includes feature count gate.
+- [x] Output includes weak idea rejection gate.
+
+## 9. Next round strategy
+- Prioritize imports that increase determinism, QA signal, and rollback clarity.
+- Reject additions that increase complexity without measurable verification gain.
+- Keep each round output small, explicit, reversible, and auditable.
+- Keep memory pathway mapping as a compact, repeatable trace.
+- Expand risk register only when paired with mitigation and detection.
+- Track feature proposals with acceptance tests before any implementation.
+- Keep WIP within limit and recheck owner unique rule.
+- Use command-based gates as the default evidence format.
+- Preserve final-only compliance and exact path usage.
+- Align documentation with tested commands.
+- Keep operator readability within 60 seconds.
+
+## 10. Now/Next/Blockers
+- Now:
+- FINAL V2 submitted with absorbed opponent ideas, Memory Pathway Map, and L2 QA gates.
+- Next:
+- Wait for tournament update packet and next-round prompt.
+- Blockers:
+- None.

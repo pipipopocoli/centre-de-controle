@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Tournament V1 - Phase 3 Deep Dive</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #121212;
+            --card-bg: #1E1E1E;
+            --accent-leo: #FFD700;
+            /* Gold */
+            --accent-victor: #4A90E2;
+            /* Blue */
+            --accent-a11: #E74C3C;
+            /* Red */
+            --accent-a4: #00FF9D;
+            /* Cyan/Green */
+            --accent-a12: #27AE60;
+            /* Green */
+            --accent-a13: #F39C12;
+            /* Orange */
+            --accent-a14: #BDC3C7;
+            /* Grey */
+            --accent-a15: #9B59B6;
+            /* Purple */
+            --accent-other: #7F8C8D;
+            /* Grey */
+            --text-main: #ECF0F1;
+            --text-dim: #95A5A6;
+            --text-highlight: #FFFFFF;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 40px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1,
+        h2 {
+            font-family: 'Press Start 2P', cursive;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            text-align: center;
+            color: #FFF;
+            text-shadow: 4px 4px 0px #333;
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-dim);
+            margin-bottom: 60px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            letter-spacing: 2px;
+        }
+
+        /* GRID STYLES (Restored) */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 80px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            position: relative;
+            border: 1px solid #333;
+            transition: transform 0.2s, box-shadow 0.2s;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: var(--accent-color, #777);
+        }
+
+        .role-badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        .avatar {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            margin: 0 0 10px 0;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            line-height: 1.5;
+            color: var(--accent-color);
+        }
+
+        .proposal-name {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-dim);
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .card ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+
+        .card li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .quote {
+            font-style: italic;
+            color: var(--text-dim);
+            margin-top: 20px;
+            font-size: 14px;
+            border-left: 3px solid var(--accent-color);
+            padding-left: 10px;
+        }
+
+        /* L3 SECTION */
+        .section-header {
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            margin-top: 60px;
+            font-size: 20px;
+            color: var(--text-highlight);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .l3-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 40px;
+            margin-bottom: 80px;
+        }
+
+        .l3-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid #333;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .l3-header {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px 30px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 6px solid var(--accent-color);
+        }
+
+        .l3-header h2 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--accent-color);
+        }
+
+        .l3-header .role {
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .l3-body {
+            padding: 30px;
+            flex-grow: 1;
+        }
+
+        .l3-title {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            color: var(--text-highlight);
+        }
+
+        .l3-objective {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
+        .l3-section-title {
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #777;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+            margin-top: 25px;
+        }
+
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .feature-tag {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #444;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .feature-tag.highlight {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .risk-list {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 14px;
+            color: var(--text-dim);
+        }
+
+        .risk-list li {
+            margin-bottom: 6px;
+        }
+
+        /* ACCENTS */
+        .leo {
+            --accent-color: var(--accent-leo);
+        }
+
+        .victor {
+            --accent-color: var(--accent-victor);
+        }
+
+        .a11 {
+            --accent-color: var(--accent-a11);
+        }
+
+        .a4 {
+            --accent-color: var(--accent-a4);
+        }
+
+        .a12 {
+            --accent-color: var(--accent-a12);
+        }
+
+        .a13 {
+            --accent-color: var(--accent-a13);
+        }
+
+        .a14 {
+            --accent-color: var(--accent-a14);
+        }
+
+        .a15 {
+            --accent-color: var(--accent-a15);
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>TOURNAMENT ROSTER</h1>
+    <div class="subtitle">Complete Agent Breakdown</div>
+
+    <!-- ROSTER GRID (Restored) -->
+    <div class="grid">
+
+        <!-- Leo -->
+        <div class="card leo">
+            <span class="role-badge" style="color: var(--accent-leo)">Lead • UX/Workflow</span>
+            <div class="avatar">🦁</div>
+            <h2>LEO</h2>
+            <div class="proposal-name">"The Operating System"</div>
+            <ul>
+                <li><strong>Goal:</strong> 60-second clarity for any operator.</li>
+                <li><strong>Key Features:</strong> Skills Ops Panel, Tournament V2, Urgency Ranking.</li>
+                <li><strong>Vibe:</strong> Visual, Energetic, "Ready to Fight".</li>
+            </ul>
+            <div class="quote">"If you can't understand the status in 60 seconds, the tool has failed."</div>
+        </div>
+
+        <!-- Victor -->
+        <div class="card victor">
+            <span class="role-badge" style="color: var(--accent-victor)">Lead • Architecture</span>
+            <div class="avatar">🛡️</div>
+            <h2>VICTOR</h2>
+            <div class="proposal-name">"The Execution Blueprint"</div>
+            <ul>
+                <li><strong>Goal:</strong> Risk-free, reversible delivery.</li>
+                <li><strong>Key Features:</strong> Implementation Lots (A-E), Session Backups, Severity Matrix.</li>
+                <li><strong>Vibe:</strong> Strict, Reliable, Engineering-First.</li>
+            </ul>
+            <div class="quote">"We do not build on hope. We build on contracts and fallback paths."</div>
+        </div>
+
+        <!-- Agent 11 -->
+        <div class="card a11">
+            <span class="role-badge" style="color: var(--accent-a11)">Critique • Feasibility</span>
+            <div class="avatar">✂️</div>
+            <h2>AGENT-11</h2>
+            <div class="proposal-name">"The Pruning Shears"</div>
+            <ul>
+                <li><strong>Goal:</strong> Cut scope to ensure survival.</li>
+                <li><strong>Key Ideas:</strong> Strict 12-item kickoff list, Anti-Complexity Gate.</li>
+            </ul>
+            <div class="quote">"22 ideas is a wish. 12 ideas is a plan."</div>
+        </div>
+
+        <!-- Agent 4 (New Entry) -->
+        <div class="card a4">
+            <span class="role-badge" style="color: var(--accent-a4)">Process • Control</span>
+            <div class="avatar">🤖</div>
+            <h2>AGENT 4</h2>
+            <div class="proposal-name">"The Systems Engineer"</div>
+            <ul>
+                <li><strong>Goal:</strong> Enforce deterministic transitions.</li>
+                <li><strong>Key Ideas:</strong> Reliability Tokens, Gate Scripts.</li>
+            </ul>
+            <div class="quote">"Control is not optional. It is the only way."</div>
+        </div>
+
+        <!-- Agent 12 -->
+        <div class="card a12">
+            <span class="role-badge" style="color: var(--accent-a12)">Critique • Reliability</span>
+            <div class="avatar">🛟</div>
+            <h2>AGENT-12</h2>
+            <div class="proposal-name">"The Safety Net"</div>
+            <ul>
+                <li><strong>Goal:</strong> Script every failure recovery.</li>
+                <li><strong>Key Ideas:</strong> Retry Budgets, Recovery Playbooks, Stale Markers.</li>
+            </ul>
+            <div class="quote">"Hope is not a strategy. Document the crash."</div>
+        </div>
+
+        <!-- Agent 13 -->
+        <div class="card a13">
+            <span class="role-badge" style="color: var(--accent-a13)">Critique • Flow</span>
+            <div class="avatar">🚦</div>
+            <h2>AGENT-13</h2>
+            <div class="proposal-name">"The Traffic Controller"</div>
+            <ul>
+                <li><strong>Goal:</strong> Reduce cognitive load.</li>
+                <li><strong>Key Ideas:</strong> Urgency Ranking, Waiting Owner Labels, Escalation Matrix.</li>
+            </ul>
+            <div class="quote">"Don't just say 'Waiting'. Say 'Waiting on Bob'."</div>
+        </div>
+
+        <!-- Agent 14 -->
+        <div class="card a14">
+            <span class="role-badge" style="color: var(--accent-a14)">Alt • Simple</span>
+            <div class="avatar">🧘</div>
+            <h2>AGENT-14</h2>
+            <div class="proposal-name">"The Minimalist"</div>
+            <ul>
+                <li><strong>Goal:</strong> Boring, predictable value (80/20).</li>
+                <li><strong>Key Ideas:</strong> 6-Chapter Bible, No heavy dashboards.</li>
+            </ul>
+            <div class="quote">"Complex systems fail. Simple systems scale."</div>
+        </div>
+
+        <!-- Agent 15 -->
+        <div class="card a15">
+            <span class="role-badge" style="color: var(--accent-a15)">Alt • Outlier</span>
+            <div class="avatar">🚀</div>
+            <h2>AGENT-15</h2>
+            <div class="proposal-name">"The Time Traveler"</div>
+            <ul>
+                <li><strong>Goal:</strong> Perfect state replay (Event Sourcing).</li>
+                <li><strong>Key Ideas:</strong> Workflow Control Plane, Infinite Undo, Kill-Switch.</li>
+            </ul>
+            <div class="quote">"The only source of truth is the event log."</div>
+        </div>
+
+    </div>
+
+    <!-- DEEP DIVE SECTION (Kept from Update) -->
+    <div class="section-header">
+        <span style="font-size: 24px">🔥</span> DEEP DIVE (L3 FINALISTS)
+    </div>
+
+    <div class="l3-grid">
+
+        <!-- LEO -->
+        <div class="l3-card leo">
+            <div class="l3-header">
+                <h2>LEO</h2>
+                <span class="role">Lead • UX/Workflow</span>
+            </div>
+            <div class="l3-body">
+                <div class="l3-title">"The Operating System"</div>
+                <div class="l3-objective">
+                    "Enable any operator to understand state, role, and next action in under 60 seconds. Zero
+                    ambiguity."
+                </div>
+
+                <div class="l3-section-title">Key Features</div>
+                <div class="tag-container">
+                    <span class="feature-tag highlight">Skills Ops Panel (CP-0013)</span>
+                    <span class="feature-tag highlight">Tournament Engine V2</span>
+                    <span class="feature-tag">Urgency Ranking</span>
+                    <span class="feature-tag">Waiting Owner Labels</span>
+                    <span class="feature-tag">Daily Digest</span>
+                    <span class="feature-tag">Status Model V4</span>
+                </div>
+
+                <div class="l3-section-title">Top Risks Mitigated</div>
+                <ul class="risk-list">
+                    <li><strong>Zombie Board:</strong> Stale markers for cards >24h old.</li>
+                    <li><strong>Process Paralysis:</strong> Micro-gates and auto-verification.</li>
+                    <li><strong>Information Overload:</strong> "Traffic Light" UI and collapsible details.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- VICTOR -->
+        <div class="l3-card victor">
+            <div class="l3-header">
+                <h2>VICTOR</h2>
+                <span class="role">Lead • Architecture</span>
+            </div>
+            <div class="l3-body">
+                <div class="l3-title">"The Execution Blueprint"</div>
+                <div class="l3-objective">
+                    "Deliver a risk-free, technically rigorous V1 with traceable decisions and guaranteed revert paths."
+                </div>
+
+                <div class="l3-section-title">Key Features</div>
+                <div class="tag-container">
+                    <span class="feature-tag highlight">Implementation Lots (A-E)</span>
+                    <span class="feature-tag highlight">Severity Token Matrix</span>
+                    <span class="feature-tag">Session State Backups</span>
+                    <span class="feature-tag">Evidence Integrity Ledger</span>
+                    <span class="feature-tag">Throughput Budget</span>
+                </div>
+
+                <div class="l3-section-title">Top Risks Mitigated</div>
+                <ul class="risk-list">
+                    <li><strong>Data Corruption:</strong> Atomic writes and restoration from backup.</li>
+                    <li><strong>Scope Creep:</strong> Strict "Lots" system with defined boundaries.</li>
+                    <li><strong>Code Drift:</strong> Mandatory evidence links for every transition.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- AGENT 11 -->
+        <div class="l3-card a11">
+            <div class="l3-header">
+                <h2>AGENT 11</h2>
+                <span class="role">Critique • Feasibility</span>
+            </div>
+            <div class="l3-body">
+                <div class="l3-title">"The Pruning Shears"</div>
+                <div class="l3-objective">
+                    "Reduce scoring ambiguity and prevent rework by strictly limiting scope to the essential 12 items."
+                </div>
+
+                <div class="l3-section-title">Key Features</div>
+                <div class="tag-container">
+                    <span class="feature-tag highlight">Strict 12-Item Kickoff</span>
+                    <span class="feature-tag highlight">Anti-Complexity Gate</span>
+                    <span class="feature-tag">"No" Committee</span>
+                    <span class="feature-tag">Cost/Benefit Scoring</span>
+                </div>
+
+                <div class="l3-section-title">Top Risks Mitigated</div>
+                <ul class="risk-list">
+                    <li><strong>"Big Bang" Failure:</strong> Force small, incremental batches.</li>
+                    <li><strong>Resource Exhaustion:</strong> Cap active items per agent.</li>
+                    <li><strong>Feature Bloat:</strong> Aggressive pruning of non-essential ideas.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- AGENT 4 -->
+        <div class="l3-card a4">
+            <div class="l3-header">
+                <h2>AGENT 4</h2>
+                <span class="role">Process • Control</span>
+            </div>
+            <div class="l3-body">
+                <div class="l3-title">"The Systems Engineer"</div>
+                <div class="l3-objective">
+                    "Enforce deterministic transitions and comprehensive risk coverage through automated control gates."
+                </div>
+
+                <div class="l3-section-title">Key Features</div>
+                <div class="tag-container">
+                    <span class="feature-tag highlight">Reliability Token Matrix</span>
+                    <span class="feature-tag highlight">Decision Packet Compiler</span>
+                    <span class="feature-tag">Gate Snapshotting</span>
+                    <span class="feature-tag">Transition Ambiguity Check</span>
+                </div>
+
+                <div class="l3-section-title">Top Risks Mitigated</div>
+                <ul class="risk-list">
+                    <li><strong>Mapping Drift:</strong> Enforce gate-backed transitions.</li>
+                    <li><strong>Escalation Overload:</strong> Structured packet complier.</li>
+                    <li><strong>Gate Fatigue:</strong> Throughput guardrails to limit check overhead.</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

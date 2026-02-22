@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +20,11 @@ class AgentState:
     status: str | None
     blockers: list[str]
     current_task: str | None = None
+    level: int = 2
+    lead_id: str | None = None
+    role: str = "specialist"
+    platform: str | None = None
+    skills: list[str] = field(default_factory=list)
 
 
 @dataclass

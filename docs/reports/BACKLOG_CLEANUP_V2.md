@@ -32,20 +32,38 @@
   - `build-v5/`
   - `dist/_archive/`
 
-## Candidate duplicates and decisions needed
-- Spec files:
-  - `Centre de controle.spec` vs `cockpit.spec` vs `cockpit_v5.spec`
-  - Decision needed: single canonical build spec.
-- Python env:
-  - `.venv/` vs `venv/`
-  - Decision needed: keep one env path as standard.
-- Legacy docs:
-  - root `Cockpit_V2_*.pdf` and generated docs variants
-  - Decision needed: keep source of truth folder for V2 docs.
+## Decision lock - 2026-02-19
+### Canonical keys
+- `canonical_build_spec`:
+  - `/Users/oliviercloutier/Desktop/Cockpit/Centre de controle.spec`
+- `canonical_virtualenv`:
+  - `/Users/oliviercloutier/Desktop/Cockpit/.venv/`
+- `canonical_docs_source_of_truth`:
+  - ops evidence: `/Users/oliviercloutier/Desktop/Cockpit/docs/reports/`
+  - tournament evidence: `/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/`
+  - tournament evidence: `/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/`
+- `cleanup_exclusions_hard_lock`:
+  - skip patterns: `tournament`, `PROMPTS`, `ROUND-`, `JUDGE_FEEDBACK`, `TOURNAMENT_ARENA`
+  - protected paths:
+    - `/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/`
+    - `/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/`
+    - `/Users/oliviercloutier/Desktop/Cockpit/site/`
+    - `/Users/oliviercloutier/Desktop/Cockpit/control/examples/`
+
+### Short rationale
+- `.gitignore` preserves `Centre de controle.spec` while other `*.spec` files are not canonical by default.
+- Active verification and mission flows mostly run with `.venv/bin/python`.
+- Operational evidence is already consolidated under `/Users/oliviercloutier/Desktop/Cockpit/docs/reports/`.
+
+### Consequences
+- `cockpit.spec` and `cockpit_v5.spec` are legacy references, non-canonical.
+- `venv/` remains a temporary fallback path, non-canonical.
+- Root `Cockpit_V2_*.pdf` files remain archive references, not the primary ops source of truth.
 
 ## Cleanup policy
 - No hard delete until explicit owner sign-off.
-- Archive first, delete later.
+- archive-first policy enforced for every cleanup pass.
+- no hard delete without explicit owner sign-off.
 - Never touch tournament trees in cleanup passes.
 
 ## Tournament exclusion rules (hard lock)
@@ -60,6 +78,7 @@
   - `/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/`
   - `/Users/oliviercloutier/Desktop/Cockpit/site/` (arena and ops visibility files)
   - `/Users/oliviercloutier/Desktop/Cockpit/control/examples/` files used for tournament ops
+- No delete, no archive move, no rename in tournament trees.
 - Tournament mode remains dormant by default:
   - no auto-dispatch
   - no auto-judge
@@ -67,6 +86,14 @@
 
 ## Next cleanup gate
 - Run after next V2 implementation checkpoint:
-  - choose canonical spec file
-  - choose canonical virtualenv path
+  - align scripts and docs toward `.venv/` as canonical runtime path
   - prune archived local artifacts older than 30 days
+
+## Now / Next / Blockers
+- Now:
+  - canonical spec/env/docs decisions are locked for cleanup.
+  - tournament exclusions are explicitly hard-locked.
+- Next:
+  - align remaining scripts/docs references toward `.venv/` in non-destructive follow-up.
+- Blockers:
+  - none

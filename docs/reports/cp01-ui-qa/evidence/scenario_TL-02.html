@@ -1,0 +1,76 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: -apple-system, system-ui, sans-serif; background: #F6F3EE; margin: 0; padding: 20px; }
+                .card { background: white; border-radius: 8px; border: 1px solid #D9D3C8; overflow: hidden; margin-bottom: 20px; }
+                .header { padding: 12px 16px; border-bottom: 1px solid #E5E7EB; }
+                .title { font-size: 15px; font-weight: 700; margin: 0; }
+                .subtitle { font-size: 12px; color: #6B7280; margin: 4px 0 0; }
+            </style>
+        </head>
+        <body>
+            <h1>Hybrid Timeline - Degraded (Evidence)</h1>
+            <div class="card" style="width: 450px;">
+                <div class="header">
+                    <h2 class="title">Route du projet</h2>
+                    <p class="subtitle">Evidence Capture Mode</p>
+                </div>
+                <div style="padding: 20px;">
+                    
+        <svg width="400" height="280" viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg">
+            <line x1="30" y1="30" x2="30" y2="220" stroke="#1C1C1C" stroke-width="3" />
+            <circle cx="30" cy="40" r="8" fill="#22C55E" /><text x="50" y="45" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1C1C1C">Wave 1 - Foundation</text><text x="50" y="60" font-family="Inter, sans-serif" font-size="11" fill="#5E6167">Project setup complete</text><circle cx="30" cy="100" r="8" fill="#2C5DFF" /><text x="50" y="105" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1C1C1C">Wave 2 - Core</text><text x="50" y="120" font-family="Inter, sans-serif" font-size="11" fill="#5E6167">Stalled on dependency</text><text x="50" y="90" font-family="Menlo, monospace" font-size="9" fill="#5E6167">CP-0010</text><circle cx="30" cy="160" r="8" fill="#C4C4C4" /><text x="50" y="165" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1C1C1C">Wave 3 - Pilotage</text><text x="50" y="180" font-family="Inter, sans-serif" font-size="11" fill="#5E6167">Blocked by Wave 2</text><circle cx="30" cy="220" r="8" fill="#C4C4C4" /><text x="50" y="225" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#1C1C1C">Wave 4 - cleanup</text><text x="50" y="240" font-family="Inter, sans-serif" font-size="11" fill="#5E6167">Pending</text>
+        </svg>
+        
+                </div>
+                <div style="border-top: 1px solid #D9D3C8;">
+                    
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead style="background: #F3F4F6;">
+                <tr>
+                    <th style="padding: 8px; font-size: 11px; color: #374151;">Time</th>
+                    <th style="padding: 8px; font-size: 11px; color: #374151;">Lane</th>
+                    <th style="padding: 8px; font-size: 11px; color: #374151;">Sev</th>
+                    <th style="padding: 8px; font-size: 11px; color: #374151;">Event</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            <tr style="border-bottom: 1px solid #E5E7EB;">
+                <td style="padding: 8px; font-family: monospace; font-size: 11px; color: #5E6167;">10:15</td>
+                <td style="padding: 8px; font-size: 11px;">runtime</td>
+                <td style="padding: 8px; font-size: 11px; color: #B91C1C; font-weight: 600;">critical</td>
+                <td style="padding: 8px; font-size: 11px; color: #B91C1C;">connection reset <span style="color: #9CA3AF;">| Backend unreachable</span></td>
+            </tr>
+            
+            <tr style="border-bottom: 1px solid #E5E7EB;">
+                <td style="padding: 8px; font-family: monospace; font-size: 11px; color: #5E6167;">10:14</td>
+                <td style="padding: 8px; font-size: 11px;">risk</td>
+                <td style="padding: 8px; font-size: 11px; color: #B91C1C; font-weight: 600;">critical</td>
+                <td style="padding: 8px; font-size: 11px; color: #B91C1C;">SLO violation <span style="color: #9CA3AF;">| Success rate < 90%</span></td>
+            </tr>
+            
+            <tr style="border-bottom: 1px solid #E5E7EB;">
+                <td style="padding: 8px; font-family: monospace; font-size: 11px; color: #5E6167;">10:12</td>
+                <td style="padding: 8px; font-size: 11px;">delivery</td>
+                <td style="padding: 8px; font-size: 11px; color: #92400E; font-weight: 600;">warn</td>
+                <td style="padding: 8px; font-size: 11px; color: #92400E;">CP-0010 blocked <span style="color: #9CA3AF;">| Missing assets</span></td>
+            </tr>
+            
+            <tr style="border-bottom: 1px solid #E5E7EB;">
+                <td style="padding: 8px; font-family: monospace; font-size: 11px; color: #5E6167;">10:00</td>
+                <td style="padding: 8px; font-size: 11px;">runtime</td>
+                <td style="padding: 8px; font-size: 11px; color: #1C1C1C; font-weight: 600;">info</td>
+                <td style="padding: 8px; font-size: 11px; color: #1C1C1C;">retry attempt 3 <span style="color: #9CA3AF;">| Backoff 30s</span></td>
+            </tr>
+            
+            </tbody>
+        </table>
+        
+                </div>
+            </div>
+        </body>
+        </html>
+        

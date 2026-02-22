@@ -1,0 +1,160 @@
+
+<html><head>
+<style>
+body {
+  font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  background: #f6f3ee;
+  color: #1c1c1c;
+  margin: 0;
+  padding: 12px;
+}
+h1 { margin: 0; font-size: 24px; color: #2c5dff; }
+h2 { margin: 14px 0 8px 0; font-size: 16px; color: #2c5dff; }
+h3 { margin: 8px 0 6px 0; font-size: 14px; color: #1c1c1c; }
+p, li, td, th { font-size: 12px; line-height: 1.45; }
+a { color: #2c5dff; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.muted { color: #5e6167; }
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.card {
+  background: #ffffff;
+  border: 1px solid #d9d3c8;
+  border-radius: 10px;
+  padding: 10px;
+}
+.metric { font-size: 22px; font-weight: 700; color: #2c5dff; }
+.badge {
+  display: inline-block;
+  border: 1px solid #d9d3c8;
+  border-radius: 999px;
+  padding: 3px 8px;
+  margin-right: 6px;
+  font-size: 11px;
+  color: #5e6167;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border: 1px solid #d9d3c8;
+  border-radius: 8px;
+  overflow: hidden;
+}
+th, td {
+  border-bottom: 1px solid #eee9df;
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+}
+th { background: #f0ece6; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 980px) {
+  .grid4, .grid2, .row { grid-template-columns: 1fr; }
+}
+</style>
+</head><body>
+  <h1>Pilotage - Cockpit Pilotage (CP-001)</h1>
+  <p class='muted'>Generated at 2026-02-19T17:11:37+00:00 | Scope: projet | Mode: simple</p>
+  <p>Simple mode: quick operational reading in under 60 seconds. Focus on phase, blockers, next actions, and evidence paths.</p>
+
+  
+  <div class='card' style='background: #FFFBEB; border-left: 4px solid #F59E0B; margin-bottom: 12px;'>
+    <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
+      <h2 style='margin: 0; font-size: 15px;'>Rapport Now / Next / Blockers</h2>
+      <span class='badge' style='font-size: 10px;'>Cadence: toutes les 2h | 2026-02-19T17:11:37+00:00</span>
+    </div>
+    <div class='grid4' style='grid-template-columns: 1fr 1fr 1fr; gap: 8px;'>
+      <div style='padding: 8px; background: #FFFFFF; border-radius: 8px; border: 1px solid #E5DED3;'>
+        <div style='font-size: 11px; color: #5E6167; margin-bottom: 4px;'>&#x1F4CD; Now</div>
+        <div style='font-size: 13px; font-weight: 600;'>Fix network issues</div>
+      </div>
+      <div style='padding: 8px; background: #FFFFFF; border-radius: 8px; border: 1px solid #E5DED3;'>
+        <div style='font-size: 11px; color: #5E6167; margin-bottom: 4px;'>&#x27A1;&#xFE0F; Next</div>
+        <ul style='margin: 0; padding-left: 16px;'><li>n/a</li></ul>
+      </div>
+      <div style='padding: 8px; background: #FEF2F2; border-radius: 8px; border: 1px solid #C94B4B;'>
+        <div style='font-size: 11px; color: #C94B4B; margin-bottom: 4px;'>&#x1F6A7; Blockers (5)</div>
+        <ul style='margin: 0; padding-left: 16px;'><li>Network Down</li><li>API Timeout</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class='grid4'>
+    <div class='card'><div class='muted'>Phase lifecycle</div><div class='metric'>Implement</div><p class='muted'>45% of lifecycle</p></div>
+    <div class='card'><div class='muted'>Issue progress</div><div class='metric'>60%</div><p class='muted'>12 done / 20 total</p></div>
+    <div class='card'><div class='muted'>Open blockers</div><div class='metric'>5</div><p class='muted'>state + blocked agents</p></div>
+    <div class='card'><div class='muted'>Pending requests</div><div class='metric'>15</div><p class='muted'>queued/dispatched/reminded</p></div>
+  </div>
+
+  <div class='grid4' style='grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;'>
+    <div class='card' style='background:#FFFBEB; border: 1px solid #FDE68A;'>
+      <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;'>
+        <div class='muted' style='font-size:11px;'>SLO Verdict</div>
+        <span style='font-size:22px; font-weight:800; color:#92400E;'>&#x26A0;&#xFE0F; HOLD</span>
+      </div>
+      <table style='width:100%; font-size:11px; color:#5E6167;'>
+        <tr><td>dispatch p95</td><td style='text-align:right; font-weight:600;'>&le; 2000 ms</td></tr>
+        <tr><td>dispatch p99</td><td style='text-align:right; font-weight:600;'>&le; 5000 ms</td></tr>
+        <tr><td>success rate</td><td style='text-align:right; font-weight:600;'>&ge; 99%</td></tr>
+        <tr><td>open blockers</td><td style='text-align:right; font-weight:600; color:#C94B4B;'>5</td></tr>
+        <tr><td>pending queue</td><td style='text-align:right; font-weight:600;'>15</td></tr>
+      </table>
+    </div>
+    <div class='card'>
+      <div class='muted' style='font-size:11px;'>&#x1F4B0; Co&#xFB;t mensuel (CAD)</div>
+      <div class='metric' style='font-size:20px;'>$1,500 <span style='font-size:12px; color:#5E6167;'>/ mois</span></div>
+      <div style='background:#E8E2D9; border-radius:4px; height:8px; margin-top:8px;'>
+        <div style='background:#C94B4B; width:100%; height:100%; border-radius:4px;'></div>
+      </div>
+      <p class='muted' style='margin-top:4px; font-size:10px;'>Budget plafond &mdash; t&eacute;l&eacute;m&eacute;trie non connect&eacute;e</p>
+    </div>
+  </div>
+
+  <h2>On est où?</h2>
+  <div class='card'>
+    <div style='display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;'>
+      <span class='badge' style='background:#F0FDF4; color:#166534; border-color:#BBF7D0;'>&#x1F4A4; Repos 1</span>
+      <span class='badge' style='background:#CEFBFB; color:#0F766E; border-color:#99F6E4;'>&#x26A1; En action 0</span>
+      <span class='badge' style='background:#DBEAFE; color:#1E40AF; border-color:#93C5FD;'>&#x23F3; Attente 0</span>
+      <span class='badge' style='background:#FEE2E2; color:#991B1B; border-color:#FECACA;'>&#x1F534; Bloqué 5</span>
+    </div>
+    <h3>Issue status breakdown</h3>
+    <svg viewBox='0 0 560 120' width='100%' height='120' xmlns='http://www.w3.org/2000/svg'><rect x='0' y='0' width='100%' height='100%' fill='#ffffff' rx='10'/><rect x='20' y='34' width='0' height='22' fill='#9ca3af' rx='6'/><rect x='20' y='34' width='0' height='22' fill='#2c5dff' rx='6'/><rect x='20' y='34' width='0' height='22' fill='#ef4444' rx='6'/><rect x='20' y='34' width='500' height='22' fill='#23a6a6' rx='6'/><text x='20' y='78' font-size='11' fill='#5e6167'>todo</text><text x='58' y='78' font-size='11' fill='#1c1c1c'>0</text><text x='120' y='78' font-size='11' fill='#5e6167'>in_progress</text><text x='198' y='78' font-size='11' fill='#1c1c1c'>0</text><text x='272' y='78' font-size='11' fill='#5e6167'>blocked</text><text x='326' y='78' font-size='11' fill='#1c1c1c'>0</text><text x='390' y='78' font-size='11' fill='#5e6167'>done</text><text x='426' y='78' font-size='11' fill='#1c1c1c'>12</text></svg>
+    <h3>Agent status breakdown</h3>
+    <svg viewBox='0 0 560 120' width='100%' height='120' xmlns='http://www.w3.org/2000/svg'><rect x='0' y='0' width='100%' height='100%' fill='#ffffff' rx='10'/><rect x='20' y='34' width='500' height='22' fill='#9ca3af' rx='6'/><rect x='520' y='34' width='0' height='22' fill='#2c5dff' rx='6'/><rect x='520' y='34' width='0' height='22' fill='#f59e0b' rx='6'/><rect x='520' y='34' width='0' height='22' fill='#ef4444' rx='6'/><text x='20' y='78' font-size='11' fill='#5e6167'>repos</text><text x='58' y='78' font-size='11' fill='#1c1c1c'>1</text><text x='120' y='78' font-size='11' fill='#5e6167'>en action</text><text x='184' y='78' font-size='11' fill='#1c1c1c'>0</text><text x='248' y='78' font-size='11' fill='#5e6167'>attente</text><text x='300' y='78' font-size='11' fill='#1c1c1c'>0</text><text x='362' y='78' font-size='11' fill='#5e6167'>bloque</text><text x='406' y='78' font-size='11' fill='#1c1c1c'>5</text></svg>
+  </div>
+
+  <h2>On s’en va où?</h2>
+  <div class='grid2'>
+    <div class='card'>
+      <h3>Next top 5</h3>
+      <ul><li>No next items</li></ul>
+    </div>
+    <div class='card'>
+      <h3>Milestones and gates imminents</h3>
+      <ul><li>No active gates</li></ul>
+    </div>
+  </div>
+
+  <h2>Pourquoi?</h2>
+  <div class='card'>
+    <p><b>Objectif:</b> Fix network issues</p>
+    <p><b>Contexte repo/projet:</b> Mock Description</p>
+  </div>
+
+  <h2>Comment?</h2>
+  <div class='card'>
+    <ul>
+      <li>1. Intake and context lock</li>
+      <li>2. Plan and ownership assignment</li>
+      <li>3. Execution streams and quality gates</li>
+      <li>4. Review and rollback checks</li>
+      <li>5. Ship decision with evidence packet</li>
+    </ul>
+    <h3>Chemins de preuve</h3>
+    <ul><li>No proof files found.</li></ul>
+  </div>
+
+  
+</body></html>

@@ -50,6 +50,8 @@ class MainWindow(QMainWindow):
         app_stamp: str = "",
         repo_head: str = "",
         data_dir: str = "",
+        runtime_mode: str = "",
+        runtime_source: str = "",
     ) -> None:
         super().__init__()
         title = "Centre de controle"
@@ -60,6 +62,9 @@ class MainWindow(QMainWindow):
         self.current_project_id = project.project_id
         self.app_stamp = app_stamp or version_text
         self.repo_head = repo_head
+        self.runtime_mode = runtime_mode or "DEV LIVE"
+        self.runtime_source = runtime_source or "custom"
+        self.runtime_root = data_dir or ""
 
         central = QWidget()
         outer = QHBoxLayout(central)
@@ -73,7 +78,14 @@ class MainWindow(QMainWindow):
         footer_text = "\n".join(footer_lines) if footer_lines else None
 
         self.sidebar = SidebarWidget(projects=projects, footer_text=footer_text, data_dir=data_dir)
-        self.sidebar.set_runtime_context(self.app_stamp, self.repo_head, self.current_project_id)
+        self.sidebar.set_runtime_context(
+            self.app_stamp,
+            self.repo_head,
+            self.current_project_id,
+            runtime_mode=self.runtime_mode,
+            runtime_source=self.runtime_source,
+            runtime_root=self.runtime_root,
+        )
         self.sidebar.setFixedWidth(220)
         self.sidebar.new_project_btn.clicked.connect(self.on_new_project)
 
@@ -133,6 +145,8 @@ class MainWindow(QMainWindow):
         self.chatroom.pack_light_btn.clicked.connect(self.on_pack_light)
         self.chatroom.pack_full_btn.clicked.connect(self.on_pack_full)
         self.chatroom.ping_btn.clicked.connect(self.on_ping_agents)
+        self.agents_grid.context_selected.connect(self.on_ui_context_selected)
+        self.project_pilotage.context_selected.connect(self.on_ui_context_selected)
         self.sidebar.auto_mode.toggle.toggled.connect(self.on_auto_mode_toggled)
         self.sidebar.auto_mode.run_once_btn.clicked.connect(self.on_auto_mode_run_once)
 
@@ -152,6 +166,11 @@ class MainWindow(QMainWindow):
         self.auto_mode_codex_app = "Codex"
         self.auto_mode_ag_app = "Antigravity"
         self.auto_mode_last_error: str | None = None
+        self._portfolio_cache: list[ProjectData] = []
+        self._portfolio_cache_at: datetime | None = None
+        self._portfolio_cache_seconds = 30
+        self._last_bible_refresh_at: datetime | None = None
+        self._bible_refresh_seconds = 45
 
         self.auto_mode_timer = QTimer(self)
         self.auto_mode_timer.setInterval(self.auto_mode_interval_seconds * 1000)
@@ -163,30 +182,56 @@ class MainWindow(QMainWindow):
         self._clems_pinged_operator: bool = False
         self._clems_last_agent_ack_key: str | None = None
 
-        self.load_project(project)
+        self.load_project(project, refresh_chat_now=True, force_portfolio_refresh=True)
         if initial_project_row is not None:
             self.sidebar.project_list.blockSignals(True)
             self.sidebar.project_list.setCurrentRow(initial_project_row)
             self.sidebar.project_list.blockSignals(False)
         self.run_auto_mode_tick()
 
-        self.refresh_timer = QTimer(self)
-        self.refresh_timer.setInterval(5000)
-        self.refresh_timer.timeout.connect(self.refresh_project)
-        self.refresh_timer.start()
+        self.project_refresh_timer = QTimer(self)
+        self.project_refresh_timer.setInterval(5000)
+        self.project_refresh_timer.timeout.connect(self.refresh_project)
+        self.project_refresh_timer.start()
+
+        self.chat_refresh_timer = QTimer(self)
+        self.chat_refresh_timer.setInterval(1500)
+        self.chat_refresh_timer.timeout.connect(self.refresh_chat)
+        self.chat_refresh_timer.start()
+
+        self.bible_refresh_timer = QTimer(self)
+        self.bible_refresh_timer.setInterval(15000)
+        self.bible_refresh_timer.timeout.connect(self.refresh_bible)
+        self.bible_refresh_timer.start()
 
         self.reminder_timer = QTimer(self)
         self.reminder_timer.setInterval(60000)
         self.reminder_timer.timeout.connect(self.check_reminders)
         self.reminder_timer.start()
 
-    def load_project(self, project: ProjectData) -> None:
+    def load_project(
+        self,
+        project: ProjectData,
+        *,
+        refresh_chat_now: bool = True,
+        force_portfolio_refresh: bool = False,
+    ) -> None:
         prev_project_id = self.current_project_id
         self.current_project_id = project.project_id
-        self.sidebar.set_runtime_context(self.app_stamp, self.repo_head, self.current_project_id)
-        if prev_project_id != self.current_project_id:
+        project_changed = prev_project_id != self.current_project_id
+        self.sidebar.set_runtime_context(
+            self.app_stamp,
+            self.repo_head,
+            self.current_project_id,
+            runtime_mode=self.runtime_mode,
+            runtime_source=self.runtime_source,
+            runtime_root=self.runtime_root,
+        )
+        if project_changed:
             self.sidebar.auto_mode.set_last_dispatch("-")
             self.sidebar.auto_mode.set_last_error("")
+            self.chatroom.reset_feed_state()
+            self.chatroom.clear_context_ref()
         self.roadmap.set_roadmap(
             project.roadmap.get("now", []),
             project.roadmap.get("next", []),
@@ -195,16 +240,43 @@ class MainWindow(QMainWindow):
         phase, objective, next_items, eta = self._read_state_summary()
         self.roadmap.set_state(phase, objective, next_items, eta=eta)
         self.agents_grid.set_agents(project.agents)
-        self.project_bible.set_project(project, refresh=True)
-        self.project_pilotage.set_project(project, portfolio=[], refresh=True)
+        self.project_bible.set_project(project, refresh=project_changed)
+        portfolio_projects = self._get_portfolio_projects(project, force=force_portfolio_refresh or project_changed)
+        self.project_pilotage.set_project(project, portfolio=portfolio_projects, refresh=True)
         self._sync_auto_mode_from_settings(project)
-        self.refresh_chat()
+        if refresh_chat_now:
+            self.refresh_chat()
+        if project_changed:
+            self.refresh_bible(force=True)
+
+    def _get_portfolio_projects(self, current_project: ProjectData, *, force: bool = False) -> list[ProjectData]:
+        now = datetime.now(timezone.utc)
+        if (
+            not force
+            and self._portfolio_cache_at is not None
+            and (now - self._portfolio_cache_at).total_seconds() <= self._portfolio_cache_seconds
+        ):
+            cached = [item for item in self._portfolio_cache if item.project_id != current_project.project_id]
+            return [current_project] + cached
+
+        refreshed: list[ProjectData] = [current_project]
+        for project_id in list_projects():
+            if project_id == current_project.project_id:
+                continue
+            try:
+                refreshed.append(load_project(project_id))
+            except Exception:
+                continue
+
+        self._portfolio_cache = [item for item in refreshed if item.project_id != current_project.project_id]
+        self._portfolio_cache_at = now
+        return refreshed
 
     def on_project_selected(self, project_id: str) -> None:
         if not project_id:
             return
         project = load_project(project_id)
-        self.load_project(project)
+        self.load_project(project, refresh_chat_now=True, force_portfolio_refresh=True)
 
     def _reload_projects_list(self, select_id: str | None = None) -> None:
         projects = list_projects()
@@ -238,13 +310,27 @@ class MainWindow(QMainWindow):
             return
         self._reload_projects_list(select_id=project_id)
         project = load_project(project_id)
-        self.load_project(project)
+        self.load_project(project, refresh_chat_now=True, force_portfolio_refresh=True)
 
     def refresh_project(self) -> None:
         if not self.current_project_id:
             return
         project = load_project(self.current_project_id)
-        self.load_project(project)
+        self.load_project(project, refresh_chat_now=False, force_portfolio_refresh=False)
+        self.refresh_bible(force=False)
+
+    def refresh_bible(self, *, force: bool = False) -> None:
+        if not self.current_project_id:
+            return
+        if self.center_tabs.currentWidget() is not self.project_bible and not force:
+            return
+        now = datetime.now(timezone.utc)
+        if not force and self._last_bible_refresh_at is not None:
+            elapsed = (now - self._last_bible_refresh_at).total_seconds()
+            if elapsed < self._bible_refresh_seconds:
+                return
+        self.project_bible.refresh_content()
+        self._last_bible_refresh_at = now
 
     def refresh_chat(self) -> None:
         if not self.current_project_id:
@@ -259,10 +345,29 @@ class MainWindow(QMainWindow):
             messages = load_chat_thread(self.current_project_id, current_tag)
         else:
             messages = []
-        self.chatroom.set_thread_messages(messages)
+        self.chatroom.set_thread_messages(messages, thread_tag=current_tag)
 
     def on_thread_selected(self, _label: str) -> None:
         self.refresh_chat()
+
+    def on_ui_context_selected(self, context_ref: dict) -> None:
+        if not isinstance(context_ref, dict):
+            return
+        payload = dict(context_ref)
+        if not payload.get("selected_at"):
+            payload["selected_at"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        source_path = str(payload.get("source_path") or "").strip()
+        if payload.get("kind") == "agent" and not source_path and self.current_project_id:
+            agent_id = str(payload.get("id") or "").strip()
+            if agent_id:
+                state_path = project_dir(self.current_project_id) / "agents" / agent_id / "state.json"
+                if state_path.exists():
+                    payload["source_path"] = str(state_path)
+                    try:
+                        payload["source_uri"] = state_path.resolve().as_uri()
+                    except Exception:
+                        payload["source_uri"] = ""
+        self.chatroom.set_context_ref(payload)
 
     def on_send_message(self) -> None:
         if not self.current_project_id:
@@ -270,6 +375,7 @@ class MainWindow(QMainWindow):
         text = self.chatroom.input.text().strip()
         if not text:
             return
+        context_ref = self.chatroom.consume_context_ref()
         tags = parse_tags(text)
         mentions = parse_mentions(text)
         message_id = self._make_message_id("operator")
@@ -281,6 +387,8 @@ class MainWindow(QMainWindow):
             "tags": tags,
             "mentions": mentions,
         }
+        if context_ref:
+            payload["context_ref"] = context_ref
         append_chat_message(self.current_project_id, payload)
         for tag in tags:
             append_thread_message(self.current_project_id, tag, payload)
@@ -323,7 +431,8 @@ class MainWindow(QMainWindow):
     def on_ping_agents(self) -> None:
         if not self.current_project_id:
             return
-        text = "Ping @leo @victor #ping"
+        context_ref = self.chatroom.consume_context_ref()
+        text = "Ping @leo @victor @nova #ping"
         tags = parse_tags(text)
         mentions = parse_mentions(text)
         message_id = self._make_message_id("operator")
@@ -335,6 +444,8 @@ class MainWindow(QMainWindow):
             "tags": tags,
             "mentions": mentions,
         }
+        if context_ref:
+            payload["context_ref"] = context_ref
         append_chat_message(self.current_project_id, payload)
         for tag in tags:
             append_thread_message(self.current_project_id, tag, payload)

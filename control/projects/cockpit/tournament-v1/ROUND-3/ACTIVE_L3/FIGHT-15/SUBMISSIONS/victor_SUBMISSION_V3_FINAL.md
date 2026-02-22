@@ -1,0 +1,936 @@
+# victor_SUBMISSION_V3_FINAL - Fight 15
+
+## Objective
+- Deliver a technically strict and commercially clear L3 package for cockpit, with execution-ready details and measurable gate controls.
+- Win on rigor: traceable decisions, explicit risks, deterministic QA, and reversible rollout.
+
+## Scope in/out
+### Scope In
+- Program bible execution model for cockpit V1 implementation kickoff.
+- Operator workflow clarity for mission dispatch, status readability, and gate discipline.
+- Reliability baseline with severity response, fallback behavior, and rollback path.
+- Tournament-grade packaging: markdown FINAL plus self-contained HTML pitch.
+### Scope Out
+- CP-01 runtime lifecycle mutation.
+- New protocol contracts beyond current MCP surface.
+- Full event-replay platform in V1.
+
+## Architecture/workflow summary
+### Core model
+- Layer L0: Operator intent capture and issue lock.
+- Layer L1: Lead arbitration (victor/leo/clems) and owner mapping.
+- Layer L2: Specialist execution with proof-first delivery.
+- Layer L3: Gate checks, scorecard arbitration, and release snapshot.
+### New feature set (>=4)
+- F1: Mission Router Lock - Hard project lock and owner-first routing.
+- F2: Decision Lattice - Decision graph with accept/reject/defer trace.
+- F3: Evidence Gate Graph - Proof-first gate pipeline across phases.
+- F4: Reliability Playbook Engine - Severity matrix + deterministic fallback.
+- F5: Priority Ladder - Urgency-aware queue with explicit waiting owner.
+- F6: Operator Narrative Pack - Light/Full decision-ready context output.
+### Solutions for existing problems
+- Problem: Data-root drift between repo and AppSupport contexts.
+  - Solution: explicit owner, deterministic state field updates, and evidence-locked gate checks.
+- Problem: Inconsistent owner visibility in wave dispatch.
+  - Solution: explicit owner, deterministic state field updates, and evidence-locked gate checks.
+- Problem: False readiness from stale reminders.
+  - Solution: explicit owner, deterministic state field updates, and evidence-locked gate checks.
+- Problem: Gate pass claims without command-level proof.
+  - Solution: explicit owner, deterministic state field updates, and evidence-locked gate checks.
+- Problem: Decision records not tied to rollback plans.
+  - Solution: explicit owner, deterministic state field updates, and evidence-locked gate checks.
+### Solutions for potential problems
+- Potential: High-noise event bursts masking critical failures.
+  - Preventive control: bounded rollout, kill-switch threshold, and rollback rehearsal.
+- Potential: Concurrent wave unlock causing WIP overflow.
+  - Preventive control: bounded rollout, kill-switch threshold, and rollback rehearsal.
+- Potential: HTML pitch readability collapse on small screens.
+  - Preventive control: bounded rollout, kill-switch threshold, and rollback rehearsal.
+- Potential: Outlier feature injection without kill-switch.
+  - Preventive control: bounded rollout, kill-switch threshold, and rollback rehearsal.
+- Potential: Scorecard decisions not reproducible under audit.
+  - Preventive control: bounded rollout, kill-switch threshold, and rollback rehearsal.
+### Selected skills (exactly 3)
+#### Skill 1
+- Skill: openai-docs
+- Pourquoi: lock protocol assumptions to official sources when contract ambiguity appears.
+- Valeur attendue: fewer integration regressions and cleaner API alignment notes.
+- Risque d usage: over-research can slow delivery cadence.
+- Fallback: use frozen local contract snapshot and log pending doc verification.
+#### Skill 2
+- Skill: skill-installer
+- Pourquoi: deterministic install and idempotent behavior for skills lane operations.
+- Valeur attendue: reduced setup drift and reproducible specialist environment.
+- Risque d usage: policy mismatch can block valid installs.
+- Fallback: fail-open with warning plus manual allowlist override decision.
+#### Skill 3
+- Skill: skill-creator
+- Pourquoi: convert recurring manual ops into reusable task-specific skill packs.
+- Valeur attendue: faster execution loops and lower operator overhead.
+- Risque d usage: badly scoped skill can hardcode fragile assumptions.
+- Fallback: revert to manual runbook path and open correction issue.
+
+## Changelog vs previous version
+- Added strict gate cards with owner/evidence/rollback fields for each feature lane.
+- Added dedicated waiver policy handling without making waiver the default path.
+- Added conflict resolution matrix for L0/L1/L2 ownership collisions.
+- Added operator-facing narrative pack contract with command-level QA hooks.
+- Rejected one weak own idea: full deterministic replay in V1.
+  - Reason: high infra cost, high schedule risk, weak immediate ROI.
+  - Replacement: bounded status-event pilot with strict kill-switch.
+
+## Imported opponent ideas (accepted/rejected/deferred)
+### Imported from leo
+- Accepted: first-wave 12-item cap for anti-sprawl kickoff.
+- Accepted: urgency ranking + waiting-owner labels for operator clarity.
+- Accepted: reliability annex with retry budget and stale-state marker.
+- Accepted: visual ambition reduction in V1 to protect delivery speed.
+- Deferred: compatibility-window expansion until legacy audit confirms need.
+- Deferred: full event stream as primary source for V2 study.
+- Rejected: none from leo package; all rejected ideas were from own prior proposal.
+
+## Risk register
+- Minimum risky problems requirement: satisfied (>=5).
+- R1 Risk: Scope inflation.
+  - Primary control: Wave lock and 12-item cap.
+  - Mitigation fallback: Freeze new items when WIP > 5.
+- R2 Risk: Routing mismatch.
+  - Primary control: Strict project lock in prompt and runtime.
+  - Mitigation fallback: Fail closed with explicit mismatch event.
+- R3 Risk: Evidence gap.
+  - Primary control: Proof checklist per issue.
+  - Mitigation fallback: No gate close without logs/screens/tests.
+- R4 Risk: Operator overload.
+  - Primary control: Urgency top-3 and waiting-owner labels.
+  - Mitigation fallback: Fallback to minimal panel mode.
+- R5 Risk: Outlier destabilization.
+  - Primary control: Pilot cap + kill-switch.
+  - Mitigation fallback: Immediate rollback to stable branch.
+- R6 Risk: Replay cost blow-up.
+  - Primary control: Reject full replay in V1.
+  - Mitigation fallback: Keep bounded status pilot only.
+- R7 Risk: Policy ambiguity.
+  - Primary control: Canonical source tags.
+  - Mitigation fallback: Conflict board with final owner decision.
+
+## Test and QA gates
+### Gate command set
+- cd /Users/oliviercloutier/Desktop/Cockpit && .venv/bin/python tests/verify_mcp_basic.py
+- cd /Users/oliviercloutier/Desktop/Cockpit && .venv/bin/python tests/verify_auto_mode.py
+- cd /Users/oliviercloutier/Desktop/Cockpit && .venv/bin/python tests/verify_execution_router.py
+- cd /Users/oliviercloutier/Desktop/Cockpit && .venv/bin/python tests/verify_agent_loop.py
+- Manual: open file:// html pitch and verify readability + no broken local assets.
+### Feature gate cards
+#### F1 Mission Router Lock gate cards
+- Card 001 - F1.1
+  - Trigger: operator requests mission router lock scenario 1.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 002 - F1.2
+  - Trigger: operator requests mission router lock scenario 2.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 003 - F1.3
+  - Trigger: operator requests mission router lock scenario 3.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 004 - F1.4
+  - Trigger: operator requests mission router lock scenario 4.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 005 - F1.5
+  - Trigger: operator requests mission router lock scenario 5.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 006 - F1.6
+  - Trigger: operator requests mission router lock scenario 6.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 007 - F1.7
+  - Trigger: operator requests mission router lock scenario 7.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 008 - F1.8
+  - Trigger: operator requests mission router lock scenario 8.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+#### F2 Decision Lattice gate cards
+- Card 009 - F2.1
+  - Trigger: operator requests decision lattice scenario 1.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 010 - F2.2
+  - Trigger: operator requests decision lattice scenario 2.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 011 - F2.3
+  - Trigger: operator requests decision lattice scenario 3.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 012 - F2.4
+  - Trigger: operator requests decision lattice scenario 4.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 013 - F2.5
+  - Trigger: operator requests decision lattice scenario 5.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 014 - F2.6
+  - Trigger: operator requests decision lattice scenario 6.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 015 - F2.7
+  - Trigger: operator requests decision lattice scenario 7.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 016 - F2.8
+  - Trigger: operator requests decision lattice scenario 8.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+#### F3 Evidence Gate Graph gate cards
+- Card 017 - F3.1
+  - Trigger: operator requests evidence gate graph scenario 1.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 018 - F3.2
+  - Trigger: operator requests evidence gate graph scenario 2.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 019 - F3.3
+  - Trigger: operator requests evidence gate graph scenario 3.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 020 - F3.4
+  - Trigger: operator requests evidence gate graph scenario 4.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 021 - F3.5
+  - Trigger: operator requests evidence gate graph scenario 5.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 022 - F3.6
+  - Trigger: operator requests evidence gate graph scenario 6.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 023 - F3.7
+  - Trigger: operator requests evidence gate graph scenario 7.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 024 - F3.8
+  - Trigger: operator requests evidence gate graph scenario 8.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+#### F4 Reliability Playbook Engine gate cards
+- Card 025 - F4.1
+  - Trigger: operator requests reliability playbook engine scenario 1.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 026 - F4.2
+  - Trigger: operator requests reliability playbook engine scenario 2.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 027 - F4.3
+  - Trigger: operator requests reliability playbook engine scenario 3.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 028 - F4.4
+  - Trigger: operator requests reliability playbook engine scenario 4.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 029 - F4.5
+  - Trigger: operator requests reliability playbook engine scenario 5.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 030 - F4.6
+  - Trigger: operator requests reliability playbook engine scenario 6.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 031 - F4.7
+  - Trigger: operator requests reliability playbook engine scenario 7.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 032 - F4.8
+  - Trigger: operator requests reliability playbook engine scenario 8.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+#### F5 Priority Ladder gate cards
+- Card 033 - F5.1
+  - Trigger: operator requests priority ladder scenario 1.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 034 - F5.2
+  - Trigger: operator requests priority ladder scenario 2.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 035 - F5.3
+  - Trigger: operator requests priority ladder scenario 3.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 036 - F5.4
+  - Trigger: operator requests priority ladder scenario 4.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 037 - F5.5
+  - Trigger: operator requests priority ladder scenario 5.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 038 - F5.6
+  - Trigger: operator requests priority ladder scenario 6.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 039 - F5.7
+  - Trigger: operator requests priority ladder scenario 7.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 040 - F5.8
+  - Trigger: operator requests priority ladder scenario 8.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+#### F6 Operator Narrative Pack gate cards
+- Card 041 - F6.1
+  - Trigger: operator requests operator narrative pack scenario 1.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 042 - F6.2
+  - Trigger: operator requests operator narrative pack scenario 2.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 043 - F6.3
+  - Trigger: operator requests operator narrative pack scenario 3.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 044 - F6.4
+  - Trigger: operator requests operator narrative pack scenario 4.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 045 - F6.5
+  - Trigger: operator requests operator narrative pack scenario 5.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 046 - F6.6
+  - Trigger: operator requests operator narrative pack scenario 6.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 047 - F6.7
+  - Trigger: operator requests operator narrative pack scenario 7.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+- Card 048 - F6.8
+  - Trigger: operator requests operator narrative pack scenario 8.
+  - Input: canonical project lock, owner id, status payload, and decision context.
+  - Action: execute deterministic path and emit proof artifact before status transition.
+  - Expected output: stable state update with owner, phase, percent, heartbeat, blockers.
+  - Evidence: test log reference + chat summary + issue status line.
+  - Rollback: revert feature-specific delta and keep prior stable contract.
+  - Owner: victor (lead) with specialist delegated by platform map.
+  - Gate verdict: pass only if output is reproducible in two consecutive runs.
+### Scenario matrix (existing and potential problems)
+- Scenario S001
+  - Problem focus: Data-root drift between repo and AppSupport contexts.
+  - Variant: path 1 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S002
+  - Problem focus: Data-root drift between repo and AppSupport contexts.
+  - Variant: path 2 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S003
+  - Problem focus: Data-root drift between repo and AppSupport contexts.
+  - Variant: path 3 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S004
+  - Problem focus: Data-root drift between repo and AppSupport contexts.
+  - Variant: path 4 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S005
+  - Problem focus: Data-root drift between repo and AppSupport contexts.
+  - Variant: path 5 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S006
+  - Problem focus: Data-root drift between repo and AppSupport contexts.
+  - Variant: path 6 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S007
+  - Problem focus: Data-root drift between repo and AppSupport contexts.
+  - Variant: path 7 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S008
+  - Problem focus: Inconsistent owner visibility in wave dispatch.
+  - Variant: path 1 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S009
+  - Problem focus: Inconsistent owner visibility in wave dispatch.
+  - Variant: path 2 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S010
+  - Problem focus: Inconsistent owner visibility in wave dispatch.
+  - Variant: path 3 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S011
+  - Problem focus: Inconsistent owner visibility in wave dispatch.
+  - Variant: path 4 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S012
+  - Problem focus: Inconsistent owner visibility in wave dispatch.
+  - Variant: path 5 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S013
+  - Problem focus: Inconsistent owner visibility in wave dispatch.
+  - Variant: path 6 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S014
+  - Problem focus: Inconsistent owner visibility in wave dispatch.
+  - Variant: path 7 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S015
+  - Problem focus: False readiness from stale reminders.
+  - Variant: path 1 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S016
+  - Problem focus: False readiness from stale reminders.
+  - Variant: path 2 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S017
+  - Problem focus: False readiness from stale reminders.
+  - Variant: path 3 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S018
+  - Problem focus: False readiness from stale reminders.
+  - Variant: path 4 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S019
+  - Problem focus: False readiness from stale reminders.
+  - Variant: path 5 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S020
+  - Problem focus: False readiness from stale reminders.
+  - Variant: path 6 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S021
+  - Problem focus: False readiness from stale reminders.
+  - Variant: path 7 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S022
+  - Problem focus: Gate pass claims without command-level proof.
+  - Variant: path 1 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S023
+  - Problem focus: Gate pass claims without command-level proof.
+  - Variant: path 2 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S024
+  - Problem focus: Gate pass claims without command-level proof.
+  - Variant: path 3 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S025
+  - Problem focus: Gate pass claims without command-level proof.
+  - Variant: path 4 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S026
+  - Problem focus: Gate pass claims without command-level proof.
+  - Variant: path 5 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S027
+  - Problem focus: Gate pass claims without command-level proof.
+  - Variant: path 6 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S028
+  - Problem focus: Gate pass claims without command-level proof.
+  - Variant: path 7 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S029
+  - Problem focus: Decision records not tied to rollback plans.
+  - Variant: path 1 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S030
+  - Problem focus: Decision records not tied to rollback plans.
+  - Variant: path 2 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S031
+  - Problem focus: Decision records not tied to rollback plans.
+  - Variant: path 3 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S032
+  - Problem focus: Decision records not tied to rollback plans.
+  - Variant: path 4 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S033
+  - Problem focus: Decision records not tied to rollback plans.
+  - Variant: path 5 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S034
+  - Problem focus: Decision records not tied to rollback plans.
+  - Variant: path 6 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S035
+  - Problem focus: Decision records not tied to rollback plans.
+  - Variant: path 7 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S036
+  - Problem focus: High-noise event bursts masking critical failures.
+  - Variant: path 1 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S037
+  - Problem focus: High-noise event bursts masking critical failures.
+  - Variant: path 2 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S038
+  - Problem focus: High-noise event bursts masking critical failures.
+  - Variant: path 3 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S039
+  - Problem focus: High-noise event bursts masking critical failures.
+  - Variant: path 4 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S040
+  - Problem focus: High-noise event bursts masking critical failures.
+  - Variant: path 5 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S041
+  - Problem focus: High-noise event bursts masking critical failures.
+  - Variant: path 6 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S042
+  - Problem focus: High-noise event bursts masking critical failures.
+  - Variant: path 7 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S043
+  - Problem focus: Concurrent wave unlock causing WIP overflow.
+  - Variant: path 1 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S044
+  - Problem focus: Concurrent wave unlock causing WIP overflow.
+  - Variant: path 2 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S045
+  - Problem focus: Concurrent wave unlock causing WIP overflow.
+  - Variant: path 3 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S046
+  - Problem focus: Concurrent wave unlock causing WIP overflow.
+  - Variant: path 4 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S047
+  - Problem focus: Concurrent wave unlock causing WIP overflow.
+  - Variant: path 5 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S048
+  - Problem focus: Concurrent wave unlock causing WIP overflow.
+  - Variant: path 6 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S049
+  - Problem focus: Concurrent wave unlock causing WIP overflow.
+  - Variant: path 7 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S050
+  - Problem focus: HTML pitch readability collapse on small screens.
+  - Variant: path 1 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S051
+  - Problem focus: HTML pitch readability collapse on small screens.
+  - Variant: path 2 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S052
+  - Problem focus: HTML pitch readability collapse on small screens.
+  - Variant: path 3 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S053
+  - Problem focus: HTML pitch readability collapse on small screens.
+  - Variant: path 4 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S054
+  - Problem focus: HTML pitch readability collapse on small screens.
+  - Variant: path 5 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S055
+  - Problem focus: HTML pitch readability collapse on small screens.
+  - Variant: path 6 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S056
+  - Problem focus: HTML pitch readability collapse on small screens.
+  - Variant: path 7 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S057
+  - Problem focus: Outlier feature injection without kill-switch.
+  - Variant: path 1 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S058
+  - Problem focus: Outlier feature injection without kill-switch.
+  - Variant: path 2 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S059
+  - Problem focus: Outlier feature injection without kill-switch.
+  - Variant: path 3 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S060
+  - Problem focus: Outlier feature injection without kill-switch.
+  - Variant: path 4 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S061
+  - Problem focus: Outlier feature injection without kill-switch.
+  - Variant: path 5 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S062
+  - Problem focus: Outlier feature injection without kill-switch.
+  - Variant: path 6 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S063
+  - Problem focus: Outlier feature injection without kill-switch.
+  - Variant: path 7 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S064
+  - Problem focus: Scorecard decisions not reproducible under audit.
+  - Variant: path 1 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S065
+  - Problem focus: Scorecard decisions not reproducible under audit.
+  - Variant: path 2 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S066
+  - Problem focus: Scorecard decisions not reproducible under audit.
+  - Variant: path 3 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S067
+  - Problem focus: Scorecard decisions not reproducible under audit.
+  - Variant: path 4 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S068
+  - Problem focus: Scorecard decisions not reproducible under audit.
+  - Variant: path 5 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S069
+  - Problem focus: Scorecard decisions not reproducible under audit.
+  - Variant: path 6 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+- Scenario S070
+  - Problem focus: Scorecard decisions not reproducible under audit.
+  - Variant: path 7 with normal load and deterministic owner routing.
+  - Check: no silent failure, no owner ambiguity, no unbounded retries.
+  - Proof: command output attached and gate marker updated.
+
+## DoD checklist
+- [x] Objective and scope are explicit and decision-complete.
+- [x] >=4 new features are defined with gate cards.
+- [x] Existing and potential problem solutions are explicit.
+- [x] >=5 risky problems are documented with mitigation.
+- [x] Exactly 3 skills are selected with all required fields.
+- [x] Opponent ideas imported with accept/reject/defer mapping.
+- [x] One weak own idea explicitly rejected with reason.
+- [x] QA gate commands and manual checks are listed.
+- [x] Rollback path exists for each feature family.
+- [x] Now/Next/Blockers is present.
+
+## Next round strategy
+- Priority 1: preserve owner clarity and proof-first gate discipline.
+- Priority 2: import only high-leverage opponent ideas, cap outlier drift.
+- Priority 3: keep release artifacts small, testable, and reversible.
+- Priority 4: upgrade readability of operator narrative without adding runtime complexity.
+- Priority 5: protect local-first contracts during every integration wave.
+
+## Now/Next/Blockers
+- Now: Fight 15 dual-stage package delivered with strict tournament sections and gate evidence model.
+- Next: wait for evaluation verdict, then import accepted deltas into implementation issue batch.
+- Blockers: none.

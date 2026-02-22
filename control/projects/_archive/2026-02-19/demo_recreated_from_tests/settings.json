@@ -1,0 +1,16 @@
+{
+  "project_id": "demo",
+  "project_name": "Demo",
+  "feature_flags": {
+    "deep_mining": false,
+    "auto_mode": true
+  },
+  "auto_mode": {
+    "interval_seconds": 5,
+    "max_actions": 1
+  },
+  "github": {
+    "repo": ""
+  },
+  "updated_at": "2026-02-19T12:22:54+00:00"
+}

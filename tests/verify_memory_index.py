@@ -90,6 +90,32 @@ def main() -> int:
         other_hits = search_memory("evozina", "run loop", projects_root=projects_root)
         assert not other_hits, "cross-project retrieval must remain isolated"
 
+        # Wave06 lock: incomplete registry must still include canonical nova core when directory exists.
+        (project_dir / "agents" / "nova").mkdir(parents=True, exist_ok=True)
+        (project_dir / "agents" / "registry.json").write_text(
+            json.dumps(
+                {
+                    "clems": {
+                        "agent_id": "clems",
+                        "level": 0,
+                        "engine": "CDX",
+                        "platform": "codex",
+                    },
+                    "victor": {
+                        "agent_id": "victor",
+                        "level": 1,
+                        "engine": "CDX",
+                        "platform": "codex",
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        agent_report_3 = build_agent_memory_indexes(project_id, projects_root=projects_root)
+        assert "nova" in agent_report_3.indexed_agents, "nova must be indexed from canonical core fallback"
+        assert Path(project_dir / "agents" / "nova" / "memory.index.json").exists(), "nova memory index should exist"
+
     print("OK: memory index verified")
     return 0
 

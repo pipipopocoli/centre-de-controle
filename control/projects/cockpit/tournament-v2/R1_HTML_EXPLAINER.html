@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tournament V2 - R1 Explainer</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #111a2b;
+      --panel-2: #16233a;
+      --text: #e6edf8;
+      --muted: #9eb2ce;
+      --accent: #4fb3ff;
+      --good: #2dd4bf;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --border: #223455;
+      --top: #7dd3fc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background: radial-gradient(circle at 20% 10%, #17315c 0%, var(--bg) 40%);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .wrap {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .hero {
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, #0f1b30, #0b1425);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+    .title {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: 0.4px;
+    }
+    .sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+    }
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .pill {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 13px;
+    }
+    .pill b { color: var(--top); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      min-height: 370px;
+    }
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+    .variant {
+      display: inline-block;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 8px;
+      margin-bottom: 8px;
+      color: var(--top);
+      background: #0e1a2c;
+    }
+    .k {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--muted);
+      margin-top: 9px;
+      margin-bottom: 4px;
+    }
+    ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    li { margin: 3px 0; }
+    .weak li { color: #ffd0d0; }
+    .links {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      padding: 6px 8px;
+      border-radius: 8px;
+    }
+    a:hover { text-decoration: underline; }
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel);
+      padding: 14px;
+    }
+    .panel h3 { margin: 0 0 10px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 8px 6px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; }
+    .rank { font-weight: 700; color: var(--top); }
+    .top4 { color: var(--good); font-weight: 700; }
+    .notes {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    @media (max-width: 1020px) {
+      .meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid { grid-template-columns: 1fr; }
+      .panels { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1 class="title">Cockpit Tournament V2 - R1 Closeout</h1>
+      <p class="sub">Resume rapide: 6 packages evalues, top4 verrouille, pret pour dispatch R2 fusion.</p>
+      <div class="meta">
+        <div class="pill"><b>Objectif</b><br/>Choisir les 4 meilleurs plans R1 pour fusion R2.</div>
+        <div class="pill"><b>Contraintes lockees</b><br/>Global Brain accessible, memoire projet isolee, full access = approval @clems.</div>
+        <div class="pill"><b>Format</b><br/>R1 isole (6), puis R2 top4 conscient de toutes options.</div>
+        <div class="pill"><b>Rubric</b><br/>Stabilite 35, Qualite 30, Clarte 20, Faisabilite 15 (+bonus).</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>competitor-r1-a</h2>
+        <div class="variant">Variant A - stabilite/persistence</div>
+        <div class="k">Concept general</div>
+        <p>Architecture "stability-first" avec Run Bundle Contract, event log append-only, replay deterministe et commit atomique.</p>
+        <div class="k">Gros avantages</div>
+        <ul>
+          <li>Excellente discipline crash/replay/corruption.</li>
+          <li>Contrats de policy clairs pour full-access et approvals.</li>
+          <li>Bon mode rollout/rollback par etapes.</li>
+        </ul>
+        <div class="k">Innovations</div>
+        <ul>
+          <li>RBC comme artefact central de fiabilite.</li>
+          <li>Checksums + sequence monotonicity + consistency probes.</li>
+        </ul>
+        <div class="k">Faiblesses/risques</div>
+        <ul class="weak">
+          <li>Moins de profondeur sur orchestration multi-providers.</li>
+          <li>Budget et UX moins pousses que les top entrants.</li>
+        </ul>
+        <div class="k">Format vulgarisation propose</div>
+        <p>Panel "Persistence Health" en 60 secondes: data safe, continue/rollback, approval now.</p>
+        <div class="links">
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-a/01_EXEC_SUMMARY.md">01_EXEC_SUMMARY</a>
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-a/08_VULGARISATION_SPEC.md">08_VULGARISATION_SPEC</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>competitor-r1-b</h2>
+        <div class="variant">Variant B - skills supply chain</div>
+        <div class="k">Concept general</div>
+        <p>Modele supply-chain complet: trust tiers, provenance, lockfile strict, lifecycle install/update/revoke, parity cross-runtime.</p>
+        <div class="k">Gros avantages</div>
+        <ul>
+          <li>Pack le plus complet en contracts engineering.</li>
+          <li>Grande force sur securite, auditabilite et containment.</li>
+          <li>Matrice risques/mitigations tres actionnable.</li>
+        </ul>
+        <div class="k">Innovations</div>
+        <ul>
+          <li>Trust tiers T0-T3 avec gate policy nette.</li>
+          <li>Conformance gate Codex/Antigravity release-blocking.</li>
+          <li>skills.lock fortement contractuel.</li>
+        </ul>
+        <div class="k">Faiblesses/risques</div>
+        <ul class="weak">
+          <li>Overhead process potentiellement lourd.</li>
+          <li>Risque de saturation review si escalade trop frequente.</li>
+        </ul>
+        <div class="k">Format vulgarisation propose</div>
+        <p>Vue incident skills avec reason codes, blast radius et script action en 5 etapes.</p>
+        <div class="links">
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-b/01_EXEC_SUMMARY.md">01_EXEC_SUMMARY</a>
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-b/08_VULGARISATION_SPEC.md">08_VULGARISATION_SPEC</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>competitor-r1-c</h2>
+        <div class="variant">Variant C - router/orchestration</div>
+        <div class="k">Concept general</div>
+        <p>Three-plane architecture (control/data/trust) avec Router Orchestration Graph, scheduling fair, fallback tiers et replay contract.</p>
+        <div class="k">Gros avantages</div>
+        <ul>
+          <li>Excellent fit pour scale multi-agents et multi-provider.</li>
+          <li>Forte clarte sur queues, starvation guards, anti-thundering-herd.</li>
+          <li>Bonne trajectoire rollout avec flags de rollback.</li>
+        </ul>
+        <div class="k">Innovations</div>
+        <ul>
+          <li>ROG (Router Orchestration Graph) avec contrats explicites par noeud.</li>
+          <li>Fallback tiers 0->3 avec escalade controlee.</li>
+        </ul>
+        <div class="k">Faiblesses/risques</div>
+        <ul class="weak">
+          <li>Complexite technique elevee a maintenir.</li>
+          <li>Risque de depasser capacite equipe sans discipline WBS stricte.</li>
+        </ul>
+        <div class="k">Format vulgarisation propose</div>
+        <p>Dashboard local offline avec router health, timeline, costs, skills et freshness warnings.</p>
+        <div class="links">
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-c/01_EXEC_SUMMARY.md">01_EXEC_SUMMARY</a>
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-c/08_VULGARISATION_SPEC.md">08_VULGARISATION_SPEC</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>competitor-r1-d</h2>
+        <div class="variant">Variant D - memory engine</div>
+        <div class="k">Concept general</div>
+        <p>Memory stack 4 couches: logs durables, FTS baseline, semantic optionnel gate, queue de promotion Global Brain avec approval.</p>
+        <div class="k">Gros avantages</div>
+        <ul>
+          <li>Tres solide sur isolation memoire et contamination control.</li>
+          <li>Bonne discipline retention/compaction/promotion.</li>
+        </ul>
+        <div class="k">Innovations</div>
+        <ul>
+          <li>Promotion queue explicite avec de-identification proof.</li>
+          <li>Deterministic retrieval framing et replay safety.</li>
+        </ul>
+        <div class="k">Faiblesses/risques</div>
+        <ul class="weak">
+          <li>Portee plus etroite que les plans top4.</li>
+          <li>Moins de details system-wide sur routing, supply chain et release quality.</li>
+        </ul>
+        <div class="k">Format vulgarisation propose</div>
+        <p>Tab memoire "health/confidence/isolation/promotion/action" orientee decisions rapides.</p>
+        <div class="links">
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-d/01_EXEC_SUMMARY.md">01_EXEC_SUMMARY</a>
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-d/08_VULGARISATION_SPEC.md">08_VULGARISATION_SPEC</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>competitor-r1-e</h2>
+        <div class="variant">Variant E - eval harness</div>
+        <div class="k">Concept general</div>
+        <p>Eval Control Plane pour non-regression: scenario registry, replay orchestrator, metrics aggregator, gate evaluator, evidence publisher.</p>
+        <div class="k">Gros avantages</div>
+        <ul>
+          <li>Plan le plus fort en discipline de qualite release.</li>
+          <li>Tres bonne gestion FP/FN et confusion matrix.</li>
+          <li>Artifacts de gate clairs et auditables.</li>
+        </ul>
+        <div class="k">Innovations</div>
+        <ul>
+          <li>Gate severity policy (PASS/SOFT_FAIL/HARD_FAIL/OVERRIDE_APPROVED).</li>
+          <li>Release packet structure et signatures evidence-first.</li>
+        </ul>
+        <div class="k">Faiblesses/risques</div>
+        <ul class="weak">
+          <li>Focus eval tres fort mais moins complet sur orchestration runtime.</li>
+          <li>Risque cout compute si suites trop larges.</li>
+        </ul>
+        <div class="k">Format vulgarisation propose</div>
+        <p>Panel 4 cartes: verdict, pourquoi, deltas, prochaine action owner+ETA.</p>
+        <div class="links">
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-e/01_EXEC_SUMMARY.md">01_EXEC_SUMMARY</a>
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-e/08_VULGARISATION_SPEC.md">08_VULGARISATION_SPEC</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>competitor-r1-f</h2>
+        <div class="variant">Variant F - UX vulgarisation</div>
+        <div class="k">Concept general</div>
+        <p>Vulgarisation control loop orientee operations: snapshot canonique, bundle deterministe, dashboard offline, policy cues visibles.</p>
+        <div class="k">Gros avantages</div>
+        <ul>
+          <li>Meilleure clarte operateur et lisibilite sous pression.</li>
+          <li>Excellente specification du tab HTML local et mode degrade.</li>
+          <li>Bonne articulation policy + approvals dans l interface.</li>
+        </ul>
+        <div class="k">Innovations</div>
+        <ul>
+          <li>Reading order strict et pressure mode action-first.</li>
+          <li>Fallback text-first pour robustesse offline.</li>
+        </ul>
+        <div class="k">Faiblesses/risques</div>
+        <ul class="weak">
+          <li>Moins profond que B/C sur control plane infra et supply-chain hardening.</li>
+          <li>Necessite forte discipline backend pour tenir les promesses UX.</li>
+        </ul>
+        <div class="k">Format vulgarisation propose</div>
+        <p>Spec la plus complete du round pour un tab operator-first local file://.</p>
+        <div class="links">
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-f/01_EXEC_SUMMARY.md">01_EXEC_SUMMARY</a>
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-f/08_VULGARISATION_SPEC.md">08_VULGARISATION_SPEC</a>
+        </div>
+      </article>
+    </section>
+
+    <section class="panels">
+      <article class="panel">
+        <h3>Classement final R1</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Competitor</th>
+              <th>Decision</th>
+              <th>Commentaire court</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="rank">1</td><td>competitor-r1-b</td><td class="top4">Top4</td><td>Best complete governance + contracts package.</td></tr>
+            <tr><td class="rank">2</td><td>competitor-r1-c</td><td class="top4">Top4</td><td>Best orchestration and scale control model.</td></tr>
+            <tr><td class="rank">3</td><td>competitor-r1-f</td><td class="top4">Top4</td><td>Best operator clarity and vulgarisation design.</td></tr>
+            <tr><td class="rank">4</td><td>competitor-r1-e</td><td class="top4">Top4</td><td>Best eval harness and release gate discipline.</td></tr>
+            <tr><td class="rank">5</td><td>competitor-r1-a</td><td>Out</td><td>Strong reliability core, lower breadth than top4.</td></tr>
+            <tr><td class="rank">6</td><td>competitor-r1-d</td><td>Out</td><td>Strong memory lane, narrower full-system coverage.</td></tr>
+          </tbody>
+        </table>
+        <p class="notes">Note: numeric score detail reste interne par policy.</p>
+      </article>
+
+      <article class="panel">
+        <h3>Top4 shortlist R2</h3>
+        <ul>
+          <li><b>competitor-r1-b</b> - fusion driver sur trust/skills governance.</li>
+          <li><b>competitor-r1-c</b> - fusion driver sur router/orchestration/scale.</li>
+          <li><b>competitor-r1-f</b> - fusion driver sur operator UX/vulgarisation.</li>
+          <li><b>competitor-r1-e</b> - fusion driver sur eval harness/non-regression.</li>
+        </ul>
+        <p class="notes">Prochaine etape: lancer R2 fusion consciente sur ces 4 entrants avec imports obligatoires adopt/reject/defer.</p>
+        <div class="links">
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1_TOP4_SELECTION.md">R1_TOP4_SELECTION.md</a>
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1_SCORE_DETAIL_INTERNAL.md">R1_SCORE_DETAIL_INTERNAL.md</a>
+          <a href="file:///Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R2_PROMPTS_TOP4.md">R2_PROMPTS_TOP4.md</a>
+        </div>
+      </article>
+    </section>
+  </div>
+</body>
+</html>

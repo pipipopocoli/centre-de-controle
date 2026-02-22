@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import fcntl
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -110,6 +111,27 @@ def _get_repo_head() -> str:
         return "unavailable"
 
 
+def _runtime_mode() -> str:
+    override = str(os.environ.get("COCKPIT_RUNTIME_MODE") or "").strip().upper()
+    if override in {"DEV LIVE", "RELEASE"}:
+        return override
+    return "RELEASE" if getattr(sys, "frozen", False) else "DEV LIVE"
+
+
+def _runtime_source(projects_root: Path) -> str:
+    repo_root = ROOT_DIR / "control" / "projects"
+    app_root = Path.home() / "Library" / "Application Support" / "Cockpit" / "projects"
+    try:
+        resolved = projects_root.expanduser().resolve()
+    except OSError:
+        resolved = projects_root
+    if resolved == repo_root:
+        return "repo"
+    if resolved == app_root:
+        return "appsupport"
+    return "custom"
+
+
 def main() -> int:
     # -- Singleton guard: prevent duplicate instances --------------------------
     LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -142,6 +164,8 @@ def main() -> int:
 
     app_stamp = _get_version_stamp()
     repo_head = _get_repo_head()
+    runtime_mode = _runtime_mode()
+    runtime_source = _runtime_source(PROJECTS_DIR)
     window = MainWindow(
         project,
         projects=projects,
@@ -149,6 +173,8 @@ def main() -> int:
         app_stamp=app_stamp,
         repo_head=repo_head,
         data_dir=str(PROJECTS_DIR),
+        runtime_mode=runtime_mode,
+        runtime_source=runtime_source,
     )
     window.show()
     return app.exec()

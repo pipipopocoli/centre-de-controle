@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Cockpit V2 — Whitepaper</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,700;1,300&family=Inter:wght@400;600&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Merriweather', serif;
+            line-height: 1.8;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 20px;
+            background: #fdfdfd;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Inter', sans-serif;
+            color: #111;
+            margin-top: 2em;
+        }
+
+        h1 {
+            font-size: 3em;
+            border-bottom: 4px solid #111;
+            padding-bottom: 20px;
+            margin-top: 0;
+        }
+
+        .abstract {
+            font-size: 1.2em;
+            font-style: italic;
+            color: #555;
+            border-left: 4px solid #ddd;
+            padding-left: 20px;
+            margin: 40px 0;
+        }
+
+        .diagram {
+            background: #f4f4f4;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        code {
+            font-family: monospace;
+            background: #eee;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .note {
+            background: #eef9ff;
+            border: 1px solid #bce0fd;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Cockpit V2 : L'Ère de la Matrice</h1>
+    <p class="abstract">
+        Ce document détaille la transition conceptuelle de Cockpit d'une collection d'agents isolés ("Silos")
+        vers une organisation interconnectée et hiérarchique ("La Matrice"). Il sert de fondation théorique
+        pour le développement de la V2.
+    </p>
+
+    <h2>1. Le Problème : L'Archipel des Silos</h2>
+    <p>
+        Actuellement, Cockpit ressemble à un archipel. Chaque agent (Victor, Léo, Agent-1) vit sur son île.
+        Ils ne se parlent pas, ne partagent pas leur mémoire, et n'ont aucune idée de ce que font les autres.
+        Si Agent-1 apprend une super technique pour parser du JSON, Agent-2 continue de faire les mêmes erreurs.
+    </p>
+    <div class="diagram">
+        <div class="mermaid">
+            graph TD
+            subgraph SILOS [Architecture Actuelle]
+            A[Victor\n(Island 1)] ---|No Bridge| B[Léo\n(Island 2)]
+            B ---|No Bridge| C[Agent-X\n(Island 3)]
+            C ---|No Bridge| A
+            end
+            style SILOS fill:#fff,stroke:#333
+        </div>
+    </div>
+
+    <h2>2. La Solution : La Matrice (Skill Matrix)</h2>
+    <p>
+        La V2 introduit une couche commune : la <strong>Skill Matrix</strong>. C'est une bibliothèque centrale
+        où chaque savoir est stocké. Les agents ne "possèdent" plus le savoir, ils l'empruntent à la demande.
+    </p>
+    <ul>
+        <li><strong>Savoir centralisé :</strong> <code>brainfs/library/</code></li>
+        <li><strong>Identité forte :</strong> <code>brainfs/souls/</code></li>
+        <li><strong>Hiérarchie claire :</strong> Clems orchestre, Victor construit, Léo dessine.</li>
+    </ul>
+
+    <h2>3. Architecture Proposée</h2>
+
+    <h3>3.1 La Hiérarchie (L0 - L1 - L2)</h3>
+    <p>
+        Pour éviter le chaos, nous structurons l'équipe comme une vraie entreprise tech.
+    </p>
+    <div class="diagram">
+        <div class="mermaid">
+            graph TD
+            L0[👽 Clems (L0)\nOrchestrator]
+            L1A[🛠️ Victor (L1)\nTech Lead]
+            L1B[🎨 Léo (L1)\nProduct Lead]
+
+            L2A[👷 Worker Agents\nCodex Runners]
+            L2B[👷 Worker Agents\nAntigravity Runners]
+
+            L0 --> L1A
+            L0 --> L1B
+            L1A --> L2A
+            L1B --> L2B
+        </div>
+    </div>
+
+    <h3>3.2 Le Système de Mémoire (Tri-Layer)</h3>
+    <p>
+        La mémoire n'est plus un simple fichier texte. Elle devient un système à 3 étages :
+    </p>
+    <ol>
+        <li>
+            <strong>Short-Term (RAM) :</strong> Le contexte de la conversation actuelle. Rapide, éphémère.
+        </li>
+        <li>
+            <strong>Long-Term (Vector Store) :</strong> La bibliothèque du congrès. Tout est archivé et recherchable
+            sémantiquement.
+            <em>(Technology: ChromaDB ou SQLite FTS5)</em>
+        </li>
+        <li>
+            <strong>Meta-Memory (Patterns) :</strong> Ce que l'agent a "compris" de ses expériences (ex: "Olivier
+            déteste le CSS Tailwind").
+        </li>
+    </ol>
+
+    <div class="note">
+        <strong>Note Technique :</strong> Pour la Phase 1 et 2, nous utiliserons SQLite FTS5 pour la recherche par
+        mots-clés,
+        car c'est léger et ne nécessite pas de GPU. ChromaDB viendra en Phase 3.
+    </div>
+
+    <h2>4. Conclusion</h2>
+    <p>
+        Cockpit V2 n'est pas juste une mise à jour de code. C'est un changement de paradigme.
+        Nous passons d'un outil d'exécution de scripts à une plateforme d'intelligence collective.
+    </p>
+
+    <footer style="margin-top:50px; border-top:1px solid #ddd; padding-top:20px; font-size:0.8em; color:#999;">
+        Généré par Léo pour Olivier — Cockpit V2 Project
+    </footer>
+
+    <script>
+    mermaid.initialize({ startOnLoad: true });
+    </script>
+
+</body>
+
+</html>

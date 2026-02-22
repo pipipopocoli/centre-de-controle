@@ -22,6 +22,10 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
+from app.services.auto_mode import (  # noqa: E402
+    CONTROL_CADENCE_KPI_MIN_INTERVAL_MINUTES,
+    emit_control_cadence_kpi_snapshot,
+)
 from scripts.auto_mode_core import (  # noqa: E402
     DEFAULT_PROJECT,
     dispatch_once,
@@ -58,6 +62,17 @@ def main() -> int:
         action="store_true",
         help="Print the prompt to stdout when actions are triggered",
     )
+    parser.add_argument(
+        "--no-kpi-snapshot",
+        action="store_true",
+        help="Disable control-cadence KPI snapshot emission",
+    )
+    parser.add_argument(
+        "--kpi-min-interval-minutes",
+        type=int,
+        default=CONTROL_CADENCE_KPI_MIN_INTERVAL_MINUTES,
+        help="Minimum interval between KPI snapshots for cadence mode",
+    )
     args = parser.parse_args()
 
     project_id = args.project or os.environ.get("COCKPIT_PROJECT_ID") or DEFAULT_PROJECT
@@ -76,6 +91,27 @@ def main() -> int:
     print(f"Config: {config_hint}")
     print(f"Max actions per cycle: {max_actions}")
 
+    def emit_snapshot_line() -> None:
+        if args.no_kpi_snapshot:
+            print("KPI snapshot emitted=false reason=disabled snapshot_path=")
+            return
+        snapshot = emit_control_cadence_kpi_snapshot(
+            projects_root,
+            project_id,
+            min_interval_minutes=max(int(args.kpi_min_interval_minutes), 1),
+        )
+        emitted = bool(snapshot.get("emitted"))
+        reason = str(snapshot.get("reason") or ("emitted" if emitted else "unknown"))
+        snapshot_path = str(snapshot.get("snapshot_path") or "")
+        generated_at = str(snapshot.get("generated_at") or "")
+        print(
+            "KPI snapshot "
+            f"emitted={str(emitted).lower()} "
+            f"reason={reason} "
+            f"snapshot_path={snapshot_path} "
+            f"generated_at={generated_at}"
+        )
+
     if args.once:
         stats = dispatch_once(
             projects_root,
@@ -92,6 +128,7 @@ def main() -> int:
             f"Actions: {stats['actions_used']} (sent={stats.get('sent_actions', 0)}, "
             f"fallback={stats.get('fallback_actions', 0)}) | State: {stats.get('state_path', '')}"
         )
+        emit_snapshot_line()
         return 0
 
     while True:
@@ -111,6 +148,7 @@ def main() -> int:
                 f"Actions: {stats['actions_used']} (sent={stats.get('sent_actions', 0)}, "
                 f"fallback={stats.get('fallback_actions', 0)}) | State: {stats.get('state_path', '')}"
             )
+        emit_snapshot_line()
         time.sleep(max(args.interval, 0.5))
 
 

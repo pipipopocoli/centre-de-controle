@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cockpit - Battle Royal Prompt Engine</title>
+  <style>
+    :root {
+      --bg-0: #070b16;
+      --bg-1: #121b3b;
+      --card: #161f44;
+      --card-soft: #1b2753;
+      --line: #2f3f7f;
+      --text: #f4f7ff;
+      --muted: #adbae6;
+      --ok: #29da8d;
+      --warn: #ffc95a;
+      --risk: #ff6f86;
+      --accent: #58b0ff;
+      --fight: #ff4f59;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 12% -8%, rgba(88, 176, 255, 0.22) 0, transparent 38%),
+        radial-gradient(circle at 88% -10%, rgba(255, 79, 89, 0.24) 0, transparent 40%),
+        linear-gradient(160deg, var(--bg-0), var(--bg-1));
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 22px 16px 40px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+
+    .sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, var(--card), var(--card-soft));
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+    }
+
+    .section { margin-top: 12px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 10px;
+    }
+
+    .kpis {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .kpi .n {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+
+    .kpi .l { color: var(--muted); font-size: 12px; }
+
+    h2 { margin: 0 0 8px; font-size: 18px; }
+    h3 { margin: 0 0 6px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+    p { margin: 6px 0; line-height: 1.45; }
+
+    .chips {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .chip.ok { color: #bafed9; border-color: rgba(41, 218, 141, 0.45); }
+    .chip.warn { color: #ffe8bd; border-color: rgba(255, 201, 90, 0.45); }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .node {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      min-height: 86px;
+    }
+
+    .node .title {
+      font-size: 11px;
+      color: #d4dbff;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+    }
+
+    .bracket {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .round {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .fight {
+      border: 1px solid rgba(255, 79, 89, 0.4);
+      border-radius: 10px;
+      padding: 8px;
+      background: rgba(255, 79, 89, 0.08);
+      margin-top: 7px;
+    }
+
+    .fight:first-child { margin-top: 0; }
+
+    .fight-id {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #ffd2d7;
+      margin-bottom: 4px;
+    }
+
+    .fighter {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px;
+      background: rgba(11, 16, 36, 0.6);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .vs {
+      text-align: center;
+      font-size: 11px;
+      margin-top: 4px;
+      color: #ffd88e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .rule {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .grid-2-eq {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    ol, ul { margin: 7px 0 0 18px; padding: 0; }
+    li { margin: 4px 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 7px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: rgba(88, 176, 255, 0.14);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.35px;
+    }
+
+    code {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 1px 5px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .footer {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 980px) {
+      .grid-2, .grid-2-eq { grid-template-columns: 1fr; }
+      .kpis { grid-template-columns: 1fr 1fr; }
+      .flow { grid-template-columns: 1fr; }
+      .bracket { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <h1>Battle Royal - Prompt Engine</h1>
+      <p class="sub">Tu as raison: le tournoi est un systeme de prompts iteratif. Chaque round = nouveau prompt + nouvelle submission + nouveau score.</p>
+    </header>
+
+    <section class="grid-2 section">
+      <article class="card">
+        <h2>Regle zero (important)</h2>
+        <p>Ce tournoi ne compare pas du code. Il compare des <strong>plans</strong> qui deviennent plus solides round apres round.</p>
+        <p>A chaque manche, chaque agent recoit un prompt avec les regles du round, lit le contexte precedent, puis renvoie une version amelioree.</p>
+        <div class="chips">
+          <span class="chip ok">prompt obligatoire a chaque round</span>
+          <span class="chip ok">cross-review obligatoire</span>
+          <span class="chip warn">complexite +1 par round</span>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Etat rapide</h2>
+        <p>Le pack tournoi existe deja. J ai ajoute un vrai <strong>Prompt Engine Pack</strong> pour executer le process comme tu le veux.</p>
+        <p>Dossier: <code>/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/PROMPTS/</code></p>
+      </article>
+    </section>
+
+    <section class="kpis">
+      <article class="kpi">
+        <div class="n">5</div>
+        <div class="l">projets/agents en roster</div>
+      </article>
+      <article class="kpi">
+        <div class="n">1</div>
+        <div class="l">template prompt unique</div>
+      </article>
+      <article class="kpi">
+        <div class="n">7</div>
+        <div class="l">etapes dans la boucle round</div>
+      </article>
+      <article class="kpi">
+        <div class="n">3+</div>
+        <div class="l">idees adverse a importer</div>
+      </article>
+    </section>
+
+    <section class="card section">
+      <h2>Boucle officielle d un round</h2>
+      <div class="flow">
+        <div class="node">
+          <div class="title">Step 1</div>
+          Collecte contexte
+          <ul>
+            <li>submission N-1</li>
+            <li>submission adverse N-1</li>
+            <li>judge feedback</li>
+          </ul>
+        </div>
+        <div class="node">
+          <div class="title">Step 2</div>
+          Generation prompt
+          <ul>
+            <li>template unique</li>
+            <li>regles du round</li>
+            <li>level de complexite</li>
+          </ul>
+        </div>
+        <div class="node">
+          <div class="title">Step 3</div>
+          Execution agent
+          <ul>
+            <li>cross-review</li>
+            <li>upgrade plan</li>
+            <li>accept/reject/defer</li>
+          </ul>
+        </div>
+        <div class="node">
+          <div class="title">Step 4</div>
+          Submission
+          <ul>
+            <li>format impose</li>
+            <li>DoD + tests</li>
+            <li>changelog</li>
+          </ul>
+        </div>
+        <div class="node">
+          <div class="title">Step 5</div>
+          Judge + score
+          <ul>
+            <li>scorecard 100 pts</li>
+            <li>feedback fight</li>
+            <li>winner promote</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="card section">
+      <h2>Bracket Street Fighter (plan tournament)</h2>
+      <p>A chaque victoire: le gagnant review le plan adverse, integre des idees, renomme le projet, et passe au round suivant.</p>
+      <div class="bracket">
+        <div class="round">
+          <h3>Play-In</h3>
+          <div class="fight">
+            <div class="fight-id">Fight 01</div>
+            <div class="fighter">@agent-12 - Project Titan</div>
+            <div class="vs">vs</div>
+            <div class="fighter">@agent-13 - Project Pulse</div>
+            <div class="rule">Winner cree un nouveau nom projet fusion.</div>
+          </div>
+        </div>
+
+        <div class="round">
+          <h3>Semi Finals</h3>
+          <div class="fight">
+            <div class="fight-id">Fight 02</div>
+            <div class="fighter">@leo - Project Rogue</div>
+            <div class="vs">vs</div>
+            <div class="fighter">Winner Fight 01</div>
+          </div>
+          <div class="fight">
+            <div class="fight-id">Fight 03</div>
+            <div class="fighter">@victor - Project Atlas</div>
+            <div class="vs">vs</div>
+            <div class="fighter">@agent-11 - Project Nova</div>
+          </div>
+        </div>
+
+        <div class="round">
+          <h3>Final</h3>
+          <div class="fight">
+            <div class="fight-id">Fight 04</div>
+            <div class="fighter">Winner Fight 02</div>
+            <div class="vs">vs</div>
+            <div class="fighter">Winner Fight 03</div>
+            <div class="rule">Champion = best implementation-ready plan.</div>
+          </div>
+          <div class="fight">
+            <div class="fight-id">Fight 05 (Bonus)</div>
+            <div class="fighter">Champion</div>
+            <div class="vs">vs</div>
+            <div class="fighter">@agent-14 ou @agent-15</div>
+            <div class="rule">Optional stress test: simple alt or outlier alt.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid-2-eq section">
+      <article class="card">
+        <h2>Rules par round (ce que tu demandais)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Round</th>
+              <th>Regles obligatoires</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Round 1</td>
+              <td>Plan base solide + risques + tests + DoD.</td>
+            </tr>
+            <tr>
+              <td>Round 2</td>
+              <td>Importer >=3 idees adverse + complexite +1.</td>
+            </tr>
+            <tr>
+              <td>Round 3</td>
+              <td>Execution lots + rollback + accept/reject/defer trace.</td>
+            </tr>
+            <tr>
+              <td>Final</td>
+              <td>Champion pack + issue map + no unresolved critical risk.</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="card">
+        <h2>Prompt files prets</h2>
+        <ul>
+          <li><a href="./PROMPTS/00_TOURNAMENT_ENGINE_RULES.md">PROMPTS/00_TOURNAMENT_ENGINE_RULES.md</a></li>
+          <li><a href="./PROMPTS/01_MATCH_PROMPT_TEMPLATE.md">PROMPTS/01_MATCH_PROMPT_TEMPLATE.md</a></li>
+          <li><a href="./PROMPTS/02_OPERATOR_RUNBOOK_FAST.md">PROMPTS/02_OPERATOR_RUNBOOK_FAST.md</a></li>
+          <li><a href="./PROMPTS/03_ROUND1_PROMPTS_READY.md">PROMPTS/03_ROUND1_PROMPTS_READY.md</a></li>
+        </ul>
+        <p>Tu peux copier ces prompts et les envoyer fight par fight.</p>
+      </article>
+    </section>
+
+    <section class="card section">
+      <h2>Next actions maintenant</h2>
+      <ol>
+        <li>Valider le roster et le bracket.</li>
+        <li>Lancer Fight 01 et Fight 03 avec les prompts Round 1.</li>
+        <li>Scorer, publier judge feedback, puis generer prompts Round 2.</li>
+        <li>Repeter jusqu au champion.</li>
+      </ol>
+      <p class="footer">File: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/OVERVIEW_FAST.html</p>
+    </section>
+  </main>
+</body>
+</html>

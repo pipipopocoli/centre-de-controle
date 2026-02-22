@@ -1,0 +1,139 @@
+from __future__ import annotations
+
+import subprocess
+import tempfile
+import time
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+
+
+@dataclass(frozen=True)
+class RunnerResult:
+    runner: str
+    status: str
+    success: bool
+    launched: bool
+    completed: bool
+    returncode: int | None
+    stdout: str
+    stderr: str
+    error: str | None
+    started_at: str
+    finished_at: str
+    duration_seconds: float
+    output_path: str | None
+    output_text: str
+    model: str
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def _read_text(path: Path | None) -> str:
+    if path is None or not path.exists():
+        return ""
+    try:
+        return path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def run_ollama(
+    prompt: str,
+    cwd: Path,
+    timeout_s: int,
+    *,
+    model: str = "llama3.2",
+    output_path: Path | None = None,
+) -> RunnerResult:
+    started_at = _utc_now_iso()
+    started_mono = time.monotonic()
+
+    managed_output = output_path is None
+    if output_path is None:
+        tmp = tempfile.NamedTemporaryFile(prefix="cockpit_ollama_", suffix=".txt", delete=False)
+        output_path = Path(tmp.name)
+        tmp.close()
+    else:
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    command = ["ollama", "run", model, prompt]
+
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=max(int(timeout_s), 30),
+        )
+        duration = max(time.monotonic() - started_mono, 0.0)
+        success = completed.returncode == 0
+        output_text = (completed.stdout or "").strip()
+        if output_path is not None:
+            output_path.write_text(output_text, encoding="utf-8")
+        return RunnerResult(
+            runner="ollama",
+            status="completed" if success else "failed",
+            success=success,
+            launched=True,
+            completed=True,
+            returncode=completed.returncode,
+            stdout=(completed.stdout or "").strip(),
+            stderr=(completed.stderr or "").strip(),
+            error=None if success else (completed.stderr.strip() or completed.stdout.strip() or "ollama run failed"),
+            started_at=started_at,
+            finished_at=_utc_now_iso(),
+            duration_seconds=round(duration, 3),
+            output_path=str(output_path),
+            output_text=output_text,
+            model=model,
+        )
+    except subprocess.TimeoutExpired as exc:
+        duration = max(time.monotonic() - started_mono, 0.0)
+        return RunnerResult(
+            runner="ollama",
+            status="timeout",
+            success=False,
+            launched=True,
+            completed=False,
+            returncode=None,
+            stdout=(exc.stdout or "").strip(),
+            stderr=(exc.stderr or "").strip(),
+            error=f"ollama timeout after {max(int(timeout_s), 30)}s",
+            started_at=started_at,
+            finished_at=_utc_now_iso(),
+            duration_seconds=round(duration, 3),
+            output_path=str(output_path),
+            output_text="",
+            model=model,
+        )
+    except OSError as exc:
+        duration = max(time.monotonic() - started_mono, 0.0)
+        return RunnerResult(
+            runner="ollama",
+            status="failed",
+            success=False,
+            launched=False,
+            completed=False,
+            returncode=None,
+            stdout="",
+            stderr="",
+            error=f"ollama unavailable: {exc}",
+            started_at=started_at,
+            finished_at=_utc_now_iso(),
+            duration_seconds=round(duration, 3),
+            output_path=str(output_path),
+            output_text="",
+            model=model,
+        )
+    finally:
+        if managed_output and output_path is not None:
+            try:
+                output_path.unlink(missing_ok=True)
+            except OSError:
+                pass

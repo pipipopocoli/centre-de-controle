@@ -2,6 +2,23 @@
 
 Goal: build a local-first macOS .app that runs without a venv and keeps data outside the bundle.
 
+## Desktop update contract (Wave09)
+
+Two channels are intentionally supported:
+
+1. Dev Live (recommended during implementation)
+- Launch source: `./launch_cockpit.sh`
+- Uses current repo code.
+- Runtime/project data refreshes continuously.
+- QSS changes are live; Python code changes apply after app restart.
+- Dock note: seeing a second Python icon (rocket) is expected in Dev Live.
+
+2. Release app (distribution snapshot)
+- Launch source: `dist/Centre de controle.app`
+- Frozen build artifact.
+- No full auto-update of code/UI from repo changes.
+- Rebuild is required to ship new UI/code into the `.app`.
+
 ## Data directory
 Order of precedence:
 - COCKPIT_DATA_DIR=repo|dev -> control/projects (dev only)
@@ -36,6 +53,24 @@ If the app launches with the *old* UI, ensure you're opening:
 - `dist/Centre de controle.app` (not a previously installed copy in /Applications).
 If you distribute outside your dev machine, codesign the app:
 ```
+
+## Install a Dev Live Dock launcher
+
+Use this once on your machine:
+
+```bash
+cd /Users/oliviercloutier/Desktop/Cockpit
+scripts/packaging/install_dev_live_launcher.sh
+```
+
+Expected output:
+- `~/Applications/Centre de controle - Dev Live.app` (preferred), or
+- fallback `~/Applications/Centre de controle - Dev Live.command`
+
+Then drag the Dev Live launcher to Dock and remove stale icons.
+If you still see two icons while using Dev Live, that is expected behavior:
+- one icon is the launcher applet,
+- one icon is the running Python process.
 codesign --deep --force --options runtime --sign "Developer ID Application: <NAME>" dist/<App>.app
 ```
 

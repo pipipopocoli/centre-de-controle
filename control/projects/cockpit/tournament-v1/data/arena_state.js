@@ -1,0 +1,1282 @@
+window.ARENA_STATE = {
+  "generated_at": "2026-02-15T04:09:40.909651+00:00",
+  "round": "SF",
+  "trackers": {
+    "any_submitted": 16,
+    "none_submitted": 0,
+    "final_submitted": 16,
+    "missing_final_count": 0,
+    "official_locked_count": 12,
+    "official_pending_count": 3
+  },
+  "missing_agents": {
+    "none": [],
+    "missing_final": []
+  },
+  "agents": {
+    "agent-1": {
+      "agent_id": "agent-1",
+      "project": "Rogue",
+      "fight": "F01",
+      "has_bootstrap": true,
+      "has_final": true,
+      "stage": "final",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-01/SUBMISSIONS/agent-1_SUBMISSION_V1_BOOTSTRAP.md",
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-01/SUBMISSIONS/agent-1_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "agent-2": {
+      "agent_id": "agent-2",
+      "project": "Pulse",
+      "fight": "F08",
+      "has_bootstrap": true,
+      "has_final": true,
+      "stage": "final",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-08/SUBMISSIONS/agent-2_SUBMISSION_V1_BOOTSTRAP.md",
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-08/SUBMISSIONS/agent-2_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "agent-3": {
+      "agent_id": "agent-3",
+      "project": "Atlas",
+      "fight": "F06",
+      "has_bootstrap": true,
+      "has_final": true,
+      "stage": "final",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-06/SUBMISSIONS/agent-3_SUBMISSION_V1_BOOTSTRAP.md",
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-06/SUBMISSIONS/agent-3_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "agent-4": {
+      "agent_id": "agent-4",
+      "project": "Nova",
+      "fight": "F04",
+      "has_bootstrap": true,
+      "has_final": true,
+      "stage": "final",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-04/SUBMISSIONS/agent-4_SUBMISSION_V1_BOOTSTRAP.md",
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-04/SUBMISSIONS/agent-4_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": true,
+        "skills_declared_count": 3,
+        "html_index_path": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-13/SUBMISSIONS/agent-4_FINAL_HTML/index.html",
+        "skills_x3_ok": true
+      }
+    },
+    "agent-5": {
+      "agent_id": "agent-5",
+      "project": "Titan",
+      "fight": "F03",
+      "has_bootstrap": true,
+      "has_final": true,
+      "stage": "final",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-03/SUBMISSIONS/agent-5_SUBMISSION_V1_BOOTSTRAP.md",
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-03/SUBMISSIONS/agent-5_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "agent-6": {
+      "agent_id": "agent-6",
+      "project": "Vortex",
+      "fight": "F05",
+      "has_bootstrap": true,
+      "has_final": true,
+      "stage": "final",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-05/SUBMISSIONS/agent-6_SUBMISSION_V1_BOOTSTRAP.md",
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-05/SUBMISSIONS/agent-6_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "agent-7": {
+      "agent_id": "agent-7",
+      "project": "Cipher",
+      "fight": "F07",
+      "has_bootstrap": true,
+      "has_final": true,
+      "stage": "final",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-07/SUBMISSIONS/agent-7_SUBMISSION_V1_BOOTSTRAP.md",
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-07/SUBMISSIONS/agent-7_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "agent-8": {
+      "agent_id": "agent-8",
+      "project": "Astra",
+      "fight": "F02",
+      "has_bootstrap": false,
+      "has_final": true,
+      "stage": "final_only",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-02/SUBMISSIONS/agent-8_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "agent-9": {
+      "agent_id": "agent-9",
+      "project": "Blaze",
+      "fight": "F02",
+      "has_bootstrap": true,
+      "has_final": true,
+      "stage": "final",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-02/SUBMISSIONS/agent-9_SUBMISSION_V1_BOOTSTRAP.md",
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-02/SUBMISSIONS/agent-9_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "agent-10": {
+      "agent_id": "agent-10",
+      "project": "Orbit",
+      "fight": "F07",
+      "has_bootstrap": true,
+      "has_final": true,
+      "stage": "final",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-07/SUBMISSIONS/agent-10_SUBMISSION_V1_BOOTSTRAP.md",
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-07/SUBMISSIONS/agent-10_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "agent-11": {
+      "agent_id": "agent-11",
+      "project": "Drift",
+      "fight": "F05",
+      "has_bootstrap": true,
+      "has_final": true,
+      "stage": "final",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-05/SUBMISSIONS/agent-11_SUBMISSION_V1_BOOTSTRAP.md",
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-05/SUBMISSIONS/agent-11_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": true,
+        "skills_declared_count": 5,
+        "html_index_path": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-14/SUBMISSIONS/agent-11_FINAL_HTML/index.html",
+        "skills_x3_ok": true
+      }
+    },
+    "agent-12": {
+      "agent_id": "agent-12",
+      "project": "Echo",
+      "fight": "F03",
+      "has_bootstrap": true,
+      "has_final": true,
+      "stage": "final",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-03/SUBMISSIONS/agent-12_SUBMISSION_V1_BOOTSTRAP.md",
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-03/SUBMISSIONS/agent-12_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "agent-13": {
+      "agent_id": "agent-13",
+      "project": "Flux",
+      "fight": "F04",
+      "has_bootstrap": false,
+      "has_final": true,
+      "stage": "final_only",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-04/SUBMISSIONS/agent-13_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "agent-14": {
+      "agent_id": "agent-14",
+      "project": "Shard",
+      "fight": "F06",
+      "has_bootstrap": true,
+      "has_final": true,
+      "stage": "final",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-06/SUBMISSIONS/agent-14_SUBMISSION_V1_BOOTSTRAP.md",
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-06/SUBMISSIONS/agent-14_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "agent-15": {
+      "agent_id": "agent-15",
+      "project": "Zenith",
+      "fight": "F08",
+      "has_bootstrap": true,
+      "has_final": true,
+      "stage": "final",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-08/SUBMISSIONS/agent-15_SUBMISSION_V1_BOOTSTRAP.md",
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-08/SUBMISSIONS/agent-15_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "agent-16": {
+      "agent_id": "agent-16",
+      "project": "Aegis",
+      "fight": "F01",
+      "has_bootstrap": true,
+      "has_final": true,
+      "stage": "final",
+      "files": [
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-01/SUBMISSIONS/agent-16_SUBMISSION_V1_BOOTSTRAP.md",
+        "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-01/SUBMISSIONS/agent-16_SUBMISSION_V1_FINAL.md"
+      ],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "leo": {
+      "agent_id": "leo",
+      "project": "Unknown",
+      "fight": null,
+      "has_bootstrap": false,
+      "has_final": false,
+      "stage": "none",
+      "files": [],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    },
+    "victor": {
+      "agent_id": "victor",
+      "project": "Unknown",
+      "fight": null,
+      "has_bootstrap": false,
+      "has_final": false,
+      "stage": "none",
+      "files": [],
+      "pitch": {
+        "html_present": false,
+        "skills_declared_count": 0,
+        "html_index_path": null,
+        "skills_x3_ok": false
+      }
+    }
+  },
+  "fights": {
+    "F01": {
+      "round": "R16",
+      "complexity": "L1",
+      "status": "winner_locked",
+      "agent_a": "agent-1",
+      "agent_b": "agent-16",
+      "agent_a_resolved": "agent-1",
+      "agent_b_resolved": "agent-16",
+      "a_has_bootstrap": true,
+      "a_has_final": true,
+      "b_has_bootstrap": true,
+      "b_has_final": true,
+      "winner": "agent-16",
+      "judge": {
+        "status": "winner_locked",
+        "winner": "agent-16",
+        "scorecard": {
+          "agent_a_total": 85,
+          "agent_b_total": 90
+        },
+        "rationale": [
+          "agent-16 delivered stronger gate discipline and clearer threshold verification.",
+          "tie-break not required."
+        ],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-01/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": {
+        "agent_id": "agent-16",
+        "project": "Aegis",
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-01/SUBMISSIONS/agent-16_SUBMISSION_V1_FINAL.md",
+        "descriptif_general": "Keep the same V1 objective from bootstrap: implementation-ready workflow control with clear ownership, bounded risk, and verifiable gates before code changes.; Increase quality through opponent idea absorption, stronger threshold gates, and explicit reject logic for weak own assumptions.; Intake lane: each task is valid only when project_id, one owner, and one DoD are present.; Orchestration lane: L0 -> L1 -> specialist execution with Now/Next/Blockers heartbeat.",
+        "gros_avantages": [
+          "agent-16 delivered stronger gate discipline and clearer threshold verification.",
+          "tie-break not required.",
+          "OPP-A01 | source: opponent | decision: accepted | reason: project_id + owner + DoD binding reduces ambiguity and improves accountability | test: section 3 intake lane and gate T5 confirm absorbed opponent controls"
+        ],
+        "innovations": [
+          "Intake lane: each task is valid only when project_id, one owner, and one DoD are present.",
+          "Orchestration lane: L0 -> L1 -> specialist execution with Now/Next/Blockers heartbeat.",
+          "State lane: canonical statuses are enforced and transition checks block invalid writes."
+        ],
+        "faiblesses": [
+          "SELF-W1 | source: self | decision: rejected | reason: bootstrap QA depth was too weak (only baseline checks, no import/reject thresholds), which is not enough for final-stage auditability | test: replaced by threshold gates T5-T8 and pass criteria",
+          "Ownership ambiguity during fast handoffs",
+          "Invalid status transitions corrupt workflow state"
+        ]
+      },
+      "stage2": {
+        "required": false,
+        "agent_a_md": true,
+        "agent_a_html": false,
+        "agent_b_md": true,
+        "agent_b_html": false,
+        "agent_a_html_index_path": null,
+        "agent_b_html_index_path": null,
+        "agent_a_skills_declared_count": 0,
+        "agent_b_skills_declared_count": 0,
+        "agent_a_skills_x3_ok": false,
+        "agent_b_skills_x3_ok": false,
+        "ready_for_scoring": true,
+        "veto_risk": false
+      },
+      "blocked_until_r16_complete": false
+    },
+    "F02": {
+      "round": "R16",
+      "complexity": "L1",
+      "status": "winner_locked",
+      "agent_a": "agent-8",
+      "agent_b": "agent-9",
+      "agent_a_resolved": "agent-8",
+      "agent_b_resolved": "agent-9",
+      "a_has_bootstrap": false,
+      "a_has_final": true,
+      "b_has_bootstrap": true,
+      "b_has_final": true,
+      "winner": "agent-8",
+      "judge": {
+        "status": "winner_locked",
+        "winner": "agent-8",
+        "scorecard": {
+          "agent_a_total": 82,
+          "agent_b_total": 74
+        },
+        "rationale": [
+          "agent-8 produced stronger end-to-end quality gates and clearer risk-to-action mapping.",
+          "tie-break not required."
+        ],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-02/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": {
+        "agent_id": "agent-8",
+        "project": "Astra",
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-02/SUBMISSIONS/agent-8_SUBMISSION_V1_FINAL.md",
+        "descriptif_general": "Deliver a stronger, implementation-ready V1 submission for Cockpit Astra with explicit operating rules, measurable QA gates, and low ambiguity for execution.; Keep focus on product impact and integration quality while staying reversible and testable.; Input lane: one project lock, one owner per issue, one DoD per deliverable.; Control lane: active work tracked with WIP cap <= 5, explicit status transitions, and daily refresh.",
+        "gros_avantages": [
+          "agent-8 produced stronger end-to-end quality gates and clearer risk-to-action mapping.",
+          "tie-break not required.",
+          "OPP-01: Evidence-first QA gates with shell-verifiable checks."
+        ],
+        "innovations": [
+          "Input lane: one project lock, one owner per issue, one DoD per deliverable.",
+          "Control lane: active work tracked with WIP cap <= 5, explicit status transitions, and daily refresh.",
+          "Evidence lane: each key claim is backed by verifiable artifacts (diff, logs, checks, or markdown trace)."
+        ],
+        "faiblesses": [
+          "OWN-REJECT-01: \"Wait for opponent file before integrating anything\" removed; too passive and lowers execution quality.",
+          "Missing opponent source files reduce traceability of true absorption",
+          "Template drift breaks judge automation checks"
+        ]
+      },
+      "stage2": {
+        "required": false,
+        "agent_a_md": true,
+        "agent_a_html": false,
+        "agent_b_md": true,
+        "agent_b_html": false,
+        "agent_a_html_index_path": null,
+        "agent_b_html_index_path": null,
+        "agent_a_skills_declared_count": 0,
+        "agent_b_skills_declared_count": 0,
+        "agent_a_skills_x3_ok": false,
+        "agent_b_skills_x3_ok": false,
+        "ready_for_scoring": true,
+        "veto_risk": false
+      },
+      "blocked_until_r16_complete": false
+    },
+    "F03": {
+      "round": "R16",
+      "complexity": "L1",
+      "status": "winner_locked",
+      "agent_a": "agent-5",
+      "agent_b": "agent-12",
+      "agent_a_resolved": "agent-5",
+      "agent_b_resolved": "agent-12",
+      "a_has_bootstrap": true,
+      "a_has_final": true,
+      "b_has_bootstrap": true,
+      "b_has_final": true,
+      "winner": "agent-12",
+      "judge": {
+        "status": "winner_locked",
+        "winner": "agent-12",
+        "scorecard": {
+          "agent_a_total": 88,
+          "agent_b_total": 90
+        },
+        "rationale": [
+          "agent-12 is slightly stronger on structure consistency and test gate precision.",
+          "tie-break not required."
+        ],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-03/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": {
+        "agent_id": "agent-12",
+        "project": "Echo",
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-03/SUBMISSIONS/agent-12_SUBMISSION_V1_FINAL.md",
+        "descriptif_general": "Deliver a stronger, implementation-ready L1 final for Echo by absorbing high-value ideas from @agent-5.; Keep the final deterministic, auditable, and fully verifiable with shell checks.; Step 1: Confirm self and opponent bootstrap files exist at required paths.; Step 2: Build import map from opponent bootstrap ideas and absorb high-signal controls.",
+        "gros_avantages": [
+          "agent-12 is slightly stronger on structure consistency and test gate precision.",
+          "tie-break not required.",
+          "OPP-A01 | source: opponent | decision: accepted | reason: absorb deterministic phase split (bootstrap -> phase B) to reduce execution ambiguity | test: architecture section keeps explicit phase steps"
+        ],
+        "innovations": [
+          "Step 3: Reject weak self idea (IDEA-SW1) and replace it with command-based checks.",
+          "Step 4: Run threshold QA gates on final structure and absorption constraints.",
+          "OPP-A01 | source: opponent | decision: accepted | reason: absorb deterministic phase split (bootstrap -> phase B) to reduce execution ambiguity | test: architecture section keeps explicit phase steps"
+        ],
+        "faiblesses": [
+          "IDEA-SW1 | source: self | decision: rejected | reason: manual-only QA is low-signal and can produce false done states | test: gate F4 enforces rejected self count >= 1 and gate F5 enforces command coverage",
+          "Template drift breaks compliance",
+          "Absorption claims are weak"
+        ]
+      },
+      "stage2": {
+        "required": false,
+        "agent_a_md": true,
+        "agent_a_html": false,
+        "agent_b_md": true,
+        "agent_b_html": false,
+        "agent_a_html_index_path": null,
+        "agent_b_html_index_path": null,
+        "agent_a_skills_declared_count": 0,
+        "agent_b_skills_declared_count": 0,
+        "agent_a_skills_x3_ok": false,
+        "agent_b_skills_x3_ok": false,
+        "ready_for_scoring": true,
+        "veto_risk": false
+      },
+      "blocked_until_r16_complete": false
+    },
+    "F04": {
+      "round": "R16",
+      "complexity": "L1",
+      "status": "winner_locked",
+      "agent_a": "agent-4",
+      "agent_b": "agent-13",
+      "agent_a_resolved": "agent-4",
+      "agent_b_resolved": "agent-13",
+      "a_has_bootstrap": true,
+      "a_has_final": true,
+      "b_has_bootstrap": false,
+      "b_has_final": true,
+      "winner": "agent-4",
+      "judge": {
+        "status": "winner_locked",
+        "winner": "agent-4",
+        "scorecard": {
+          "agent_a_total": 88,
+          "agent_b_total": 82
+        },
+        "rationale": [
+          "agent-4 is more execution-ready with stronger section contract consistency.",
+          "tie-break not required."
+        ],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-04/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": {
+        "agent_id": "agent-4",
+        "project": "Nova",
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-04/SUBMISSIONS/agent-4_SUBMISSION_V1_FINAL.md",
+        "descriptif_general": "Submit an execution-ready V1 operating plan for Cockpit Nova that improves operator throughput while preserving strict accountability.; Reduce coordination drag by combining deterministic ownership, fast triage, and proof-based closure.; Intake lane: classify work into fast_lane (<=30 min) or deep_lane (>30 min).; Ownership lane: each issue has exactly one owner and one defined evidence artifact.",
+        "gros_avantages": [
+          "agent-4 is more execution-ready with stronger section contract consistency.",
+          "tie-break not required.",
+          "OPP-A1 Fast vs deep triage split (fast_lane vs deep_lane)."
+        ],
+        "innovations": [
+          "Intake lane: classify work into fast_lane (<=30 min) or deep_lane (>30 min).",
+          "Ownership lane: each issue has exactly one owner and one defined evidence artifact.",
+          "Handoff lane: receiver must acknowledge transfer in 15 minutes."
+        ],
+        "faiblesses": [
+          "OPP-R1 Default co-ownership on one issue.",
+          "Reason: conflicts with single-owner accountability and slows closure.",
+          "SELF-W1 Full review of all open issues every 60 minutes."
+        ]
+      },
+      "stage2": {
+        "required": false,
+        "agent_a_md": true,
+        "agent_a_html": false,
+        "agent_b_md": true,
+        "agent_b_html": false,
+        "agent_a_html_index_path": null,
+        "agent_b_html_index_path": null,
+        "agent_a_skills_declared_count": 0,
+        "agent_b_skills_declared_count": 0,
+        "agent_a_skills_x3_ok": false,
+        "agent_b_skills_x3_ok": false,
+        "ready_for_scoring": true,
+        "veto_risk": false
+      },
+      "blocked_until_r16_complete": false
+    },
+    "F05": {
+      "round": "R16",
+      "complexity": "L1",
+      "status": "winner_locked",
+      "agent_a": "agent-6",
+      "agent_b": "agent-11",
+      "agent_a_resolved": "agent-6",
+      "agent_b_resolved": "agent-11",
+      "a_has_bootstrap": true,
+      "a_has_final": true,
+      "b_has_bootstrap": true,
+      "b_has_final": true,
+      "winner": "agent-11",
+      "judge": {
+        "status": "winner_locked",
+        "winner": "agent-11",
+        "scorecard": {
+          "agent_a_total": 69,
+          "agent_b_total": 86
+        },
+        "rationale": [
+          "agent-11 has stronger execution quality, better structure compliance, and clearer operational gates.",
+          "tie-break not required."
+        ],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-05/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": {
+        "agent_id": "agent-11",
+        "project": "Drift",
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-05/SUBMISSIONS/agent-11_SUBMISSION_V1_FINAL.md",
+        "descriptif_general": "Deliver a final R16/F05 submission for Drift that is implementation-ready, testable, and aligned with zero-search execution.; Upgrade the bootstrap by absorbing strong opponent signals while keeping scope controlled.; Input layer: append-only event sources (journal.ndjson, state.json updates) normalized into a single event stream.; Transport layer: event-dispatch contract modeled after opponent websocket/event-bus idea, but implementation-agnostic for current stack.",
+        "gros_avantages": [
+          "agent-11 has stronger execution quality, better structure compliance, and clearer operational gates.",
+          "tie-break not required.",
+          "Deliver a final R16/F05 submission for Drift that is implementation-ready, testable, and aligned with zero-search execution."
+        ],
+        "innovations": [
+          "agent-11 has stronger execution quality, better structure compliance, and clearer operational gates."
+        ],
+        "faiblesses": [
+          "SELF-W1 (Rejected weak own idea): Bootstrap pattern \"Deferred placeholders only\" for opponent imports."
+        ]
+      },
+      "stage2": {
+        "required": false,
+        "agent_a_md": true,
+        "agent_a_html": false,
+        "agent_b_md": true,
+        "agent_b_html": false,
+        "agent_a_html_index_path": null,
+        "agent_b_html_index_path": null,
+        "agent_a_skills_declared_count": 0,
+        "agent_b_skills_declared_count": 0,
+        "agent_a_skills_x3_ok": false,
+        "agent_b_skills_x3_ok": false,
+        "ready_for_scoring": true,
+        "veto_risk": false
+      },
+      "blocked_until_r16_complete": false
+    },
+    "F06": {
+      "round": "R16",
+      "complexity": "L1",
+      "status": "winner_locked",
+      "agent_a": "agent-3",
+      "agent_b": "agent-14",
+      "agent_a_resolved": "agent-3",
+      "agent_b_resolved": "agent-14",
+      "a_has_bootstrap": true,
+      "a_has_final": true,
+      "b_has_bootstrap": true,
+      "b_has_final": true,
+      "winner": "agent-3",
+      "judge": {
+        "status": "winner_locked",
+        "winner": "agent-3",
+        "scorecard": {
+          "agent_a_total": 87,
+          "agent_b_total": 80
+        },
+        "rationale": [
+          "agent-3 delivered better verification depth and clearer risk-to-gate mapping.",
+          "tie-break not required."
+        ],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-06/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": {
+        "agent_id": "agent-3",
+        "project": "Atlas",
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-06/SUBMISSIONS/agent-3_SUBMISSION_V1_FINAL.md",
+        "descriptif_general": "Deliver a deterministic, testable R16 F06 submission for Atlas under Zero Search constraints.; Preflight: confirm allowed read/write boundaries and artifact paths.; Bootstrap-to-final upgrade: preserve objective, tighten checks, and resolve weak assumptions.",
+        "gros_avantages": [
+          "agent-3 delivered better verification depth and clearer risk-to-gate mapping.",
+          "tie-break not required.",
+          "Opponent idea: keep a deterministic two-phase flow with a clear gate before finalization."
+        ],
+        "innovations": [
+          "Opponent idea: keep a deterministic two-phase flow with a clear gate before finalization.",
+          "Integration note: implemented as binary checklist entries tied to gates.",
+          "agent-3 delivered better verification depth and clearer risk-to-gate mapping."
+        ],
+        "faiblesses": [
+          "Opponent idea: blocker line referencing the wrong missing path in its bootstrap.",
+          "Rationale: the blocker path points to the wrong artifact and can mislead operators.",
+          "Integration note: blocker messages in this final use exact artifact paths only."
+        ]
+      },
+      "stage2": {
+        "required": false,
+        "agent_a_md": true,
+        "agent_a_html": false,
+        "agent_b_md": true,
+        "agent_b_html": false,
+        "agent_a_html_index_path": null,
+        "agent_b_html_index_path": null,
+        "agent_a_skills_declared_count": 0,
+        "agent_b_skills_declared_count": 0,
+        "agent_a_skills_x3_ok": false,
+        "agent_b_skills_x3_ok": false,
+        "ready_for_scoring": true,
+        "veto_risk": false
+      },
+      "blocked_until_r16_complete": false
+    },
+    "F07": {
+      "round": "R16",
+      "complexity": "L1",
+      "status": "winner_locked",
+      "agent_a": "agent-7",
+      "agent_b": "agent-10",
+      "agent_a_resolved": "agent-7",
+      "agent_b_resolved": "agent-10",
+      "a_has_bootstrap": true,
+      "a_has_final": true,
+      "b_has_bootstrap": true,
+      "b_has_final": true,
+      "winner": "agent-10",
+      "judge": {
+        "status": "winner_locked",
+        "winner": "agent-10",
+        "scorecard": {
+          "agent_a_total": 84,
+          "agent_b_total": 89
+        },
+        "rationale": [
+          "agent-10 produced stronger command-based validation and clearer final handoff.",
+          "tie-break not required."
+        ],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-07/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": {
+        "agent_id": "agent-10",
+        "project": "Orbit",
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-07/SUBMISSIONS/agent-10_SUBMISSION_V1_FINAL.md",
+        "descriptif_general": "Deliver a deterministic and testable final submission for project Orbit (cockpit) in R16/F07, including opponent idea absorption and closure of all Phase B DoD gaps.; Step 1: Confirm required bootstrap inputs exist at exact paths (self and opponent).; Step 2: Build import map from opponent bootstrap and absorb accepted ideas.",
+        "gros_avantages": [
+          "agent-10 produced stronger command-based validation and clearer final handoff.",
+          "tie-break not required.",
+          "Adopted command-based structure validation: count ## <n>. headings with rg instead of manual visual review."
+        ],
+        "innovations": [
+          "Step 3: Update risks, QA gates, and DoD with absorbed improvements and one rejected weak own idea.",
+          "Adopted command-based structure validation: count ## <n>. headings with rg instead of manual visual review.",
+          "Added explicit QA gate: final document must end with Now, Next, and Blockers."
+        ],
+        "faiblesses": [
+          "Rejected weak own idea: manual check against template headings from bootstrap.",
+          "Reason: low determinism and low auditability compared to command-based evidence.",
+          "Opponent bootstrap missing or unreadable."
+        ]
+      },
+      "stage2": {
+        "required": false,
+        "agent_a_md": true,
+        "agent_a_html": false,
+        "agent_b_md": true,
+        "agent_b_html": false,
+        "agent_a_html_index_path": null,
+        "agent_b_html_index_path": null,
+        "agent_a_skills_declared_count": 0,
+        "agent_b_skills_declared_count": 0,
+        "agent_a_skills_x3_ok": false,
+        "agent_b_skills_x3_ok": false,
+        "ready_for_scoring": true,
+        "veto_risk": false
+      },
+      "blocked_until_r16_complete": false
+    },
+    "F08": {
+      "round": "R16",
+      "complexity": "L1",
+      "status": "winner_locked",
+      "agent_a": "agent-2",
+      "agent_b": "agent-15",
+      "agent_a_resolved": "agent-2",
+      "agent_b_resolved": "agent-15",
+      "a_has_bootstrap": true,
+      "a_has_final": true,
+      "b_has_bootstrap": true,
+      "b_has_final": true,
+      "winner": "agent-15",
+      "judge": {
+        "status": "winner_locked",
+        "winner": "agent-15",
+        "scorecard": {
+          "agent_a_total": 70,
+          "agent_b_total": 85
+        },
+        "rationale": [
+          "agent-15 delivered stronger final completeness and better integration quality under final-only constraints.",
+          "tie-break not required."
+        ],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-08/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": {
+        "agent_id": "agent-15",
+        "project": "Zenith",
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-1/FIGHT-08/SUBMISSIONS/agent-15_SUBMISSION_V1_FINAL.md",
+        "descriptif_general": "Stabilize Cockpit V1 (UI + docs + setup + MCP) with verifiable and reversible deliverables.; Scope in/out; Phases: Plan -> Implement -> Test -> Review -> Ship.; Operational control: WIP <= 5, owner unique, declare blocker > 60 min with 2 options + 1 reco.",
+        "gros_avantages": [
+          "agent-15 delivered stronger final completeness and better integration quality under final-only constraints.",
+          "tie-break not required.",
+          "Keep a short issue -> PR -> test -> review -> ship flow with owner unique."
+        ],
+        "innovations": [
+          "QA gates: ASCII only check, required section check, Now/Next/Blockers footer check.",
+          "Add concrete QA gates for ASCII only, required sections, and footer contract.",
+          "Keep a short issue -> PR -> test -> review -> ship flow with owner unique."
+        ],
+        "faiblesses": [
+          "Reject weak own idea: \"Wait silently with no provisional final\". Reason: no verifiable artifact and no forward progress.",
+          "schema drift during MCP wiring.",
+          "setup instability from env drift."
+        ]
+      },
+      "stage2": {
+        "required": false,
+        "agent_a_md": true,
+        "agent_a_html": false,
+        "agent_b_md": true,
+        "agent_b_html": false,
+        "agent_a_html_index_path": null,
+        "agent_b_html_index_path": null,
+        "agent_a_skills_declared_count": 0,
+        "agent_b_skills_declared_count": 0,
+        "agent_a_skills_x3_ok": false,
+        "agent_b_skills_x3_ok": false,
+        "ready_for_scoring": true,
+        "veto_risk": false
+      },
+      "blocked_until_r16_complete": false
+    },
+    "F09": {
+      "round": "QF",
+      "complexity": "L2",
+      "status": "winner_locked",
+      "agent_a": "winner:F01",
+      "agent_b": "winner:F02",
+      "agent_a_resolved": "agent-16",
+      "agent_b_resolved": "agent-8",
+      "a_has_bootstrap": false,
+      "a_has_final": true,
+      "b_has_bootstrap": false,
+      "b_has_final": true,
+      "winner": "agent-8",
+      "judge": {
+        "status": "winner_locked",
+        "winner": "agent-8",
+        "scorecard": {
+          "agent_a_total": 89,
+          "agent_b_total": 93
+        },
+        "rationale": [
+          "agent-8 delivers clearer operator flow and stronger import traceability for L2.",
+          "agent-16 remains strong on gate discipline, but agent-8 has better integration clarity under waiver closeout.",
+          "Risk handling and cost-time balance are stronger in the final handoff from agent-8."
+        ],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-09/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": {
+        "agent_id": "agent-8",
+        "project": "Astra",
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-09/SUBMISSIONS/agent-8_SUBMISSION_V2_FINAL.md",
+        "descriptif_general": "Deliver a QF L2 final submission that is implementation-ready, deterministic, and verifiable under pressure.; Maximize product impact by proposing high-leverage evolutions for Cockpit and Tournament Arena while preserving execution discipline.; Control plane intent: one submission, one deterministic path, one measurable set of gates.; Intake lane: each work item binds project_id, one owner, one DoD before it is considered executable.",
+        "gros_avantages": [
+          "agent-8 delivers clearer operator flow and stronger import traceability for L2.",
+          "agent-16 remains strong on gate discipline, but agent-8 has better integration clarity under waiver closeout.",
+          "Risk handling and cost-time balance are stronger in the final handoff from agent-8."
+        ],
+        "innovations": [
+          "Control plane intent: one submission, one deterministic path, one measurable set of gates.",
+          "Intake lane: each work item binds project_id, one owner, one DoD before it is considered executable.",
+          "Transition lane: state changes are validated before acceptance to avoid silent drift."
+        ],
+        "faiblesses": [
+          "SELF-R01 | source: self | decision: rejected | reason: proxy imports without direct source basis reduce integration credibility | test: Gate T5 verifies rejected-self threshold and explicit rationale.",
+          "SELF-R02 | source: self | decision: rejected | reason: prior short-depth posture under-served QF depth requirements | test: Gate T1 verifies line count >=500 and Gate T10 verifies feature depth.",
+          "OPP-D01 | source: opponent | decision: deferred | reason: readability benchmark threshold tuning should use real judge telemetry after QF | test: Section 9 includes measurable follow-up for threshold tuning."
+        ]
+      },
+      "stage2": {
+        "required": false,
+        "agent_a_md": true,
+        "agent_a_html": false,
+        "agent_b_md": true,
+        "agent_b_html": false,
+        "agent_a_html_index_path": null,
+        "agent_b_html_index_path": null,
+        "agent_a_skills_declared_count": 0,
+        "agent_b_skills_declared_count": 0,
+        "agent_a_skills_x3_ok": false,
+        "agent_b_skills_x3_ok": false,
+        "ready_for_scoring": true,
+        "veto_risk": false
+      },
+      "blocked_until_r16_complete": false
+    },
+    "F10": {
+      "round": "QF",
+      "complexity": "L2",
+      "status": "winner_locked",
+      "agent_a": "winner:F03",
+      "agent_b": "winner:F04",
+      "agent_a_resolved": "agent-12",
+      "agent_b_resolved": "agent-4",
+      "a_has_bootstrap": false,
+      "a_has_final": true,
+      "b_has_bootstrap": false,
+      "b_has_final": true,
+      "winner": "agent-4",
+      "judge": {
+        "status": "winner_locked",
+        "winner": "agent-4",
+        "scorecard": {
+          "agent_a_total": 91,
+          "agent_b_total": 94
+        },
+        "rationale": [
+          "agent-4 is slightly stronger on workflow clarity and cost-time balance while keeping L2 controls verifiable.",
+          "agent-12 has strong reliability depth, but agent-4 keeps higher execution throughput with lower ceremony.",
+          "tie-break not required."
+        ],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-10/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": {
+        "agent_id": "agent-4",
+        "project": "Nova",
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-10/SUBMISSIONS/agent-4_SUBMISSION_V2_FINAL.md",
+        "descriptif_general": "Deliver a stronger L2 final that beats @agent-12 on impact while preserving deterministic execution quality.; Increase operator throughput with risk-tiered handoff controls and threshold-based QA gates.; Step 1: Preflight input lock and fail-fast blocker path checks.; Step 2: Intake split into fast_lane and deep_lane, then assign risk tier (high, medium, low).",
+        "gros_avantages": [
+          "agent-4 is slightly stronger on workflow clarity and cost-time balance while keeping L2 controls verifiable.",
+          "agent-12 has strong reliability depth, but agent-4 keeps higher execution throughput with lower ceremony.",
+          "tie-break not required."
+        ],
+        "innovations": [
+          "Step 2: Intake split into fast_lane and deep_lane, then assign risk tier (high, medium, low).",
+          "Step 4: Handoff SLA is tiered by risk: high=10m, medium=30m, low=60m.",
+          "OPP-A01 | source: opponent | decision: accepted | reason: absorb deterministic phase-flow wording to reduce execution ambiguity | test: section 3 keeps explicit ordered steps."
+        ],
+        "faiblesses": [
+          "OPP-R01 | source: opponent | decision: rejected | reason: keep ownership singular and avoid shared ownership drift in urgent work | test: section 3 keeps one-owner lane as hard rule.",
+          "SELF-W1 | source: self | decision: rejected | reason: fixed 15-minute SLA for all handoffs is too rigid at L2 and adds noise on deep-lane tasks | test: section 3 now uses risk-tiered SLA thresholds.",
+          "Wrong risk-tier assignment at intake"
+        ]
+      },
+      "stage2": {
+        "required": false,
+        "agent_a_md": true,
+        "agent_a_html": false,
+        "agent_b_md": true,
+        "agent_b_html": false,
+        "agent_a_html_index_path": null,
+        "agent_b_html_index_path": null,
+        "agent_a_skills_declared_count": 0,
+        "agent_b_skills_declared_count": 0,
+        "agent_a_skills_x3_ok": false,
+        "agent_b_skills_x3_ok": false,
+        "ready_for_scoring": true,
+        "veto_risk": false
+      },
+      "blocked_until_r16_complete": false
+    },
+    "F11": {
+      "round": "QF",
+      "complexity": "L2",
+      "status": "winner_locked",
+      "agent_a": "winner:F05",
+      "agent_b": "winner:F06",
+      "agent_a_resolved": "agent-11",
+      "agent_b_resolved": "agent-3",
+      "a_has_bootstrap": false,
+      "a_has_final": true,
+      "b_has_bootstrap": false,
+      "b_has_final": true,
+      "winner": "agent-11",
+      "judge": {
+        "status": "winner_locked",
+        "winner": "agent-11",
+        "scorecard": {
+          "agent_a_total": 92,
+          "agent_b_total": 88
+        },
+        "rationale": [
+          "agent-11 provides cleaner execution structure and stronger traceability from risk to DoD.",
+          "agent-3 is solid technically, but agent-11 is more direct and implementation-ready for operator use.",
+          "Workflow and integration evidence are more consistent end-to-end in agent-11 submission."
+        ],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-11/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": {
+        "agent_id": "agent-11",
+        "project": "Drift",
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-11/SUBMISSIONS/agent-11_SUBMISSION_V2_FINAL.md",
+        "descriptif_general": "Deliver a deterministic, testable, implementation-ready QF F11 final for Drift under final-only zero-search constraints.; Increase judge score by combining strict compliance with stronger execution signal on impact and cost/time.; Step 1: Preflight.; Entry: required input files exist and final-only constraint is confirmed.",
+        "gros_avantages": [
+          "agent-11 provides cleaner execution structure and stronger traceability from risk to DoD.",
+          "agent-3 is solid technically, but agent-11 is more direct and implementation-ready for operator use.",
+          "Workflow and integration evidence are more consistent end-to-end in agent-11 submission."
+        ],
+        "innovations": [
+          "not_extracted: innovations"
+        ],
+        "faiblesses": [
+          "SELF-W1 (Rejected weak own idea): \"transport interface-first sans criteres de selection concrets\"."
+        ]
+      },
+      "stage2": {
+        "required": false,
+        "agent_a_md": true,
+        "agent_a_html": false,
+        "agent_b_md": true,
+        "agent_b_html": false,
+        "agent_a_html_index_path": null,
+        "agent_b_html_index_path": null,
+        "agent_a_skills_declared_count": 0,
+        "agent_b_skills_declared_count": 0,
+        "agent_a_skills_x3_ok": false,
+        "agent_b_skills_x3_ok": false,
+        "ready_for_scoring": true,
+        "veto_risk": false
+      },
+      "blocked_until_r16_complete": false
+    },
+    "F12": {
+      "round": "QF",
+      "complexity": "L2",
+      "status": "winner_locked",
+      "agent_a": "winner:F07",
+      "agent_b": "winner:F08",
+      "agent_a_resolved": "agent-10",
+      "agent_b_resolved": "agent-15",
+      "a_has_bootstrap": false,
+      "a_has_final": true,
+      "b_has_bootstrap": false,
+      "b_has_final": true,
+      "winner": "agent-10",
+      "judge": {
+        "status": "winner_locked",
+        "winner": "agent-10",
+        "scorecard": {
+          "agent_a_total": 90,
+          "agent_b_total": 84
+        },
+        "rationale": [
+          "agent-10 has stronger command-verifiable QA posture and better delivery precision for QF scope.",
+          "agent-15 brings useful simplification, but agent-10 is more complete on integration and risk controls.",
+          "Final handoff quality and execution readiness are stronger in agent-10 package."
+        ],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": {
+        "agent_id": "agent-10",
+        "project": "Orbit",
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-2/FIGHT-12/SUBMISSIONS/agent-10_SUBMISSION_V2_FINAL.md",
+        "descriptif_general": "Deliver a deterministic, testable, and high-scoring QF final for project Orbit with final-only discipline, stronger risk control, and measurable feasibility evidence.; Step 1: Verify both required R1 final inputs are present at exact paths.; Step 2: Build and apply opponent import map (O15-A1..O15-A4) with acceptance decisions.",
+        "gros_avantages": [
+          "agent-10 has stronger command-verifiable QA posture and better delivery precision for QF scope.",
+          "agent-15 brings useful simplification, but agent-10 is more complete on integration and risk controls.",
+          "Final handoff quality and execution readiness are stronger in agent-10 package."
+        ],
+        "innovations": [
+          "Step 4: Run full command-based validation on the V2 final output path.",
+          "O15-A3: concrete QA gates for ASCII contract, required sections, and footer contract.",
+          "O15-A1: owner-unique issue -> PR -> test -> review -> ship flow."
+        ],
+        "faiblesses": [
+          "SELF-R1: legacy pre-final artifact dependent validation flow.",
+          "Reason: lowers feasibility in final-only dispatch and weakens audit clarity.",
+          "required input file missing at execution time."
+        ]
+      },
+      "stage2": {
+        "required": false,
+        "agent_a_md": true,
+        "agent_a_html": false,
+        "agent_b_md": true,
+        "agent_b_html": false,
+        "agent_a_html_index_path": null,
+        "agent_b_html_index_path": null,
+        "agent_a_skills_declared_count": 0,
+        "agent_b_skills_declared_count": 0,
+        "agent_a_skills_x3_ok": false,
+        "agent_b_skills_x3_ok": false,
+        "ready_for_scoring": true,
+        "veto_risk": false
+      },
+      "blocked_until_r16_complete": false
+    },
+    "F13": {
+      "round": "SF",
+      "complexity": "L3",
+      "status": "pending",
+      "agent_a": "winner:F09",
+      "agent_b": "winner:F10",
+      "agent_a_resolved": "agent-8",
+      "agent_b_resolved": "agent-4",
+      "a_has_bootstrap": false,
+      "a_has_final": false,
+      "b_has_bootstrap": false,
+      "b_has_final": true,
+      "winner": null,
+      "judge": {
+        "status": "pending",
+        "winner": null,
+        "scorecard": {
+          "agent_a_total": null,
+          "agent_b_total": null
+        },
+        "rationale": [],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/FIGHT-13/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": null,
+      "stage2": {
+        "required": true,
+        "agent_a_md": false,
+        "agent_a_html": false,
+        "agent_b_md": true,
+        "agent_b_html": true,
+        "agent_a_html_index_path": null,
+        "agent_b_html_index_path": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-13/SUBMISSIONS/agent-4_FINAL_HTML/index.html",
+        "agent_a_skills_declared_count": 0,
+        "agent_b_skills_declared_count": 3,
+        "agent_a_skills_x3_ok": false,
+        "agent_b_skills_x3_ok": true,
+        "ready_for_scoring": false,
+        "veto_risk": true
+      },
+      "blocked_until_r16_complete": false
+    },
+    "F14": {
+      "round": "SF",
+      "complexity": "L3",
+      "status": "pending",
+      "agent_a": "winner:F11",
+      "agent_b": "winner:F12",
+      "agent_a_resolved": "agent-11",
+      "agent_b_resolved": "agent-10",
+      "a_has_bootstrap": false,
+      "a_has_final": true,
+      "b_has_bootstrap": false,
+      "b_has_final": false,
+      "winner": null,
+      "judge": {
+        "status": "pending",
+        "winner": null,
+        "scorecard": {
+          "agent_a_total": null,
+          "agent_b_total": null
+        },
+        "rationale": [],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/FIGHT-14/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": null,
+      "stage2": {
+        "required": true,
+        "agent_a_md": true,
+        "agent_a_html": true,
+        "agent_b_md": false,
+        "agent_b_html": false,
+        "agent_a_html_index_path": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/FIGHT-14/SUBMISSIONS/agent-11_FINAL_HTML/index.html",
+        "agent_b_html_index_path": null,
+        "agent_a_skills_declared_count": 5,
+        "agent_b_skills_declared_count": 0,
+        "agent_a_skills_x3_ok": true,
+        "agent_b_skills_x3_ok": false,
+        "ready_for_scoring": false,
+        "veto_risk": true
+      },
+      "blocked_until_r16_complete": false
+    },
+    "F15": {
+      "round": "FINAL",
+      "complexity": "L4",
+      "status": "pending",
+      "agent_a": "winner:F13",
+      "agent_b": "winner:F14",
+      "agent_a_resolved": null,
+      "agent_b_resolved": null,
+      "a_has_bootstrap": null,
+      "a_has_final": null,
+      "b_has_bootstrap": null,
+      "b_has_final": null,
+      "winner": null,
+      "judge": {
+        "status": "pending",
+        "winner": null,
+        "scorecard": {
+          "agent_a_total": null,
+          "agent_b_total": null
+        },
+        "rationale": [],
+        "source_file": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/FINAL/FIGHT-15/JUDGE_FEEDBACK.md"
+      },
+      "winner_dossier": null,
+      "stage2": {
+        "required": true,
+        "agent_a_md": null,
+        "agent_a_html": null,
+        "agent_b_md": null,
+        "agent_b_html": null,
+        "agent_a_html_index_path": null,
+        "agent_b_html_index_path": null,
+        "agent_a_skills_declared_count": null,
+        "agent_b_skills_declared_count": null,
+        "agent_a_skills_x3_ok": null,
+        "agent_b_skills_x3_ok": null,
+        "ready_for_scoring": false,
+        "veto_risk": true
+      },
+      "blocked_until_r16_complete": false
+    }
+  },
+  "fight_order": {
+    "R16": [
+      "F01",
+      "F02",
+      "F03",
+      "F04",
+      "F05",
+      "F06",
+      "F07",
+      "F08"
+    ],
+    "QF": [
+      "F09",
+      "F10",
+      "F11",
+      "F12"
+    ],
+    "SF": [
+      "F13",
+      "F14"
+    ],
+    "FINAL": [
+      "F15"
+    ]
+  },
+  "l3": {
+    "entries": [
+      "agent-8",
+      "agent-4",
+      "agent-11",
+      "agent-10",
+      "leo",
+      "victor"
+    ],
+    "wildcard_added": null,
+    "pairings": [
+      {
+        "fight": "F13",
+        "agent_a": "agent-8",
+        "agent_b": "agent-4"
+      },
+      {
+        "fight": "F14",
+        "agent_a": "agent-11",
+        "agent_b": "agent-10"
+      },
+      {
+        "fight": "F15",
+        "agent_a": "leo",
+        "agent_b": "victor"
+      }
+    ],
+    "rules": {
+      "dual_stage_required": true,
+      "skills_required": 3,
+      "pitch_points": 25,
+      "total_points": 125
+    }
+  }
+};

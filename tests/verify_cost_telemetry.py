@@ -11,6 +11,10 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
 from app.services.cost_telemetry import (  # noqa: E402
+    COST_EVENT_ERROR_CODES,
+    COST_EVENT_ERROR_CACHED_TOKEN_MISMATCH,
+    COST_EVENT_ERROR_CURRENCY_NOT_CAD,
+    COST_EVENT_ERROR_INVALID_COST_CAD_ESTIMATE_NEGATIVE,
     COST_EVENT_SCHEMA_VERSION,
     estimate_monthly_cad,
     estimate_monthly_cad_from_path,
@@ -49,24 +53,28 @@ def main() -> int:
         timestamp=now_utc.isoformat(),
         cost=2.5,
     )
+    assert COST_EVENT_SCHEMA_VERSION == "wave05_cost_event_v2"
     ok, reason = validate_cost_event(valid, project_id="cockpit")
     assert ok is True and reason is None
 
     bad_currency = dict(valid)
     bad_currency["currency"] = "USD"
     ok, reason = validate_cost_event(bad_currency, project_id="cockpit")
-    assert ok is False and reason == "currency_not_cad"
+    assert ok is False and reason == COST_EVENT_ERROR_CURRENCY_NOT_CAD
+    assert reason in COST_EVENT_ERROR_CODES
 
     bad_negative = dict(valid)
     bad_negative["cost_cad_estimate"] = -1.0
     ok, reason = validate_cost_event(bad_negative, project_id="cockpit")
-    assert ok is False and reason == "invalid_cost_cad_estimate_negative"
+    assert ok is False and reason == COST_EVENT_ERROR_INVALID_COST_CAD_ESTIMATE_NEGATIVE
+    assert reason in COST_EVENT_ERROR_CODES
 
     bad_cached = dict(valid)
     bad_cached["cached_tokens"] = 2
     bad_cached["cached_input_tokens"] = 1
     ok, reason = validate_cost_event(bad_cached, project_id="cockpit")
-    assert ok is False and reason == "cached_token_mismatch"
+    assert ok is False and reason == COST_EVENT_ERROR_CACHED_TOKEN_MISMATCH
+    assert reason in COST_EVENT_ERROR_CODES
 
     events = [
         valid,

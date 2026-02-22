@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Cockpit V2 — La Roadmap Visuelle</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --card-bg: #161b22;
+            --text: #c9d1d9;
+            --accent: #58a6ff;
+            --success: #238636;
+            --warning: #d29922;
+            --danger: #f85149;
+            --border: #30363d;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #ffffff;
+            font-weight: 800;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #58a6ff, #d29922);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .phase-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .phase-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .badge.p1 {
+            background: rgba(35, 134, 54, 0.2);
+            color: #3fb950;
+            border: 1px solid #238636;
+        }
+
+        .badge.p2 {
+            background: rgba(210, 153, 34, 0.2);
+            color: #d29922;
+            border: 1px solid #9e6a03;
+        }
+
+        .badge.p3 {
+            background: rgba(248, 81, 73, 0.2);
+            color: #ff7b72;
+            border: 1px solid #da3633;
+        }
+
+        .task-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 15px;
+        }
+
+        .task-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #21262d;
+            display: flex;
+            align-items: center;
+        }
+
+        .task-list li::before {
+            content: "▹";
+            color: var(--accent);
+            margin-right: 10px;
+            font-family: monospace;
+        }
+
+        .mermaid-container {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(110, 118, 129, 0.4);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header style="text-align:center; margin-bottom: 60px;">
+            <h1>COCKPIT V2 ROADMAP</h1>
+            <p style="font-size: 1.2rem; color: #8b949e;">Du Silo à la Matrice : Plan d'Évolution en 3 Phases</p>
+        </header>
+
+        <!-- GANTT CHART -->
+        <div class="phase-card">
+            <h2>📅 Vue d'ensemble (Timeline)</h2>
+            <div class="mermaid-container">
+                <div class="mermaid">
+                    gantt
+                    title Roadmap Cockpit V2
+                    dateFormat YYYY-MM-DD
+                    axisFormat %d/%m
+
+                    section Phase 1 : Fondations
+                    Agent Registry & Hierarchy :active, p1a, 2026-02-17, 3d
+                    SOUL.md & Skills Engine :p1b, 2026-02-18, 5d
+                    Task Manager MVP :p1c, 2026-02-24, 4d
+
+                    section Phase 2 : Intelligence
+                    Platform Router (Multi-LLM) :p2a, 2026-03-02, 6d
+                    Memory Engine (FTS5) :p2b, 2026-03-08, 5d
+                    Org Chart Visualization :p2c, 2026-03-14, 4d
+
+                    section Phase 3 : Puissance
+                    Vector Store (ChromaDB) :p3a, 2026-03-20, 7d
+                    Local LLM (Ollama) :p3b, 2026-03-28, 5d
+                    Cost & Token Tracking :p3c, 2026-04-03, 4d
+                </div>
+            </div>
+        </div>
+
+        <!-- PHASE 1 -->
+        <div class="phase-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2><span class="badge p1">PHASE 1</span> Fondations & Identité</h2>
+                <span style="color:#3fb950; font-weight:bold;">~30 Heures</span>
+            </div>
+            <p>L'objectif est de briser les hardcodages et de donner une "âme" aux agents.</p>
+            <ul class="task-list">
+                <li><strong>Agent Registry :</strong> Remplacer le <code>if/else</code> géant par un
+                    <code>agents.json</code> dynamique.</li>
+                <li><strong>Hiérarchie L0/L1/L2 :</strong> Définir qui est boss (Clems), qui est lead (Victor/Léo), qui
+                    est worker.</li>
+                <li><strong>SOUL.md :</strong> Créer les fichiers de personnalité pour chaque agent.</li>
+                <li><strong>Skill Engine :</strong> Charger les compétences (Python, React, etc.) dynamiquement dans le
+                    prompt.</li>
+            </ul>
+        </div>
+
+        <!-- PHASE 2 -->
+        <div class="phase-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2><span class="badge p2">PHASE 2</span> Intelligence & Connexions</h2>
+                <span style="color:#d29922; font-weight:bold;">~35 Heures</span>
+            </div>
+            <p>Rendre le système robuste aux pannes et capable de se souvenir des choses simples.</p>
+            <ul class="task-list">
+                <li><strong>Platform Router :</strong> Un système capable de switcher entre Codex, Antigravity et Ollama
+                    si une API tombe.</li>
+                <li><strong>Memory (FTS5) :</strong> Une mémoire basée sur les mots-clés (rapide, léger, sans serveur).
+                </li>
+                <li><strong>Org Chart UI :</strong> Visualiser l'équipe sous forme de graphe interactif.</li>
+            </ul>
+        </div>
+
+        <!-- PHASE 3 -->
+        <div class="phase-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2><span class="badge p3">PHASE 3</span> Puissance & Autonomie</h2>
+                <span style="color:#ff7b72; font-weight:bold;">~40 Heures</span>
+            </div>
+            <p>Le passage au "Heavy Metal" : IA locale et mémoire sémantique profonde.</p>
+            <ul class="task-list">
+                <li><strong>Vector Store (ChromaDB) :</strong> Recherche par "sens" et plus seulement par mots-clés.
+                </li>
+                <li><strong>Local LLM (Ollama) :</strong> Faire tourner des agents gratuits et privés sur ton Mac.</li>
+                <li><strong>Cost Tracking :</strong> Savoir exactement combien coûte chaque tâche.</li>
+            </ul>
+        </div>
+
+    </div>
+
+    <script>
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'neutral',
+        gantt: {
+            titleTopMargin: 25,
+            barHeight: 20,
+            barGap: 4,
+            topPadding: 50,
+            sidePadding: 100
+        }
+    });
+    </script>
+
+</body>
+
+</html>

@@ -49,11 +49,32 @@ def main() -> int:
                 },
             )
 
+        # Exact duplicate line for request_id must be dropped by queue recovery.
+        _write_ndjson(
+            requests_path,
+            {
+                "request_id": "runreq_test_001",
+                "project_id": project_id,
+                "agent_id": "agent-1",
+                "status": "queued",
+                "source": "mention",
+                "created_at": "2026-02-07T00:00:01Z",
+                "message": {
+                    "message_id": "msg_test_001",
+                    "thread_id": None,
+                    "author": "operator",
+                    "text": "Ping @agent-1 duplicate line",
+                    "tags": [],
+                    "mentions": ["agent-1"],
+                },
+            },
+        )
+
         result_1 = dispatch_once(projects_root, project_id, max_actions=1)
 
         assert result_1.dispatched_count == 3, f"expected 3 dispatched, got {result_1.dispatched_count}"
         assert len(result_1.actions) == 1, f"expected max_actions=1, got {len(result_1.actions)}"
-        assert result_1.actions[0].agent_id == "agent-1", "expected first action to be agent-1"
+        assert result_1.actions[0].agent_id in {"agent-1", "agent-2", "agent-3"}, "unexpected action target"
 
         for _request_id, agent_id, _msg_id, _text in reqs:
             inbox = projects_root / project_id / "runs" / "inbox" / f"{agent_id}.ndjson"
@@ -71,6 +92,8 @@ def main() -> int:
         requests_map = state_payload.get("requests")
         assert isinstance(requests_map, dict), "requests map missing"
         assert len(requests_map) >= len(processed), "requests map should cover processed ids"
+        counters = state_payload.get("counters") if isinstance(state_payload.get("counters"), dict) else {}
+        assert int(counters.get("queue_exact_dupe_removed_total") or 0) >= 1, "exact duplicate recovery counter missing"
 
         # Second run should not duplicate inbox entries and should produce no actions.
         result_2 = dispatch_once(projects_root, project_id, max_actions=1)

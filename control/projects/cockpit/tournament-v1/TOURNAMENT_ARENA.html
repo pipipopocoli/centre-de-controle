@@ -1,0 +1,2201 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TOURNAMENT_ARENA V3</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --red: #EA1F29;
+      --yellow: #ECC743;
+      --blue: #32A7D7;
+      --green: #6A857A;
+      --gray: #5E5B68;
+      --light: #EFEFD0;
+      --dark: #0D1018;
+      --panel: #151A24;
+      --panel-2: #1E2532;
+      --ink: #090C13;
+      --danger: #ff6b79;
+      --ok: #5cff8f;
+      --warn: #ffd06d;
+      --pixel-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45);
+      --pixel-shadow-soft: 2px 2px 0 rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--dark);
+      color: var(--light);
+      font-family: "VT323", monospace;
+      min-height: 100%;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.12;
+      background:
+        linear-gradient(0deg, rgba(255,255,255,0.15) 50%, transparent 50%),
+        linear-gradient(90deg, rgba(255,255,255,0.04) 50%, transparent 50%);
+      background-size: 100% 3px, 3px 100%;
+      z-index: 100;
+    }
+
+    .crt-glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 30% 0%, rgba(50, 167, 215, 0.18), transparent 45%),
+                  radial-gradient(circle at 85% 10%, rgba(234, 31, 41, 0.15), transparent 35%);
+      z-index: 99;
+    }
+
+    .wrap {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero {
+      border: 3px solid var(--blue);
+      background: linear-gradient(180deg, #1a2333 0%, #121926 100%);
+      box-shadow: var(--pixel-shadow);
+      padding: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(120deg, rgba(255,255,255,0.08), transparent 35%);
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      min-width: 320px;
+    }
+
+    .hero-link {
+      text-decoration: none;
+    }
+
+    .hero-link:visited {
+      color: #d6f2ff;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: "Press Start 2P", monospace;
+      font-size: clamp(20px, 2.7vw, 34px);
+      line-height: 1.2;
+      color: var(--yellow);
+      text-shadow: 2px 2px 0 var(--ink);
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      font-size: 28px;
+      color: #d9ecff;
+      letter-spacing: 0.5px;
+    }
+
+    .badge {
+      border: 2px solid var(--red);
+      background: #3b1518;
+      color: #ffd7db;
+      padding: 7px 10px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      box-shadow: var(--pixel-shadow-soft);
+      max-width: 520px;
+    }
+
+    .metrics {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .metric {
+      border: 2px solid var(--gray);
+      background: var(--panel);
+      padding: 8px;
+      box-shadow: var(--pixel-shadow-soft);
+    }
+
+    .metric-label {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: #b8c2d2;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .metric-value {
+      margin-top: 4px;
+      font-size: 38px;
+      line-height: 1;
+      color: var(--light);
+    }
+
+    .layout {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 2.3fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 3px solid var(--gray);
+      background: linear-gradient(180deg, var(--panel-2), var(--panel));
+      box-shadow: var(--pixel-shadow);
+      padding: 10px;
+    }
+
+    .panel h2 {
+      margin: 0 0 7px;
+      font-family: "Press Start 2P", monospace;
+      font-size: clamp(12px, 1.4vw, 17px);
+      color: var(--yellow);
+      line-height: 1.3;
+      text-shadow: 1px 1px 0 var(--ink);
+    }
+
+    .panel-note {
+      margin: 0;
+      font-size: 24px;
+      color: #d2e8ff;
+    }
+
+    .panel-note a {
+      color: #9ad9ff;
+    }
+
+    .bracket-grid {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(220px, 1fr));
+      gap: 16px;
+      align-items: start;
+    }
+
+    .round-col {
+      min-width: 0;
+      padding: 10px 10px 12px 14px;
+      border: 2px solid #2c3a56;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 35%),
+        linear-gradient(180deg, #131b2b, #101725);
+      box-shadow: var(--pixel-shadow-soft);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .round-col::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.08;
+      background:
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.35), rgba(255,255,255,0.35) 1px, transparent 1px, transparent 7px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0.2) 1px, transparent 1px, transparent 7px);
+    }
+
+    .round-col > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .round-col:not(:first-child) {
+      border-left-width: 3px;
+    }
+
+    .round-col[data-active="true"] {
+      border-color: var(--yellow);
+      box-shadow: 0 0 0 2px rgba(236,199,67,0.22), var(--pixel-shadow-soft);
+    }
+
+    .round-title {
+      margin: 0 0 9px;
+      font-family: "Press Start 2P", monospace;
+      font-size: 10px;
+      color: var(--blue);
+      line-height: 1.25;
+      text-transform: uppercase;
+      border: 2px solid #2f4f7e;
+      background: #122033;
+      padding: 7px 8px 6px;
+      box-shadow: var(--pixel-shadow-soft);
+      text-align: center;
+    }
+
+    .fight-stack {
+      display: grid;
+      gap: 8px;
+    }
+
+    #round-r16 { gap: 14px; }
+    #round-qf,
+    #round-sf,
+    #round-final {
+      gap: 14px;
+      padding-top: 0;
+    }
+
+    .fight-card {
+      position: relative;
+      width: 100%;
+      text-align: left;
+      border: 2px solid var(--gray);
+      background: #141a26;
+      padding: 8px;
+      min-height: 124px;
+      color: var(--light);
+      box-shadow: var(--pixel-shadow-soft);
+      cursor: pointer;
+      transition: transform 100ms ease;
+    }
+
+    .fight-card:hover,
+    .fight-card:focus-visible {
+      transform: translate(-1px, -1px);
+      outline: none;
+      border-color: var(--blue);
+    }
+
+    .fight-card::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -10px;
+      width: 10px;
+      height: 4px;
+      background: repeating-linear-gradient(90deg, var(--blue), var(--blue) 2px, transparent 2px, transparent 4px);
+      transform: translateY(-2px);
+      opacity: 0.8;
+    }
+
+    .round-final .fight-card::after,
+    .champion-block::after {
+      display: none;
+    }
+
+    .fight-card[data-status="ready_for_prompt"] { border-color: var(--gray); }
+    .fight-card[data-status="awaiting_submissions"] { border-color: var(--danger); }
+    .fight-card[data-status="scoring"] { border-color: var(--yellow); box-shadow: 0 0 0 2px rgba(236,199,67,0.3), var(--pixel-shadow-soft); }
+    .fight-card[data-status="pending"] { border-color: #7c8291; }
+    .fight-card[data-status="winner_locked"] { border-color: var(--ok); box-shadow: 0 0 0 2px rgba(92,255,143,0.28), var(--pixel-shadow-soft); }
+    .fight-card[data-status="winner_locked"]::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(130deg, rgba(92,255,143,0.14), transparent 45%);
+    }
+    .fight-card[data-official="false"] {
+      border-color: #616778;
+      background: #131721;
+      opacity: 0.92;
+    }
+    .fight-card[data-official="false"] .fight-id { color: #b7bece; }
+    .fight-card[data-official="false"] .slot {
+      border-color: #3d4352;
+      background: #121621;
+    }
+    .fight-card[data-official="false"] .slot-stage {
+      border-color: #60667a;
+      background: #242a3b;
+      color: #d8deec;
+    }
+    .fight-card[data-official="false"] .slot-project { color: #aab2c5; }
+    .fight-card[data-official="false"]:hover,
+    .fight-card[data-official="false"]:focus-visible {
+      border-color: #838aa0;
+    }
+
+    .fight-id {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: var(--blue);
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .slot {
+      border: 1px solid #344059;
+      background: #111722;
+      padding: 6px 7px;
+      margin-top: 4px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 48px;
+    }
+
+    .slot:first-of-type { margin-top: 0; }
+    .slot.slot-winner {
+      border-color: var(--ok);
+      box-shadow: inset 0 0 0 1px rgba(92,255,143,0.35);
+      cursor: pointer;
+    }
+    .slot.slot-winner .slot-name { color: #d8ffe8; }
+    .slot.slot-winner .slot-project { color: #aff1c8; }
+
+    .slot-main {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
+    }
+
+    .slot-name {
+      font-size: 20px;
+      line-height: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .slot-project {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      color: #9dc1ea;
+      line-height: 1.1;
+      text-transform: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .agent-icon {
+      width: 30px;
+      height: 30px;
+      border: 2px solid #3f4f69;
+      background: #0f1625;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      flex: 0 0 auto;
+      box-shadow: var(--pixel-shadow-soft);
+    }
+
+    .slot-stage {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      border: 1px solid var(--gray);
+      padding: 1px 5px;
+      text-transform: lowercase;
+      color: #d6e4f5;
+      background: #1e2533;
+      white-space: nowrap;
+    }
+
+    .status-tag {
+      margin-top: 6px;
+      display: inline-block;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      padding: 1px 6px;
+      border: 1px solid var(--gray);
+      text-transform: lowercase;
+      background: #1a2130;
+    }
+
+    .status-ready_for_prompt { color: #d6deec; border-color: var(--gray); }
+    .status-awaiting_submissions { color: #ffd5dc; border-color: var(--danger); }
+    .status-scoring { color: #ffeeb4; border-color: var(--yellow); }
+    .status-winner_locked { color: #d0ffe2; border-color: var(--ok); }
+    .status-non_official { color: #e6eaf4; border-color: #858ca1; background: #232838; }
+    .status-veto { color: #ffd9df; border-color: var(--danger); background: #381923; }
+    .pitch-link {
+      color: #98e7ff;
+      text-decoration: underline;
+      word-break: break-all;
+    }
+    .pitch-link:hover,
+    .pitch-link:focus-visible {
+      color: #fff0bf;
+    }
+
+    .champion-block {
+      border: 2px solid var(--yellow);
+      background: #2b2212;
+      box-shadow: var(--pixel-shadow-soft);
+      padding: 10px;
+      text-align: center;
+      margin-top: 4px;
+      position: relative;
+    }
+
+    .champion-title {
+      font-family: "Press Start 2P", monospace;
+      font-size: 12px;
+      color: var(--yellow);
+      margin: 0;
+    }
+
+    .champion-name {
+      margin-top: 8px;
+      font-size: 26px;
+      color: #fff2c9;
+    }
+
+    .side-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .list {
+      margin: 6px 0 0;
+      padding-left: 18px;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .list li { margin: 4px 0; }
+
+    .rule-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 20px;
+      line-height: 1.15;
+    }
+
+    .rule-table th,
+    .rule-table td {
+      border: 1px solid #3c4864;
+      padding: 5px;
+      vertical-align: top;
+    }
+
+    .rule-table th {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #c7e9ff;
+      background: #1c2a3c;
+    }
+
+    .template-grid {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .template-box {
+      border: 2px solid #425174;
+      background: #111a29;
+      padding: 8px;
+      box-shadow: var(--pixel-shadow-soft);
+    }
+
+    .template-title {
+      margin: 0 0 5px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: #cceeff;
+      text-transform: uppercase;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      line-height: 1.35;
+      color: #e1efff;
+    }
+
+    .btn-row {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .btn {
+      border: 2px solid var(--blue);
+      background: #12253a;
+      color: #d6f2ff;
+      padding: 4px 7px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      cursor: pointer;
+      box-shadow: var(--pixel-shadow-soft);
+    }
+
+    .btn:hover,
+    .btn:focus-visible {
+      outline: none;
+      border-color: var(--yellow);
+      background: #2f2a17;
+      color: #fff0bf;
+    }
+
+    .tracker-metrics {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .tracker-metric {
+      border: 2px solid #425174;
+      background: #111a29;
+      padding: 6px;
+      box-shadow: var(--pixel-shadow-soft);
+    }
+
+    .tracker-label {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      color: #b7c8e6;
+      text-transform: uppercase;
+    }
+
+    .tracker-value {
+      margin-top: 3px;
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .chip-row {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      padding: 2px 7px;
+      border: 1px solid;
+      text-transform: lowercase;
+    }
+
+    .chip.none { border-color: var(--danger); color: #ffd4db; background: #32171c; }
+    .chip.missing { border-color: var(--warn); color: #ffe8bb; background: #322718; }
+
+    .modal-shell {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 200;
+    }
+
+    .modal-shell.open { display: flex; }
+
+    .modal {
+      width: min(980px, 100%);
+      max-height: 92vh;
+      overflow-y: auto;
+      border: 3px solid var(--blue);
+      background: #111724;
+      box-shadow: var(--pixel-shadow);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 9px;
+      border-bottom: 2px solid #3b4a69;
+      background: #1d2940;
+      position: sticky;
+      top: 0;
+    }
+
+    .modal-title {
+      margin: 0;
+      font-family: "Press Start 2P", monospace;
+      font-size: 13px;
+      color: var(--yellow);
+      line-height: 1.3;
+    }
+
+    .close {
+      border: 2px solid var(--red);
+      background: #34161b;
+      color: #ffd7dc;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      padding: 4px 7px;
+      cursor: pointer;
+      box-shadow: var(--pixel-shadow-soft);
+    }
+
+    .modal-body {
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 10px;
+    }
+
+    .block {
+      border: 2px solid #3c4864;
+      background: #131b2b;
+      padding: 8px;
+      box-shadow: var(--pixel-shadow-soft);
+    }
+
+    .block h3 {
+      margin: 0 0 5px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: #c7edff;
+      text-transform: uppercase;
+    }
+
+    .block p {
+      margin: 5px 0;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+
+    .pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .agent-box {
+      border: 1px solid #3f4b68;
+      background: #0f1624;
+      padding: 6px;
+      min-height: 64px;
+    }
+
+    .agent-head {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .agent-icon.modal {
+      width: 36px;
+      height: 36px;
+    }
+
+    .agent-name {
+      font-size: 22px;
+      line-height: 1;
+      color: #ebf4ff;
+    }
+
+    .agent-meta {
+      margin-top: 3px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      color: #b5c7e8;
+    }
+
+    .agent-meta.project {
+      color: #8fd6ff;
+    }
+
+    .agent-icon.tracker {
+      width: 24px;
+      height: 24px;
+      border-width: 1px;
+      box-shadow: none;
+    }
+
+    .callout {
+      margin-top: 6px;
+      border: 2px solid var(--danger);
+      background: #2e161c;
+      color: #ffd5dd;
+      padding: 6px;
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .callout.ok {
+      border-color: var(--ok);
+      background: #173020;
+      color: #d3ffe3;
+    }
+
+    .callout.warn {
+      border-color: var(--warn);
+      background: #322715;
+      color: #ffe8bb;
+    }
+    .dossier-desc {
+      margin-top: 4px;
+      font-size: 20px;
+      line-height: 1.2;
+      color: #dce8ff;
+    }
+    .dossier-source {
+      margin-top: 4px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      line-height: 1.35;
+      color: #9ec0e6;
+      word-break: break-word;
+    }
+    .dossier-list {
+      margin: 4px 0 0 18px;
+      padding: 0;
+      font-size: 20px;
+      line-height: 1.15;
+      color: #e4efff;
+    }
+    .dossier-list li { margin: 4px 0; }
+
+    .error-banner {
+      margin-top: 12px;
+      border: 3px solid var(--red);
+      background: #34171d;
+      color: #ffd8de;
+      padding: 10px;
+      box-shadow: var(--pixel-shadow);
+      font-size: 22px;
+      line-height: 1.2;
+      display: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+
+    @media (max-width: 1280px) {
+      .layout { grid-template-columns: 1fr; }
+      .template-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 1020px) {
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tracker-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .bracket-grid { grid-template-columns: 1fr; }
+      .hero-actions {
+        min-width: 0;
+        align-items: flex-start;
+      }
+      .round-col {
+        border-left: none !important;
+        padding-left: 10px;
+      }
+      #round-r16,
+      #round-qf,
+      #round-sf,
+      #round-final {
+        gap: 8px !important;
+        padding-top: 0 !important;
+      }
+      .fight-card::after { display: none; }
+      .fight-card { min-height: 112px; }
+      .agent-icon { width: 24px; height: 24px; }
+      .slot-name { font-size: 18px; }
+      .slot-project { font-size: 9px; }
+      .modal-body { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .metrics,
+      .tracker-metrics { grid-template-columns: 1fr; }
+      .pair { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="crt-glow"></div>
+  <div class="wrap">
+    <header class="hero">
+      <div class="hero-top">
+        <div>
+          <h1>Tournament Arena V3</h1>
+          <p class="subtitle">Pixel retro board + final-only tournament flow</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn hero-link" id="heroPublicLink" href="https://wet-trees-hear.loca.lt/TOURNAMENT_ARENA.html" target="_blank" rel="noopener noreferrer">Suivre en ligne (public)</a>
+          <div class="badge" id="heroGate">loading gate status...</div>
+        </div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-label">Round actif officiel</div>
+          <div class="metric-value" id="metricRound">-</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Resultats lockes</div>
+          <div class="metric-value" id="metricActive">-</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">En attente de lock</div>
+          <div class="metric-value" id="metricDecision">-</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Dossiers winners</div>
+          <div class="metric-value" id="metricMissingFinal">-</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="error-banner" id="loadError"></div>
+
+    <div class="layout">
+      <section class="panel">
+        <h2>Bracket Board</h2>
+        <p class="panel-note">Mode officiel seulement: fights non lockes restent visibles mais bloques.</p>
+        <p class="panel-note" id="l3PairingSummary" style="margin-top:6px;">L3 pairings: loading...</p>
+        <div class="bracket-grid">
+          <div class="round-col" id="col-r16" data-round="R16">
+            <h3 class="round-title">Round of 16 (L1)</h3>
+            <div class="fight-stack" id="round-r16"></div>
+          </div>
+          <div class="round-col" id="col-qf" data-round="QF">
+            <h3 class="round-title">Quarter Finals (L2)</h3>
+            <div class="fight-stack" id="round-qf"></div>
+          </div>
+          <div class="round-col" id="col-sf" data-round="SF">
+            <h3 class="round-title">Semi Finals (L3)</h3>
+            <div class="fight-stack" id="round-sf"></div>
+          </div>
+          <div class="round-col round-final" id="col-final" data-round="FINAL">
+            <h3 class="round-title">Grand Final (L4)</h3>
+            <div class="fight-stack" id="round-final"></div>
+          </div>
+          <div class="round-col" id="col-champion" data-round="CHAMP">
+            <h3 class="round-title">Champion</h3>
+            <div class="champion-block">
+              <p class="champion-title">Winner</p>
+              <div class="champion-name" id="championName">TBD</div>
+              <p class="panel-note" style="font-size:18px;margin-top:8px;">NEW_CODE = WINNER-LOSER-Rn</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-grid">
+        <section class="panel">
+          <h2>Prompt Engine</h2>
+          <ol class="list">
+            <li>collect context</li>
+            <li>dispatch dual-stage prompts</li>
+            <li>collect FINAL md + html pitch</li>
+            <li>score with 125 rubric + veto</li>
+            <li>lock winner in judge file</li>
+            <li>sync arena state</li>
+            <li>prepare next-round prompts</li>
+          </ol>
+        </section>
+
+        <section class="panel">
+          <h2>Rules Lock</h2>
+          <table class="rule-table">
+            <thead>
+              <tr>
+                <th>Rule</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Output format</td><td>Dual-stage (MD + HTML)</td></tr>
+              <tr><td>Absorption</td><td>>=3 imported opponent ideas</td></tr>
+              <tr><td>Self correction</td><td>>=1 rejected weak own idea</td></tr>
+              <tr><td>Tie-break</td><td>risk -> feasibility -> pitch</td></tr>
+              <tr><td>Scoring</td><td>125 points + veto</td></tr>
+              <tr><td>L3 recovery gate</td><td>MD >= 700 lines + HTML required</td></tr>
+              <tr><td>L3 entrants</td><td>QF winners + leo + victor (+wildcard if odd)</td></tr>
+              <tr><td>L3 active fights</td><td>F13, F14, F15 (leo vs victor inclus)</td></tr>
+              <tr><td>Public visibility</td><td>winner + rationale only (scores detaillees masquees)</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </aside>
+    </div>
+
+    <section class="panel" style="margin-top:12px;">
+      <h2>Operator Quick Actions (Dual-Stage)</h2>
+      <p class="panel-note">Send update packet with FINAL markdown + HTML index paths.</p>
+      <div class="template-grid">
+        <div class="template-box">
+          <p class="template-title">TOURNAMENT_UPDATE_V1</p>
+          <pre id="tplUpdate">TOURNAMENT_UPDATE_V1
+round: R16
+fight: F&lt;nn&gt;
+agent_a: &lt;id&gt;
+agent_b: &lt;id&gt;
+project_a: &lt;codename&gt;
+project_b: &lt;codename&gt;
+submission_a: &lt;absolute path to *_FINAL.md&gt;
+submission_b: &lt;absolute path to *_FINAL.md&gt;
+html_pitch_a: &lt;absolute path to index.html&gt;
+html_pitch_b: &lt;absolute path to index.html&gt;
+judge_constraints: &lt;optional&gt;</pre>
+          <div class="btn-row"><button class="btn" data-copy="tplUpdate">copy template</button></div>
+        </div>
+
+        <div class="template-box">
+          <p class="template-title">NEXT_PROMPTS_V1</p>
+          <pre id="tplNext">NEXT_PROMPTS_V1
+round_next: R&lt;n+1&gt;
+winner: &lt;id&gt;
+loser: &lt;id&gt;
+scorecard:
+- impact: x/30
+- workflow: x/15
+- integration: x/10
+- feasibility: x/20
+- risk: x/15
+- cost_time: x/10
+- pitch_html: x/25
+imports_required_for_winner:
+- &lt;3+ ideas from opponent&gt;
+next_prompt_winner: &lt;final-only prompt copy/paste&gt;
+next_prompt_opponent_or_eliminated: &lt;role or exit&gt;</pre>
+          <div class="btn-row"><button class="btn" data-copy="tplNext">copy template</button></div>
+        </div>
+      </div>
+
+      <div class="template-box" style="margin-top:10px;">
+        <p class="template-title">Dispatch lines (auto)</p>
+        <pre id="recoveryDispatch">loading...</pre>
+        <div class="btn-row"><button class="btn" data-copy="recoveryDispatch">copy lines</button></div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:12px;">
+      <h2>Tournament V2 Launch</h2>
+      <p class="panel-note">V2 run is manual and independent from the V1 score engine shown above.</p>
+      <div class="tracker-metrics">
+        <div class="tracker-metric">
+          <div class="tracker-label">Competitors</div>
+          <div class="tracker-value" id="v2Total">-</div>
+        </div>
+        <div class="tracker-metric">
+          <div class="tracker-label">Ready</div>
+          <div class="tracker-value" id="v2Ready">-</div>
+        </div>
+        <div class="tracker-metric">
+          <div class="tracker-label">Running</div>
+          <div class="tracker-value" id="v2Running">-</div>
+        </div>
+        <div class="tracker-metric">
+          <div class="tracker-label">Submitted</div>
+          <div class="tracker-value" id="v2Submitted">-</div>
+        </div>
+      </div>
+      <div class="template-box" style="margin-top:10px;">
+        <p class="template-title">R1 dispatch V2 (copy)</p>
+        <pre id="v2Dispatch">loading...</pre>
+        <div class="btn-row"><button class="btn" data-copy="v2Dispatch">copy dispatch</button></div>
+      </div>
+      <table class="rule-table" style="margin-top:10px;">
+        <thead>
+          <tr>
+            <th>Competitor</th>
+            <th>Axis</th>
+            <th>Status</th>
+            <th>Output root</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="v2LaunchRows"></tbody>
+      </table>
+    </section>
+
+    <section class="panel" style="margin-top:12px;">
+      <h2>Tournament Submission Tracker</h2>
+      <p class="panel-note">Source: data/arena_state.js generated from judge files + submissions by round.</p>
+
+      <div class="tracker-metrics">
+        <div class="tracker-metric">
+          <div class="tracker-label">Any dossier</div>
+          <div class="tracker-value" id="trkAny">-</div>
+        </div>
+        <div class="tracker-metric">
+          <div class="tracker-label">No dossier</div>
+          <div class="tracker-value" id="trkNone">-</div>
+        </div>
+        <div class="tracker-metric">
+          <div class="tracker-label">Final dossier</div>
+          <div class="tracker-value" id="trkFinal">-</div>
+        </div>
+        <div class="tracker-metric">
+          <div class="tracker-label">Missing final</div>
+          <div class="tracker-value" id="trkMissingFinal">-</div>
+        </div>
+      </div>
+
+      <div class="chip-row" id="missingChips"></div>
+
+      <table class="rule-table" style="margin-top:10px;">
+        <thead>
+          <tr>
+            <th>Icon</th>
+            <th>Agent</th>
+            <th>Project</th>
+            <th>Fight</th>
+            <th>Stage</th>
+            <th>Official result</th>
+            <th>Files</th>
+          </tr>
+        </thead>
+        <tbody id="trackerRows"></tbody>
+      </table>
+    </section>
+
+    <section class="panel" style="margin-top:12px;">
+      <h2>Pitch status (L3 dual-stage)</h2>
+      <p class="panel-note">Follow md final + html pitch + skills x3 gate + veto risk.</p>
+      <table class="rule-table" style="margin-top:10px;">
+        <thead>
+          <tr>
+            <th>Agent</th>
+            <th>Fight</th>
+            <th>MD final</th>
+            <th>HTML index</th>
+            <th>Skills x3</th>
+            <th>Ready for scoring</th>
+            <th>Veto risk</th>
+          </tr>
+        </thead>
+        <tbody id="pitchStatusRows"></tbody>
+      </table>
+    </section>
+
+    <section class="panel" style="margin-top:12px;">
+      <h2>Resultats complets</h2>
+      <p class="panel-note">Vue officielle: winner + rationale uniquement. Notes numeriques detaillees non exposees. <a id="resultsPublicLink" href="https://wet-trees-hear.loca.lt/TOURNAMENT_ARENA.html" target="_blank" rel="noopener noreferrer">Lien public</a></p>
+      <table class="rule-table" style="margin-top:10px;">
+        <thead>
+          <tr>
+            <th>Fight</th>
+            <th>Round</th>
+            <th>Agent A</th>
+            <th>Agent B</th>
+            <th>Rationale</th>
+            <th>Status</th>
+            <th>Winner</th>
+          </tr>
+        </thead>
+        <tbody id="matchResultsRows"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <div class="modal-shell" id="fightModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fightTitle">
+      <div class="modal-head">
+        <h2 class="modal-title" id="fightTitle">Fight detail</h2>
+        <button class="close" id="closeModal" type="button">close</button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <section class="block">
+            <h3>Snapshot</h3>
+            <p><strong>Round:</strong> <span id="mRound">-</span> | <strong>Complexity:</strong> <span id="mComplexity">-</span></p>
+            <p><strong>Status:</strong> <span id="mStatus">-</span></p>
+            <div class="pair">
+              <div class="agent-box">
+                <div class="agent-head">
+                  <img class="agent-icon modal" id="mAgentAIcon" alt="agent A icon" />
+                  <div>
+                    <div class="agent-name" id="mAgentA">-</div>
+                    <div class="agent-meta project" id="mAgentAProject">project -</div>
+                    <div class="agent-meta" id="mAgentAInfo">stage -</div>
+                  </div>
+                </div>
+              </div>
+              <div class="agent-box">
+                <div class="agent-head">
+                  <img class="agent-icon modal" id="mAgentBIcon" alt="agent B icon" />
+                  <div>
+                    <div class="agent-name" id="mAgentB">-</div>
+                    <div class="agent-meta project" id="mAgentBProject">project -</div>
+                    <div class="agent-meta" id="mAgentBInfo">stage -</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="mCallout"></div>
+          </section>
+
+          <section class="block" style="margin-top:10px;">
+            <h3>What to send Clems now</h3>
+            <pre id="mPacket"></pre>
+            <div class="btn-row"><button class="btn" data-copy="mPacket">copy packet</button></div>
+          </section>
+        </div>
+
+        <div>
+          <section class="block">
+            <h3>Hybrid scoring rubric</h3>
+            <table class="rule-table">
+              <thead>
+                <tr><th>Criterion</th><th>Pts</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Impact</td><td>30</td></tr>
+                <tr><td>Workflow</td><td>15</td></tr>
+                <tr><td>Integration</td><td>10</td></tr>
+                <tr><td>Feasibility</td><td>20</td></tr>
+                <tr><td>Risk</td><td>15</td></tr>
+                <tr><td>Cost/time</td><td>10</td></tr>
+                <tr><td>Pitch HTML</td><td>25</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="block" style="margin-top:10px;">
+            <h3>Missing final check</h3>
+            <pre id="mMissing">-</pre>
+          </section>
+
+          <section class="block" style="margin-top:10px;">
+            <h3>Dual-stage check</h3>
+            <pre id="mStage2">-</pre>
+          </section>
+
+          <section class="block" style="margin-top:10px;" id="winnerDossierBlock" tabindex="-1">
+            <h3>Winner project dossier</h3>
+            <p id="mDossierState">-</p>
+            <p><strong>Source</strong></p>
+            <p class="dossier-source" id="mDossierSource">-</p>
+            <p><strong>Descriptif general</strong></p>
+            <p class="dossier-desc" id="mDossierDesc">-</p>
+            <p><strong>Gros avantages</strong></p>
+            <ul class="dossier-list" id="mDossierAdvantages"></ul>
+            <p><strong>Innovations</strong></p>
+            <ul class="dossier-list" id="mDossierInnovations"></ul>
+            <p><strong>Faiblesses</strong></p>
+            <ul class="dossier-list" id="mDossierWeaknesses"></ul>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./data/arena_state.js"></script>
+  <script>
+    const state = window.ARENA_STATE || null;
+    const PUBLIC_ARENA_URL =
+      (window.location.protocol === "http:" || window.location.protocol === "https:")
+        ? window.location.href
+        : "https://wet-trees-hear.loca.lt/TOURNAMENT_ARENA.html";
+    let agentVisual = {};
+    const V2_PROMPT_FILE = "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/TOURNAMENT_PROMPT_R1.md";
+    const V2_STATUS_KEY = "cockpit_tournament_v2_r1_status";
+    const V2_STATUS_ORDER = ["ready_for_prompt", "running", "submission_received"];
+    const V2_COMPETITORS = [
+      {
+        id: "competitor-r1-a",
+        axis: "A - stability/persistence",
+        output_root: "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-a/",
+        dispatch: "Tu es competitor-r1-a. Lis " + V2_PROMPT_FILE + " et execute Variant A (stability/persistence). Ecris dans /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-a/",
+      },
+      {
+        id: "competitor-r1-b",
+        axis: "B - skills supply chain",
+        output_root: "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-b/",
+        dispatch: "Tu es competitor-r1-b. Lis " + V2_PROMPT_FILE + " et execute Variant B (skills supply chain). Ecris dans /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-b/",
+      },
+      {
+        id: "competitor-r1-c",
+        axis: "C - router/orchestration",
+        output_root: "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-c/",
+        dispatch: "Tu es competitor-r1-c. Lis " + V2_PROMPT_FILE + " et execute Variant C (router/orchestration). Ecris dans /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-c/",
+      },
+      {
+        id: "competitor-r1-d",
+        axis: "D - memory engine",
+        output_root: "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-d/",
+        dispatch: "Tu es competitor-r1-d. Lis " + V2_PROMPT_FILE + " et execute Variant D (memory engine). Ecris dans /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-d/",
+      },
+      {
+        id: "competitor-r1-e",
+        axis: "E - eval harness",
+        output_root: "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-e/",
+        dispatch: "Tu es competitor-r1-e. Lis " + V2_PROMPT_FILE + " et execute Variant E (eval harness). Ecris dans /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-e/",
+      },
+      {
+        id: "competitor-r1-f",
+        axis: "F - ux vulgarisation",
+        output_root: "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-f/",
+        dispatch: "Tu es competitor-r1-f. Lis " + V2_PROMPT_FILE + " et execute Variant F (ux vulgarisation). Ecris dans /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v2/R1/competitor-r1-f/",
+      }
+    ];
+    const V2_DEFAULT_STATUS_MAP = {
+      "competitor-r1-a": "submission_received",
+      "competitor-r1-b": "submission_received",
+      "competitor-r1-c": "submission_received",
+      "competitor-r1-d": "submission_received",
+      "competitor-r1-e": "submission_received",
+      "competitor-r1-f": "submission_received"
+    };
+
+    const statusLabels = {
+      winner_locked: "winner_locked",
+      non_official: "resultat_non_officiel"
+    };
+
+    const iconPalettes = [
+      ["#131a2a", "#35E0FF", "#2D7DFF"],
+      ["#201824", "#FF3B3B", "#FFC63D"],
+      ["#17211b", "#5CFF8F", "#35E0FF"],
+      ["#26191a", "#FF8A5B", "#FFD36B"],
+      ["#1a1f28", "#9A7DFF", "#35E0FF"],
+      ["#1e2216", "#B5F86A", "#32A7D7"],
+      ["#21182a", "#F07CFF", "#FF6B79"],
+      ["#141f1d", "#73FFD9", "#3E8CFF"]
+    ];
+
+    function fightOfficialTag(fight) {
+      return fight.status === "winner_locked" ? "winner_locked" : "non_official";
+    }
+
+    function escapeHtml(value) {
+      const text = String(value == null ? "" : value);
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function hashString(input) {
+      let h = 2166136261;
+      for (let i = 0; i < input.length; i += 1) {
+        h ^= input.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return h >>> 0;
+    }
+
+    function buildPixelSvg(seedKey, palette, placeholder) {
+      const seed = hashString(seedKey);
+      const bg = palette[0];
+      const c1 = palette[1];
+      const c2 = palette[2];
+      const size = 10;
+      const cell = 2;
+      const shapes = [];
+
+      shapes.push('<rect x="0" y="0" width="' + size + '" height="' + size + '" fill="' + bg + '"/>');
+      shapes.push('<rect x="0" y="0" width="' + size + '" height="1" fill="#314563"/>');
+      shapes.push('<rect x="0" y="9" width="' + size + '" height="1" fill="#314563"/>');
+      shapes.push('<rect x="0" y="0" width="1" height="' + size + '" fill="#314563"/>');
+      shapes.push('<rect x="9" y="0" width="1" height="' + size + '" fill="#314563"/>');
+
+      if (placeholder) {
+        const q = [
+          [3, 2], [4, 2], [5, 2],
+          [6, 3], [6, 4],
+          [5, 5], [4, 5],
+          [4, 7]
+        ];
+        for (const [x, y] of q) {
+          shapes.push('<rect x="' + x + '" y="' + y + '" width="1" height="1" fill="' + c1 + '"/>');
+        }
+      } else {
+        for (let y = 1; y <= 8; y += cell) {
+          for (let x = 1; x <= 4; x += cell) {
+            const shift = (x * 3 + y * 5) % 24;
+            const on = ((seed >> shift) & 1) === 1;
+            if (!on) continue;
+            const color = ((seed >> ((shift + 7) % 24)) & 1) ? c1 : c2;
+            const w = cell;
+            const h = cell;
+            const mx = 9 - x - (cell - 1);
+            shapes.push('<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + color + '"/>');
+            shapes.push('<rect x="' + mx + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + color + '"/>');
+          }
+        }
+      }
+
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" shape-rendering="crispEdges">' +
+        shapes.join("") + "</svg>";
+      return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+    }
+
+    function buildAgentVisual(currentState) {
+      const out = {};
+      const ids = Object.keys(currentState.agents || {});
+      for (const id of ids) {
+        const palette = iconPalettes[hashString(id) % iconPalettes.length];
+        out[id] = {
+          agent_id: id,
+          name: id,
+          project: currentState.agents[id].project || "Unknown",
+          palette_id: hashString(id) % iconPalettes.length,
+          icon_svg_data_uri: buildPixelSvg(id, palette, false)
+        };
+      }
+      return out;
+    }
+
+    function agentIdFromToken(token, resolved) {
+      if (resolved && /^agent-\d+$/.test(resolved)) return resolved;
+      if (token && /^agent-\d+$/.test(token)) return token;
+      return null;
+    }
+
+    function winnerText(token) {
+      if (!token || !token.startsWith("winner:")) return "TBD";
+      return "Winner " + token.split(":")[1];
+    }
+
+    function profileForSlot(token, resolved) {
+      const agentId = agentIdFromToken(token, resolved);
+      if (agentId && agentVisual[agentId]) return agentVisual[agentId];
+
+      const pseudo = resolved || winnerText(token);
+      const palette = iconPalettes[hashString(pseudo + "-unknown") % iconPalettes.length];
+      return {
+        agent_id: agentId || pseudo,
+        name: pseudo,
+        project: token && token.startsWith("winner:") ? "TBD" : "Unknown",
+        palette_id: hashString(pseudo) % iconPalettes.length,
+        icon_svg_data_uri: buildPixelSvg("unknown-" + pseudo, palette, true)
+      };
+    }
+
+    function slotHtml(token, resolved, stage) {
+      const p = profileForSlot(token, resolved);
+      return [
+        '<img class="agent-icon" src="' + p.icon_svg_data_uri + '" alt="' + escapeHtml(p.name) + ' icon" />',
+        '<div class="slot-main"><span class="slot-name">' + escapeHtml(p.name) + '</span><span class="slot-project">Project: ' + escapeHtml(p.project) + "</span></div>",
+        '<span class="slot-stage">' + escapeHtml(stage) + "</span>"
+      ].join("");
+    }
+
+    function agentSort(a, b) {
+      const am = /^agent-(\d+)$/.exec(a);
+      const bm = /^agent-(\d+)$/.exec(b);
+      if (am && bm) return parseInt(am[1], 10) - parseInt(bm[1], 10);
+      if (am) return -1;
+      if (bm) return 1;
+      return String(a).localeCompare(String(b));
+    }
+
+    function stageFromBools(hasBootstrap, hasFinal) {
+      if (hasFinal && hasBootstrap) return "final";
+      if (hasFinal && !hasBootstrap) return "final_only";
+      if (hasBootstrap && !hasFinal) return "bootstrap";
+      if (hasBootstrap === null || hasFinal === null) return "pending";
+      return "none";
+    }
+
+    function displayToken(token, resolved) {
+      if (!token) return "TBD";
+      if (!token.startsWith("winner:")) return token;
+      if (resolved) return resolved + " (winner " + token.split(":")[1] + ")";
+      return "Winner " + token.split(":")[1];
+    }
+
+    function l3PairingMap() {
+      const map = {};
+      const pairs = state && state.l3 && Array.isArray(state.l3.pairings) ? state.l3.pairings : [];
+      for (const pair of pairs) {
+        if (!pair || !pair.fight) continue;
+        map[pair.fight] = pair;
+      }
+      return map;
+    }
+
+    function getL3Pairing(fightId) {
+      const pairs = l3PairingMap();
+      return pairs[fightId] || null;
+    }
+
+    function effectiveParticipants(fightId, fight) {
+      const pair = getL3Pairing(fightId);
+      if (pair && pair.agent_a && pair.agent_b) {
+        return {
+          tokenA: pair.agent_a,
+          tokenB: pair.agent_b,
+          resolvedA: pair.agent_a,
+          resolvedB: pair.agent_b,
+          is_l3_override: true
+        };
+      }
+      return {
+        tokenA: fight.agent_a,
+        tokenB: fight.agent_b,
+        resolvedA: fight.agent_a_resolved,
+        resolvedB: fight.agent_b_resolved,
+        is_l3_override: false
+      };
+    }
+
+    function displayFightOrder() {
+      const out = {
+        R16: [...(state.fight_order.R16 || [])],
+        QF: [...(state.fight_order.QF || [])],
+        SF: [...(state.fight_order.SF || [])],
+        FINAL: [...(state.fight_order.FINAL || [])]
+      };
+      const pairs = state && state.l3 && Array.isArray(state.l3.pairings) ? state.l3.pairings : [];
+      if (!pairs.length) return out;
+      for (const pair of pairs) {
+        if (!pair || !pair.fight) continue;
+        if (!out.SF.includes(pair.fight)) out.SF.push(pair.fight);
+        out.FINAL = out.FINAL.filter((fid) => fid !== pair.fight);
+      }
+      return out;
+    }
+
+    function displayRoundForFight(fightId, fight) {
+      if (getL3Pairing(fightId)) return "L3";
+      if (fight && fight.round === "SF") return "L3";
+      return fight ? (fight.round || "-") : "-";
+    }
+
+    function roundDir(round) {
+      if (round === "R16") return "ROUND-1";
+      if (round === "QF") return "ROUND-2";
+      if (round === "SF") return "ROUND-3";
+      return "FINAL";
+    }
+
+    function versionTag(round) {
+      if (round === "R16") return "V1";
+      if (round === "QF") return "V2";
+      if (round === "SF") return "V3";
+      if (round === "FINAL") return "V4";
+      return "V1";
+    }
+
+    function readmeDir(round) {
+      if (round === "R16") return "ROUND-1";
+      if (round === "QF") return "ROUND-2";
+      if (round === "L3") return "ROUND-3";
+      if (round === "SF") return "ROUND-3";
+      return "ROUND-3";
+    }
+
+    function finalPath(fightId, agentId) {
+      const l3Pair = getL3Pairing(fightId);
+      const base = "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1";
+      if (l3Pair) {
+        return base + "/ROUND-3/ACTIVE_L3/FIGHT-" + fightId.slice(1) + "/SUBMISSIONS/" + agentId + "_SUBMISSION_V3_FINAL.md";
+      }
+      const f = state.fights[fightId];
+      const round = f ? f.round : "R16";
+      const dir = roundDir(round);
+      const version = versionTag(round);
+      if (round === "FINAL") {
+        return base + "/FINAL/" + agentId + "_SUBMISSION_" + version + "_FINAL.md";
+      }
+      return base + "/" + dir + "/FIGHT-" + fightId.slice(1) + "/SUBMISSIONS/" + agentId + "_SUBMISSION_" + version + "_FINAL.md";
+    }
+
+    function defaultHtmlPitchPath(fightId, agentId) {
+      const base = "/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1";
+      const l3Pair = getL3Pairing(fightId);
+      if (l3Pair) {
+        return base + "/ROUND-3/ACTIVE_L3/FIGHT-" + fightId.slice(1) + "/SUBMISSIONS/" + agentId + "_FINAL_HTML/index.html";
+      }
+      const f = state.fights[fightId];
+      const round = f ? f.round : "R16";
+      const dir = roundDir(round);
+      if (round === "FINAL") {
+        return base + "/FINAL/" + agentId + "_FINAL_HTML/index.html";
+      }
+      return base + "/" + dir + "/FIGHT-" + fightId.slice(1) + "/SUBMISSIONS/" + agentId + "_FINAL_HTML/index.html";
+    }
+
+    function toFileUrl(path) {
+      if (!path) return "";
+      if (path.startsWith("file://")) return path;
+      return "file://" + path;
+    }
+
+    function copyById(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const text = el.textContent;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text);
+      }
+    }
+
+    function getV2StatusMap() {
+      try {
+        const raw = localStorage.getItem(V2_STATUS_KEY);
+        if (!raw) return { ...V2_DEFAULT_STATUS_MAP };
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object"
+          ? { ...V2_DEFAULT_STATUS_MAP, ...parsed }
+          : { ...V2_DEFAULT_STATUS_MAP };
+      } catch (_err) {
+        return { ...V2_DEFAULT_STATUS_MAP };
+      }
+    }
+
+    function setV2StatusMap(statusMap) {
+      try {
+        localStorage.setItem(V2_STATUS_KEY, JSON.stringify(statusMap));
+      } catch (_err) {
+        // ignore storage errors to keep UI usable
+      }
+    }
+
+    function nextV2Status(current) {
+      const idx = V2_STATUS_ORDER.indexOf(current);
+      if (idx < 0) return V2_STATUS_ORDER[0];
+      return V2_STATUS_ORDER[(idx + 1) % V2_STATUS_ORDER.length];
+    }
+
+    function renderV2LaunchBoard() {
+      const statusMap = getV2StatusMap();
+      const rows = document.getElementById("v2LaunchRows");
+      const dispatch = document.getElementById("v2Dispatch");
+      if (!rows || !dispatch) return;
+
+      const lines = V2_COMPETITORS.map((entry) => entry.dispatch);
+      dispatch.textContent = lines.join("\n");
+
+      rows.innerHTML = "";
+      let readyCount = 0;
+      let runningCount = 0;
+      let submittedCount = 0;
+
+      for (const entry of V2_COMPETITORS) {
+        const status = statusMap[entry.id] || "ready_for_prompt";
+        if (status === "ready_for_prompt") readyCount += 1;
+        if (status === "running") runningCount += 1;
+        if (status === "submission_received") submittedCount += 1;
+
+        const tr = document.createElement("tr");
+        const btnId = "v2-cycle-" + entry.id;
+        tr.innerHTML = [
+          "<td>" + escapeHtml(entry.id) + "</td>",
+          "<td>" + escapeHtml(entry.axis) + "</td>",
+          "<td>" + escapeHtml(status) + "</td>",
+          "<td>" + escapeHtml(entry.output_root) + "</td>",
+          '<td><button class="btn" id="' + escapeHtml(btnId) + '" type="button">cycle status</button></td>'
+        ].join("");
+        rows.appendChild(tr);
+
+        const btn = document.getElementById(btnId);
+        if (btn) {
+          btn.addEventListener("click", () => {
+            const current = getV2StatusMap()[entry.id] || "ready_for_prompt";
+            const updated = getV2StatusMap();
+            updated[entry.id] = nextV2Status(current);
+            setV2StatusMap(updated);
+            renderV2LaunchBoard();
+          });
+        }
+      }
+
+      document.getElementById("v2Total").textContent = String(V2_COMPETITORS.length);
+      document.getElementById("v2Ready").textContent = String(readyCount);
+      document.getElementById("v2Running").textContent = String(runningCount);
+      document.getElementById("v2Submitted").textContent = String(submittedCount);
+    }
+
+    function showError(msg) {
+      const b = document.getElementById("loadError");
+      b.style.display = "block";
+      b.textContent = msg;
+    }
+
+    function renderHero() {
+      const t = state.trackers;
+      const locked = t.official_locked_count != null
+        ? t.official_locked_count
+        : Object.values(state.fights).filter((f) => f.status === "winner_locked").length;
+      const pending = t.official_pending_count != null
+        ? t.official_pending_count
+        : Object.values(state.fights).filter((f) => f.status !== "winner_locked").length;
+      const dossierCount = Object.values(state.fights).filter((f) => !!f.winner_dossier).length;
+      const activeRound = detectActiveRound();
+
+      document.getElementById("metricRound").textContent = activeRound;
+      document.getElementById("metricActive").textContent = String(locked);
+      document.getElementById("metricDecision").textContent = String(pending);
+      document.getElementById("metricMissingFinal").textContent = String(dossierCount);
+      document.getElementById("heroGate").textContent =
+        "Mode dual-stage + officiel | L3 actif: F13/F14/F15 (leo vs victor visible) | veto on missing md/html";
+      const heroPublicLink = document.getElementById("heroPublicLink");
+      const resultsPublicLink = document.getElementById("resultsPublicLink");
+      if (heroPublicLink) heroPublicLink.href = PUBLIC_ARENA_URL;
+      if (resultsPublicLink) resultsPublicLink.href = PUBLIC_ARENA_URL;
+
+      let champion = "TBD";
+      const final = state.fights.F15;
+      if (final && final.winner) champion = final.winner;
+      document.getElementById("championName").textContent = champion;
+    }
+
+    function detectActiveRound() {
+      const order = displayFightOrder();
+      const roundChecks = [
+        ["R16", order.R16 || []],
+        ["QF", order.QF || []],
+        ["L3", order.SF || []],
+        ["FINAL", order.FINAL || []]
+      ];
+      for (const [label, fights] of roundChecks) {
+        if (!fights.length) continue;
+        const hasOpen = fights.some((fid) => {
+          const f = state.fights[fid];
+          return f && f.status !== "winner_locked";
+        });
+        if (hasOpen) return label;
+      }
+      return "FINAL";
+    }
+
+    function highlightActiveRound() {
+      const map = {
+        R16: "col-r16",
+        QF: "col-qf",
+        L3: "col-sf",
+        FINAL: "col-final"
+      };
+      for (const id of Object.values(map)) {
+        const el = document.getElementById(id);
+        if (el) el.dataset.active = "false";
+      }
+      const active = detectActiveRound();
+      const target = document.getElementById(map[active]);
+      if (target) target.dataset.active = "true";
+    }
+
+    function renderBracket() {
+      const map = {
+        R16: document.getElementById("round-r16"),
+        QF: document.getElementById("round-qf"),
+        SF: document.getElementById("round-sf"),
+        FINAL: document.getElementById("round-final")
+      };
+
+      for (const key of Object.keys(map)) map[key].innerHTML = "";
+      const order = displayFightOrder();
+
+      for (const round of ["R16", "QF", "SF", "FINAL"]) {
+        for (const fightId of (order[round] || [])) {
+          const f = state.fights[fightId];
+          if (!f) continue;
+          const participants = effectiveParticipants(fightId, f);
+          const card = document.createElement("button");
+          card.className = "fight-card";
+          card.dataset.fight = fightId;
+          card.dataset.status = f.status;
+          card.dataset.official = f.status === "winner_locked" ? "true" : "false";
+
+          const aStage = stageFromBools(f.a_has_bootstrap, f.a_has_final);
+          const bStage = stageFromBools(f.b_has_bootstrap, f.b_has_final);
+          const aId = agentIdFromToken(participants.tokenA, participants.resolvedA);
+          const bId = agentIdFromToken(participants.tokenB, participants.resolvedB);
+          const aWinner = !!f.winner && aId === f.winner;
+          const bWinner = !!f.winner && bId === f.winner;
+          const statusTag = fightOfficialTag(f);
+          const vetoTag = f.stage2 && f.stage2.veto_risk
+            ? '<span class="status-tag status-veto">veto_risk</span>'
+            : "";
+
+          card.innerHTML = [
+            '<div class="fight-id">' + fightId + '</div>',
+            '<div class="slot' + (aWinner ? " slot-winner" : "") + '" data-focus-dossier="' + (aWinner ? "1" : "0") + '">' + slotHtml(participants.tokenA, participants.resolvedA, aStage) + "</div>",
+            '<div class="slot' + (bWinner ? " slot-winner" : "") + '" data-focus-dossier="' + (bWinner ? "1" : "0") + '">' + slotHtml(participants.tokenB, participants.resolvedB, bStage) + "</div>",
+            '<span class="status-tag status-' + statusTag + '">' + (statusLabels[statusTag] || statusTag) + '</span>',
+            vetoTag
+          ].join("");
+
+          card.addEventListener("click", () => openFight(fightId, false));
+          card.querySelectorAll('.slot[data-focus-dossier="1"]').forEach((slot) => {
+            slot.addEventListener("click", (event) => {
+              event.stopPropagation();
+              openFight(fightId, true);
+            });
+          });
+          map[round].appendChild(card);
+        }
+      }
+
+      highlightActiveRound();
+    }
+
+    function renderL3Summary() {
+      const el = document.getElementById("l3PairingSummary");
+      if (!el) return;
+      const pairs = state && state.l3 && Array.isArray(state.l3.pairings) ? state.l3.pairings : [];
+      if (!pairs.length) {
+        el.textContent = "L3 pairings: pending.";
+        return;
+      }
+      const lines = pairs
+        .filter((p) => p && p.agent_a && p.agent_b)
+        .map((p) => p.fight + ": " + p.agent_a + " vs " + p.agent_b);
+      el.textContent = lines.length ? ("L3 pairings: " + lines.join(" | ")) : "L3 pairings: pending.";
+    }
+
+    function applyBracketSpacing() {
+      const r16 = document.getElementById("round-r16");
+      const qf = document.getElementById("round-qf");
+      const sf = document.getElementById("round-sf");
+      const finalRound = document.getElementById("round-final");
+      if (!r16 || !qf || !sf || !finalRound) return;
+
+      const mobile = window.matchMedia("(max-width: 1020px)").matches;
+      if (mobile) {
+        r16.style.gap = "8px";
+        qf.style.gap = "8px";
+        sf.style.gap = "8px";
+        finalRound.style.gap = "8px";
+        qf.style.paddingTop = "0px";
+        sf.style.paddingTop = "0px";
+        finalRound.style.paddingTop = "0px";
+        return;
+      }
+
+      const firstCard = r16.querySelector(".fight-card");
+      const cardHeight = firstCard ? firstCard.getBoundingClientRect().height : 96;
+      const baseGap = 14;
+      const step = cardHeight + baseGap;
+
+      // Align round centers so branches read naturally from left to right.
+      const qfPad = Math.round(step * 0.5);
+      const qfGap = Math.round((2 * step) - cardHeight);
+      const sfPad = Math.round(step * 1.5);
+      const sfGap = Math.round((4 * step) - cardHeight);
+      const finalPad = Math.round(step * 3.5);
+
+      r16.style.gap = baseGap + "px";
+      qf.style.paddingTop = qfPad + "px";
+      qf.style.gap = qfGap + "px";
+      sf.style.paddingTop = sfPad + "px";
+      sf.style.gap = sfGap + "px";
+      finalRound.style.paddingTop = finalPad + "px";
+      finalRound.style.gap = baseGap + "px";
+    }
+
+    function officialResultForAgent(agentId) {
+      const agent = state.agents[agentId];
+      if (!agent || !agent.fight) return "-";
+      const fight = state.fights[agent.fight];
+      if (!fight) return "pending";
+      if (fight.status !== "winner_locked") return "pending";
+      return fight.winner === agentId ? "winner_locked" : "eliminated";
+    }
+
+    function setList(id, items) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = "";
+      const values = items && items.length ? items : ["not_extracted"];
+      for (const item of values) {
+        const li = document.createElement("li");
+        li.textContent = item;
+        el.appendChild(li);
+      }
+    }
+
+    function renderWinnerDossier(fight, focusDossier) {
+      const stateEl = document.getElementById("mDossierState");
+      const sourceEl = document.getElementById("mDossierSource");
+      const descEl = document.getElementById("mDossierDesc");
+      const blockEl = document.getElementById("winnerDossierBlock");
+
+      if (fight.status !== "winner_locked" || !fight.winner_dossier) {
+        stateEl.textContent = "Resultat non officiel. Dossier winner indisponible.";
+        sourceEl.textContent = "-";
+        descEl.textContent = "not_extracted: winner_not_locked";
+        setList("mDossierAdvantages", ["not_extracted: winner_not_locked"]);
+        setList("mDossierInnovations", ["not_extracted: winner_not_locked"]);
+        setList("mDossierWeaknesses", ["not_extracted: winner_not_locked"]);
+        return;
+      }
+
+      const dossier = fight.winner_dossier;
+      stateEl.textContent = "Winner locke: " + dossier.agent_id + " | project " + dossier.project;
+      sourceEl.textContent = dossier.source_file || "-";
+      descEl.textContent = dossier.descriptif_general || "not_extracted: descriptif_general";
+      setList("mDossierAdvantages", dossier.gros_avantages || []);
+      setList("mDossierInnovations", dossier.innovations || []);
+      setList("mDossierWeaknesses", dossier.faiblesses || []);
+
+      if (focusDossier) {
+        blockEl.focus({ preventScroll: true });
+        blockEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
+    function renderTracker() {
+      const t = state.trackers;
+      document.getElementById("trkAny").textContent = String(t.any_submitted);
+      document.getElementById("trkNone").textContent = String(t.none_submitted);
+      document.getElementById("trkFinal").textContent = String(t.final_submitted);
+      document.getElementById("trkMissingFinal").textContent = String(t.missing_final_count);
+
+      const chips = document.getElementById("missingChips");
+      chips.innerHTML = "";
+
+      const noneAgents = state.missing_agents.none || [];
+      const missingFinal = state.missing_agents.missing_final || [];
+
+      for (const id of noneAgents) {
+        const chip = document.createElement("span");
+        chip.className = "chip none";
+        chip.textContent = id + " no dossier";
+        chips.appendChild(chip);
+      }
+
+      for (const id of missingFinal) {
+        const chip = document.createElement("span");
+        chip.className = "chip missing";
+        chip.textContent = id + " missing final";
+        chips.appendChild(chip);
+      }
+
+      const rows = document.getElementById("trackerRows");
+      rows.innerHTML = "";
+
+      const ids = Object.keys(state.agents).filter((id) => /^agent-\d+$/.test(id)).sort(agentSort);
+      for (const id of ids) {
+        const a = state.agents[id];
+        const p = profileForSlot(id, id);
+        const officialResult = officialResultForAgent(id);
+        const tr = document.createElement("tr");
+        tr.innerHTML = [
+          '<td><img class="agent-icon tracker" src="' + p.icon_svg_data_uri + '" alt="' + escapeHtml(id) + ' icon"></td>',
+          "<td>" + id + "</td>",
+          "<td>" + escapeHtml(p.project) + "</td>",
+          "<td>" + (a.fight || "-") + "</td>",
+          "<td>" + escapeHtml(a.stage) + "</td>",
+          "<td>" + escapeHtml(officialResult) + "</td>",
+          "<td>" + (a.files.length ? a.files.map(escapeHtml).join("<br>") : "-") + "</td>"
+        ].join("");
+        rows.appendChild(tr);
+      }
+
+      const dispatch = document.getElementById("recoveryDispatch");
+      const r16Locked = (state.fight_order.R16 || []).every((fid) => state.fights[fid] && state.fights[fid].status === "winner_locked");
+      const activeRound = detectActiveRound();
+      if (activeRound === "L3" && state.l3 && Array.isArray(state.l3.entries)) {
+        const entries = state.l3.entries.filter((id) => id && !String(id).startsWith("winner:"));
+        dispatch.textContent = [
+          "L3 active dispatch.",
+          "Use prompt file: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/PROMPTS/10_L3_DISPATCH.md",
+          "",
+          ...entries.map((id) => "Tu es " + id + ". Lis ton README L3: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/ROUND-3/ACTIVE_L3/AGENT_READMES/" + id + "_README.md")
+        ].join("\n");
+      } else if (!missingFinal.length && r16Locked) {
+        const qfAgents = [];
+        for (const fid of (state.fight_order.QF || [])) {
+          const f = state.fights[fid];
+          if (!f) continue;
+          if (f.agent_a_resolved) qfAgents.push(f.agent_a_resolved);
+          if (f.agent_b_resolved) qfAgents.push(f.agent_b_resolved);
+        }
+        const uniq = Array.from(new Set(qfAgents)).sort(agentSort);
+        dispatch.textContent = [
+          "R16 complete. QF ready.",
+          "Use prompt file: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/PROMPTS/07_QF_PROMPTS_READY.md",
+          "",
+          ...uniq.map((id) => "Tu es " + id + ". Lis le prompt QF et ecris uniquement ton fichier *_FINAL.md.")
+        ].join("\n");
+      } else if (!missingFinal.length) {
+        dispatch.textContent = "R16 recovery complete. No missing final.";
+      } else {
+        const rdir = readmeDir(activeRound);
+        dispatch.textContent = missingFinal.map((id) => {
+          return "Tu es " + id + ". Lis ton README: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/tournament-v1/" + rdir + "/AGENT_READMES/" + id + "_README.md";
+        }).join("\n");
+      }
+    }
+
+    function renderPitchStatus() {
+      const rows = document.getElementById("pitchStatusRows");
+      if (!rows) return;
+      rows.innerHTML = "";
+
+      const ordered = [];
+      const order = displayFightOrder();
+      for (const round of ["R16", "QF", "SF", "FINAL"]) {
+        for (const fid of (order[round] || [])) {
+          ordered.push(fid);
+        }
+      }
+
+      for (const fid of ordered) {
+        const f = state.fights[fid];
+        if (!f || !f.stage2) continue;
+        const s2 = f.stage2;
+        const participants = effectiveParticipants(fid, f);
+
+        const entrants = [
+          {
+            id: participants.resolvedA || participants.tokenA,
+            md: s2.agent_a_md,
+            html: s2.agent_a_html,
+            htmlPath: s2.agent_a_html_index_path || (participants.resolvedA ? defaultHtmlPitchPath(fid, participants.resolvedA) : null),
+            skillsOk: s2.agent_a_skills_x3_ok,
+            skillsCount: s2.agent_a_skills_declared_count,
+          },
+          {
+            id: participants.resolvedB || participants.tokenB,
+            md: s2.agent_b_md,
+            html: s2.agent_b_html,
+            htmlPath: s2.agent_b_html_index_path || (participants.resolvedB ? defaultHtmlPitchPath(fid, participants.resolvedB) : null),
+            skillsOk: s2.agent_b_skills_x3_ok,
+            skillsCount: s2.agent_b_skills_declared_count,
+          },
+        ];
+
+        for (const entry of entrants) {
+          if (!entry.id || String(entry.id).startsWith("winner:")) continue;
+          const tr = document.createElement("tr");
+          const mdText = entry.md === null ? "-" : (entry.md ? "yes" : "no");
+          const htmlText = entry.html === null ? "-" : (entry.html ? "yes" : "no");
+          const skillsText = entry.skillsOk === null
+            ? "-"
+            : ((entry.skillsOk ? "ok" : "missing") + " (" + String(entry.skillsCount == null ? 0 : entry.skillsCount) + ")");
+          const readyText = s2.ready_for_scoring ? "yes" : "no";
+          const vetoText = s2.veto_risk ? "yes" : "no";
+          const htmlCell = entry.htmlPath
+            ? '<a class="pitch-link" href="' + escapeHtml(toFileUrl(entry.htmlPath)) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(entry.htmlPath) + "</a>"
+            : "-";
+
+          tr.innerHTML = [
+            "<td>" + escapeHtml(String(entry.id)) + "</td>",
+            "<td>" + escapeHtml(fid) + "</td>",
+            "<td>" + escapeHtml(mdText) + "</td>",
+            "<td>" + htmlCell + "</td>",
+            "<td>" + escapeHtml(skillsText) + "</td>",
+            "<td>" + escapeHtml(readyText) + "</td>",
+            "<td>" + escapeHtml(vetoText) + "</td>",
+          ].join("");
+          rows.appendChild(tr);
+        }
+      }
+    }
+
+    function renderMatchResults() {
+      const rows = document.getElementById("matchResultsRows");
+      if (!rows) return;
+      rows.innerHTML = "";
+
+      const ordered = [];
+      const order = displayFightOrder();
+      for (const round of ["R16", "QF", "SF", "FINAL"]) {
+        for (const fid of (order[round] || [])) {
+          ordered.push(fid);
+        }
+      }
+
+      for (const fid of ordered) {
+        const f = state.fights[fid];
+        if (!f) continue;
+        const participants = effectiveParticipants(fid, f);
+
+        const aName = displayToken(participants.tokenA, participants.resolvedA);
+        const bName = displayToken(participants.tokenB, participants.resolvedB);
+        const rationaleLines = (f.judge && Array.isArray(f.judge.rationale)) ? f.judge.rationale : [];
+        const rationale = rationaleLines.length
+          ? rationaleLines.slice(0, 2).join(" | ")
+          : (f.status === "winner_locked" ? "rationale_not_set" : "pending_lock");
+        const statusTag = fightOfficialTag(f);
+        const winner = f.winner || "TBD";
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = [
+          "<td>" + escapeHtml(fid) + "</td>",
+          "<td>" + escapeHtml(displayRoundForFight(fid, f)) + "</td>",
+          "<td>" + escapeHtml(aName) + "</td>",
+          "<td>" + escapeHtml(bName) + "</td>",
+          "<td>" + escapeHtml(rationale) + "</td>",
+          '<td><span class="status-tag status-' + statusTag + '">' + escapeHtml(statusLabels[statusTag] || statusTag) + "</span></td>",
+          "<td>" + escapeHtml(winner) + "</td>"
+        ].join("");
+        rows.appendChild(tr);
+      }
+    }
+
+    function openFight(fightId, focusDossier) {
+      const f = state.fights[fightId];
+      if (!f) return;
+      const participants = effectiveParticipants(fightId, f);
+
+      document.getElementById("fightTitle").textContent = fightId + " detail";
+      document.getElementById("mRound").textContent = displayRoundForFight(fightId, f);
+      document.getElementById("mComplexity").textContent = f.complexity;
+      document.getElementById("mStatus").textContent = f.status;
+
+      const aName = displayToken(participants.tokenA, participants.resolvedA);
+      const bName = displayToken(participants.tokenB, participants.resolvedB);
+      const aStage = stageFromBools(f.a_has_bootstrap, f.a_has_final);
+      const bStage = stageFromBools(f.b_has_bootstrap, f.b_has_final);
+      const aProfile = profileForSlot(participants.tokenA, participants.resolvedA);
+      const bProfile = profileForSlot(participants.tokenB, participants.resolvedB);
+
+      document.getElementById("mAgentA").textContent = aName;
+      document.getElementById("mAgentAProject").textContent = "project " + aProfile.project;
+      document.getElementById("mAgentAInfo").textContent = "stage " + aStage;
+      document.getElementById("mAgentAIcon").src = aProfile.icon_svg_data_uri;
+      document.getElementById("mAgentAIcon").alt = aName + " icon";
+      document.getElementById("mAgentB").textContent = bName;
+      document.getElementById("mAgentBProject").textContent = "project " + bProfile.project;
+      document.getElementById("mAgentBInfo").textContent = "stage " + bStage;
+      document.getElementById("mAgentBIcon").src = bProfile.icon_svg_data_uri;
+      document.getElementById("mAgentBIcon").alt = bName + " icon";
+
+      const callout = document.getElementById("mCallout");
+      callout.innerHTML = "";
+
+      if (f.status === "winner_locked") {
+        const div = document.createElement("div");
+        div.className = "callout ok";
+        div.textContent = "Winner locked: " + (f.winner || "unknown") + " | details in winner dossier.";
+        callout.appendChild(div);
+      } else {
+        const div = document.createElement("div");
+        div.className = "callout warn";
+        div.textContent = "Resultat non officiel: " + f.status + ". Dossier winner indisponible jusqu au lock.";
+        callout.appendChild(div);
+      }
+      if (f.stage2 && f.stage2.veto_risk) {
+        const div = document.createElement("div");
+        div.className = "callout";
+        div.textContent = "VETO RISK: dual-stage incomplete for this fight.";
+        callout.appendChild(div);
+      }
+
+      const aPacketAgent = participants.resolvedA || (participants.tokenA && !participants.tokenA.startsWith("winner:") ? participants.tokenA : null);
+      const bPacketAgent = participants.resolvedB || (participants.tokenB && !participants.tokenB.startsWith("winner:") ? participants.tokenB : null);
+      const aPacket = aPacketAgent ? finalPath(fightId, aPacketAgent) : "<final path>";
+      const bPacket = bPacketAgent ? finalPath(fightId, bPacketAgent) : "<final path>";
+      const stage2 = f.stage2 || {};
+      const aHtmlPacket = stage2.agent_a_html_index_path || (aPacketAgent ? defaultHtmlPitchPath(fightId, aPacketAgent) : "<html index path>");
+      const bHtmlPacket = stage2.agent_b_html_index_path || (bPacketAgent ? defaultHtmlPitchPath(fightId, bPacketAgent) : "<html index path>");
+
+      document.getElementById("mPacket").textContent = [
+        "TOURNAMENT_UPDATE_V1",
+        "round: " + displayRoundForFight(fightId, f),
+        "fight: " + fightId,
+        "agent_a: " + (participants.resolvedA || participants.tokenA || "<id>"),
+        "agent_b: " + (participants.resolvedB || participants.tokenB || "<id>"),
+        "project_a: " + aProfile.project,
+        "project_b: " + bProfile.project,
+        "submission_a: " + aPacket,
+        "submission_b: " + bPacket,
+        "html_pitch_a: " + aHtmlPacket,
+        "html_pitch_b: " + bHtmlPacket,
+        "judge_constraints: <optional>"
+      ].join("\n");
+
+      const missing = [];
+      if (aPacketAgent && f.a_has_final === false) missing.push(aPacketAgent + " => " + finalPath(fightId, aPacketAgent));
+      if (bPacketAgent && f.b_has_final === false) missing.push(bPacketAgent + " => " + finalPath(fightId, bPacketAgent));
+      document.getElementById("mMissing").textContent = missing.length ? missing.join("\n") : "none";
+      const stage2Lines = [
+        "required: " + String(!!stage2.required),
+        "agent_a_md: " + String(stage2.agent_a_md),
+        "agent_a_html: " + String(stage2.agent_a_html),
+        "agent_b_md: " + String(stage2.agent_b_md),
+        "agent_b_html: " + String(stage2.agent_b_html),
+        "agent_a_html_index: " + String(stage2.agent_a_html_index_path || "-"),
+        "agent_b_html_index: " + String(stage2.agent_b_html_index_path || "-"),
+        "agent_a_skills_count: " + String(stage2.agent_a_skills_declared_count),
+        "agent_b_skills_count: " + String(stage2.agent_b_skills_declared_count),
+        "ready_for_scoring: " + String(stage2.ready_for_scoring),
+        "veto_risk: " + String(stage2.veto_risk),
+      ];
+      document.getElementById("mStage2").textContent = stage2Lines.join("\n");
+
+      renderWinnerDossier(f, !!focusDossier);
+
+      const modal = document.getElementById("fightModal");
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeFight() {
+      const modal = document.getElementById("fightModal");
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function bindUI() {
+      document.getElementById("closeModal").addEventListener("click", closeFight);
+      document.getElementById("fightModal").addEventListener("click", (e) => {
+        if (e.target.id === "fightModal") closeFight();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeFight();
+      });
+
+      document.querySelectorAll("[data-copy]").forEach((btn) => {
+        btn.addEventListener("click", () => copyById(btn.dataset.copy));
+      });
+    }
+
+    function init() {
+      if (!state || !state.fights || !state.trackers) {
+        showError("Missing arena state. Run tools/sync_arena_state.py then reload this page.");
+        return;
+      }
+
+      agentVisual = buildAgentVisual(state);
+      renderHero();
+      renderL3Summary();
+      renderBracket();
+      applyBracketSpacing();
+      renderTracker();
+      renderV2LaunchBoard();
+      renderPitchStatus();
+      renderMatchResults();
+      bindUI();
+      window.addEventListener("resize", applyBracketSpacing);
+    }
+
+    init();
+  </script>
+</body>
+</html>

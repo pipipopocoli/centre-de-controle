@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent-11 L3 F14 Final Pitch</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --ink: #152029;
+      --muted: #4d5a66;
+      --panel: #fffdf8;
+      --line: #d7ccb8;
+      --accent: #c0502f;
+      --accent2: #205b73;
+      --ok: #216b47;
+      --warn: #915e13;
+      --risk: #9b2c2c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 15%, rgba(192,80,47,0.12), transparent 40%),
+        radial-gradient(circle at 90% 20%, rgba(32,91,115,0.11), transparent 34%),
+        linear-gradient(180deg, #f8f6f0, #efe8da);
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 20px 44px;
+    }
+    .hero {
+      background: linear-gradient(130deg, #fff8ea, #f5eee1 55%, #f2ebe0);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: 0 10px 30px rgba(33,31,24,0.08);
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 2rem;
+      letter-spacing: 0.02em;
+    }
+    h2 {
+      margin: 26px 0 10px;
+      font-size: 1.35rem;
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 5px;
+    }
+    h3 {
+      margin: 12px 0 6px;
+      font-size: 1.02rem;
+    }
+    p { margin: 8px 0; }
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .meta div {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 0.95rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    ul { margin: 8px 0 8px 20px; }
+    li { margin: 4px 0; }
+    .tag {
+      display: inline-block;
+      margin-right: 6px;
+      margin-bottom: 6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+    .accent { color: var(--accent); font-weight: 700; }
+    .ok { color: var(--ok); font-weight: 700; }
+    .warn { color: var(--warn); font-weight: 700; }
+    .risk { color: var(--risk); font-weight: 700; }
+    .score {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .score div {
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.88rem;
+      background: #fff;
+    }
+    footer {
+      margin-top: 24px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Agent-11 L3 Fight 14 Final Pitch</h1>
+      <p><span class="accent">Codename:</span> Drift | <span class="accent">Round:</span> L3 | <span class="accent">Fight:</span> F14 | <span class="accent">Opponent:</span> agent-10</p>
+      <p>Thesis: keep deterministic compliance equal to opponent strength, then win on clarity, depth, and execution confidence.</p>
+      <div class="meta">
+        <div><strong>Stage 1</strong><br>500+ line markdown with hard IDs and gate traceability.</div>
+        <div><strong>Stage 2</strong><br>Self-contained HTML pitch that opens on file:// and mirrors the same IDs.</div>
+        <div><strong>Winning angle</strong><br>High signal evidence with low interpretation overhead for judges.</div>
+      </div>
+    </section>
+
+    <h2>Resume executif</h2>
+    <div class="card">
+      <p>This proposal upgrades the QF baseline into a dual-stage L3 package that is strict, measurable, and commercially clear. It introduces four measurable features, a full risk-to-gate trace model, and a constrained skill strategy with mandatory fallbacks.</p>
+      <p>Why this matters: the judge can validate every major claim through command gates, while leadership can understand impact and adoption risk in one read.</p>
+      <div class="score">
+        <div><strong>Impact</strong><br>Operator delay and triage error reduction.</div>
+        <div><strong>Workflow</strong><br>Five-step deterministic flow.</div>
+        <div><strong>Feasibility</strong><br>P0/P1 lock before optional expansion.</div>
+        <div><strong>Risk</strong><br>RISK-01..RISK-05 with mitigation links.</div>
+      </div>
+    </div>
+
+    <h2>4 innovations/features minimum</h2>
+    <div class="grid">
+      <article class="card">
+        <span class="tag">FEATURE-01</span>
+        <h3>Priority Triage Lanes with SLA clocks</h3>
+        <p>Blockers and urgent items are surfaced first with visible SLA timers and owner assignment pressure.</p>
+        <p class="ok">Target: owner assignment in less than 30 seconds for critical items.</p>
+      </article>
+      <article class="card">
+        <span class="tag">FEATURE-02</span>
+        <h3>Deterministic Gate Runner</h3>
+        <p>Each quality claim is bound to a command gate with expected pass/fail output.</p>
+        <p class="ok">Target: zero narrative-only acceptance decisions.</p>
+      </article>
+      <article class="card">
+        <span class="tag">FEATURE-03</span>
+        <h3>Risk-to-Gate Trace Matrix</h3>
+        <p>Every risk maps to mitigation, owner, and verification gate reference.</p>
+        <p class="ok">Target: no orphan risk and no orphan DoD item.</p>
+      </article>
+      <article class="card">
+        <span class="tag">FEATURE-04</span>
+        <h3>Skill Safety Router</h3>
+        <p>Exactly three selected skills with mandatory fallback fields to prevent workflow dead ends.</p>
+        <p class="ok">Target: 3/3 skills with complete safety contract.</p>
+      </article>
+    </div>
+
+    <h2>Solutions for existing and potential problems</h2>
+    <div class="grid">
+      <article class="card">
+        <h3>Existing problem: scoring ambiguity</h3>
+        <p>Solution: IDs for features, imports, risks, skills, and gates; no free-form evidence claims.</p>
+        <p>Verification: grep checks for FEATURE, A10-I, RISK, and SKILL tags.</p>
+      </article>
+      <article class="card">
+        <h3>Existing problem: scope drift</h3>
+        <p>Solution: P0/P1 execution lock and explicit rejection of weak abstraction (SELF-W1).</p>
+        <p>Verification: required P0/P1 markers plus SELF-W1 replacement text.</p>
+      </article>
+      <article class="card">
+        <h3>Potential problem: offline pitch failure</h3>
+        <p>Solution: single-file HTML with embedded CSS and no external dependencies.</p>
+        <p>Verification: scan for external src and href patterns.</p>
+      </article>
+      <article class="card">
+        <h3>Potential problem: evidence inconsistency</h3>
+        <p>Solution: deterministic gate list and one fixed handoff format.</p>
+        <p>Verification: rerun gate bundle and compare expected outputs.</p>
+      </article>
+    </div>
+
+    <h2>Top 5 risks with mitigation</h2>
+    <div class="grid">
+      <article class="card">
+        <span class="tag risk">RISK-01</span>
+        <h3>Format drift</h3>
+        <p>Mitigation: enforce exact section regex gate before handoff.</p>
+      </article>
+      <article class="card">
+        <span class="tag risk">RISK-02</span>
+        <h3>Depth shortfall</h3>
+        <p>Mitigation: hard line budget and wc gate with minimum threshold.</p>
+      </article>
+      <article class="card">
+        <span class="tag risk">RISK-03</span>
+        <h3>Weak import coverage</h3>
+        <p>Mitigation: lock A10-I1, A10-I2, A10-I3 imports and SELF-W1 rejection.</p>
+      </article>
+      <article class="card">
+        <span class="tag risk">RISK-04</span>
+        <h3>Under-reported risk posture</h3>
+        <p>Mitigation: maintain RISK-01..RISK-05 table with owner and verification links.</p>
+      </article>
+      <article class="card">
+        <span class="tag risk">RISK-05</span>
+        <h3>Skill misuse</h3>
+        <p>Mitigation: exactly three skills with mandatory fallback field per skill.</p>
+      </article>
+    </div>
+
+    <h2>3 selected skills with rationale</h2>
+    <div class="grid">
+      <article class="card">
+        <span class="tag">SKILL-1</span>
+        <h3>openai-docs</h3>
+        <p><strong>Pourquoi:</strong> keep external assumptions grounded and current when API constraints matter.</p>
+        <p><strong>Valeur attendue:</strong> higher technical credibility and fewer invalid assumptions.</p>
+        <p><strong>Risque d usage:</strong> can slow pace if used outside constrained need.</p>
+        <p><strong>Fallback:</strong> locked local contracts and deterministic gates.</p>
+      </article>
+      <article class="card">
+        <span class="tag">SKILL-2</span>
+        <h3>skill-installer</h3>
+        <p><strong>Pourquoi:</strong> quickly enable missing specialist capability when a requirement is concrete.</p>
+        <p><strong>Valeur attendue:</strong> faster setup and lower integration drag.</p>
+        <p><strong>Risque d usage:</strong> installing unnecessary capability creates process noise.</p>
+        <p><strong>Fallback:</strong> continue with built-in workflow and mission templates.</p>
+      </article>
+      <article class="card">
+        <span class="tag">SKILL-3</span>
+        <h3>skill-creator</h3>
+        <p><strong>Pourquoi:</strong> standardize repeatable specialist loops when recurring gaps are proven.</p>
+        <p><strong>Valeur attendue:</strong> better delegation quality and reusable playbooks.</p>
+        <p><strong>Risque d usage:</strong> overfitting a short-lived pattern into permanent process.</p>
+        <p><strong>Fallback:</strong> one-page runbook with strict QA gates.</p>
+      </article>
+    </div>
+
+    <h2>Pourquoi cette idee gagne</h2>
+    <section class="card">
+      <p><span class="accent">Technical win:</span> deterministic sections, explicit IDs, command-based evidence, and file:// compatible pitch.</p>
+      <p><span class="accent">Execution win:</span> P0/P1-first sequencing controls cost and timeline while keeping reversibility.</p>
+      <p><span class="accent">Risk win:</span> top-5 risk model with mitigation and verification references lowers veto probability.</p>
+      <p><span class="accent">Commercial win:</span> clear story for adoption speed, operator trust, and lower decision latency.</p>
+      <p><span class="ok">Bottom line:</span> this package is easier to score, easier to trust, and faster to execute than a narrative-heavy alternative.</p>
+    </section>
+
+    <footer>
+      <p>Agent-11 | L3 F14 | Drift | Dual-stage final package</p>
+      <p>Self-contained artifact for local review via file://</p>
+    </footer>
+  </div>
+</body>
+</html>

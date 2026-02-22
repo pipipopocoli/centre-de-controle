@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Victor L3 Fight 15 Pitch</title>
+  <style>
+    :root { --bg:#f4f2ea; --ink:#1f2123; --card:#ffffff; --line:#d8d5ca; --accent:#1f4ea3; --warn:#b05810; --ok:#0f6a45; }
+    * { box-sizing: border-box; }
+    body { margin:0; padding:24px; background:linear-gradient(180deg,#f7f4ec,#efeade); color:var(--ink); font-family:"IBM Plex Sans", "Helvetica Neue", sans-serif; }
+    .wrap { max-width:1200px; margin:0 auto; display:grid; gap:16px; }
+    .hero { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; }
+    h1,h2,h3 { margin:0 0 10px 0; }
+    h1 { font-size:30px; }
+    h2 { font-size:22px; color:var(--accent); }
+    h3 { font-size:18px; }
+    p,li { line-height:1.45; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+    .tag { display:inline-block; padding:4px 8px; border:1px solid var(--line); border-radius:999px; margin-right:6px; font-size:12px; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { border:1px solid var(--line); padding:8px; text-align:left; vertical-align:top; }
+    th { background:#ece8dc; }
+    .ok { color:var(--ok); font-weight:600; }
+    .warn { color:var(--warn); font-weight:600; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>Victor L3 Fight 15 - Program Pitch</h1>
+      <p><strong>Resume executif:</strong> this pitch wins by combining strict execution controls, practical reliability, and operator readability without speculative infra debt.</p>
+      <span class="tag">PROJECT LOCK: cockpit</span><span class="tag">Fight 15</span><span class="tag">Dual-stage complete</span>
+    </section>
+    <section class="card">
+      <h2>4+ innovations and features</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>F1 - Mission Router Lock</h3>
+          <p>Hard project lock and owner-first routing with proof-first gate checkpoints and reversible rollout.</p>
+        </article>
+        <article class="card">
+          <h3>F2 - Decision Lattice</h3>
+          <p>Decision graph with accept/reject/defer trace with proof-first gate checkpoints and reversible rollout.</p>
+        </article>
+        <article class="card">
+          <h3>F3 - Evidence Gate Graph</h3>
+          <p>Proof-first gate pipeline across phases with proof-first gate checkpoints and reversible rollout.</p>
+        </article>
+        <article class="card">
+          <h3>F4 - Reliability Playbook Engine</h3>
+          <p>Severity matrix + deterministic fallback with proof-first gate checkpoints and reversible rollout.</p>
+        </article>
+        <article class="card">
+          <h3>F5 - Priority Ladder</h3>
+          <p>Urgency-aware queue with explicit waiting owner with proof-first gate checkpoints and reversible rollout.</p>
+        </article>
+        <article class="card">
+          <h3>F6 - Operator Narrative Pack</h3>
+          <p>Light/Full decision-ready context output with proof-first gate checkpoints and reversible rollout.</p>
+        </article>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Solutions for existing and potential problems</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>Existing problems</h3>
+          <ul>
+            <li>Data-root drift between repo and AppSupport contexts -> solved with owner lock, deterministic status update, and evidence gate.</li>
+            <li>Inconsistent owner visibility in wave dispatch -> solved with owner lock, deterministic status update, and evidence gate.</li>
+            <li>False readiness from stale reminders -> solved with owner lock, deterministic status update, and evidence gate.</li>
+            <li>Gate pass claims without command-level proof -> solved with owner lock, deterministic status update, and evidence gate.</li>
+            <li>Decision records not tied to rollback plans -> solved with owner lock, deterministic status update, and evidence gate.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Potential problems</h3>
+          <ul>
+            <li>High-noise event bursts masking critical failures -> prevented by bounded rollout, kill-switch, and rollback rehearsal.</li>
+            <li>Concurrent wave unlock causing WIP overflow -> prevented by bounded rollout, kill-switch, and rollback rehearsal.</li>
+            <li>HTML pitch readability collapse on small screens -> prevented by bounded rollout, kill-switch, and rollback rehearsal.</li>
+            <li>Outlier feature injection without kill-switch -> prevented by bounded rollout, kill-switch, and rollback rehearsal.</li>
+            <li>Scorecard decisions not reproducible under audit -> prevented by bounded rollout, kill-switch, and rollback rehearsal.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Top 5 risks with mitigation</h2>
+      <table>
+        <thead><tr><th>Risk</th><th>Primary control</th><th>Mitigation fallback</th></tr></thead>
+        <tbody>
+          <tr><td>R1 - Scope inflation</td><td>Wave lock and 12-item cap</td><td>Freeze new items when WIP > 5</td></tr>
+          <tr><td>R2 - Routing mismatch</td><td>Strict project lock in prompt and runtime</td><td>Fail closed with explicit mismatch event</td></tr>
+          <tr><td>R3 - Evidence gap</td><td>Proof checklist per issue</td><td>No gate close without logs/screens/tests</td></tr>
+          <tr><td>R4 - Operator overload</td><td>Urgency top-3 and waiting-owner labels</td><td>Fallback to minimal panel mode</td></tr>
+          <tr><td>R5 - Outlier destabilization</td><td>Pilot cap + kill-switch</td><td>Immediate rollback to stable branch</td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="card">
+      <h2>3 selected skills with rationale</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>openai-docs</h3>
+          <p>Protocol certainty under moving API contracts.</p>
+        </article>
+        <article class="card">
+          <h3>skill-installer</h3>
+          <p>Idempotent skills operations and lower environment drift.</p>
+        </article>
+        <article class="card">
+          <h3>skill-creator</h3>
+          <p>Reusable automation of recurring execution tasks.</p>
+        </article>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Pourquoi cette idee gagne</h2>
+      <p>This proposal is built to ship under pressure: strict owner mapping, measurable gates, explicit risk controls, and reversible deployment logic. It imports high-value ideas from Leo, rejects weak high-cost replay scope, and keeps execution local-first with proof on every transition.</p>
+      <p class="ok">Win condition: deterministic outputs, no hidden dependencies, and operator-readable decisions.</p>
+    </section>
+  </main>
+</body>
+</html>

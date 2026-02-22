@@ -224,7 +224,7 @@ def build_agent_memory_indexes(
     project_id: str,
     projects_root: Path | None = None,
     *,
-    core_agents: tuple[str, ...] = ("clems", "victor", "leo"),
+    core_agents: tuple[str, ...] | None = None,
 ) -> AgentMemoryIndexReport:
     """
     Generate deterministic agents/*/memory.index.json for core roles.
@@ -237,13 +237,35 @@ def build_agent_memory_indexes(
     if not project_dir.exists():
         raise FileNotFoundError(f"Project not found: {project_dir}")
 
+    resolved_core_agents: tuple[str, ...]
+    if core_agents is None:
+        from app.services.agent_registry import load_agent_registry
+
+        registry = load_agent_registry(project_id, root)
+        preferred = ["clems", "victor", "leo", "nova"]
+        # Always consider canonical core first, even with partial/missing registry.
+        selected: list[str] = list(preferred)
+
+        for agent_id in sorted(registry.keys()):
+            meta = registry.get(agent_id)
+            if meta is None:
+                continue
+            if int(meta.level) <= 1 and agent_id not in selected:
+                selected.append(agent_id)
+
+        if not selected:
+            selected = list(preferred)
+        resolved_core_agents = tuple(selected)
+    else:
+        resolved_core_agents = tuple(core_agents)
+
     decisions_text = _read_text(project_dir / "DECISIONS.md")
     decisions = _extract_decisions(decisions_text, limit=8)
 
     indexed_paths: list[str] = []
     indexed_agents: list[str] = []
 
-    for agent_id in core_agents:
+    for agent_id in resolved_core_agents:
         agent_dir = project_dir / "agents" / agent_id
         if not agent_dir.exists():
             continue

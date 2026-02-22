@@ -124,7 +124,7 @@ def dispatch_once(
             route = SendRoute(
                 project_id=project_id,
                 agent_id=action.agent_id,
-                platform=agent_platform(action.agent_id),
+                platform=str(action.platform or agent_platform(action.agent_id)),
                 app_name=action.app_to_open,
                 window_title_contains=action.app_to_open,
                 require_window_match=require_window_match,

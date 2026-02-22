@@ -2,7 +2,7 @@
 
 - Owner: agent-11
 - Phase: Implement
-- Status: Review
+- Status: Done
 
 ## Objective
 - Emit CAD cost events per execution and expose monthly estimate.
