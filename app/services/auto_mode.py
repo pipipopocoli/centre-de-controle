@@ -1007,6 +1007,10 @@ def dispatch_once(
     )
 
     processed, requests, counters = _load_state(resolved_state)
+    tick_started_at = _utc_now_iso()
+    _increment_counter(counters, "ticks", 1)
+    counters["last_tick_at"] = tick_started_at
+    counters["last_pulse_at"] = tick_started_at
     requests_index = _build_requests_index(requests_path)
     _recover_missing_processed_entries(processed, requests, requests_index)
 
