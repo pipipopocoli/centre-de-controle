@@ -145,3 +145,12 @@
 - Consequences: Sidebar, Pilotage, and Vulgarisation expose source root, generated_at, and freshness status. AppSupport remains canonical runtime source.
 - Owners: clems, victor, leo, nova
 - References: /Users/oliviercloutier/Desktop/Cockpit/app/ui/sidebar.py, /Users/oliviercloutier/Desktop/Cockpit/app/ui/project_pilotage.py, /Users/oliviercloutier/Desktop/Cockpit/app/services/project_bible.py, /Users/oliviercloutier/Desktop/Cockpit/docs/PACKAGING.md, /Users/oliviercloutier/Desktop/Cockpit/docs/RUNBOOK.md
+
+## 2026-02-23 - ADR-CP-017 Wave12.1 closeout + Wave13 UX lock
+- Status: Accepted
+- Context: After Wave11 push, operator still reported three UX gaps: weak hierarchy readability, dense vulgarisation simple mode, and missing compact live progress visibility.
+- Decision: Close Wave12.1 first (push canonical isolation/runtime clarity changes), then launch Wave13 with four scoped issues: CP-0044 (L0/L1/L2 hierarchy), CP-0045 (simple vulgarisation cleanup), CP-0046 (live task+code+agent view), CP-0047 (pulse recency stability signal).
+- Rationale: Keeps delivery momentum while resolving operator-facing pain points without architecture rewrite.
+- Consequences: New live activity feed service and updated Pilotage/Overview contracts; cadence trust includes explicit pulse signal; tournament remains dormant.
+- Owners: clems, victor, leo, nova
+- References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE12_PUSH_RECEIPT_2026-02-23.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0044-wave13-agent-hierarchy-l0-l1-l2.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0045-wave13-vulgarisation-simple-clean.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0046-wave13-live-view-task-code-hybrid.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0047-wave13-runtime-cadence-stability.md

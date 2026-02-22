@@ -78,6 +78,9 @@
   "feature_flags": {
     "auto_mode": true
   },
+  "control_gates": {
+    "pulse_stale_seconds": 3600
+  },
   "auto_mode": {
     "interval_seconds": 5,
     "max_actions": 2

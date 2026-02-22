@@ -4,27 +4,26 @@
 - Implement
 
 ## Objective
-- Ship Wave11: Dev Live clarity, vulgarisation freshness proof, and full snapshot push.
+- Ship Wave13 UX lock: L0/L1/L2 hierarchy, live view task+code, clean vulgarisation simple mode, and pulse recency clarity.
 
 ## Now
-- Runtime panel now states Dev Live behavior explicitly, including expected two-icon behavior.
-- Vulgarisation renders with generated_at, freshness status, runtime source, root path, and file proof paths.
-- Pilotage health line now includes runtime source and vulgarisation freshness/generated timestamp.
-- AppSupport remains canonical runtime root for active desktop usage.
-- Wave10 lanes remain tracked while Wave11 clarity closeout is integrated.
+- Wave12.1 closeout pushed to `main` with receipt and canonical cockpit isolation lock.
+- Overview agent grid now renders explicit hierarchy sections L0/L1/L2 with action/attente/bloque/repos counts.
+- Pilotage now shows a compact live view (`Code now`, `Tasks now`, `Agents now`) with linked-repo-first fallback.
+- Vulgarisation simple mode has reduced density: 4 brief blocks + What next + Timeline focus.
+- Runtime cadence now tracks `last_pulse_at` and exposes pulse status in health signals.
 
 ## Next
-- Run Wave11 smoke suite before push.
-- Publish push manifest and push receipt with SHA + refs.
-- Push snapshot branch then main.
-- Keep dual-root cadence checks every 30-45 minutes during wave execution.
+- Validate visual quality in desktop app (live run) and collect screenshot evidence for Wave13 lanes.
+- Dispatch lead prompts (@victor/@leo/@nova), then specialists after T+15m ack.
+- Keep dual-root cadence checks every 30-45 min during active lanes.
+- Close CP-0044..CP-0047 with mapped QA evidence.
 
 ## In Progress
-- ISSUE-CP-0039-wave10-chat-incremental-scroll-lock
-- ISSUE-CP-0040-wave10-refresh-decoupling-performance
-- ISSUE-CP-0041-wave10-ui-click-context-routing
-- ISSUE-CP-0043-wave10-throughput-burst-governance
-- WAVE11 dev-live clarity closeout + snapshot push lane
+- ISSUE-CP-0044-wave13-agent-hierarchy-l0-l1-l2
+- ISSUE-CP-0045-wave13-vulgarisation-simple-clean
+- ISSUE-CP-0046-wave13-live-view-task-code-hybrid
+- ISSUE-CP-0047-wave13-runtime-cadence-stability
 
 ## Blockers
 - none
@@ -33,9 +32,9 @@
 - ISSUE-CP-0015 remains deferred and non-blocking.
 
 ## Risks
-- operator confusion if stale release app is launched instead of Dev Live.
-- stale_tick can return if cadence pulses are skipped.
-- full snapshot push increases blast radius if smoke gate is skipped.
+- visual hierarchy can still feel dense if card content is too long.
+- stale pulse can return if cadence checks are skipped in long inactive windows.
+- linked repo can be unset for some projects (fallback expected).
 
 ## Gates
 - pending_stale_gt24h == 0
@@ -46,15 +45,12 @@
 - tournament_auto_dispatch == false
 
 ## Links
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE10_DISPATCH_2026-02-22.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE11_DISPATCH_2026-02-23.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE11_PUSH_MANIFEST_2026-02-23.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE11_PUSH_RECEIPT_2026-02-23.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0039-wave10-chat-incremental-scroll-lock.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0040-wave10-refresh-decoupling-performance.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0041-wave10-ui-click-context-routing.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0042-wave10-vulgarisation-clean-simple-tech.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0043-wave10-throughput-burst-governance.md
-- /Users/oliviercloutier/Desktop/Cockpit/docs/PACKAGING.md
-- /Users/oliviercloutier/Desktop/Cockpit/docs/RUNBOOK.md
-- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/BACKLOG_TOURNAMENT_PRESERVATION.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE12_PUSH_RECEIPT_2026-02-23.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0044-wave13-agent-hierarchy-l0-l1-l2.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0045-wave13-vulgarisation-simple-clean.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0046-wave13-live-view-task-code-hybrid.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0047-wave13-runtime-cadence-stability.md
+- /Users/oliviercloutier/Desktop/Cockpit/app/ui/agents_grid.py
+- /Users/oliviercloutier/Desktop/Cockpit/app/ui/project_pilotage.py
+- /Users/oliviercloutier/Desktop/Cockpit/app/services/live_activity_feed.py
+- /Users/oliviercloutier/Desktop/Cockpit/app/services/project_bible.py

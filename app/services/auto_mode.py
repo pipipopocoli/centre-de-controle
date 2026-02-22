@@ -667,6 +667,10 @@ def load_runtime_state(
 ) -> dict[str, Any]:
     requests_path, _, resolved_state = _paths(projects_root, project_id, state_path)
     processed, requests, counters = _load_state(resolved_state)
+    tick_started_at = _utc_now_iso()
+    _increment_counter(counters, "ticks", 1)
+    counters["last_tick_at"] = tick_started_at
+    counters["last_pulse_at"] = tick_started_at
     requests_index = _build_requests_index(requests_path)
     _recover_missing_processed_entries(processed, requests, requests_index)
     return {
@@ -1194,6 +1198,13 @@ def dispatch_once(
 
     counters["dispatch_last_count"] = dispatched
     counters["dispatch_last_at"] = _utc_now_iso()
+    counters["last_pulse_at"] = str(counters.get("dispatch_last_at") or tick_started_at)
+    counters["last_stats"] = {
+        "timestamp": tick_started_at,
+        "dispatched": dispatched,
+        "skipped": skipped,
+        "actions_used": actions_used,
+    }
 
     _save_state(resolved_state, processed, requests, counters)
     _write_slo_verdict(projects_root, project_id, settings=settings)

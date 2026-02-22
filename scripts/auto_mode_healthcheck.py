@@ -135,6 +135,7 @@ def _latest_runtime_activity(state_payload: dict[str, Any]) -> datetime | None:
 
     candidates = [
         _parse_iso(str(counters.get("last_tick_at") or "")),
+        _parse_iso(str(counters.get("last_pulse_at") or "")),
         _parse_iso(str(counters.get("dispatch_last_at") or "")),
         _parse_iso(str(last_stats.get("timestamp") or "")),
         _parse_iso(str(state_payload.get("updated_at") or "")),
@@ -187,6 +188,7 @@ def main() -> int:
         counters = {}
 
     last_tick_at = _parse_iso(str(counters.get("last_tick_at") or ""))
+    last_pulse_at = _parse_iso(str(counters.get("last_pulse_at") or ""))
     last_activity_at = _latest_runtime_activity(state_payload)
     tick_age_seconds = None if last_activity_at is None else max(int((now - last_activity_at).total_seconds()), 0)
     snapshot_age_seconds = _last_snapshot_age_seconds(snapshot_path, now)
@@ -219,6 +221,10 @@ def main() -> int:
         issues.append("missing_last_activity")
     elif tick_age_seconds is not None and tick_age_seconds > max(int(args.stale_seconds), 0):
         issues.append("stale_tick")
+    if last_pulse_at is not None:
+        pulse_age_seconds = max(int((now - last_pulse_at).total_seconds()), 0)
+        if pulse_age_seconds > max(int(args.stale_seconds), 0):
+            issues.append("pulse_stale")
     max_open_threshold = max(int(args.max_open), 0)
     if open_requests > max_open_threshold:
         issues.append("too_many_open_requests")
@@ -254,6 +260,7 @@ def main() -> int:
         "runtime_sync_closed_count": int(recovery.get("runtime_synced_closed") or 0),
         "runtime_missing_closed_count": int(recovery.get("runtime_missing_closed") or 0),
         "last_tick_at": last_tick_at.isoformat() if last_tick_at is not None else None,
+        "last_pulse_at": last_pulse_at.isoformat() if last_pulse_at is not None else None,
         "last_activity_at": last_activity_at.isoformat() if last_activity_at is not None else None,
         "tick_age_seconds": tick_age_seconds,
         "snapshot_age_seconds": snapshot_age_seconds,

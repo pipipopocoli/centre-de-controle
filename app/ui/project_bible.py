@@ -64,7 +64,7 @@ class ProjectBibleWidget(QFrame):
 
         root.addWidget(header)
 
-        self.mode_hint = QLabel("Simple: action-first in <=60s. Switch to Tech for full evidence tables.")
+        self.mode_hint = QLabel("Simple: 4 blocs (On est ou / On va ou / Pourquoi / Comment) + What next + Timeline.")
         self.mode_hint.setObjectName("projectBibleModeHint")
         root.addWidget(self.mode_hint)
 
@@ -123,7 +123,7 @@ class ProjectBibleWidget(QFrame):
             self.mode_hint.setText("Tech: full evidence tables and detailed diagnostics.")
         else:
             self.mode_btn.setText("Mode: Simple (<=60s)")
-            self.mode_hint.setText("Simple: action-first in <=60s. Switch to Tech for full evidence tables.")
+            self.mode_hint.setText("Simple: 4 blocs (On est ou / On va ou / Pourquoi / Comment) + What next + Timeline.")
         self.refresh_content()
 
     def _toggle_mode(self) -> None:

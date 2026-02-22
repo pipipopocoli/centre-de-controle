@@ -19,6 +19,12 @@ from app.data.model import AgentState
 
 STALE_SECONDS = 10 * 60
 WAITING_STATUSES = {"pinged", "queued", "dispatched", "reminded", "waiting_reconfirm"}
+LEVEL_LABELS = {
+    0: "L0 - Orchestration",
+    1: "L1 - Leads",
+    2: "L2 - Specialists",
+    3: "Lx - Others",
+}
 
 
 def _format_age(seconds: float) -> str:
@@ -71,6 +77,20 @@ def _status_label(status: str | None) -> tuple[str, str]:
     return mapping.get(normalized, (status, normalized))
 
 
+def _status_bucket(state: AgentState) -> str:
+    normalized = (state.status or "").strip().lower()
+    blockers = [item.strip() for item in (state.blockers or []) if str(item).strip()]
+    if blockers and normalized in {"", "idle", "completed", "replied", "closed"}:
+        return "blocked"
+    if normalized in {"blocked", "error"}:
+        return "blocked"
+    if normalized in {"planning", "executing", "verifying"}:
+        return "action"
+    if normalized in WAITING_STATUSES:
+        return "waiting"
+    return "rest"
+
+
 class AgentCard(QFrame):
     context_selected = Signal(dict)
 
@@ -113,7 +133,7 @@ class AgentCard(QFrame):
             status_key = "blocked"
 
         # Left-border stripe driven by QSS property
-        self.setProperty("statusStripe", status_key)
+        self.setProperty("statusStripe", _status_bucket(state))
 
         self.status_label = QLabel(status_text)
         self.status_label.setObjectName("agentStatus")
@@ -216,12 +236,54 @@ class AgentsGridWidget(QFrame):
                 item.widget().deleteLater()
 
         columns = 3
-        for idx, agent in enumerate(agents):
-            row = idx // columns
-            col = idx % columns
-            card = AgentCard(agent)
-            card.context_selected.connect(self.context_selected.emit)
-            self.grid.addWidget(card, row, col)
+        grouped: dict[int, list[AgentState]] = {0: [], 1: [], 2: [], 3: []}
+        for agent in agents:
+            try:
+                parsed_level = int(agent.level)
+            except (TypeError, ValueError):
+                parsed_level = 3
+            level = parsed_level if parsed_level in {0, 1, 2} else 3
+            grouped[level].append(agent)
+
+        for level in grouped:
+            grouped[level].sort(key=lambda item: (str(item.name or "").lower(), str(item.agent_id or "")))
+
+        row_cursor = 0
+        for level in [0, 1, 2, 3]:
+            section_agents = grouped[level]
+            if not section_agents:
+                continue
+
+            counts = {"action": 0, "waiting": 0, "blocked": 0, "rest": 0}
+            for state in section_agents:
+                counts[_status_bucket(state)] += 1
+
+            section = QWidget()
+            section_layout = QHBoxLayout(section)
+            section_layout.setContentsMargins(2, 2, 2, 2)
+            section_layout.setSpacing(8)
+
+            header = QLabel(LEVEL_LABELS[level])
+            header.setObjectName("agentLevelHeader")
+            summary = QLabel(
+                "action {action} | attente {waiting} | bloque {blocked} | repos {rest}".format(**counts)
+            )
+            summary.setObjectName("agentLevelSummary")
+
+            section_layout.addWidget(header)
+            section_layout.addStretch(1)
+            section_layout.addWidget(summary)
+            self.grid.addWidget(section, row_cursor, 0, 1, columns)
+            row_cursor += 1
+
+            for idx, agent in enumerate(section_agents):
+                row = row_cursor + (idx // columns)
+                col = idx % columns
+                card = AgentCard(agent)
+                card.context_selected.connect(self.context_selected.emit)
+                self.grid.addWidget(card, row, col)
+
+            row_cursor += (len(section_agents) + columns - 1) // columns
 
         if not agents:
             empty = QLabel("No agents yet")

@@ -1317,14 +1317,21 @@ def _render_vulgarisation_html(
     recommendations_payload = snapshot.get("recommendations")
     recommendations = recommendations_payload if isinstance(recommendations_payload, list) else []
     action_rows = []
-    next_limit = 4 if render_mode == "simple" else 5
-    blocker_limit = 2 if render_mode == "simple" else 3
+    next_limit = 5 if render_mode == "simple" else 5
+    blocker_limit = 5 if render_mode == "simple" else 3
+    max_simple_actions = 5
     for item in next_items[:next_limit]:
         if isinstance(item, str) and item.strip():
             action_rows.append(("next", item.strip()))
+            if render_mode == "simple" and len(action_rows) >= max_simple_actions:
+                break
     for item in blockers_items[:blocker_limit]:
+        if render_mode == "simple" and len(action_rows) >= max_simple_actions:
+            break
         if isinstance(item, str) and item.strip():
             action_rows.append(("blocker", item.strip()))
+            if render_mode == "simple" and len(action_rows) >= max_simple_actions:
+                break
     if not action_rows:
         action_rows.append(("next", "No explicit next action found."))
     actions_table_rows = "".join(
@@ -1452,6 +1459,8 @@ def _render_vulgarisation_html(
 """
 
     if render_mode == "simple":
+        card_html = ""
+        recommendations_section = ""
         skill_inventory_section = ""
         architecture_section = ""
         progress_panel_section = ""

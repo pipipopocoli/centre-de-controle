@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
 
 from app.data.model import ProjectData
 from app.services.cost_telemetry import estimate_monthly_cad_from_path, legacy_monthly_cad_estimate
+from app.services.live_activity_feed import build_live_activity_feed
 from app.services.project_pilotage import build_portfolio_snapshot
 from app.ui.project_timeline import ProjectTimelineWidget, _parse_state_items
 
@@ -61,6 +62,32 @@ def _detect_runtime_source(project_dir: Path) -> tuple[str, str]:
     except ValueError:
         pass
     return "custom", str(resolved)
+
+
+def _parse_iso(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def _status_bucket(status: str | None, blockers: list[str]) -> str:
+    normalized = str(status or "").strip().lower()
+    blockers_clean = [item.strip() for item in blockers if str(item).strip()]
+    if blockers_clean and normalized in {"", "idle", "completed", "replied", "closed"}:
+        return "blocked"
+    if normalized in {"blocked", "error"}:
+        return "blocked"
+    if normalized in {"planning", "executing", "verifying"}:
+        return "action"
+    if normalized in {"pinged", "queued", "dispatched", "reminded", "waiting_reconfirm"}:
+        return "waiting"
+    return "rest"
 
 
 PHASE_PROGRESS = {
@@ -162,6 +189,10 @@ class ProjectPilotageWidget(QFrame):
         self._portfolio_cache_html = ""
         self._portfolio_cache_at: datetime | None = None
         self._state_source_path: Path | None = None
+        self._live_code_cache: dict | None = None
+        self._live_code_at: datetime | None = None
+        self._live_code_refresh_seconds = 15
+        self._live_repo_path = ""
 
         root = QVBoxLayout(self)
         root.setContentsMargins(16, 12, 16, 12)
@@ -262,6 +293,26 @@ class ProjectPilotageWidget(QFrame):
         cols_layout.addWidget(self._col_next, 1)
         cols_layout.addWidget(self._col_blockers, 1)
         root.addLayout(cols_layout)
+
+        # ── Live view (task + code + agents) ───────────────────────
+        self._live_frame = QFrame()
+        self._live_frame.setObjectName("pilotageLiveFrame")
+        live_layout = QHBoxLayout(self._live_frame)
+        live_layout.setContentsMargins(0, 0, 0, 0)
+        live_layout.setSpacing(10)
+
+        self._live_code_col = _InfoColumn("Code now", "🧪", "#7C3AED")
+        self._live_tasks_col = _InfoColumn("Tasks now", "📋", "#2C5DFF")
+        self._live_agents_col = _InfoColumn("Agents now", "👥", "#0F766E")
+
+        self._live_code_col.item_selected.connect(lambda text: self._emit_live_context("code_change", text))
+        self._live_tasks_col.item_selected.connect(lambda text: self._emit_live_context("task_item", text))
+        self._live_agents_col.item_selected.connect(lambda text: self._emit_live_context("agent_live", text))
+
+        live_layout.addWidget(self._live_code_col, 1)
+        live_layout.addWidget(self._live_tasks_col, 1)
+        live_layout.addWidget(self._live_agents_col, 1)
+        root.addWidget(self._live_frame)
 
         # ── Timeline route ──────────────────────────────────────────
         self._timeline = ProjectTimelineWidget()
@@ -375,6 +426,43 @@ class ProjectPilotageWidget(QFrame):
             legacy_cost = legacy_monthly_cad_estimate(legacy_payload)
             monthly_cost_label = "n/a" if legacy_cost is None else f"{legacy_cost:.2f}"
 
+        level_counts = {0: 0, 1: 0, 2: 0}
+        level_buckets = {
+            0: {"action": 0, "waiting": 0, "blocked": 0},
+            1: {"action": 0, "waiting": 0, "blocked": 0},
+            2: {"action": 0, "waiting": 0, "blocked": 0},
+        }
+        for agent in self._project.agents:
+            try:
+                level = int(agent.level)
+            except (TypeError, ValueError):
+                level = 2
+            level = level if level in {0, 1, 2} else 2
+            level_counts[level] += 1
+            bucket = _status_bucket(agent.status, agent.blockers)
+            if bucket in {"action", "waiting", "blocked"}:
+                level_buckets[level][bucket] += 1
+
+        settings_payload = self._project.settings if isinstance(self._project.settings, dict) else {}
+        control_gates = settings_payload.get("control_gates") if isinstance(settings_payload.get("control_gates"), dict) else {}
+        pulse_stale_seconds = int(control_gates.get("pulse_stale_seconds") or 3600)
+        auto_mode_state_path = project_dir / "runs" / "auto_mode_state.json"
+        pulse_status = "unknown"
+        if auto_mode_state_path.exists():
+            try:
+                state_payload = json.loads(_read_text(auto_mode_state_path))
+            except Exception:
+                state_payload = {}
+            counters = state_payload.get("counters") if isinstance(state_payload.get("counters"), dict) else {}
+            pulse_at = _parse_iso(
+                str(counters.get("last_pulse_at") or counters.get("dispatch_last_at") or counters.get("last_tick_at") or "")
+            )
+            if pulse_at is None:
+                pulse_status = "stale"
+            else:
+                pulse_age = max(int((datetime.now(timezone.utc) - pulse_at).total_seconds()), 0)
+                pulse_status = "ok" if pulse_age <= max(pulse_stale_seconds, 60) else "stale"
+
         if self._scope == "portfolio" and self._portfolio:
             snapshot = build_portfolio_snapshot(self._portfolio)
             self._title.setText("Pilotage — Portfolio")
@@ -382,7 +470,7 @@ class ProjectPilotageWidget(QFrame):
                 f"Projects: {int(snapshot.get('projects_count', 0))} | "
                 f"Blockers: {int(snapshot.get('total_blockers', 0))} | "
                 f"Active agents: {int(snapshot.get('total_active_agents', 0))} | "
-                f"Data root: {runtime_source}"
+                f"Data root: {runtime_source} | Pulse: {pulse_status}"
             )
 
             now_items = [
@@ -430,12 +518,18 @@ class ProjectPilotageWidget(QFrame):
                 slo_status = "OK" if slo_verdict == "GO" else ("WARN" if slo_verdict == "HOLD" else "N/A")
                 cost_status = "OK" if monthly_cost_label != "n/a" else "WARN"
                 self._health_line.setText(
-                    f"Status: SLO={slo_status} | Cost={cost_status} | Data={runtime_source} | Vulgarisation={vulg_freshness}"
+                    f"Status: SLO={slo_status} | Cost={cost_status} | Data={runtime_source} | "
+                    f"Vulgarisation={vulg_freshness} | Pulse={pulse_status} | "
+                    f"L0={level_counts[0]} L1={level_counts[1]} L2={level_counts[2]}"
                 )
             else:
                 self._health_line.setText(
                     f"SLO: {slo_verdict} | Cost CAD (month): {monthly_cost_label} | "
-                    f"Data root [{runtime_source}]: {runtime_root} | Vulgarisation generated_at: {vulg_generated_at}"
+                    f"Data root [{runtime_source}]: {runtime_root} | Vulgarisation generated_at: {vulg_generated_at} | "
+                    f"Pulse: {pulse_status} | "
+                    f"L0(action {level_buckets[0]['action']}/attente {level_buckets[0]['waiting']}/bloque {level_buckets[0]['blocked']}) "
+                    f"L1(action {level_buckets[1]['action']}/attente {level_buckets[1]['waiting']}/bloque {level_buckets[1]['blocked']}) "
+                    f"L2(action {level_buckets[2]['action']}/attente {level_buckets[2]['waiting']}/bloque {level_buckets[2]['blocked']})"
                 )
 
             # Lists
@@ -458,6 +552,109 @@ class ProjectPilotageWidget(QFrame):
             scope=self._scope,
             mode=self._mode,
         )
+        self._refresh_live_view(force=force)
+
+    def _refresh_live_view(self, *, force: bool = False) -> None:
+        if self._project is None:
+            return
+
+        now = datetime.now(timezone.utc)
+        include_code = force
+        if not include_code:
+            if self._live_code_cache is None or self._live_code_at is None:
+                include_code = True
+            else:
+                age = (now - self._live_code_at).total_seconds()
+                include_code = age >= self._live_code_refresh_seconds
+
+        feed = build_live_activity_feed(self._project, limit=30, include_code=include_code)
+        code_payload = feed.get("code") if isinstance(feed.get("code"), dict) else {}
+        if include_code:
+            self._live_code_cache = code_payload
+            self._live_code_at = now
+        elif self._live_code_cache is not None:
+            code_payload = self._live_code_cache
+
+        tasks_payload = feed.get("tasks") if isinstance(feed.get("tasks"), dict) else {}
+        agents_payload = feed.get("agents") if isinstance(feed.get("agents"), dict) else {}
+
+        self._live_repo_path = str(code_payload.get("repo_path") or "")
+
+        code_items: list[str] = []
+        branch = str(code_payload.get("branch") or "unknown")
+        code_items.append(f"branch: {branch}")
+        commits = code_payload.get("commits") if isinstance(code_payload.get("commits"), list) else []
+        for row in commits[:3]:
+            if not isinstance(row, dict):
+                continue
+            sha = str(row.get("sha") or "")[:7]
+            msg = str(row.get("message") or "n/a")
+            code_items.append(f"{sha} {msg}")
+        changed_files = code_payload.get("changed_files") if isinstance(code_payload.get("changed_files"), list) else []
+        for path in changed_files[:3]:
+            text = str(path).strip()
+            if text:
+                code_items.append(f"changed: {text}")
+        self._live_code_col.set_items(code_items[:8] or ["No code activity"])
+
+        task_items: list[str] = []
+        phase = str(tasks_payload.get("phase") or "Plan")
+        open_requests = int(tasks_payload.get("open_requests") or 0)
+        issues_payload = tasks_payload.get("issues") if isinstance(tasks_payload.get("issues"), dict) else {}
+        task_items.append(f"phase: {phase}")
+        task_items.append(f"open requests: {open_requests}")
+        task_items.append(f"issues open: {int(issues_payload.get('open_like') or 0)}")
+        for row in (tasks_payload.get("now") if isinstance(tasks_payload.get("now"), list) else [])[:2]:
+            if isinstance(row, str) and row.strip():
+                task_items.append(f"now: {row.strip()}")
+        for row in (tasks_payload.get("next") if isinstance(tasks_payload.get("next"), list) else [])[:2]:
+            if isinstance(row, str) and row.strip():
+                task_items.append(f"next: {row.strip()}")
+        self._live_tasks_col.set_items(task_items[:8] or ["No task activity"])
+
+        levels = agents_payload.get("levels") if isinstance(agents_payload.get("levels"), dict) else {}
+        l0 = levels.get(0) if isinstance(levels.get(0), dict) else {}
+        l1 = levels.get(1) if isinstance(levels.get(1), dict) else {}
+        l2 = levels.get(2) if isinstance(levels.get(2), dict) else {}
+        agent_items = [
+            f"L0 a:{int(l0.get('action') or 0)} w:{int(l0.get('waiting') or 0)} b:{int(l0.get('blocked') or 0)}",
+            f"L1 a:{int(l1.get('action') or 0)} w:{int(l1.get('waiting') or 0)} b:{int(l1.get('blocked') or 0)}",
+            f"L2 a:{int(l2.get('action') or 0)} w:{int(l2.get('waiting') or 0)} b:{int(l2.get('blocked') or 0)}",
+        ]
+        active_agents = agents_payload.get("active_agents") if isinstance(agents_payload.get("active_agents"), list) else []
+        for row in active_agents[:3]:
+            if not isinstance(row, dict):
+                continue
+            name = str(row.get("name") or row.get("agent_id") or "")
+            status = str(row.get("status") or row.get("bucket") or "")
+            if name:
+                agent_items.append(f"{name}: {status}")
+        self._live_agents_col.set_items(agent_items[:8] or ["No agent activity"])
+
+    def _emit_live_context(self, kind: str, text: str) -> None:
+        source_path = ""
+        source_uri = ""
+        if kind == "code_change" and self._live_repo_path:
+            source_path = self._live_repo_path
+            try:
+                source_uri = Path(self._live_repo_path).resolve().as_uri()
+            except Exception:
+                source_uri = ""
+        elif self._state_source_path is not None:
+            source_path = str(self._state_source_path)
+            try:
+                source_uri = self._state_source_path.resolve().as_uri()
+            except Exception:
+                source_uri = ""
+        payload = {
+            "kind": kind,
+            "id": kind,
+            "title": text,
+            "source_path": source_path,
+            "source_uri": source_uri,
+            "selected_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        }
+        self.context_selected.emit(payload)
 
     def _emit_state_context(self, kind: str, context_id: str, text: str) -> None:
         source_path = str(self._state_source_path) if self._state_source_path is not None else ""
