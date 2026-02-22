@@ -92,6 +92,11 @@ class RuntimeContextPanel(QFrame):
         self.project_title.setObjectName("runtimeContextTitle")
         self.project_title.setWordWrap(True)
 
+        self.project_warning = QLabel("")
+        self.project_warning.setObjectName("projectMismatch")
+        self.project_warning.setWordWrap(True)
+        self.project_warning.setVisible(False)
+
         self.mode_badge = QLabel("Mode: -")
         self.mode_badge.setObjectName("runtimeModeBadge")
         self.mode_badge.setWordWrap(True)
@@ -131,6 +136,7 @@ class RuntimeContextPanel(QFrame):
         self.rebuild_button.clicked.connect(self._open_packaging_guide)
 
         layout.addWidget(self.project_title)
+        layout.addWidget(self.project_warning)
         layout.addWidget(self.mode_badge)
         layout.addWidget(self.app_stamp)
         layout.addWidget(self.repo_head)
@@ -176,7 +182,23 @@ class RuntimeContextPanel(QFrame):
         }
         source_label = source_label_map.get(source_value, source_value)
 
-        self.project_title.setText(f"Project: {project_value}")
+        is_canonical = project_value.lower() == "cockpit"
+
+        if is_canonical:
+            self.project_title.setText(f"🔒 {project_value} (Canonical)")
+            self.project_title.setProperty("canonical", "true")
+            self.project_warning.setText("")
+            self.project_warning.setVisible(False)
+        else:
+            self.project_title.setText(f"⚠️ {project_value} (Non-canonical)")
+            self.project_title.setProperty("canonical", "false")
+            self.project_warning.setText(
+                "Warning: You are viewing an archived or non-canonical project. "
+                "Runtime truth and pilotage actions may not reflect the active Cockpit state."
+            )
+            self.project_warning.setVisible(True)
+
+        self.project_title.style().polish(self.project_title)
         self.mode_badge.setText(f"Mode: {mode_value}")
         self.app_stamp.setText(f"App stamp: {app_value}")
         self.repo_head.setText(f"Repo head: {repo_value}")

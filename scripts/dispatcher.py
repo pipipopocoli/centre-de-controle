@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-DEFAULT_PROJECT = "demo"
+DEFAULT_PROJECT = "cockpit"
 MAX_PROCESSED_IDS = 2000
 
 
@@ -108,7 +108,7 @@ def _dispatch_once(project_id: str, state_path: Path) -> dict[str, int]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Dispatch run requests into per-agent inbox files.")
-    parser.add_argument("--project", default=None, help="Project id (default: COCKPIT_PROJECT_ID or demo)")
+    parser.add_argument("--project", default=None, help="Project id (default: COCKPIT_PROJECT_ID or cockpit)")
     parser.add_argument("--interval", type=float, default=5.0, help="Polling interval in seconds")
     parser.add_argument("--once", action="store_true", help="Run once and exit")
     parser.add_argument(

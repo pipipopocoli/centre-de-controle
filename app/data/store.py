@@ -187,15 +187,108 @@ def ensure_project_structure(project_id: str, project_name: str | None = None) -
     return pdir
 
 
+def _default_appsupport_projects_root() -> Path:
+    return Path.home() / "Library" / "Application Support" / "Cockpit" / "projects"
+
+
+def _resolve_path(path: Path) -> Path:
+    expanded = path.expanduser()
+    try:
+        return expanded.resolve()
+    except OSError:
+        return expanded.absolute()
+
+
+def _is_within(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
+def _is_appsupport_projects_root(projects_root: Path | None = None) -> bool:
+    root = _resolve_path(projects_root or PROJECTS_DIR)
+    return root == _resolve_path(_default_appsupport_projects_root())
+
+
+def _canonical_project_id_from_entry(entry: Path, projects_root: Path | None = None) -> str:
+    root = projects_root or PROJECTS_DIR
+    root_resolved = _resolve_path(root)
+    entry_id = entry.name
+
+    if _is_appsupport_projects_root(root) and entry_id == "demo" and (root / "cockpit").exists():
+        return "cockpit"
+
+    if not entry.exists() and not entry.is_symlink():
+        return entry_id
+
+    target = _resolve_path(entry)
+    if not _is_within(target, root_resolved):
+        return entry_id
+
+    relative = target.relative_to(root_resolved)
+    if not relative.parts:
+        return entry_id
+    return relative.parts[0]
+
+
+def _canonical_project_id(project_id: str, projects_root: Path | None = None) -> str:
+    raw_project_id = str(project_id or "").strip()
+    if not raw_project_id:
+        return raw_project_id
+
+    root = projects_root or PROJECTS_DIR
+    if _is_appsupport_projects_root(root) and raw_project_id == "demo" and (root / "cockpit").exists():
+        return "cockpit"
+
+    entry = root / raw_project_id
+    if not entry.exists() and not entry.is_symlink():
+        return raw_project_id
+
+    canonical = _canonical_project_id_from_entry(entry, root)
+    if canonical and canonical != raw_project_id and (root / canonical).exists():
+        return canonical
+    return raw_project_id
+
+
+def _is_active_project_entry(entry: Path, projects_root: Path | None = None) -> bool:
+    if not entry.is_dir():
+        return False
+    if entry.name == "_archive":
+        return False
+
+    root = projects_root or PROJECTS_DIR
+    if _is_appsupport_projects_root(root) and entry.name == "demo":
+        return False
+
+    canonical = _canonical_project_id_from_entry(entry, root)
+    if canonical and canonical != entry.name and (root / canonical).exists():
+        return False
+    return True
+
+
 def ensure_demo_project() -> ProjectData:
-    ensure_project_structure("demo", "Demo")
-    return load_project("demo")
+    target_project_id = "cockpit" if _is_appsupport_projects_root() else "demo"
+    target_project_name = "Cockpit" if target_project_id == "cockpit" else "Demo"
+    ensure_project_structure(target_project_id, target_project_name)
+    return load_project(target_project_id)
 
 
 def list_projects() -> list[str]:
     if not PROJECTS_DIR.exists():
         return []
-    return sorted([p.name for p in PROJECTS_DIR.iterdir() if p.is_dir()])
+    out: list[str] = []
+    seen: set[str] = set()
+    for entry in sorted(PROJECTS_DIR.iterdir(), key=lambda item: item.name):
+        if not _is_active_project_entry(entry, PROJECTS_DIR):
+            continue
+        canonical = _canonical_project_id_from_entry(entry, PROJECTS_DIR) or entry.name
+        if canonical in seen:
+            continue
+        seen.add(canonical)
+        out.append(canonical)
+    return sorted(out)
 
 
 def resolve_startup_project_id(project_ids: list[str], preferred_project_id: str | None) -> str | None:
@@ -567,24 +660,25 @@ def ensure_default_roster(project_id: str) -> None:
 
 
 def load_project(project_id: str) -> ProjectData:
-    pdir = project_dir(project_id)
+    canonical_project_id = _canonical_project_id(project_id)
+    pdir = project_dir(canonical_project_id)
     agents_dir = pdir / "agents"
-    registry = _load_registry(project_id) if pdir.exists() else {}
+    registry = _load_registry(canonical_project_id) if pdir.exists() else {}
     has_state_files = False
     if agents_dir.exists():
         has_state_files = any((candidate / "state.json").exists() for candidate in agents_dir.iterdir() if candidate.is_dir())
     if pdir.exists() and (
         not has_state_files
         or _registry_missing_defaults(registry)
-        or _default_state_files_missing(project_id)
+        or _default_state_files_missing(canonical_project_id)
     ):
-        ensure_default_roster(project_id)
-        registry = _load_registry(project_id)
+        ensure_default_roster(canonical_project_id)
+        registry = _load_registry(canonical_project_id)
     settings_path = pdir / "settings.json"
     settings: dict[str, Any] = {}
     if settings_path.exists():
         settings = json.loads(settings_path.read_text(encoding="utf-8"))
-    project_name = settings.get("project_name", project_id.title())
+    project_name = settings.get("project_name", canonical_project_id.title())
 
     agents: list[AgentState] = []
     if agents_dir.exists():
@@ -641,7 +735,7 @@ def load_project(project_id: str) -> ProjectData:
         roadmap = _parse_simple_roadmap(pdir / "roadmap.yml")
 
     return ProjectData(
-        project_id=project_id,
+        project_id=canonical_project_id,
         name=project_name,
         path=pdir,
         agents=agents,
@@ -853,10 +947,11 @@ def get_project(project_id: str) -> ProjectData:
     Get project by ID, raising error if not found.
     Used by MCP server.
     """
-    pdir = project_dir(project_id)
+    canonical_project_id = _canonical_project_id(project_id)
+    pdir = project_dir(canonical_project_id)
     if not pdir.exists():
         raise ValueError(f"Project not found: {project_id}")
-    return load_project(project_id)
+    return load_project(canonical_project_id)
 
 
 def save_project(project: ProjectData) -> None:
