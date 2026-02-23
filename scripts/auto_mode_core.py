@@ -154,6 +154,8 @@ def dispatch_once(
         "dispatched": result.dispatched_count,
         "skipped": result.skipped_count,
         "actions_used": len(result.actions),
+        "gate_blocked": int(result.gate_blocked_count),
+        "gate_report_path": str(result.gate_report_path or ""),
         "sent_actions": sent_count,
         "fallback_actions": fallback_count,
         "send_statuses": send_statuses,

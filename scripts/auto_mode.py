@@ -126,7 +126,10 @@ def main() -> int:
         print(
             f"Dispatched: {stats['dispatched']} | Skipped: {stats['skipped']} | "
             f"Actions: {stats['actions_used']} (sent={stats.get('sent_actions', 0)}, "
-            f"fallback={stats.get('fallback_actions', 0)}) | State: {stats.get('state_path', '')}"
+            f"fallback={stats.get('fallback_actions', 0)}) | "
+            f"GateBlocked: {stats.get('gate_blocked', 0)} | "
+            f"GateReport: {stats.get('gate_report_path', '')} | "
+            f"State: {stats.get('state_path', '')}"
         )
         emit_snapshot_line()
         return 0
@@ -146,7 +149,10 @@ def main() -> int:
             print(
                 f"Dispatched: {stats['dispatched']} | Skipped: {stats['skipped']} | "
                 f"Actions: {stats['actions_used']} (sent={stats.get('sent_actions', 0)}, "
-                f"fallback={stats.get('fallback_actions', 0)}) | State: {stats.get('state_path', '')}"
+                f"fallback={stats.get('fallback_actions', 0)}) | "
+                f"GateBlocked: {stats.get('gate_blocked', 0)} | "
+                f"GateReport: {stats.get('gate_report_path', '')} | "
+                f"State: {stats.get('state_path', '')}"
             )
         emit_snapshot_line()
         time.sleep(max(args.interval, 0.5))

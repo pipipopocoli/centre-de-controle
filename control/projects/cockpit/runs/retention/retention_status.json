@@ -1,0 +1,247 @@
+{
+  "archive_artifacts": [],
+  "generated_at": "2026-02-23T10:27:53+00:00",
+  "isolation_check": {
+    "canonical_project_id": "cockpit",
+    "projects_root": "/Users/oliviercloutier/Desktop/Cockpit/control/projects"
+  },
+  "next_compaction_at": "2026-02-23T12:27:53+00:00",
+  "policy_version": "wave14-7-30-90-permanent-v1",
+  "project_id": "cockpit",
+  "sources": {
+    "agents/agent-1/journal.ndjson": {
+      "counts": {
+        "archive_permanent": 0,
+        "cool_90d": 0,
+        "hot_7d": 1,
+        "warm_30d": 0
+      },
+      "indexed_lines": {
+        "cool_90d": 0,
+        "hot_7d": 1,
+        "warm_30d": 0
+      },
+      "timestamp_quality": {
+        "invalid_or_missing": 0,
+        "valid": 1,
+        "valid_ratio": 1.0
+      },
+      "total_rows": 1
+    },
+    "agents/agent-11/journal.ndjson": {
+      "counts": {
+        "archive_permanent": 0,
+        "cool_90d": 0,
+        "hot_7d": 1,
+        "warm_30d": 0
+      },
+      "indexed_lines": {
+        "cool_90d": 0,
+        "hot_7d": 1,
+        "warm_30d": 0
+      },
+      "timestamp_quality": {
+        "invalid_or_missing": 0,
+        "valid": 1,
+        "valid_ratio": 1.0
+      },
+      "total_rows": 1
+    },
+    "agents/agent-3/journal.ndjson": {
+      "counts": {
+        "archive_permanent": 0,
+        "cool_90d": 0,
+        "hot_7d": 1,
+        "warm_30d": 2
+      },
+      "indexed_lines": {
+        "cool_90d": 0,
+        "hot_7d": 1,
+        "warm_30d": 2
+      },
+      "timestamp_quality": {
+        "invalid_or_missing": 0,
+        "valid": 3,
+        "valid_ratio": 1.0
+      },
+      "total_rows": 3
+    },
+    "agents/agent-6/journal.ndjson": {
+      "counts": {
+        "archive_permanent": 0,
+        "cool_90d": 0,
+        "hot_7d": 6,
+        "warm_30d": 4
+      },
+      "indexed_lines": {
+        "cool_90d": 0,
+        "hot_7d": 6,
+        "warm_30d": 4
+      },
+      "timestamp_quality": {
+        "invalid_or_missing": 0,
+        "valid": 10,
+        "valid_ratio": 1.0
+      },
+      "total_rows": 10
+    },
+    "agents/agent-7/journal.ndjson": {
+      "counts": {
+        "archive_permanent": 0,
+        "cool_90d": 0,
+        "hot_7d": 4,
+        "warm_30d": 2
+      },
+      "indexed_lines": {
+        "cool_90d": 0,
+        "hot_7d": 4,
+        "warm_30d": 2
+      },
+      "timestamp_quality": {
+        "invalid_or_missing": 0,
+        "valid": 6,
+        "valid_ratio": 1.0
+      },
+      "total_rows": 6
+    },
+    "agents/agent-8/journal.ndjson": {
+      "counts": {
+        "archive_permanent": 0,
+        "cool_90d": 0,
+        "hot_7d": 1,
+        "warm_30d": 0
+      },
+      "indexed_lines": {
+        "cool_90d": 0,
+        "hot_7d": 1,
+        "warm_30d": 0
+      },
+      "timestamp_quality": {
+        "invalid_or_missing": 0,
+        "valid": 1,
+        "valid_ratio": 1.0
+      },
+      "total_rows": 1
+    },
+    "agents/antigravity/journal.ndjson": {
+      "counts": {
+        "archive_permanent": 0,
+        "cool_90d": 0,
+        "hot_7d": 0,
+        "warm_30d": 0
+      },
+      "indexed_lines": {
+        "cool_90d": 0,
+        "hot_7d": 0,
+        "warm_30d": 0
+      },
+      "timestamp_quality": {
+        "invalid_or_missing": 0,
+        "valid": 0,
+        "valid_ratio": 0.0
+      },
+      "total_rows": 0
+    },
+    "agents/clems/journal.ndjson": {
+      "counts": {
+        "archive_permanent": 0,
+        "cool_90d": 0,
+        "hot_7d": 16,
+        "warm_30d": 1
+      },
+      "indexed_lines": {
+        "cool_90d": 0,
+        "hot_7d": 16,
+        "warm_30d": 1
+      },
+      "timestamp_quality": {
+        "invalid_or_missing": 0,
+        "valid": 17,
+        "valid_ratio": 1.0
+      },
+      "total_rows": 17
+    },
+    "agents/leo/journal.ndjson": {
+      "counts": {
+        "archive_permanent": 0,
+        "cool_90d": 0,
+        "hot_7d": 3,
+        "warm_30d": 30
+      },
+      "indexed_lines": {
+        "cool_90d": 0,
+        "hot_7d": 3,
+        "warm_30d": 30
+      },
+      "timestamp_quality": {
+        "invalid_or_missing": 0,
+        "valid": 33,
+        "valid_ratio": 1.0
+      },
+      "total_rows": 33
+    },
+    "agents/nova/journal.ndjson": {
+      "counts": {
+        "archive_permanent": 0,
+        "cool_90d": 0,
+        "hot_7d": 8,
+        "warm_30d": 0
+      },
+      "indexed_lines": {
+        "cool_90d": 0,
+        "hot_7d": 8,
+        "warm_30d": 0
+      },
+      "timestamp_quality": {
+        "invalid_or_missing": 0,
+        "valid": 8,
+        "valid_ratio": 1.0
+      },
+      "total_rows": 8
+    },
+    "agents/victor/journal.ndjson": {
+      "counts": {
+        "archive_permanent": 0,
+        "cool_90d": 0,
+        "hot_7d": 7,
+        "warm_30d": 5
+      },
+      "indexed_lines": {
+        "cool_90d": 0,
+        "hot_7d": 7,
+        "warm_30d": 5
+      },
+      "timestamp_quality": {
+        "invalid_or_missing": 0,
+        "valid": 12,
+        "valid_ratio": 1.0
+      },
+      "total_rows": 12
+    },
+    "chat/global.ndjson": {
+      "counts": {
+        "archive_permanent": 0,
+        "cool_90d": 0,
+        "hot_7d": 33,
+        "warm_30d": 65
+      },
+      "indexed_lines": {
+        "cool_90d": 0,
+        "hot_7d": 33,
+        "warm_30d": 65
+      },
+      "timestamp_quality": {
+        "invalid_or_missing": 0,
+        "valid": 98,
+        "valid_ratio": 1.0
+      },
+      "total_rows": 98
+    }
+  },
+  "totals": {
+    "archive_permanent": 0,
+    "cool_90d": 0,
+    "hot_7d": 81,
+    "warm_30d": 109
+  }
+}

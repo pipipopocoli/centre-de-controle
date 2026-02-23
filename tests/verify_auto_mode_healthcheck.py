@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 HEALTHCHECK_SCRIPT = ROOT_DIR / "scripts" / "auto_mode_healthcheck.py"
+AUTO_MODE_SCRIPT = ROOT_DIR / "scripts" / "auto_mode.py"
 
 
 def _write_json(path: Path, payload: dict) -> None:
@@ -21,6 +22,7 @@ def _run_healthcheck(
     projects_root: Path,
     *,
     max_open: int,
+    stale_seconds: int = 3600,
     max_snapshot_age_seconds: int | None = None,
 ) -> tuple[int, dict]:
     cmd = [
@@ -31,7 +33,7 @@ def _run_healthcheck(
         "--data-dir",
         str(projects_root),
         "--stale-seconds",
-        "3600",
+        str(stale_seconds),
         "--max-open",
         str(max_open),
     ]
@@ -114,6 +116,7 @@ def main() -> int:
         assert payload["open_requests_total"] == 2, payload
         assert payload["tick_age_seconds"] <= 3600, payload
         assert "stale_tick" not in payload["issues"], payload
+        assert payload["issue_details"] == {}, payload
         assert payload["max_snapshot_age_seconds"] == 2100, payload
 
         # Low close-rate alone should not degrade when queue is already under control.
@@ -173,6 +176,7 @@ def main() -> int:
         assert code_snapshot == 1, payload_snapshot
         assert payload_snapshot["status"] == "degraded", payload_snapshot
         assert "stale_kpi_snapshot" in payload_snapshot["issues"], payload_snapshot
+        assert payload_snapshot["issue_details"]["stale_kpi_snapshot"], payload_snapshot
         assert payload_snapshot["max_snapshot_age_seconds"] == 2100, payload_snapshot
 
         code_snapshot_relaxed, payload_snapshot_relaxed = _run_healthcheck(
@@ -183,7 +187,144 @@ def main() -> int:
         assert code_snapshot_relaxed == 0, payload_snapshot_relaxed
         assert payload_snapshot_relaxed["status"] == "healthy", payload_snapshot_relaxed
         assert "stale_kpi_snapshot" not in payload_snapshot_relaxed["issues"], payload_snapshot_relaxed
+        assert payload_snapshot_relaxed["issue_details"] == {}, payload_snapshot_relaxed
         assert payload_snapshot_relaxed["max_snapshot_age_seconds"] == 7200, payload_snapshot_relaxed
+
+        # With a fresh pulse, stale snapshot should be a soft warning, not a degraded blocker.
+        pulse_recent = (now - timedelta(minutes=5)).replace(microsecond=0).isoformat()
+        _write_json(
+            runs_dir / "auto_mode_state.json",
+            {
+                "schema_version": 3,
+                "processed": [],
+                "requests": {
+                    "req_pulse_fresh": {
+                        "request_id": "req_pulse_fresh",
+                        "project_id": "cockpit",
+                        "agent_id": "victor",
+                        "status": "queued",
+                        "created_at": now.isoformat(),
+                    }
+                },
+                "counters": {
+                    "last_tick_at": pulse_recent,
+                    "last_pulse_at": pulse_recent,
+                    "dispatch_last_at": pulse_recent,
+                },
+                "updated_at": pulse_recent,
+            },
+        )
+        (runs_dir / "requests.ndjson").write_text(
+            json.dumps(
+                {
+                    "request_id": "req_pulse_fresh",
+                    "project_id": "cockpit",
+                    "agent_id": "victor",
+                    "status": "queued",
+                    "created_at": now.isoformat(),
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        code_snapshot_soft, payload_snapshot_soft = _run_healthcheck(projects_root, max_open=2)
+        assert code_snapshot_soft == 0, payload_snapshot_soft
+        assert payload_snapshot_soft["status"] == "healthy", payload_snapshot_soft
+        assert "stale_kpi_snapshot" not in payload_snapshot_soft["issues"], payload_snapshot_soft
+        assert "stale_kpi_snapshot_soft" in payload_snapshot_soft["warnings"], payload_snapshot_soft
+
+        # Pulse checkpoint semantics: healthy -> stale -> healthy after pulse.
+        pulse_now = datetime.now(timezone.utc).replace(microsecond=0)
+        stale_iso = (pulse_now - timedelta(seconds=15)).isoformat()
+        _write_json(
+            runs_dir / "auto_mode_state.json",
+            {
+                "schema_version": 3,
+                "processed": [],
+                "requests": {
+                    "req_pulse": {
+                        "request_id": "req_pulse",
+                        "project_id": "cockpit",
+                        "agent_id": "victor",
+                        "status": "queued",
+                        "created_at": pulse_now.isoformat(),
+                    }
+                },
+                "counters": {
+                    "last_tick_at": stale_iso,
+                    "last_pulse_at": stale_iso,
+                    "dispatch_last_at": stale_iso,
+                },
+                "updated_at": stale_iso,
+            },
+        )
+        (runs_dir / "requests.ndjson").write_text(
+            json.dumps(
+                {
+                    "request_id": "req_pulse",
+                    "project_id": "cockpit",
+                    "agent_id": "victor",
+                    "status": "queued",
+                    "created_at": pulse_now.isoformat(),
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (runs_dir / "kpi_snapshots.ndjson").write_text("", encoding="utf-8")
+
+        code_pulse_healthy, payload_pulse_healthy = _run_healthcheck(
+            projects_root,
+            max_open=2,
+            stale_seconds=120,
+        )
+        assert code_pulse_healthy == 0, payload_pulse_healthy
+        assert payload_pulse_healthy["status"] == "healthy", payload_pulse_healthy
+
+        code_pulse_stale, payload_pulse_stale = _run_healthcheck(
+            projects_root,
+            max_open=2,
+            stale_seconds=1,
+        )
+        assert code_pulse_stale == 1, payload_pulse_stale
+        assert payload_pulse_stale["status"] == "degraded", payload_pulse_stale
+        assert "pulse_stale" in payload_pulse_stale["issues"], payload_pulse_stale
+        assert payload_pulse_stale["issue_details"]["pulse_stale"], payload_pulse_stale
+
+        pulse_cmd = [
+            sys.executable,
+            str(AUTO_MODE_SCRIPT),
+            "--project",
+            "cockpit",
+            "--data-dir",
+            str(projects_root),
+            "--once",
+            "--max-actions",
+            "0",
+            "--no-open",
+            "--no-clipboard",
+            "--no-notify",
+            "--kpi-min-interval-minutes",
+            "25",
+        ]
+        pulse_proc = subprocess.run(
+            pulse_cmd,
+            cwd=str(ROOT_DIR),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert pulse_proc.returncode == 0, pulse_proc.stdout + pulse_proc.stderr
+
+        code_pulse_recovered, payload_pulse_recovered = _run_healthcheck(
+            projects_root,
+            max_open=2,
+            stale_seconds=1,
+        )
+        assert code_pulse_recovered == 0, payload_pulse_recovered
+        assert payload_pulse_recovered["status"] == "healthy", payload_pulse_recovered
+        assert "pulse_stale" not in payload_pulse_recovered["issues"], payload_pulse_recovered
+        assert payload_pulse_recovered["issue_details"] == {}, payload_pulse_recovered
 
         # Increase external pressure and verify degraded threshold still triggers.
         state_payload = json.loads((runs_dir / "auto_mode_state.json").read_text(encoding="utf-8"))
@@ -214,6 +355,7 @@ def main() -> int:
         assert payload2["status"] == "degraded", payload2
         assert payload2["open_requests"] == 2, payload2
         assert "too_many_open_requests" in payload2["issues"], payload2
+        assert payload2["issue_details"]["too_many_open_requests"], payload2
 
     print("OK: auto_mode healthcheck parity verified")
     return 0

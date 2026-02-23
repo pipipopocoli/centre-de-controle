@@ -1,9 +1,129 @@
+from __future__ import annotations
 import re
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import Qt, QUrl, Signal
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QListWidget, QPushButton, QVBoxLayout, QWidget, QLabel, QFrame, QHBoxLayout
+
+
+class ObservabilityBadge(QFrame):
+    def __init__(self, label_text: str = "") -> None:
+        super().__init__()
+        self.setObjectName("obsBadge")
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(4, 2, 4, 2)
+        layout.setSpacing(4)
+
+        self._dot = QFrame()
+        self._dot.setFixedSize(8, 8)
+        self._dot.setProperty("health", "unknown")
+
+        self._text = QLabel(label_text)
+
+        layout.addWidget(self._dot)
+        layout.addWidget(self._text)
+
+    def set_health(self, status: str) -> None:
+        self._dot.setProperty("health", status)
+        self._dot.style().polish(self._dot)
+
+    def set_label(self, text: str) -> None:
+        self._text.setText(text)
+
+
+class StatusBanner(QFrame):
+    def __init__(self) -> None:
+        super().__init__()
+        self.setObjectName("statusBanner")
+        self.setVisible(False)
+        self.setProperty("severity", "info")
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(8, 8, 8, 8)
+
+        self._message = QLabel("")
+        self._message.setWordWrap(True)
+
+        layout.addWidget(self._message)
+
+    def show_warning(self, msg: str) -> None:
+        self._message.setText(msg)
+        self.setProperty("severity", "warning")
+        self.style().polish(self)
+        self.setVisible(True)
+
+    def show_error(self, msg: str) -> None:
+        self._message.setText(msg)
+        self.setProperty("severity", "error")
+        self.style().polish(self)
+        self.setVisible(True)
+
+    def dismiss(self) -> None:
+        self.setVisible(False)
+
+
+class SkillsOpsPanel(QFrame):
+    sync_requested = Signal()
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setObjectName("skillsOpsPanel")
+
+        layout = QVBoxLayout(self)
+
+        self.skills_label = QLabel("-")
+        self.last_sync_label = QLabel("Last sync: -")
+        self.profile_label = QLabel("Profile: -")
+
+        self.sync_btn = QPushButton("Sync Now")
+        self.sync_btn.clicked.connect(self._on_sync_clicked)
+
+        self.sync_feedback = QLabel("")
+
+        self.badge_sync = ObservabilityBadge("Sync")
+        self.badge_memory = ObservabilityBadge("Memory")
+
+        layout.addWidget(self.skills_label)
+        layout.addWidget(self.last_sync_label)
+        layout.addWidget(self.profile_label)
+        layout.addWidget(self.badge_sync)
+        layout.addWidget(self.badge_memory)
+        layout.addWidget(self.sync_btn)
+        layout.addWidget(self.sync_feedback)
+
+    def set_skills(self, skills: list) -> None:
+        if skills:
+            self.skills_label.setText(", ".join(skills))
+        else:
+            self.skills_label.setText("-")
+
+    def set_last_sync(self, sync_time: str) -> None:
+        self.last_sync_label.setText(f"Last sync: {sync_time}")
+
+    def set_profile_status(self, status: str) -> None:
+        self.profile_label.setText(f"Profile: {status}")
+
+    def set_sync_state(self, state: str) -> None:
+        if state == "idle":
+            self.sync_btn.setText("Sync Now")
+            self.sync_btn.setEnabled(True)
+        elif state == "loading":
+            self.sync_btn.setText("Syncing...")
+            self.sync_btn.setEnabled(False)
+        elif state == "success":
+            self.sync_btn.setText("\u2713 Sync Success")
+            self.sync_btn.setEnabled(True)
+        elif state == "error":
+            self.sync_btn.setText("\u2717 Sync Error")
+            self.sync_btn.setEnabled(True)
+
+    def set_sync_feedback(self, text: str) -> None:
+        self.sync_feedback.setText(text)
+
+    def _on_sync_clicked(self) -> None:
+        self.sync_requested.emit()
 
 
 class AutoModePanel(QFrame):
@@ -259,10 +379,14 @@ class SidebarWidget(QWidget):
         # Auto-Mode Panel
         self.runtime_context = RuntimeContextPanel()
         self.auto_mode = AutoModePanel(data_dir=data_dir)
+        self.status_banner = StatusBanner()
+        self.skills_ops = SkillsOpsPanel()
 
+        layout.addWidget(self.status_banner)
         layout.addWidget(self.runtime_context)
         layout.addWidget(title)
         layout.addWidget(self.project_list, 1)
+        layout.addWidget(self.skills_ops)
         layout.addWidget(self.docs_btn)
         layout.addWidget(self.auto_mode)
         layout.addWidget(self.new_project_btn)

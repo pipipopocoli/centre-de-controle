@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from app.services.agent_registry import load_agent_registry, resolve_agent_platform
+from app.services.gatekeeper import evaluate_mission_critical_gate
 from app.services.task_matcher import rank_candidates, score_task
 
 MAX_PROCESSED_IDS = 5000
@@ -31,6 +32,10 @@ COUNTER_RUNTIME_LOG_MISSING_CLOSED_TOTAL = "runtime_log_missing_closed_total"
 COUNTER_QUEUE_RECOVERY_BLOCKER_TOTAL = "queue_recovery_blocker_total"
 CONTROL_CADENCE_KPI_MIN_INTERVAL_MINUTES = 25
 HEALTHCHECK_KPI_SNAPSHOT_MAX_AGE_SECONDS = 2100
+MISSION_CRITICAL_GATE_FAILED_REASON = "mission_critical_gate_failed"
+
+COUNTER_MISSION_CRITICAL_GATE_BLOCKED_TOTAL = "mission_critical_gate_blocked_total"
+COUNTER_MISSION_CRITICAL_GATE_BLOCKED_BY_CODE_PREFIX = "mission_critical_gate_blocked_code"
 
 
 @dataclass(frozen=True)
@@ -54,6 +59,8 @@ class DispatchResult:
     dispatched_count: int
     skipped_count: int
     actions: list[AutoModeAction]
+    gate_blocked_count: int = 0
+    gate_report_path: str = ""
 
 
 def _utc_now_iso() -> str:
@@ -119,6 +126,12 @@ def _append_ndjson(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(payload) + "\n")
+
+
+def _counter_token(value: str) -> str:
+    token = re.sub(r"[^a-zA-Z0-9_]+", "_", str(value or "").strip().lower())
+    token = token.strip("_")
+    return token or "unknown"
 
 
 def _write_ndjson_atomic(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -659,6 +672,39 @@ def _paths(projects_root: Path, project_id: str, state_path: Path | None) -> tup
     return requests_path, inbox_dir, resolved_state
 
 
+def _mission_critical_gate_report_path(projects_root: Path, project_id: str) -> Path:
+    return projects_root / project_id / "runs" / "mission_critical_gate.ndjson"
+
+
+def _append_mission_critical_gate_event(
+    report_path: Path,
+    *,
+    project_id: str,
+    request_id: str,
+    agent_id: str,
+    action_scope: str,
+    approval_ref: str | None,
+    gate_result: dict[str, Any],
+) -> None:
+    payload = {
+        "timestamp": _utc_now_iso(),
+        "project_id": project_id,
+        "request_id": request_id,
+        "agent_id": agent_id,
+        "status": "denied",
+        "action_scope": action_scope,
+        "approval_ref": approval_ref,
+        "closed_reason": MISSION_CRITICAL_GATE_FAILED_REASON,
+        "code": str(gate_result.get("code") or ""),
+        "reason": str(gate_result.get("reason") or ""),
+        "trigger": str(gate_result.get("trigger") or ""),
+        "required_evidence_sections": list(gate_result.get("required_evidence_sections") or []),
+        "missing_evidence_sections": list(gate_result.get("missing_evidence_sections") or []),
+        "empty_evidence_sections": list(gate_result.get("empty_evidence_sections") or []),
+    }
+    _append_ndjson(report_path, payload)
+
+
 def load_runtime_state(
     projects_root: Path,
     project_id: str,
@@ -1016,10 +1062,12 @@ def dispatch_once(
 
     processed_set = set(processed)
     registry = load_agent_registry(project_id, projects_root)
+    gate_report_path = _mission_critical_gate_report_path(projects_root, project_id)
 
     dispatched = 0
     skipped = 0
     actions_used = 0
+    gate_blocked_count = 0
     actions: list[AutoModeAction] = []
 
     candidates: list[dict[str, Any]] = []
@@ -1080,6 +1128,52 @@ def dispatch_once(
             processed_set.add(request_id)
             skipped += 1
             _increment_counter(counters, "reminder_events_total", 1)
+            continue
+
+        gate_result = evaluate_mission_critical_gate(payload, settings=settings)
+        if gate_result.get("applied") and not gate_result.get("passed"):
+            now_iso = _utc_now_iso()
+            gate_code = str(gate_result.get("code") or "mission_critical_gate_failed").strip() or "mission_critical_gate_failed"
+            action_scope = str(payload.get("action_scope") or "workspace_only").strip() or "workspace_only"
+            approval_ref = str(payload.get("approval_ref") or "").strip() or None
+            request_created_at = str(payload.get("created_at") or "").strip() or now_iso
+
+            requests[request_id] = _normalize_runtime_request(
+                request_id,
+                {
+                    "project_id": project_id,
+                    "agent_id": agent_id,
+                    "status": "closed",
+                    "created_at": request_created_at,
+                    "closed_at": now_iso,
+                    "closed_reason": MISSION_CRITICAL_GATE_FAILED_REASON,
+                    "completion_source": MISSION_CRITICAL_GATE_FAILED_REASON,
+                    "updated_at": now_iso,
+                    "action_scope": action_scope,
+                    "approval_ref": approval_ref,
+                    "requested_skills": payload.get("requested_skills") or [],
+                    "error": gate_code,
+                },
+            )
+            processed.append(request_id)
+            processed_set.add(request_id)
+            skipped += 1
+            gate_blocked_count += 1
+            _increment_counter(counters, COUNTER_MISSION_CRITICAL_GATE_BLOCKED_TOTAL, 1)
+            _increment_counter(
+                counters,
+                f"{COUNTER_MISSION_CRITICAL_GATE_BLOCKED_BY_CODE_PREFIX}_{_counter_token(gate_code)}",
+                1,
+            )
+            _append_mission_critical_gate_event(
+                gate_report_path,
+                project_id=project_id,
+                request_id=request_id,
+                agent_id=agent_id,
+                action_scope=action_scope,
+                approval_ref=approval_ref,
+                gate_result=gate_result,
+            )
             continue
 
         request_created_at = str(payload.get("created_at") or "").strip() or _utc_now_iso()
@@ -1208,11 +1302,18 @@ def dispatch_once(
         "dispatched": dispatched,
         "skipped": skipped,
         "actions_used": actions_used,
+        "gate_blocked": gate_blocked_count,
     }
 
     _save_state(resolved_state, processed, requests, counters)
     _write_slo_verdict(projects_root, project_id, settings=settings)
-    return DispatchResult(dispatched_count=dispatched, skipped_count=skipped, actions=actions)
+    return DispatchResult(
+        dispatched_count=dispatched,
+        skipped_count=skipped,
+        actions=actions,
+        gate_blocked_count=gate_blocked_count,
+        gate_report_path=str(gate_report_path),
+    )
 
 
 def dispatch_once_with_counters(

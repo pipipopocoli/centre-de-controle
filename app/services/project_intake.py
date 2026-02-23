@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -86,6 +87,15 @@ def _read_readme(repo_path: Path) -> str:
     return ""
 
 
+def _iter_repo_files(repo_path: Path):
+    repo_root = repo_path.expanduser().resolve()
+    for current_root, dirnames, filenames in os.walk(repo_root):
+        dirnames[:] = sorted(name for name in dirnames if name not in IGNORE_DIRS)
+        for filename in sorted(filenames):
+            path = Path(current_root) / filename
+            yield path
+
+
 def scan_repo(repo_path: Path) -> dict[str, Any]:
     repo_path = repo_path.expanduser().resolve()
     if not repo_path.exists():
@@ -96,21 +106,27 @@ def scan_repo(repo_path: Path) -> dict[str, Any]:
     configs: set[str] = set()
     top_files: list[str] = []
     readme_excerpt = _read_readme(repo_path)
+    tests_detected = False
 
-    for path in repo_path.rglob("*"):
+    for path in _iter_repo_files(repo_path):
         if files_scanned >= MAX_FILES:
             break
-        if any(part in IGNORE_DIRS for part in path.parts):
-            continue
-        if path.is_dir():
-            continue
         files_scanned += 1
+
+        relative = path.relative_to(repo_path)
+        relative_text = str(relative)
+        lower_parts = [part.lower() for part in relative.parts]
+        if any(part in {"tests", "test"} for part in lower_parts):
+            tests_detected = True
+
         if path.name in CONFIG_FILES:
             configs.add(path.name)
         if path.suffix:
             ext_counts[path.suffix.lower()] += 1
         if len(top_files) < 30:
-            top_files.append(str(path.relative_to(repo_path)))
+            top_files.append(relative_text)
+
+    top_files = sorted(top_files)
 
     stack = _detect_stack(configs, ext_counts)
     languages = [f"{ext} ({count})" for ext, count in ext_counts.most_common(8)]
@@ -118,7 +134,7 @@ def scan_repo(repo_path: Path) -> dict[str, Any]:
     risks: list[str] = []
     if not readme_excerpt:
         risks.append("No README found (context may be missing)")
-    if "tests" not in {p.lower() for p in top_files}:
+    if not tests_detected:
         risks.append("Tests folder not detected (QA may be unclear)")
     if len(stack) > 1 and "unknown" not in stack:
         risks.append("Multi-stack project (scope risk)")

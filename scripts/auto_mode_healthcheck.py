@@ -19,6 +19,20 @@ from app.services.auto_mode import (  # noqa: E402
 
 OPEN_STATUSES = {"queued", "dispatched", "reminded"}
 EXTERNAL_AGENTS = {"victor", "leo", "nova"}
+ISSUE_DETAILS = {
+    "missing_state_file": "auto_mode_state.json is missing for selected project root",
+    "missing_last_activity": "no runtime activity timestamp found in state counters",
+    "stale_tick": "latest runtime activity timestamp is older than stale-seconds threshold",
+    "pulse_stale": "last_pulse_at is older than stale-seconds threshold",
+    "too_many_open_requests": "open external requests exceed max-open threshold",
+    "close_rate_low": "close-rate guard failed under active external pressure",
+    "stale_kpi_snapshot": "latest KPI snapshot is older than max-snapshot-age-seconds",
+}
+WARNING_DETAILS = {
+    "stale_kpi_snapshot_soft": (
+        "kpi snapshot is stale but a recent pulse is present; snapshot recency is tracked as warning only"
+    ),
+}
 
 
 def _parse_iso(value: str | None) -> datetime | None:
@@ -215,15 +229,18 @@ def main() -> int:
     max_snapshot_age_seconds = max(int(args.max_snapshot_age_seconds), 0)
 
     issues: list[str] = []
+    warnings: list[str] = []
+    stale_seconds = max(int(args.stale_seconds), 0)
+    pulse_age_seconds: int | None = None
     if not state_path.exists():
         issues.append("missing_state_file")
     if last_activity_at is None:
         issues.append("missing_last_activity")
-    elif tick_age_seconds is not None and tick_age_seconds > max(int(args.stale_seconds), 0):
+    elif tick_age_seconds is not None and tick_age_seconds > stale_seconds:
         issues.append("stale_tick")
     if last_pulse_at is not None:
         pulse_age_seconds = max(int((now - last_pulse_at).total_seconds()), 0)
-        if pulse_age_seconds > max(int(args.stale_seconds), 0):
+        if pulse_age_seconds > stale_seconds:
             issues.append("pulse_stale")
     max_open_threshold = max(int(args.max_open), 0)
     if open_requests > max_open_threshold:
@@ -241,8 +258,17 @@ def main() -> int:
     ):
         issues.append("close_rate_low")
 
-    if snapshot_path.exists() and snapshot_age_seconds is not None and snapshot_age_seconds > max_snapshot_age_seconds:
-        issues.append("stale_kpi_snapshot")
+    snapshot_is_stale = bool(
+        snapshot_path.exists()
+        and snapshot_age_seconds is not None
+        and snapshot_age_seconds > max_snapshot_age_seconds
+    )
+    if snapshot_is_stale:
+        pulse_is_fresh = pulse_age_seconds is not None and pulse_age_seconds <= stale_seconds
+        if pulse_is_fresh:
+            warnings.append("stale_kpi_snapshot_soft")
+        else:
+            issues.append("stale_kpi_snapshot")
 
     status = "healthy" if not issues else "degraded"
 
@@ -261,6 +287,7 @@ def main() -> int:
         "runtime_missing_closed_count": int(recovery.get("runtime_missing_closed") or 0),
         "last_tick_at": last_tick_at.isoformat() if last_tick_at is not None else None,
         "last_pulse_at": last_pulse_at.isoformat() if last_pulse_at is not None else None,
+        "pulse_age_seconds": pulse_age_seconds,
         "last_activity_at": last_activity_at.isoformat() if last_activity_at is not None else None,
         "tick_age_seconds": tick_age_seconds,
         "snapshot_age_seconds": snapshot_age_seconds,
@@ -271,6 +298,9 @@ def main() -> int:
         "kpi_snapshot_path": str(snapshot_path),
         "counters": counters,
         "issues": issues,
+        "issue_details": {code: ISSUE_DETAILS.get(code, "unknown issue code") for code in issues},
+        "warnings": warnings,
+        "warning_details": {code: WARNING_DETAILS.get(code, "unknown warning code") for code in warnings},
     }
 
     print(json.dumps(payload, indent=2))

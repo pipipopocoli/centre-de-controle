@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,21 @@ class Gate:
     TRANSITION = "TRANSITION" # All tasks done, tests pass
     RELIABILITY = "RELIABILITY" # No critical risks
     THROUGHPUT = "THROUGHPUT" # Token budget check (Agent 4)
+
+
+MISSION_CRITICAL_TRIGGER_ALL_FULL_ACCESS = "all_full_access"
+MISSION_CRITICAL_DEFAULT_APPROVAL_REF_PATTERN = r"^APR-[A-Za-z0-9._-]+$"
+MISSION_CRITICAL_DEFAULT_REQUIRED_EVIDENCE_SECTIONS = ("tests", "screenshots", "logs", "docs_updates")
+
+MISSION_CRITICAL_GATE_CODE_PASSED = "passed"
+MISSION_CRITICAL_GATE_CODE_NOT_APPLICABLE = "not_applicable"
+MISSION_CRITICAL_GATE_CODE_DISABLED = "gate_disabled"
+MISSION_CRITICAL_GATE_CODE_APPROVAL_REF_MISSING = "approval_ref_missing"
+MISSION_CRITICAL_GATE_CODE_APPROVAL_REF_INVALID = "approval_ref_invalid"
+MISSION_CRITICAL_GATE_CODE_EVIDENCE_PAYLOAD_INVALID = "evidence_payload_invalid"
+MISSION_CRITICAL_GATE_CODE_EVIDENCE_SECTION_MISSING = "evidence_section_missing"
+MISSION_CRITICAL_GATE_CODE_EVIDENCE_SECTION_EMPTY = "evidence_section_empty"
+MISSION_CRITICAL_GATE_CODE_CONFIG_INVALID = "gate_config_invalid"
 
 
 def _utc_now_iso() -> str:
@@ -95,6 +111,170 @@ def _evaluate_optional_eval_payload(
     return True, "Gate Passed (PASS)"
 
 
+def _mission_critical_settings(settings: dict[str, Any] | None) -> dict[str, Any]:
+    payload = settings if isinstance(settings, dict) else {}
+    raw = payload.get("mission_critical_gate")
+    gate = raw if isinstance(raw, dict) else {}
+    required_raw = gate.get("required_evidence_sections")
+    required_sections: list[str] = []
+    if isinstance(required_raw, list):
+        for item in required_raw:
+            section = str(item or "").strip()
+            if section:
+                required_sections.append(section)
+    if not required_sections:
+        required_sections = list(MISSION_CRITICAL_DEFAULT_REQUIRED_EVIDENCE_SECTIONS)
+    approval_pattern = str(gate.get("approval_ref_pattern") or MISSION_CRITICAL_DEFAULT_APPROVAL_REF_PATTERN).strip()
+    if not approval_pattern:
+        approval_pattern = MISSION_CRITICAL_DEFAULT_APPROVAL_REF_PATTERN
+
+    return {
+        "enabled": bool(gate.get("enabled", False)),
+        "trigger": str(gate.get("trigger") or MISSION_CRITICAL_TRIGGER_ALL_FULL_ACCESS).strip()
+        or MISSION_CRITICAL_TRIGGER_ALL_FULL_ACCESS,
+        "approval_ref_pattern": approval_pattern,
+        "required_evidence_sections": required_sections,
+    }
+
+
+def _normalize_evidence_entries(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    normalized: list[str] = []
+    for item in value:
+        text = str(item or "").strip()
+        if text:
+            normalized.append(text)
+    return normalized
+
+
+def evaluate_mission_critical_gate(
+    request: dict[str, Any],
+    *,
+    settings: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    gate_cfg = _mission_critical_settings(settings)
+    action_scope = str(request.get("action_scope") or "workspace_only").strip() or "workspace_only"
+    approval_ref = str(request.get("approval_ref") or "").strip()
+    trigger = str(gate_cfg.get("trigger") or MISSION_CRITICAL_TRIGGER_ALL_FULL_ACCESS)
+    enabled = bool(gate_cfg.get("enabled"))
+    required_sections = [str(item) for item in gate_cfg.get("required_evidence_sections") or []]
+    approval_pattern = str(gate_cfg.get("approval_ref_pattern") or MISSION_CRITICAL_DEFAULT_APPROVAL_REF_PATTERN)
+    applied = enabled and trigger == MISSION_CRITICAL_TRIGGER_ALL_FULL_ACCESS and action_scope == "full_access"
+
+    result: dict[str, Any] = {
+        "applied": bool(applied),
+        "passed": True,
+        "code": MISSION_CRITICAL_GATE_CODE_PASSED,
+        "reason": "Mission-critical gate passed",
+        "trigger": trigger,
+        "action_scope": action_scope,
+        "approval_ref": approval_ref,
+        "approval_ref_pattern": approval_pattern,
+        "required_evidence_sections": required_sections,
+        "missing_evidence_sections": [],
+        "empty_evidence_sections": [],
+    }
+
+    if not enabled:
+        result.update(
+            {
+                "applied": False,
+                "code": MISSION_CRITICAL_GATE_CODE_DISABLED,
+                "reason": "Mission-critical gate disabled",
+            }
+        )
+        return result
+
+    if not applied:
+        result.update(
+            {
+                "code": MISSION_CRITICAL_GATE_CODE_NOT_APPLICABLE,
+                "reason": "Mission-critical gate not applicable",
+            }
+        )
+        return result
+
+    if not approval_ref:
+        result.update(
+            {
+                "passed": False,
+                "code": MISSION_CRITICAL_GATE_CODE_APPROVAL_REF_MISSING,
+                "reason": "approval_ref is required for mission-critical full_access requests",
+            }
+        )
+        return result
+
+    try:
+        approval_re = re.compile(approval_pattern)
+    except re.error:
+        result.update(
+            {
+                "passed": False,
+                "code": MISSION_CRITICAL_GATE_CODE_CONFIG_INVALID,
+                "reason": "approval_ref_pattern is invalid in mission_critical_gate settings",
+            }
+        )
+        return result
+
+    if not approval_re.match(approval_ref):
+        result.update(
+            {
+                "passed": False,
+                "code": MISSION_CRITICAL_GATE_CODE_APPROVAL_REF_INVALID,
+                "reason": "approval_ref does not match required mission-critical format",
+            }
+        )
+        return result
+
+    evidence = request.get("evidence")
+    if not isinstance(evidence, dict):
+        result.update(
+            {
+                "passed": False,
+                "code": MISSION_CRITICAL_GATE_CODE_EVIDENCE_PAYLOAD_INVALID,
+                "reason": "evidence payload is required and must be an object",
+            }
+        )
+        return result
+
+    missing_sections: list[str] = []
+    empty_sections: list[str] = []
+    for section in required_sections:
+        if section not in evidence:
+            missing_sections.append(section)
+            continue
+        entries = _normalize_evidence_entries(evidence.get(section))
+        if not entries:
+            empty_sections.append(section)
+
+    if missing_sections:
+        result.update(
+            {
+                "passed": False,
+                "code": MISSION_CRITICAL_GATE_CODE_EVIDENCE_SECTION_MISSING,
+                "reason": "missing required evidence sections",
+                "missing_evidence_sections": missing_sections,
+                "empty_evidence_sections": empty_sections,
+            }
+        )
+        return result
+
+    if empty_sections:
+        result.update(
+            {
+                "passed": False,
+                "code": MISSION_CRITICAL_GATE_CODE_EVIDENCE_SECTION_EMPTY,
+                "reason": "required evidence sections must contain at least one entry",
+                "missing_evidence_sections": missing_sections,
+                "empty_evidence_sections": empty_sections,
+            }
+        )
+        return result
+
+    return result
+
+
 def check_dispatch(
     request: dict[str, Any],
     project_context: dict[str, Any] | None = None
@@ -111,6 +291,18 @@ def check_dispatch(
         return False, "Missing project_id"
     if not agent_id:
         return False, "Missing agent_id"
+
+    settings_payload: dict[str, Any] | None = None
+    if isinstance(project_context, dict):
+        settings_raw = project_context.get("settings")
+        if isinstance(settings_raw, dict):
+            settings_payload = settings_raw
+
+    mission_gate = evaluate_mission_critical_gate(request, settings=settings_payload)
+    if mission_gate.get("applied") and not mission_gate.get("passed"):
+        code = str(mission_gate.get("code") or MISSION_CRITICAL_GATE_CODE_CONFIG_INVALID)
+        reason = str(mission_gate.get("reason") or "mission-critical gate failed")
+        return False, f"Mission-critical gate blocked dispatch: {code}: {reason}"
 
     # 2. Eval Harness gate (optional, backward-compatible).
     try:

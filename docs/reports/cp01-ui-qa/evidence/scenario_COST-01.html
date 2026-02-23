@@ -55,14 +55,21 @@ th { background: #f0ece6; }
 </style>
 </head><body>
   <h1>Pilotage - Cockpit Pilotage (CP-001)</h1>
-  <p class='muted'>Generated at 2026-02-19T17:11:37+00:00 | Scope: projet | Mode: simple</p>
+  <p class='muted'>Generated at 2026-02-23T10:31:27+00:00 | Scope: projet | Mode: simple</p>
   <p>Simple mode: quick operational reading in under 60 seconds. Focus on phase, blockers, next actions, and evidence paths.</p>
 
   
   <div class='card' style='background: #FFFBEB; border-left: 4px solid #F59E0B; margin-bottom: 12px;'>
     <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
       <h2 style='margin: 0; font-size: 15px;'>Rapport Now / Next / Blockers</h2>
-      <span class='badge' style='font-size: 10px;'>Cadence: toutes les 2h | 2026-02-19T17:11:37+00:00</span>
+      <div style='display: flex; gap: 8px; align-items: center;'>
+        <span class='badge' style='font-size: 10px;'>Cadence: toutes les 2h | 2026-02-23T10:31:27+00:00</span>
+      </div>
+    </div>
+    <div style='display: flex; gap: 8px; align-items: center; margin-bottom: 12px;'>
+        <div style='font-size: 11px; font-weight: 600; color: #5E6167;'>Control Gates:</div>
+        <span class='badge' id='gateBadgeRepo' status='stale'>Repo: stale</span>
+        <span class='badge' id='gateBadgeApp' status='stale'>App: stale</span>
     </div>
     <div class='grid4' style='grid-template-columns: 1fr 1fr 1fr; gap: 8px;'>
       <div style='padding: 8px; background: #FFFFFF; border-radius: 8px; border: 1px solid #E5DED3;'>

@@ -81,6 +81,17 @@
   "control_gates": {
     "pulse_stale_seconds": 3600
   },
+  "mission_critical_gate": {
+    "enabled": true,
+    "trigger": "all_full_access",
+    "approval_ref_pattern": "^APR-[A-Za-z0-9._-]+$",
+    "required_evidence_sections": [
+      "tests",
+      "screenshots",
+      "logs",
+      "docs_updates"
+    ]
+  },
   "auto_mode": {
     "interval_seconds": 5,
     "max_actions": 2

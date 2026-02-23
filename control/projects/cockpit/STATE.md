@@ -1,30 +1,25 @@
 # State
 
 ## Phase
-- Plan
+- Review
 
 ## Objective
-- Kick off Wave14 from the Word answers pack and lock onboarding readiness for a new existing repository.
+- Lock Wave15 closeout and prepare next feature wave from a green runtime baseline.
 
 ## Now
-- Wave13 UX lanes are closed with proof packs (CP-0044..CP-0047).
-- Wave13 residual closeout completed: CP-0015 and CP-0042 are now Done with a dedicated evidence packet.
-- Runtime pulse signal is restored and healthcheck parity is green.
-- Word source answers were extracted and translated into Wave14 issue scope.
-- Wave14 dispatch packet is prepared with lead-first order and specialist follow-up.
+- Wave14 backend lane closed: CP-0048, CP-0049, CP-0052 Done with proof.
+- Wave14 residual lanes are now closed: CP-0050 and CP-0051 moved to Ship/Done with evidence links.
+- Wave15 recency patch active: stale KPI snapshot is warning-only when pulse is fresh.
+- Healthcheck deterministic suite updated and green.
+- Dual-root runtime checks are healthy after pulse.
 
 ## Next
-- Send Wave14 lead prompts in order: @victor, @leo, @nova.
-- Wait 15m for lead ack (Now/Next/Blockers), then send specialists.
-- Run cadence checks every 30-45 min during execution.
-- Close CP-0048..CP-0052 with evidence and update docs.
+- Push Wave15 snapshot.
+- Dispatch next wave from clean baseline (feature expansion only).
+- Keep pulse/check cadence every 30-45 minutes.
 
 ## In Progress
-- ISSUE-CP-0048-wave14-startup-pack-existing-repo-onboarding
-- ISSUE-CP-0049-wave14-mission-critical-commit-gate
-- ISSUE-CP-0050-wave14-memory-retention-policy
-- ISSUE-CP-0051-wave14-live-task-squares-and-timeline-clarity
-- ISSUE-CP-0052-wave14-healthcheck-zero-false-positive
+- none
 
 ## Blockers
 - none
@@ -33,9 +28,9 @@
 - none
 
 ## Risks
-- onboarding flow can drift if startup pack format is not locked early.
-- mission-critical gate can over-block if evidence contract is too strict.
-- memory retention can regress if archive policy is unclear per project.
+- stale recency warnings can drift back if cadence pulses stop.
+- AppSupport root can show stale KPI if pulse cadence is not respected.
+- closeout docs can drift from issue status if not synced at each wave end.
 
 ## Gates
 - pending_stale_gt24h == 0
@@ -47,6 +42,11 @@
 
 ## Links
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE13_CP0015_CP0042_CLOSEOUT_2026-02-23T0909Z.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE14_VICTOR_LANE_LOCK_2026-02-23T1026Z.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE14_CP0050_MEMORY_RETENTION_2026-02-23.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/cp01-ui-qa/WAVE14_UI_EVIDENCE_MAPPING.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE15_CLOSEOUT_RECEIPT_2026-02-23.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE15_OPERATOR_RECENCE_RUNBOOK_2026-02-23.md
 - /Users/oliviercloutier/Desktop/Cockpit/cockpit_v2_final_plan.docx
 - /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE14_INPUT_FROM_COCKPIT_V2_FINAL_PLAN_2026-02-23.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE14_DISPATCH_2026-02-23.md
@@ -55,3 +55,6 @@
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0050-wave14-memory-retention-policy.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0051-wave14-live-task-squares-and-timeline-clarity.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0052-wave14-healthcheck-zero-false-positive.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0053-wave15-dual-root-recency-lock.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0054-wave15-wave14-closeout-sync.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0055-wave15-operator-recence-runbook.md

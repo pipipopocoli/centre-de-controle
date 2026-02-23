@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-22T18:37:00+00:00",
+  "generated_at": "2026-02-23T11:07:35+00:00",
   "project_id": "cockpit",
   "verdict": "HOLD",
   "reasons": [
@@ -8,8 +8,8 @@
     "success_rate_below_target"
   ],
   "metrics": {
-    "dispatch_p95_ms": 172439882.0,
-    "dispatch_p99_ms": 172439882.0,
+    "dispatch_p95_ms": 157094596.0,
+    "dispatch_p99_ms": 169370825.0,
     "success_rate": 0.0
   },
   "targets": {

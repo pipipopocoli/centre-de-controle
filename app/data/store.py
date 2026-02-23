@@ -793,6 +793,42 @@ def append_thread_message(project_id: str, tag: str, payload: dict[str, Any]) ->
     _append_ndjson(chat_thread_path(project_id, safe_tag), payload)
 
 
+def retention_dir(project_id: str, projects_root: Path | None = None) -> Path:
+    root = projects_root or PROJECTS_DIR
+    canonical_project_id = _canonical_project_id(project_id, projects_root=root)
+    return root / canonical_project_id / "runs" / "retention"
+
+
+def retention_status_path(project_id: str, projects_root: Path | None = None) -> Path:
+    return retention_dir(project_id, projects_root=projects_root) / "retention_status.json"
+
+
+def retention_archive_dir(project_id: str, projects_root: Path | None = None) -> Path:
+    return retention_dir(project_id, projects_root=projects_root) / "archive"
+
+
+def load_retention_status(project_id: str, projects_root: Path | None = None) -> dict[str, Any]:
+    path = retention_status_path(project_id, projects_root=projects_root)
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def write_retention_status(
+    project_id: str,
+    payload: dict[str, Any],
+    projects_root: Path | None = None,
+) -> Path:
+    path = retention_status_path(project_id, projects_root=projects_root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    return path
+
+
 def run_requests_path(project_id: str) -> Path:
     return project_dir(project_id) / "runs" / "requests.ndjson"
 
