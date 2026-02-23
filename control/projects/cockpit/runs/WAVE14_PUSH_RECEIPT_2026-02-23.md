@@ -14,5 +14,5 @@
 5. /Users/oliviercloutier/Desktop/Cockpit/tests/verify_auto_mode_healthcheck.py -> PASS
 
 ## Notes
--  excluded from snapshot commit as local transient cache.
-- Safety pointer branch created: .
+- `.venv_screenshot/` excluded from snapshot commit as local transient cache.
+- Safety pointer branch created: `codex/wave14-prepush-20260223`.
