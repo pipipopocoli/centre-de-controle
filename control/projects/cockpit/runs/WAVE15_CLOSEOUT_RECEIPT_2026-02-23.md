@@ -1,5 +1,10 @@
 # Wave15 Closeout Receipt - 2026-02-23
 
+## Push trace
+- branch: main
+- commit_sha: 93bbfc88
+- pushed_at_utc: 2026-02-23T11:11:00Z
+
 ## Scope
 - CP-0050 closeout sync
 - CP-0051 closeout sync
