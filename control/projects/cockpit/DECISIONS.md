@@ -154,3 +154,12 @@
 - Consequences: New live activity feed service and updated Pilotage/Overview contracts; cadence trust includes explicit pulse signal; tournament remains dormant.
 - Owners: clems, victor, leo, nova
 - References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE12_PUSH_RECEIPT_2026-02-23.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0044-wave13-agent-hierarchy-l0-l1-l2.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0045-wave13-vulgarisation-simple-clean.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0046-wave13-live-view-task-code-hybrid.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0047-wave13-runtime-cadence-stability.md
+
+## 2026-02-23 - ADR-CP-018 Wave14 lock from cockpit_v2_final_plan.docx
+- Status: Accepted
+- Context: Operator provided a consolidated Word document with direct answers on functional criteria, autonomy boundaries, priorities, role model, memory retention, and quality gates.
+- Decision: Use `/Users/oliviercloutier/Desktop/Cockpit/cockpit_v2_final_plan.docx` as Wave14 intent source and translate it into five execution issues: CP-0048..CP-0052.
+- Rationale: Removes ambiguity and aligns implementation lanes with explicit operator intent.
+- Consequences: Wave14 prioritizes startup onboarding, mission-critical gate, false-positive hardening, live readability, and retention policy before new feature expansion.
+- Owners: clems, victor, leo, nova
+- References: /Users/oliviercloutier/Desktop/Cockpit/cockpit_v2_final_plan.docx, /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE14_INPUT_FROM_COCKPIT_V2_FINAL_PLAN_2026-02-23.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE14_DISPATCH_2026-02-23.md

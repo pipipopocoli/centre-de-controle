@@ -1299,6 +1299,47 @@ def _render_vulgarisation_html(
         for label, value in chart_fallback_rows
     )
 
+    # Calculate Phase Graphic HTML
+    phases_list = ["Plan", "Implement", "Test", "Release"]
+    current_phase_str = str(snapshot.get("phase") or "Plan").strip().lower()
+    
+    current_idx = 0
+    for i, p in enumerate(phases_list):
+        if p.lower() in current_phase_str or (p.lower() == "implement" and "code" in current_phase_str):
+            current_idx = i
+            break
+            
+    phase_percent = int((current_idx / max(1, len(phases_list) - 1)) * 100)
+    px_sub = int(phase_percent * 80.0 / 100.0)
+    width_css = f"calc({phase_percent}% - {px_sub}px)"
+    
+    phase_nodes = []
+    for i, p in enumerate(phases_list):
+        is_completed = i < current_idx
+        is_current = i == current_idx
+        color = "#ffffff"
+        border = "#cbd5e1"
+        text_color = "#64748b"
+        font_weight = "normal"
+        if is_completed:
+            color = "#3b82f6"
+            border = "#3b82f6"
+            text_color = "#1d4ed8"
+        elif is_current:
+            border = "#3b82f6"
+            color = "#fff"
+            text_color = "#0f172a"
+            font_weight = "700"
+            
+        circ = f'''
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-start; position: relative; z-index: 2; width: 80px;">
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: {color}; border: 4px solid {border}; box-shadow: 0 0 0 4px #fff; margin-bottom: 8px;"></div>
+          <span style="font-size: 13px; color: {text_color}; font-weight: {font_weight};">{html.escape(p)}</span>
+        </div>'''
+        phase_nodes.append(circ)
+        
+    phase_nodes_html = "".join(phase_nodes)
+
     pressure_mode_text = "ENABLED" if bool(snapshot.get("pressure_mode")) else "DISABLED"
     brief_rows = snapshot.get("brief_60s") if isinstance(snapshot.get("brief_60s"), dict) else {}
     brief_now = _clean_text_value(brief_rows.get("On est ou")) or BRIEF_STABLE_FALLBACKS["On est ou"]
@@ -1482,67 +1523,86 @@ def _render_vulgarisation_html(
 <head>
 <style>
 :root {{
-  --bg: #f6f3ee;
-  --fg: #1c1c1c;
-  --line: #d9d3c8;
-  --muted: #5e6167;
+  --bg: #f8fafc;
+  --fg: #0f172a;
+  --line: #e2e8f0;
+  --muted: #64748b;
   --ok: #0f766e;
-  --warn: #92400e;
+  --warn: #b45309;
   --critical: #b91c1c;
   --panel: #ffffff;
-  --focus: #2c5dff;
+  --focus: #3b82f6;
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }}
 * {{ box-sizing: border-box; }}
 body {{
   margin: 0;
-  padding: 14px;
-  font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  padding: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--fg);
+  line-height: 1.5;
 }}
-a {{ color: #1d4ed8; }}
+a {{ color: #2563eb; text-decoration: none; }}
+a:hover {{ text-decoration: underline; }}
 a:focus {{ outline: 2px solid var(--focus); outline-offset: 2px; }}
 .skip {{ position: absolute; left: -999px; top: -999px; }}
 .skip:focus {{ left: 8px; top: 8px; background: #fff; border: 1px solid var(--line); padding: 6px; }}
-header {{ border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 10px; }}
-h1 {{ margin: 0; font-size: 22px; color: #2c5dff; }}
-.meta {{ margin-top: 6px; color: var(--muted); font-size: 12px; }}
+header {{ 
+  border: 1px solid var(--line); 
+  background: linear-gradient(135deg, #1e293b, #0f172a); 
+  color: #f8fafc;
+  border-radius: 12px; 
+  padding: 20px 24px; 
+  box-shadow: var(--shadow);
+}}
+h1 {{ margin: 0; font-size: 24px; color: #38bdf8; font-weight: 700; letter-spacing: -0.5px; }}
+.meta {{ margin-top: 8px; color: #94a3b8; font-size: 13px; }}
 .chip {{
   display: inline-block;
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 2px 8px;
+  padding: 3px 10px;
   font-size: 11px;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }}
 .chip-ok {{ color: var(--ok); border-color: #99f6e4; background: #f0fdfa; }}
-.chip-warn {{ color: var(--warn); border-color: #fcd34d; background: #fffbeb; }}
+.chip-warn {{ color: var(--warn); border-color: #fde68a; background: #fffbeb; }}
 .chip-critical {{ color: var(--critical); border-color: #fecaca; background: #fef2f2; }}
 .main-grid {{
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 12px;
+  gap: 16px;
+  margin-top: 24px;
 }}
 .card {{
   border: 1px solid var(--line);
   background: var(--panel);
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }}
-.card-head {{ display: flex; justify-content: space-between; align-items: center; gap: 8px; }}
-.card h3 {{ margin: 0; font-size: 14px; }}
-.kv {{ margin: 8px 0 0 0; padding-left: 0; list-style: none; }}
-.kv li {{ display: flex; justify-content: space-between; gap: 8px; border-top: 1px dashed #ece6db; padding: 6px 0; font-size: 12px; }}
+.card:hover {{
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}}
+.card-head {{ display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }}
+.card h3 {{ margin: 0; font-size: 15px; color: #1e293b; }}
+.kv {{ margin: 0; padding-left: 0; list-style: none; }}
+.kv li {{ display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid #f1f5f9; padding: 8px 0; font-size: 13px; }}
+.kv li:first-child {{ border-top: none; padding-top: 0; }}
 .k {{ color: var(--muted); }}
 .v {{ color: var(--fg); font-weight: 600; text-align: right; }}
-.evidence {{ margin: 6px 0 0 16px; font-size: 12px; }}
-section {{ margin-top: 12px; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 10px; }}
-section h2 {{ margin: 0 0 8px 0; font-size: 16px; color: #2c5dff; }}
-table {{ width: 100%; border-collapse: collapse; font-size: 12px; }}
-th, td {{ border-bottom: 1px solid #eee9df; padding: 7px; text-align: left; vertical-align: top; }}
-th {{ background: #f0ece6; color: #1c1c1c; }}
-.notice {{ margin-top: 8px; font-size: 12px; color: var(--muted); }}
+.evidence {{ margin: 8px 0 0 12px; font-size: 12px; padding-left: 12px; border-left: 2px solid #e2e8f0; }}
+section {{ margin-top: 24px; border: 1px solid var(--line); background: var(--panel); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); }}
+section h2 {{ margin: 0 0 16px 0; font-size: 18px; color: #1e293b; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; }}
+table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
+th, td {{ border-bottom: 1px solid #e2e8f0; padding: 10px 8px; text-align: left; vertical-align: top; }}
+th {{ background: #f8fafc; color: #475569; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }}
+.notice {{ margin-top: 0; margin-bottom: 16px; font-size: 13px; color: var(--muted); }}
 @media (max-width: 980px) {{
   .main-grid {{ grid-template-columns: repeat(1, minmax(0, 1fr)); }}
 }}
@@ -1565,6 +1625,24 @@ th {{ background: #f0ece6; color: #1c1c1c; }}
     </div>
     <div class="meta">{html.escape(simple_summary_notice)}</div>
   </header>
+
+  <section id="executive-summary" style="margin-top: 24px; padding: 24px; box-shadow: var(--shadow); border-radius: 12px; border: 1px solid var(--line); background: var(--panel);">
+    <h2 style="margin: 0 0 12px 0; color: #1e293b; font-size: 18px; display: flex; align-items: center; gap: 8px; border: none; padding-bottom: 0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      Executive Summary
+    </h2>
+    <p style="font-size: 15px; color: #334155; max-width: 850px; line-height: 1.6; margin: 0 0 32px 0;">
+      Le projet <strong>{html.escape(project.name)}</strong> est actuellement en phase de <strong>{html.escape(snapshot.get("phase") or "Plan")}</strong> avec comme objectif principal : <em>"{html.escape(snapshot.get("objective") or "Non défini")}"</em>. L'équipe a recensé <strong>{html.escape(str(signals.get("open_tickets", "0")))}</strong> tickets ouverts, et la charge estimée (CAD) est de <strong>{html.escape(cost_monthly)}</strong> ce mois-ci. L'état général indique un mode pression : <strong>{html.escape(pressure_mode_text)}</strong>.
+    </p>
+    
+    <div style="padding: 0 10px; max-width: 650px; margin-bottom: 12px; margin-top: 30px;">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; position: relative;">
+         <div style="position: absolute; top: 12px; left: 40px; right: 40px; height: 6px; background: #e2e8f0; z-index: 0; transform: translateY(-50%); border-radius: 3px;"></div>
+         <div style="position: absolute; top: 12px; left: 40px; width: {width_css}; height: 6px; background: #3b82f6; z-index: 1; transform: translateY(-50%); border-radius: 3px; transition: width 0.5s ease;"></div>
+         {phase_nodes_html}
+      </div>
+    </div>
+  </section>
 
   <main id="main" class="main-grid" role="main" aria-label="Operator summary cards">
     {card_html}

@@ -5,12 +5,13 @@ import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
     QHBoxLayout,
     QMainWindow,
+    QPushButton,
     QSizePolicy,
     QTabWidget,
     QVBoxLayout,
@@ -35,6 +36,7 @@ from app.services.pack_context import build_pack_context, write_pack_context
 from app.services.auto_mode import dispatch_once as auto_mode_dispatch_once
 from app.ui.agents_grid import AgentsGridWidget
 from app.ui.chatroom import ChatroomWidget
+from app.ui.doc_viewer import DocsViewerWidget
 from app.ui.project_bible import ProjectBibleWidget
 from app.ui.project_pilotage import ProjectPilotageWidget
 from app.ui.roadmap import RoadmapWidget
@@ -123,6 +125,34 @@ class MainWindow(QMainWindow):
         self.project_pilotage = ProjectPilotageWidget()
         self.center_tabs.addTab(self.project_pilotage, "Pilotage")
 
+        # Tab 4: Docs (Roadmap + Tournament HTML)
+        self.docs_viewer = DocsViewerWidget()
+        self.center_tabs.addTab(self.docs_viewer, "Docs")
+
+        # Corner Widget for UI Toggles
+        self.corner_widget = QWidget()
+        corner_layout = QHBoxLayout(self.corner_widget)
+        corner_layout.setContentsMargins(0, 0, 8, 0)
+        corner_layout.setSpacing(8)
+
+        self.toggle_sidebar_btn = QPushButton("≡ Sidebar")
+        self.toggle_sidebar_btn.setCheckable(True)
+        self.toggle_sidebar_btn.setChecked(True)
+        self.toggle_sidebar_btn.setFlat(True)
+        self.toggle_sidebar_btn.setStyleSheet("color: #5E6167; font-weight: bold; border: none;")
+        self.toggle_sidebar_btn.toggled.connect(self._toggle_sidebar_visibility)
+
+        self.toggle_chat_btn = QPushButton("Chat 💬")
+        self.toggle_chat_btn.setCheckable(True)
+        self.toggle_chat_btn.setChecked(True)
+        self.toggle_chat_btn.setFlat(True)
+        self.toggle_chat_btn.setStyleSheet("color: #5E6167; font-weight: bold; border: none;")
+        self.toggle_chat_btn.toggled.connect(self._toggle_chat_visibility)
+
+        corner_layout.addWidget(self.toggle_sidebar_btn)
+        corner_layout.addWidget(self.toggle_chat_btn)
+        self.center_tabs.setCornerWidget(self.corner_widget, Qt.TopRightCorner)
+
         center_layout.addWidget(self.center_tabs)
 
         self.chatroom = ChatroomWidget()
@@ -145,6 +175,7 @@ class MainWindow(QMainWindow):
         self.chatroom.pack_light_btn.clicked.connect(self.on_pack_light)
         self.chatroom.pack_full_btn.clicked.connect(self.on_pack_full)
         self.chatroom.ping_btn.clicked.connect(self.on_ping_agents)
+        self.sidebar.docs_btn.clicked.connect(self.on_show_docs)
         self.agents_grid.context_selected.connect(self.on_ui_context_selected)
         self.project_pilotage.context_selected.connect(self.on_ui_context_selected)
         self.sidebar.auto_mode.toggle.toggled.connect(self.on_auto_mode_toggled)
@@ -287,6 +318,9 @@ class MainWindow(QMainWindow):
         if select_id and select_id in projects:
             self.sidebar.project_list.setCurrentRow(projects.index(select_id))
         self.sidebar.project_list.blockSignals(False)
+
+    def on_show_docs(self) -> None:
+        self.center_tabs.setCurrentWidget(self.docs_viewer)
 
     def on_new_project(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Select project folder")
@@ -787,3 +821,17 @@ class MainWindow(QMainWindow):
                     }
                     append_chat_message(self.current_project_id, reminder)
                     self._clems_pinged_operator = True
+
+    def _toggle_sidebar_visibility(self, checked: bool) -> None:
+        self.sidebar.setVisible(checked)
+        if checked:
+            self.toggle_sidebar_btn.setStyleSheet("color: #5E6167; font-weight: bold; border: none;")
+        else:
+            self.toggle_sidebar_btn.setStyleSheet("color: #B91C1C; font-weight: bold; border: none;")
+
+    def _toggle_chat_visibility(self, checked: bool) -> None:
+        self.chatroom.setVisible(checked)
+        if checked:
+            self.toggle_chat_btn.setStyleSheet("color: #5E6167; font-weight: bold; border: none;")
+        else:
+            self.toggle_chat_btn.setStyleSheet("color: #B91C1C; font-weight: bold; border: none;")

@@ -253,6 +253,9 @@ class SidebarWidget(QWidget):
         self.new_project_btn = QPushButton("New Project")
         self.new_project_btn.setObjectName("newProjectButton")
 
+        self.docs_btn = QPushButton("Docs")
+        self.docs_btn.setObjectName("sidebarDocsButton")
+
         # Auto-Mode Panel
         self.runtime_context = RuntimeContextPanel()
         self.auto_mode = AutoModePanel(data_dir=data_dir)
@@ -260,6 +263,7 @@ class SidebarWidget(QWidget):
         layout.addWidget(self.runtime_context)
         layout.addWidget(title)
         layout.addWidget(self.project_list, 1)
+        layout.addWidget(self.docs_btn)
         layout.addWidget(self.auto_mode)
         layout.addWidget(self.new_project_btn)
 

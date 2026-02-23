@@ -1,40 +1,41 @@
 # State
 
 ## Phase
-- Implement
+- Plan
 
 ## Objective
-- Ship Wave13 UX lock: L0/L1/L2 hierarchy, live view task+code, clean vulgarisation simple mode, and pulse recency clarity.
+- Kick off Wave14 from the Word answers pack and lock onboarding readiness for a new existing repository.
 
 ## Now
-- Wave12.1 closeout pushed to `main` with receipt and canonical cockpit isolation lock.
-- Overview agent grid now renders explicit hierarchy sections L0/L1/L2 with action/attente/bloque/repos counts.
-- Pilotage now shows a compact live view (`Code now`, `Tasks now`, `Agents now`) with linked-repo-first fallback.
-- Vulgarisation simple mode has reduced density: 4 brief blocks + What next + Timeline focus.
-- Runtime cadence now tracks `last_pulse_at` and exposes pulse status in health signals.
+- Wave13 UX lanes are closed with proof packs (CP-0044..CP-0047).
+- Wave13 residual closeout completed: CP-0015 and CP-0042 are now Done with a dedicated evidence packet.
+- Runtime pulse signal is restored and healthcheck parity is green.
+- Word source answers were extracted and translated into Wave14 issue scope.
+- Wave14 dispatch packet is prepared with lead-first order and specialist follow-up.
 
 ## Next
-- Validate visual quality in desktop app (live run) and collect screenshot evidence for Wave13 lanes.
-- Dispatch lead prompts (@victor/@leo/@nova), then specialists after T+15m ack.
-- Keep dual-root cadence checks every 30-45 min during active lanes.
-- Close CP-0044..CP-0047 with mapped QA evidence.
+- Send Wave14 lead prompts in order: @victor, @leo, @nova.
+- Wait 15m for lead ack (Now/Next/Blockers), then send specialists.
+- Run cadence checks every 30-45 min during execution.
+- Close CP-0048..CP-0052 with evidence and update docs.
 
 ## In Progress
-- ISSUE-CP-0044-wave13-agent-hierarchy-l0-l1-l2
-- ISSUE-CP-0045-wave13-vulgarisation-simple-clean
-- ISSUE-CP-0046-wave13-live-view-task-code-hybrid
-- ISSUE-CP-0047-wave13-runtime-cadence-stability
+- ISSUE-CP-0048-wave14-startup-pack-existing-repo-onboarding
+- ISSUE-CP-0049-wave14-mission-critical-commit-gate
+- ISSUE-CP-0050-wave14-memory-retention-policy
+- ISSUE-CP-0051-wave14-live-task-squares-and-timeline-clarity
+- ISSUE-CP-0052-wave14-healthcheck-zero-false-positive
 
 ## Blockers
 - none
 
 ## Deferred debt
-- ISSUE-CP-0015 remains deferred and non-blocking.
+- none
 
 ## Risks
-- visual hierarchy can still feel dense if card content is too long.
-- stale pulse can return if cadence checks are skipped in long inactive windows.
-- linked repo can be unset for some projects (fallback expected).
+- onboarding flow can drift if startup pack format is not locked early.
+- mission-critical gate can over-block if evidence contract is too strict.
+- memory retention can regress if archive policy is unclear per project.
 
 ## Gates
 - pending_stale_gt24h == 0
@@ -45,12 +46,12 @@
 - tournament_auto_dispatch == false
 
 ## Links
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE12_PUSH_RECEIPT_2026-02-23.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0044-wave13-agent-hierarchy-l0-l1-l2.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0045-wave13-vulgarisation-simple-clean.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0046-wave13-live-view-task-code-hybrid.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0047-wave13-runtime-cadence-stability.md
-- /Users/oliviercloutier/Desktop/Cockpit/app/ui/agents_grid.py
-- /Users/oliviercloutier/Desktop/Cockpit/app/ui/project_pilotage.py
-- /Users/oliviercloutier/Desktop/Cockpit/app/services/live_activity_feed.py
-- /Users/oliviercloutier/Desktop/Cockpit/app/services/project_bible.py
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE13_CP0015_CP0042_CLOSEOUT_2026-02-23T0909Z.md
+- /Users/oliviercloutier/Desktop/Cockpit/cockpit_v2_final_plan.docx
+- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE14_INPUT_FROM_COCKPIT_V2_FINAL_PLAN_2026-02-23.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE14_DISPATCH_2026-02-23.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0048-wave14-startup-pack-existing-repo-onboarding.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0049-wave14-mission-critical-commit-gate.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0050-wave14-memory-retention-policy.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0051-wave14-live-task-squares-and-timeline-clarity.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0052-wave14-healthcheck-zero-false-positive.md

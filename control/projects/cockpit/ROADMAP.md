@@ -1,26 +1,27 @@
 # Roadmap
 
 ## Vision
-- Ship Cockpit V2 implementation-first with strong operator UX, deterministic runtime control, and tournament capability preserved dormant.
+- Ship Cockpit V2 as an operator-first orchestrator for complex existing repositories, with stable runtime control and strict project isolation.
 
 ## Current checkpoint
-- Wave13 active: hierarchy clarity + live activity view + vulgarisation simple cleanup + cadence pulse clarity.
+- Wave14 planning lock from Word answer pack.
+- Wave13 residual issues CP-0015 and CP-0042 closed with proof.
 
 ## Priorities
-- P0: Keep canonical cockpit isolation and runtime trust from Wave12.1.
-- P1: Render L0/L1/L2 hierarchy clearly in Overview + Pilotage.
-- P2: Ship live view panel (code/task/agents) with linked-repo-first fallback.
-- P3: Keep simple vulgarisation readable in <=60s while preserving full tech mode evidence.
-- P4: Expose pulse recency signal to reduce false degraded interpretation.
-- P5: Keep tournament preserved and dormant.
+- P0: startup pack onboarding for existing repo (deterministic).
+- P1: mission-critical commit gate with explicit evidence and approval.
+- P2: healthcheck precision with near-zero false positives.
+- P3: live task squares and timeline readability for operators.
+- P4: memory retention policy (7d/30d/90d/permanent archive) with project isolation.
+- P5: keep tournament preserved and dormant.
 
-## Wave13 sequence
-1. Phase A done: push Wave12.1 closeout to `main` + publish receipt.
-2. Phase B lane CP-0044: hierarchy rendering and counters.
-3. Phase B lane CP-0045: simple vulgarisation cleanup and switch clarity.
-4. Phase B lane CP-0046: live activity service + Pilotage integration.
-5. Phase B lane CP-0047: pulse recency contract and healthcheck compatibility.
-6. Closeout: QA sweep, evidence capture, and docs update.
+## Wave14 sequence
+1. Input lock from `/cockpit_v2_final_plan.docx`.
+2. Lead dispatch: @victor (CDX), @leo (AG), @nova (AG).
+3. Wait 15m for lead ack, then specialist dispatch.
+4. Gate #1 (T+2h): startup pack draft + UI matrix draft + retention policy draft.
+5. Gate #2 (T+4h): tests/evidence majority complete, no cadence regression.
+6. Closeout (T+6h): docs synced, issue status updated, proof links attached.
 
 ## Daily control gates
 - pending stale (24h+) must be 0
@@ -33,8 +34,7 @@
 ## Active source of truth
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/STATE.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/DECISIONS.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE12_PUSH_RECEIPT_2026-02-23.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0044-wave13-agent-hierarchy-l0-l1-l2.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0045-wave13-vulgarisation-simple-clean.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0046-wave13-live-view-task-code-hybrid.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0047-wave13-runtime-cadence-stability.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE13_CP0015_CP0042_CLOSEOUT_2026-02-23T0909Z.md
+- /Users/oliviercloutier/Desktop/Cockpit/cockpit_v2_final_plan.docx
+- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE14_INPUT_FROM_COCKPIT_V2_FINAL_PLAN_2026-02-23.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE14_DISPATCH_2026-02-23.md

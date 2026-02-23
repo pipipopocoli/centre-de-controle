@@ -200,6 +200,67 @@ QPushButton#newProjectButton:hover {
     background-color: #2454E0;
 }
 
+QPushButton#sidebarDocsButton {
+    background-color: #FFFFFF;
+    color: #2C5DFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-weight: 600;
+}
+
+QPushButton#sidebarDocsButton:hover {
+    background-color: rgba(44, 93, 255, 0.08);
+}
+
+QPushButton#sidebarDocsButton:pressed {
+    background-color: rgba(44, 93, 255, 0.15);
+}
+
+QFrame#docsViewer {
+    background-color: #FFFFFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 8px;
+}
+
+QWidget#docsViewerToolbar {
+    background-color: transparent;
+}
+
+QPushButton#docsDocButton,
+QPushButton#docsActionButton {
+    background-color: #FFFFFF;
+    color: #1C1C1C;
+    border: 1px solid #D9D3C8;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-weight: 600;
+}
+
+QPushButton#docsDocButton[selected="true"] {
+    background-color: rgba(44, 93, 255, 0.12);
+    color: #2C5DFF;
+    border-color: #2C5DFF;
+}
+
+QPushButton#docsDocButton:hover,
+QPushButton#docsActionButton:hover {
+    background-color: rgba(44, 93, 255, 0.08);
+}
+
+QLabel#docsViewerStatus {
+    color: #5E6167;
+    font-size: 11px;
+    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+QTextBrowser#docsFallbackView {
+    background-color: #F6F3EE;
+    border: 1px solid #D9D3C8;
+    border-radius: 6px;
+    padding: 8px;
+}
+
 /* Roadmap */
 QFrame#roadmap {
     background-color: #FFFFFF;
