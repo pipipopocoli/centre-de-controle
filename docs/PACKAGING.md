@@ -1,62 +1,73 @@
 # Packaging (macOS .app)
 
-Goal: build a local-first macOS .app that runs without a venv and keeps data outside the bundle.
+Goal: build a local-first macOS app that runs without a venv and keeps data outside the bundle.
 
-## Desktop update contract (Wave09)
+## Desktop launch contract (Wave16)
 
-Two channels are intentionally supported:
+Two channels are supported, but only one is the primary operator icon:
 
-1. Dev Live (recommended during implementation)
+1. Primary operator icon (Release single-icon target)
+- Launch source: `/Applications/Centre de controle.app`
+- Install source: `dist/Centre de controle.app`
+- Behavior: single app icon in Dock/Finder for the main operator path.
+- Rebuild required to ship new Python/UI code into the app bundle.
+
+2. Dev Live (engineering lane, optional)
 - Launch source: `./launch_cockpit.sh`
-- Uses current repo code.
-- Runtime/project data refreshes continuously.
-- QSS changes are live; Python code changes apply after app restart.
-- Dock note: seeing a second Python icon (rocket) is expected in Dev Live.
-
-2. Release app (distribution snapshot)
-- Launch source: `dist/Centre de controle.app`
-- Frozen build artifact.
-- No full auto-update of code/UI from repo changes.
-- Rebuild is required to ship new UI/code into the `.app`.
+- Uses current repo code for iteration.
+- QSS updates are live; Python code changes apply after restart.
+- Dev Live launcher may still show applet/python split behavior, but this is not the primary operator icon path.
 
 ## Data directory
 Order of precedence:
-- COCKPIT_DATA_DIR=repo|dev -> control/projects (dev only)
-- COCKPIT_DATA_DIR=app|appsupport -> ~/Library/Application Support/Cockpit/projects
-- COCKPIT_DATA_DIR=<absolute path> -> explicit projects root
-- No env var -> ~/Library/Application Support/Cockpit/projects (canonical default)
+- `COCKPIT_DATA_DIR=repo|dev` -> `control/projects` (dev only)
+- `COCKPIT_DATA_DIR=app|appsupport` -> `~/Library/Application Support/Cockpit/projects`
+- `COCKPIT_DATA_DIR=<absolute path>` -> explicit projects root
+- no env var -> `~/Library/Application Support/Cockpit/projects` (canonical default)
 
-## PyInstaller prototype (recommended)
+## Build release app (PyInstaller)
 
 Install:
-- ./.venv/bin/python -m pip install pyinstaller
-- (fallback) python3 -m pip install pyinstaller
+- `./.venv/bin/python -m pip install pyinstaller`
+- fallback: `python3 -m pip install pyinstaller`
 
-Build (windowed .app):
-- PATH="$PWD/.venv/bin:$PATH" scripts/packaging/build_mac_app.sh
+Build:
+- `PATH="$PWD/.venv/bin:$PATH" scripts/packaging/build_mac_app.sh`
 
 Output:
-- dist/Centre de controle.app
+- `dist/Centre de controle.app`
 
 Version stamp:
-- The build script writes `build/version.json` with branch/sha/dirty.
-- The app reads the bundled `app/version.json` when git is unavailable inside the bundle.
+- Build writes `build/version.json` with branch/sha/dirty.
+- App reads bundled `app/version.json` when git is not available in bundle runtime.
 
-Notes:
-- The build script sets `PYINSTALLER_CONFIG_DIR=build/pyinstaller-cache` to avoid permissions errors in
-  `~/Library/Application Support/pyinstaller`.
-- If you see Qt plugin errors, keep `--collect-submodules PySide6` in the build command.
-- Version stamp is written at build time to `build/version.json` and bundled into the app as `app/version.json`.
-- The `*` indicates a dirty repo **at build time**, not runtime.
-- If you see "python: command not found", use the venv command above.
-If the app launches with the *old* UI, ensure you're opening:
-- `dist/Centre de controle.app` (not a previously installed copy in /Applications).
-If you distribute outside your dev machine, codesign the app:
+## Install primary operator icon target
+
+Use this once after each release build (or when replacing stale launcher applets):
+
+```bash
+cd /Users/oliviercloutier/Desktop/Cockpit
+scripts/packaging/install_release_app.sh
 ```
 
-## Install a Dev Live Dock launcher
+CLI options:
+- `--source <app_path>` (default: `dist/Centre de controle.app`)
+- `--target <app_path>` (default: `/Applications/Centre de controle.app`)
+- `--keep-dev-live true|false` (default: `true`)
 
-Use this once on your machine:
+Behavior:
+- Existing target is backed up with timestamp.
+- If existing target was an applet launcher (`CFBundleExecutable=applet`), it is still backed up and can be preserved as optional Dev Live launcher when `--keep-dev-live true`.
+- Release app is copied into `/Applications/Centre de controle.app`.
+
+Verification:
+
+```bash
+plutil -p /Applications/Centre\ de\ controle.app/Contents/Info.plist
+# CFBundleExecutable should be "Centre de controle"
+```
+
+## Optional: install Dev Live launcher
 
 ```bash
 cd /Users/oliviercloutier/Desktop/Cockpit
@@ -67,21 +78,21 @@ Expected output:
 - `~/Applications/Centre de controle - Dev Live.app` (preferred), or
 - fallback `~/Applications/Centre de controle - Dev Live.command`
 
-Then drag the Dev Live launcher to Dock and remove stale icons.
-If you still see two icons while using Dev Live, that is expected behavior:
-- one icon is the launcher applet,
-- one icon is the running Python process.
-codesign --deep --force --options runtime --sign "Developer ID Application: <NAME>" dist/<App>.app
+## Codesign (when distributing outside local machine)
+
+```bash
+codesign --deep --force --options runtime --sign "Developer ID Application: <NAME>" dist/Centre\ de\ controle.app
 ```
 
 ## QA checklist
-- Launch the .app
-- Verify version stamp is visible (or fallback string)
+- Launch `/Applications/Centre de controle.app`
+- Confirm `CFBundleExecutable` is `Centre de controle`
+- Verify version stamp is visible in UI
 - Open demo project (auto-created if missing)
-- Send a chat message and confirm NDJSON writes to the data dir
-- Verify UI layout (Paper Ops) and chat buttons are not clipped
+- Send a chat message and confirm NDJSON writes to data dir
+- Verify UI layout and chat actions remain readable
 
-## Notes / Risks
-- Qt plugins can be finicky; if the app opens blank, verify PyInstaller collected Qt plugins.
-- Version stamp will show unknown@unknown if version.json is missing and git is not available inside the bundle.
-- Build artifacts can be large; use dist/ cleanup as needed.
+## Notes / risks
+- If app opens blank, verify PyInstaller collected Qt plugins (`--collect-submodules PySide6`).
+- Version stamp can show `unknown@unknown` when version.json is missing and git is unavailable in bundle runtime.
+- Keep release and dev-live channels explicit to avoid launch confusion.

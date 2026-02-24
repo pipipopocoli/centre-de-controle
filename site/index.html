@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cockpit V2 - Public Explainer</title>
+  <meta
+    name="description"
+    content="Cockpit V2 explained for beginners: why V1 stalled, why V2 works, addon roles, architecture, memory pipeline, dispatch flow, and Wave16 operating mode."
+  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <a class="brand" href="#top">
+        <img src="assets/cockpit-grid.svg" alt="Cockpit symbol" width="28" height="28" />
+        <span>Cockpit V2</span>
+      </a>
+      <nav class="main-nav" aria-label="Primary">
+        <a href="#v1">V1</a>
+        <a href="#v2">V2</a>
+        <a href="#addons">Add-ons</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#charts">Charts</a>
+        <a href="#wave16">Wave16</a>
+        <a href="#launch">Start</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="content">
+    <section id="top" class="hero section">
+      <div class="shell hero-grid">
+        <div>
+          <p class="eyebrow">Public relaunch - 2026-02-24</p>
+          <h1>Cockpit V2, explained for real humans.</h1>
+          <p class="lede">
+            This page is the clean public story of Cockpit V2: what failed in V1,
+            what is fixed now, how add-ons fit in, and how the platform stays
+            stable during the current Wave16 codex-only window.
+          </p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="#launch">Read in 3-minute mode</a>
+            <a class="btn btn-ghost" href="#architecture">Read full system map</a>
+          </div>
+          <dl class="hero-kpi" aria-label="Top indicators">
+            <div>
+              <dt>Wave</dt>
+              <dd>16</dd>
+            </div>
+            <div>
+              <dt>Mode</dt>
+              <dd>Codex-only</dd>
+            </div>
+            <div>
+              <dt>Launch icon</dt>
+              <dd>Single app target</dd>
+            </div>
+          </dl>
+        </div>
+        <aside class="hero-card" aria-label="What this page gives you">
+          <h2>What you get here</h2>
+          <ul>
+            <li>Before vs now, with 1:1 fixes.</li>
+            <li>Runtime add-ons vs product add-ons.</li>
+            <li>Three system diagrams, two operational charts.</li>
+            <li>Wave16 dispatch order and credit guard policy.</li>
+            <li>Simple start path for new operators.</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <section id="v1" class="section tone-warm">
+      <div class="shell">
+        <h2>Why V1 did not hold in production</h2>
+        <p class="section-copy">
+          V1 had energy, but it had drift. Work moved fast, then context got lost,
+          dispatch got noisy, and the desktop launch story became confusing.
+          The core issue was not one bug; it was system shape.
+        </p>
+        <div class="card-grid">
+          <article class="info-card">
+            <h3>1. Dispatch noise</h3>
+            <p>
+              Too many queued or stale requests made signal quality weak and
+              operators had to guess what still mattered.
+            </p>
+          </article>
+          <article class="info-card">
+            <h3>2. Recency drift</h3>
+            <p>
+              Health could look degraded only because timestamps were stale,
+              even after a fresh pulse in another root.
+            </p>
+          </article>
+          <article class="info-card">
+            <h3>3. Dual-root confusion</h3>
+            <p>
+              Repo root and AppSupport root were not always read as one operating
+              picture, so operators saw mixed truth.
+            </p>
+          </article>
+          <article class="info-card">
+            <h3>4. Launch channel confusion</h3>
+            <p>
+              Dev Live applet behavior made the primary icon experience unclear
+              for non technical users.
+            </p>
+          </article>
+          <article class="info-card">
+            <h3>5. Provider dependency risk</h3>
+            <p>
+              Antigravity credit/outage windows could stall lanes without a strict
+              outage policy.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="v2" class="section">
+      <div class="shell">
+        <h2>Why V2 works now (fix map)</h2>
+        <p class="section-copy">
+          V2 uses explicit contracts. Every high-risk pain point now has an owner,
+          a deterministic gate, and a check command.
+        </p>
+        <div class="mapping-table" role="region" aria-label="Before vs now map">
+          <table>
+            <thead>
+              <tr>
+                <th>V1 pain</th>
+                <th>V2 fix</th>
+                <th>Proof path</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Queued stale noise</td>
+                <td>Queue hygiene + dispatch cap + closeout receipts</td>
+                <td><code>runs/WAVE15_CLOSEOUT_RECEIPT_2026-02-23.md</code></td>
+              </tr>
+              <tr>
+                <td>False degraded from stale snapshots</td>
+                <td>Autopulse guard + soft warning semantics</td>
+                <td><code>tests/verify_wave16_recency_autopulse_guard.py</code></td>
+              </tr>
+              <tr>
+                <td>No clear outage policy</td>
+                <td>Wave16 codex-only lock and allowed-agents list</td>
+                <td><code>control/projects/cockpit/settings.json</code></td>
+              </tr>
+              <tr>
+                <td>Ambiguous desktop launch</td>
+                <td>Single-icon release install path</td>
+                <td><code>scripts/packaging/install_release_app.sh</code></td>
+              </tr>
+              <tr>
+                <td>Unclear owner during pressure</td>
+                <td>Lead-first order with explicit wait/ack contract</td>
+                <td><code>runs/V2_WAVE16_DISPATCH_CREDIT_GUARD_2026-02-24.md</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="addons" class="section tone-cool">
+      <div class="shell">
+        <h2>Role of add-ons in Cockpit V2</h2>
+        <p class="section-copy">
+          Add-ons are not decoration. They are controlled extension layers.
+          We split them in two lanes so operators can reason about risk quickly.
+        </p>
+        <div class="addon-grid">
+          <article class="addon-card">
+            <h3>Runtime add-ons</h3>
+            <p class="sub">"Can the app run and ship clean?"</p>
+            <ul>
+              <li>PySide6 Addons/Essentials for UI runtime modules.</li>
+              <li>Packaging scripts for macOS release builds.</li>
+              <li>Launch channel scripts (release vs dev live).</li>
+              <li>Healthcheck and pulse command wrappers.</li>
+            </ul>
+            <p class="tiny-note">
+              Runtime add-ons are judged by stability, startup behavior,
+              and rollback safety.
+            </p>
+          </article>
+          <article class="addon-card">
+            <h3>Product add-ons</h3>
+            <p class="sub">"Can agents do useful work with guardrails?"</p>
+            <ul>
+              <li>Skills catalog and installer governance.</li>
+              <li>Mission templates and dispatch packets.</li>
+              <li>Vulgarisation reports and operator brief cards.</li>
+              <li>Policy gates for credits, recency, and approval.</li>
+            </ul>
+            <p class="tiny-note">
+              Product add-ons are judged by evidence quality and decision clarity.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="architecture" class="section">
+      <div class="shell">
+        <h2>Architecture and control flow</h2>
+        <p class="section-copy">
+          Three visual maps below show the operating model. They are written for
+          first-time readers, not only for engineers.
+        </p>
+
+        <article class="diagram-block">
+          <h3>Diagram 1 - Team hierarchy (L0/L1/L2)</h3>
+          <svg class="diagram-canvas" viewBox="0 0 980 320" role="img" aria-label="L0 L1 L2 hierarchy diagram">
+            <rect x="20" y="24" width="940" height="272" rx="18" class="panel" />
+            <g>
+              <rect x="428" y="44" width="124" height="54" rx="12" class="node node-l0" />
+              <text x="490" y="68" text-anchor="middle" class="node-title">@clems</text>
+              <text x="490" y="86" text-anchor="middle" class="node-sub">L0 orchestration</text>
+            </g>
+            <g>
+              <rect x="256" y="138" width="124" height="54" rx="12" class="node node-l1" />
+              <text x="318" y="162" text-anchor="middle" class="node-title">@victor</text>
+              <text x="318" y="180" text-anchor="middle" class="node-sub">L1 backend</text>
+            </g>
+            <g>
+              <rect x="600" y="138" width="124" height="54" rx="12" class="node node-l1" />
+              <text x="662" y="162" text-anchor="middle" class="node-title">@nova</text>
+              <text x="662" y="180" text-anchor="middle" class="node-sub">L1 advisory</text>
+            </g>
+            <g>
+              <rect x="428" y="228" width="124" height="54" rx="12" class="node node-l2" />
+              <text x="490" y="252" text-anchor="middle" class="node-title">@agent-3</text>
+              <text x="490" y="270" text-anchor="middle" class="node-sub">L2 specialist</text>
+            </g>
+            <path d="M490 98 L318 138" class="edge" />
+            <path d="M490 98 L662 138" class="edge" />
+            <path d="M318 192 L490 228" class="edge" />
+            <path d="M662 192 L490 228" class="edge" />
+          </svg>
+        </article>
+
+        <article class="diagram-block">
+          <h3>Diagram 2 - Memory pipeline</h3>
+          <svg class="diagram-canvas" viewBox="0 0 980 280" role="img" aria-label="Memory pipeline diagram">
+            <rect x="20" y="18" width="940" height="244" rx="18" class="panel" />
+            <rect x="54" y="92" width="170" height="82" rx="12" class="node node-plain" />
+            <text x="139" y="123" text-anchor="middle" class="node-title">Input files</text>
+            <text x="139" y="144" text-anchor="middle" class="node-sub">STATE ROADMAP DECISIONS chat</text>
+
+            <rect x="286" y="92" width="170" height="82" rx="12" class="node node-plain" />
+            <text x="371" y="123" text-anchor="middle" class="node-title">Normalizer</text>
+            <text x="371" y="144" text-anchor="middle" class="node-sub">deterministic snapshot</text>
+
+            <rect x="518" y="92" width="170" height="82" rx="12" class="node node-plain" />
+            <text x="603" y="123" text-anchor="middle" class="node-title">Indexes</text>
+            <text x="603" y="144" text-anchor="middle" class="node-sub">FTS5 + retention map</text>
+
+            <rect x="750" y="92" width="170" height="82" rx="12" class="node node-highlight" />
+            <text x="835" y="123" text-anchor="middle" class="node-title">Operator views</text>
+            <text x="835" y="144" text-anchor="middle" class="node-sub">brief cards + runbooks</text>
+
+            <line x1="224" y1="133" x2="286" y2="133" class="edge" />
+            <line x1="456" y1="133" x2="518" y2="133" class="edge" />
+            <line x1="688" y1="133" x2="750" y2="133" class="edge" />
+          </svg>
+        </article>
+
+        <article class="diagram-block">
+          <h3>Diagram 3 - Dispatch flow in Wave16</h3>
+          <svg class="diagram-canvas" viewBox="0 0 980 300" role="img" aria-label="Wave16 dispatch flow diagram">
+            <rect x="20" y="22" width="940" height="256" rx="18" class="panel" />
+            <rect x="50" y="114" width="170" height="64" rx="10" class="node node-plain" />
+            <text x="135" y="140" text-anchor="middle" class="node-title">1 @victor</text>
+            <text x="135" y="159" text-anchor="middle" class="node-sub">backend runtime lead</text>
+
+            <rect x="280" y="114" width="170" height="64" rx="10" class="node node-plain" />
+            <text x="365" y="140" text-anchor="middle" class="node-title">2 @nova</text>
+            <text x="365" y="159" text-anchor="middle" class="node-sub">advisory + digest</text>
+
+            <rect x="510" y="114" width="170" height="64" rx="10" class="node node-warning" />
+            <text x="595" y="140" text-anchor="middle" class="node-title">3 wait 15m</text>
+            <text x="595" y="159" text-anchor="middle" class="node-sub">Now Next Blockers ack</text>
+
+            <rect x="740" y="114" width="170" height="64" rx="10" class="node node-l2" />
+            <text x="825" y="140" text-anchor="middle" class="node-title">4 @agent-3 optional</text>
+            <text x="825" y="159" text-anchor="middle" class="node-sub">only if backend load</text>
+
+            <line x1="220" y1="146" x2="280" y2="146" class="edge" />
+            <line x1="450" y1="146" x2="510" y2="146" class="edge" />
+            <line x1="680" y1="146" x2="740" y2="146" class="edge" />
+
+            <text x="490" y="232" text-anchor="middle" class="callout">@leo lane paused until Antigravity credits recover.</text>
+          </svg>
+        </article>
+      </div>
+    </section>
+
+    <section id="charts" class="section tone-warm">
+      <div class="shell">
+        <h2>Operational charts</h2>
+        <p class="section-copy">
+          Two quick charts summarize timeline and system quality shift.
+        </p>
+
+        <div class="chart-wrap">
+          <article class="chart-card">
+            <h3>Chart 1 - Wave timeline status</h3>
+            <p class="chart-sub">Progress from Wave14 to Wave16 checkpoint.</p>
+            <div id="timeline-chart" class="chart-bars" aria-label="Wave timeline chart"></div>
+          </article>
+
+          <article class="chart-card">
+            <h3>Chart 2 - Before vs now operating quality</h3>
+            <p class="chart-sub">Target: fewer stale false alarms, clearer dispatch ownership.</p>
+            <div id="delta-chart" class="chart-bars" aria-label="Before vs now chart"></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="wave16" class="section">
+      <div class="shell">
+        <h2>On est ou / On va ou (Wave16)</h2>
+        <div class="status-grid">
+          <article>
+            <h3>On est ou</h3>
+            <ul>
+              <li>Wave16 codex-only lock active.</li>
+              <li>Dual-root recency cadence required every 30-45 min.</li>
+              <li>Credit guard active with hard reserve floor.</li>
+              <li>AG/UI expansion lane paused by policy.</li>
+            </ul>
+          </article>
+          <article>
+            <h3>On va ou</h3>
+            <ul>
+              <li>Keep runtime green through repeated pulse/check gates.</li>
+              <li>Run lead-first dispatch with explicit waits and receipts.</li>
+              <li>Resume AG lanes only after credit/outage recovery signal.</li>
+              <li>Preserve tournament dormant guard until explicit unlock.</li>
+            </ul>
+          </article>
+        </div>
+        <p class="gates-line">
+          Daily gates: pending stale 24h = 0 | stale heartbeats 1h <= 2 |
+          queued requests <= 3 | repo healthcheck healthy | appsupport healthcheck healthy.
+        </p>
+      </div>
+    </section>
+
+    <section id="launch" class="section tone-cool">
+      <div class="shell">
+        <h2>How to launch in 3 minutes</h2>
+        <ol class="launch-steps">
+          <li>
+            <strong>Install single-icon release app target</strong>
+            <pre><code>cd /Users/oliviercloutier/Desktop/Cockpit
+scripts/packaging/install_release_app.sh</code></pre>
+          </li>
+          <li>
+            <strong>Verify the icon target is a real app binary</strong>
+            <pre><code>plutil -p /Applications/Centre\ de\ controle.app/Contents/Info.plist
+# CFBundleExecutable must be "Centre de controle", not "applet"</code></pre>
+          </li>
+          <li>
+            <strong>Run Wave16 cadence commands</strong>
+            <pre><code>./.venv/bin/python scripts/auto_mode.py --project cockpit --pulse-only
+./.venv/bin/python scripts/auto_mode_healthcheck.py --project cockpit --stale-seconds 3600 --max-open 3 --autopulse-guard</code></pre>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="faq" class="section">
+      <div class="shell">
+        <h2>FAQ</h2>
+        <div class="faq-list">
+          <details>
+            <summary>Why is @leo paused right now?</summary>
+            <p>
+              Current policy (Wave16) keeps AG-targeted lanes paused while
+              Antigravity credits are unavailable. This protects reserve floor
+              and keeps control on core backend/advisory delivery.
+            </p>
+          </details>
+          <details>
+            <summary>What is the difference between release and dev live?</summary>
+            <p>
+              Release mode is the single-icon packaged app target for operators.
+              Dev live remains available for engineering iteration but is no
+              longer the primary launch icon path.
+            </p>
+          </details>
+          <details>
+            <summary>Do add-ons reduce safety?</summary>
+            <p>
+              Not by default. Add-ons are split by lane (runtime/product),
+              documented, and gated with tests, receipts, and owner accountability.
+            </p>
+          </details>
+          <details>
+            <summary>How do we know V2 status is fresh?</summary>
+            <p>
+              We publish runbook cadence plus gate checks for both roots and keep
+              run receipts with timestamps and command traces.
+            </p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-inner">
+      <p>Cockpit V2 public explainer - updated 2026-02-24</p>
+      <p>Production URL: <a href="https://cockpit-v2-launch.vercel.app">cockpit-v2-launch.vercel.app</a></p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

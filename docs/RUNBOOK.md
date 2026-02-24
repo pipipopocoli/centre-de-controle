@@ -1,10 +1,10 @@
-# Centre de controle — Docs/Runbook (PR1)
+# Centre de controle - Docs/Runbook
 
 ## Run (Python >= 3.11)
 
 Notes:
-- Project targets Python >= 3.11 (3.12 OK).
-- The PyPI package "mcp" requires Python >= 3.10, but we standardize higher for simplicity.
+- Project target: Python >= 3.11 (3.12 OK).
+- PyPI package `mcp` requires Python >= 3.10, but project baseline stays at 3.11+.
 
 ```bash
 cd /Users/oliviercloutier/Desktop/Cockpit
@@ -15,41 +15,39 @@ python -m pip install -r requirements.txt
 ./launch_cockpit.sh
 ```
 
-## Daily launch policy (Wave09)
+## Daily launch policy (Wave16)
 
-- During active implementation, use **Dev Live** as source of truth:
-  - `./launch_cockpit.sh`
-- Treat `dist/Centre de controle.app` as a release snapshot only:
-  - rebuild required for new code/UI.
+Primary operator launch path:
+- Open `/Applications/Centre de controle.app`
+- This should be the packaged release app target (single-icon operator path).
 
-Install a Dock launcher that always opens Dev Live:
+Install/update primary target:
 
 ```bash
 cd /Users/oliviercloutier/Desktop/Cockpit
-scripts/packaging/install_dev_live_launcher.sh
+scripts/packaging/install_release_app.sh
 ```
 
-In app runtime panel:
-- `Mode: DEV LIVE` -> expected for daily implementation.
-- `Mode: RELEASE` -> snapshot build (no code auto-update).
-- In `DEV LIVE`, two dock icons can appear (launcher + python rocket). This is expected.
+Optional engineering path (Dev Live):
+- `./launch_cockpit.sh`
+- Use this for fast code iteration only, not as the primary operator icon path.
 
-Version check:
-- The window title shows: `Centre de controle - <branch>@<sha><*dirty>`
-- Sidebar footer shows the same stamp plus the active data root path.
-- Expected default is `~/Library/Application Support/Cockpit/projects`.
-- Use `COCKPIT_DATA_DIR=repo` only for explicit repo-local dev sessions.
+Runtime panel expectations:
+- `Mode: RELEASE` -> packaged snapshot mode.
+- `Mode: DEV LIVE` -> engineering live mode.
 
-## V1 Local Dev Release (Phase 3)
+Version checks:
+- Window title: `Centre de controle - <branch>@<sha><*dirty>`
+- Sidebar footer: version stamp + active data root path.
+- Canonical default data root: `~/Library/Application Support/Cockpit/projects`
+- Use `COCKPIT_DATA_DIR=repo` only for explicit repo-local sessions.
 
-Release note (short):
-- V1 local dev release is live. Paper Ops UI is applied, chat actions are compact, and the version stamp is visible. Packaging is deferred to V2.
+## Verify installed app target
 
-QA checklist (V1):
-1. Launch app: `./.venv/bin/python app/main.py`
-2. Title shows `main@<sha>`
-3. Resize window: no clipping in chat action row
-4. Click `Ping Team`: ACK appears in chat and heartbeat updates
+```bash
+plutil -p /Applications/Centre\ de\ controle.app/Contents/Info.plist
+# CFBundleExecutable should be "Centre de controle"
+```
 
 ## Run MCP Server (stdio)
 
@@ -59,7 +57,7 @@ source venv/bin/activate
 python control/mcp_server.py
 ```
 
-## Runtime Drift Recovery (App Support canonical)
+## Runtime drift recovery (AppSupport canonical)
 
 Strict inbox prune (with archive backup):
 
@@ -76,18 +74,18 @@ cd /Users/oliviercloutier/Desktop/Cockpit
 ```
 
 Rollback:
-- Restore the latest file from `~/Library/Application Support/Cockpit/projects/<project>/runs/inbox/archive/`.
+- Restore latest file from `~/Library/Application Support/Cockpit/projects/<project>/runs/inbox/archive/`.
 
-## UI Layout (fixed)
+## UI layout (fixed)
 
-- **Sidebar (left)**: Projects list + `New Project` button.
-- **Top center**: Roadmap (timeline + Now/Next/Risks).
-- **Center**: Single grid of agents (CDX + AG mixed). Each card shows badge, phase, percent, ETA, status, heartbeat.
-- **Right panel**: Chatroom tabs (Global + Threads), composer, `Pack Context` actions, `Ping Leo+Victor`.
+- Sidebar: Projects + `New Project`
+- Top center: Roadmap (timeline + Now/Next/Risks)
+- Center: single grid of agents (CDX + AG mixed), each card with phase/percent/eta/status
+- Right panel: Chatroom tabs (Global + Threads), composer, `Pack Context` actions
 
-## Local Data Structure (V1)
+## Local data structure
 
-```
+```text
 control/projects/<project_id>/
   agents/<agent_id>/state.json
   agents/<agent_id>/journal.ndjson

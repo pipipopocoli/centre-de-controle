@@ -5,7 +5,9 @@
 
 ## Current checkpoint
 - Wave16 codex-only consolidation active due AG outage.
-- Wave16 backend/advisory lock is in repository and moving to final push closeout.
+- Wave16 backend/advisory lock is in repository with push receipt published.
+- Public Cockpit V2 explainer is republished on production Vercel.
+- Primary operator launch policy is now single-icon release target.
 
 ## Priorities
 - P0: codex-only outage mode + credit guard until Feb 26.
@@ -27,6 +29,7 @@
 2. Keep `@leo` lane paused until AG credits recover.
 3. Open feature issues only after runtime gates stay green at two checkpoints.
 4. Preserve tournament dormant guard.
+5. Keep release app as primary operator icon; use Dev Live only for engineering iteration.
 
 ## Daily control gates
 - pending stale (24h+) must be 0
@@ -54,3 +57,6 @@
 - /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE16_RETENTION_VISIBILITY_ADVISORY_2026-02-23.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_OPERATOR_RECENCY_RUNBOOK_2026-02-24.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_PUSH_RECEIPT_2026-02-24.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WEB_REPUBLISH_WAVE16_2026-02-24.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE16_DISPATCH_CREDIT_GUARD_2026-02-24.md
+- /Users/oliviercloutier/Desktop/Cockpit/scripts/packaging/install_release_app.sh

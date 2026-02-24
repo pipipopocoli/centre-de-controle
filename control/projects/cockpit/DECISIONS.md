@@ -172,3 +172,12 @@
 - Consequences: Leo/UI expansion lane is paused; AG-targeted requests are closed with explicit outage reason during this window; dual-root pulse/check cadence becomes mandatory to avoid stale-only degraded drift.
 - Owners: clems, victor, nova
 - References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE_MAP_WAVE16_CP0056_CP0060.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/settings.json, /Users/oliviercloutier/Desktop/Cockpit/app/services/auto_mode.py, /Users/oliviercloutier/Desktop/Cockpit/tests/verify_wave16_codex_only_outage_mode.py
+
+## 2026-02-24 - ADR-CP-020 Public relaunch + single-icon operator app policy
+- Status: Accepted
+- Context: Operator requested a public Cockpit V2 explainer relaunch, a clear Wave16 dispatch packet for AG outage conditions, and a fix for launcher confusion where the main icon resolved to a Python applet flow.
+- Decision: Publish the new public explainer directly to production (`cockpit-v2-launch`), lock Wave16 lead-first dispatch packet (`@victor`, `@nova`, optional `@agent-3`, `@leo` paused), and set release app as primary operator icon path via `install_release_app.sh`.
+- Rationale: Removes ambiguity for both public narrative and daily operations while keeping outage-safe delivery constraints.
+- Consequences: Main `/Applications/Centre de controle.app` now points to release binary (`CFBundleExecutable=Centre de controle`), Dev Live remains optional, and docs are updated to stop framing two-icon behavior as normal for the primary icon path.
+- Owners: clems, victor, nova
+- References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WEB_REPUBLISH_WAVE16_2026-02-24.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE16_DISPATCH_CREDIT_GUARD_2026-02-24.md, /Users/oliviercloutier/Desktop/Cockpit/scripts/packaging/install_release_app.sh, /Users/oliviercloutier/Desktop/Cockpit/docs/PACKAGING.md, /Users/oliviercloutier/Desktop/Cockpit/docs/RUNBOOK.md

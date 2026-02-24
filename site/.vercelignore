@@ -1,0 +1,5 @@
+node_modules
+.vercel
+debug.html
+debug_v32.html
+.DS_Store
