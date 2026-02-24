@@ -43,6 +43,7 @@ def main() -> int:
 
     # Freshness thresholds must be explicit in text.
     lowered = html.lower()
+    assert "retention=" in lowered, "missing retention status signal in header meta"
     assert ("warn >24h" in lowered) or ("warn &gt;24h" in lowered), "missing warn threshold"
     assert ("critical >72h" in lowered) or ("critical &gt;72h" in lowered), "missing critical threshold"
 

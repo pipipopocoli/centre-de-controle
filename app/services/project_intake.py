@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from collections import Counter
 from datetime import datetime, timezone
@@ -39,6 +40,7 @@ README_FILES = {"README.md", "README.txt", "README"}
 
 MAX_FILES = 2000
 MAX_READ_BYTES = 200000
+ONBOARDING_PACK_SCHEMA_VERSION = "wave16_onboarding_pack_v1"
 
 
 def _utc_now_iso() -> str:
@@ -153,3 +155,37 @@ def scan_repo(repo_path: Path) -> dict[str, Any]:
         },
         "scanned_at": _utc_now_iso(),
     }
+
+
+def build_onboarding_pack(
+    *,
+    project_id: str,
+    project_dir: Path,
+    projects_root: Path,
+    repo_path: Path,
+    run_intake: bool,
+    startup_pack_path: Path,
+    issue_seed_paths: list[str] | None = None,
+    command_path: str = "scripts/project_intake.py",
+) -> dict[str, Any]:
+    seeds = sorted(str(item).strip() for item in (issue_seed_paths or []) if str(item).strip())
+    return {
+        "schema_version": ONBOARDING_PACK_SCHEMA_VERSION,
+        "project_id": str(project_id),
+        "project_dir": str(project_dir),
+        "projects_root": str(projects_root),
+        "repo_path": str(repo_path),
+        "run_intake": bool(run_intake),
+        "startup_pack_path": str(startup_pack_path),
+        "issue_seed_paths": seeds,
+        "command_path": str(command_path),
+    }
+
+
+def write_onboarding_pack(path: Path, payload: dict[str, Any]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path

@@ -12,7 +12,9 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
 from app.services.auto_mode import (  # noqa: E402
+    CONTROL_CADENCE_KPI_MIN_INTERVAL_MINUTES,
     HEALTHCHECK_KPI_SNAPSHOT_MAX_AGE_SECONDS,
+    emit_recency_autopulse_guard,
     recover_queue_state,
     resolve_projects_root,
 )
@@ -172,6 +174,20 @@ def main() -> int:
         default=HEALTHCHECK_KPI_SNAPSHOT_MAX_AGE_SECONDS,
         help="Max age for latest KPI snapshot before degraded",
     )
+    parser.add_argument(
+        "--autopulse-guard",
+        action="store_true",
+        help=(
+            "Try a recency-only KPI pulse refresh when snapshot is stale but pulse is fresh "
+            "and no hard issues are present."
+        ),
+    )
+    parser.add_argument(
+        "--autopulse-min-interval-minutes",
+        type=int,
+        default=CONTROL_CADENCE_KPI_MIN_INTERVAL_MINUTES,
+        help="Minimum interval used by recency autopulse guard.",
+    )
     parser.add_argument("--min-close-rate", type=float, default=80.0, help="Minimum close_rate_24h before degraded")
     parser.add_argument(
         "--min-dispatched-close-rate",
@@ -263,12 +279,38 @@ def main() -> int:
         and snapshot_age_seconds is not None
         and snapshot_age_seconds > max_snapshot_age_seconds
     )
+    pulse_is_fresh = pulse_age_seconds is not None and pulse_age_seconds <= stale_seconds
     if snapshot_is_stale:
-        pulse_is_fresh = pulse_age_seconds is not None and pulse_age_seconds <= stale_seconds
         if pulse_is_fresh:
             warnings.append("stale_kpi_snapshot_soft")
         else:
             issues.append("stale_kpi_snapshot")
+
+    hard_issues = [code for code in issues if code != "stale_kpi_snapshot"]
+    autopulse_guard_result = emit_recency_autopulse_guard(
+        projects_root,
+        args.project,
+        enabled=bool(args.autopulse_guard),
+        stale_snapshot=snapshot_is_stale,
+        pulse_fresh=pulse_is_fresh,
+        hard_issues=hard_issues,
+        now=now,
+        min_interval_minutes=max(int(args.autopulse_min_interval_minutes), 1),
+    )
+    if bool(autopulse_guard_result.get("attempted")):
+        snapshot_age_seconds = _last_snapshot_age_seconds(snapshot_path, now)
+        snapshot_is_stale = bool(
+            snapshot_path.exists()
+            and snapshot_age_seconds is not None
+            and snapshot_age_seconds > max_snapshot_age_seconds
+        )
+        issues = [code for code in issues if code != "stale_kpi_snapshot"]
+        warnings = [code for code in warnings if code != "stale_kpi_snapshot_soft"]
+        if snapshot_is_stale:
+            if pulse_is_fresh:
+                warnings.append("stale_kpi_snapshot_soft")
+            else:
+                issues.append("stale_kpi_snapshot")
 
     status = "healthy" if not issues else "degraded"
 
@@ -292,6 +334,8 @@ def main() -> int:
         "tick_age_seconds": tick_age_seconds,
         "snapshot_age_seconds": snapshot_age_seconds,
         "max_snapshot_age_seconds": max_snapshot_age_seconds,
+        "autopulse_guard_enabled": bool(args.autopulse_guard),
+        "autopulse_guard_result": autopulse_guard_result,
         "kpi": kpi,
         "min_close_rate": min_close_rate,
         "min_dispatched_close_rate": min_dispatched,

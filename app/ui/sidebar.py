@@ -78,6 +78,7 @@ class SkillsOpsPanel(QFrame):
         self.profile_label = QLabel("Profile: -")
 
         self.sync_btn = QPushButton("Sync Now")
+        self.sync_btn.setProperty("controlCue", "true")
         self.sync_btn.clicked.connect(self._on_sync_clicked)
 
         self.sync_feedback = QLabel("")
@@ -372,9 +373,11 @@ class SidebarWidget(QWidget):
 
         self.new_project_btn = QPushButton("New Project")
         self.new_project_btn.setObjectName("newProjectButton")
+        self.new_project_btn.setProperty("controlCue", "primary")
 
         self.docs_btn = QPushButton("Docs")
         self.docs_btn.setObjectName("sidebarDocsButton")
+        self.docs_btn.setProperty("controlCue", "true")
 
         # Auto-Mode Panel
         self.runtime_context = RuntimeContextPanel()

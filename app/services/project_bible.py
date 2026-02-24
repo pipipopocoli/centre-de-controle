@@ -7,7 +7,7 @@ import os
 import re
 import tempfile
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +38,10 @@ BRIEF_STABLE_FALLBACKS = {
     "Pourquoi": "Maintain reliability and avoid operator decision drift.",
     "Comment": "Intake -> Plan -> Execute -> Gate -> Ship",
 }
+
+RETENTION_TOTAL_KEYS = ("hot_7d", "warm_30d", "cool_90d", "archive_permanent")
+RETENTION_OWNER = "@victor"
+RETENTION_WARN_OVERDUE_HOURS = 2.0
 
 
 @dataclass
@@ -470,10 +474,10 @@ def _build_action_recommendations(
     recommendations.append(
         {
             "recommendation_id": "D1",
-            "recommendation": "Adaptive readability budget for Simple mode using comprehension guardrails.",
+            "recommendation": "Retention confidence + operator comprehension rubric for advisory checkpoints.",
             "owner": "@nova",
             "next_action": (
-                "Add a lightweight check so Simple mode stays action-first in <=60s while Tech keeps full evidence."
+                "Draft a four-signal rubric (status, freshness, totals shape, action clarity) and validate on 3 cycles."
             ),
             "evidence_path": str(state_path),
             "decision_tag": deep_decision,
@@ -593,6 +597,160 @@ def _compute_delta_since_last_refresh(
     }
 
 
+def _parse_retention_iso(value: Any) -> datetime | None:
+    text = _clean_text_value(value)
+    if not text:
+        return None
+    normalized = text[:-1] + "+00:00" if text.endswith("Z") else text
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _retention_decision_tag(status: str) -> str:
+    normalized = _clean_text_value(status).lower()
+    if normalized == "ok":
+        return "adopt"
+    if normalized == "critical":
+        return "reject"
+    return "defer"
+
+
+def _retention_next_action(status: str, next_compaction_at: str) -> str:
+    normalized = _clean_text_value(status).lower()
+    if normalized == "ok":
+        when = _clean_text_value(next_compaction_at) or "scheduled checkpoint"
+        return f"Run retention checkpoint at {when} and confirm totals."
+    if normalized == "warn":
+        return "Run manual retention refresh now, then republish status with evidence."
+    if normalized == "critical":
+        return "Treat retention visibility as degraded; regenerate retention_status immediately."
+    return "Generate retention_status.json via memory index build before operator decisions."
+
+
+def _retention_status_level(
+    *,
+    now: datetime,
+    generated_at: datetime | None,
+    next_compaction_at: datetime | None,
+    malformed_totals: bool,
+    missing_secondary: bool,
+) -> str:
+    if malformed_totals:
+        return "critical"
+    if next_compaction_at is not None:
+        overdue_hours = (now - next_compaction_at).total_seconds() / 3600.0
+        if overdue_hours > RETENTION_WARN_OVERDUE_HOURS:
+            return "critical"
+        if overdue_hours > 0:
+            return "warn"
+    if generated_at is None or missing_secondary:
+        return "warn"
+    return "ok"
+
+
+def _load_retention_status(
+    project_dir: Path,
+    *,
+    project_id: str = "",
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    retention_path = project_dir / "runs" / "retention" / "retention_status.json"
+    if not retention_path.exists():
+        fallback_project = _clean_text_value(project_id) or _clean_text_value(project_dir.name)
+        repo_fallback = (
+            Path(__file__).resolve().parents[2]
+            / "control"
+            / "projects"
+            / fallback_project
+            / "runs"
+            / "retention"
+            / "retention_status.json"
+        )
+        if repo_fallback.exists():
+            retention_path = repo_fallback
+    payload = _read_json(retention_path)
+    if not isinstance(payload, dict):
+        status = "missing"
+        next_action = _retention_next_action(status, "")
+        return {
+            "status": status,
+            "policy_version": "unknown",
+            "generated_at": "n/a",
+            "next_compaction_at": "n/a",
+            "totals": {key: 0 for key in RETENTION_TOTAL_KEYS},
+            "owner": RETENTION_OWNER,
+            "next_action": next_action,
+            "evidence_path": str(retention_path),
+            "decision_tag": _retention_decision_tag(status),
+            "hint": "Retention status missing. Build memory index to restore visibility.",
+        }
+
+    totals_raw = payload.get("totals")
+    totals: dict[str, int] = {}
+    malformed_totals = not isinstance(totals_raw, dict)
+    for key in RETENTION_TOTAL_KEYS:
+        raw_value = totals_raw.get(key, 0) if isinstance(totals_raw, dict) else 0
+        try:
+            totals[key] = max(0, int(raw_value))
+        except (TypeError, ValueError):
+            totals[key] = 0
+            malformed_totals = True
+
+    policy_version = _clean_text_value(payload.get("policy_version")) or "unknown"
+    generated_at_text = _clean_text_value(payload.get("generated_at")) or "n/a"
+    next_compaction_text = _clean_text_value(payload.get("next_compaction_at")) or "n/a"
+    generated_at = _parse_retention_iso(generated_at_text)
+    next_compaction_at = _parse_retention_iso(next_compaction_text)
+
+    missing_secondary = any(
+        [
+            policy_version == "unknown",
+            generated_at is None,
+            next_compaction_at is None,
+            not isinstance(payload.get("sources"), dict),
+            not isinstance(payload.get("archive_artifacts"), list),
+        ]
+    )
+    resolved_now = now or _utc_now()
+    status = _retention_status_level(
+        now=resolved_now,
+        generated_at=generated_at,
+        next_compaction_at=next_compaction_at,
+        malformed_totals=malformed_totals,
+        missing_secondary=missing_secondary,
+    )
+
+    if status == "ok":
+        hint = f"Retention cadence healthy. Next compaction {next_compaction_text}."
+    elif status == "warn" and next_compaction_at is not None and resolved_now > next_compaction_at:
+        overdue = max(0.0, (resolved_now - next_compaction_at).total_seconds() / 3600.0)
+        hint = f"Retention checkpoint overdue by {overdue:.1f}h. Refresh now."
+    elif status == "warn":
+        hint = "Retention status incomplete. Fill missing fields before decisions."
+    elif status == "critical" and malformed_totals:
+        hint = "Retention totals malformed. Rebuild retention artifact now."
+    else:
+        hint = "Retention checkpoint overdue >2h. Treat visibility as degraded."
+
+    return {
+        "status": status,
+        "policy_version": policy_version,
+        "generated_at": generated_at_text,
+        "next_compaction_at": next_compaction_text,
+        "totals": totals,
+        "owner": RETENTION_OWNER,
+        "next_action": _retention_next_action(status, next_compaction_text),
+        "evidence_path": str(retention_path),
+        "decision_tag": _retention_decision_tag(status),
+        "hint": _shorten_text(hint, max_len=120),
+    }
+
+
 def _load_or_create_config(config_path: Path) -> dict[str, Any]:
     payload = _read_json(config_path)
     if not isinstance(payload, dict):
@@ -707,6 +865,7 @@ def _build_snapshot(project: ProjectData, config: dict[str, Any]) -> tuple[dict[
     source_snapshot = _build_source_snapshot(project_dir, primary_sources + optional_sources)
 
     now = _utc_now()
+    retention_advisory = _load_retention_status(project_dir, project_id=project.project_id, now=now)
     latest_mtime = _latest_mtime(primary_sources + optional_sources)
     if latest_mtime is None:
         age_hours = float(config["stale_critical_hours"]) + 1.0
@@ -756,6 +915,20 @@ def _build_snapshot(project: ProjectData, config: dict[str, Any]) -> tuple[dict[
         state_path=state_path,
         roadmap_path=roadmap_path,
     )
+    retention_recommendation = {
+        "recommendation_id": "R-RETENTION",
+        "recommendation": (
+            "Keep retention visibility explicit: track status and run compaction checkpoints on schedule."
+        ),
+        "owner": _owner_tag(retention_advisory.get("owner"), default=RETENTION_OWNER),
+        "next_action": _clean_text_value(retention_advisory.get("next_action"))
+        or "Run retention checkpoint and confirm totals.",
+        "evidence_path": _clean_text_value(retention_advisory.get("evidence_path"))
+        or str(project_dir / "runs" / "retention" / "retention_status.json"),
+        "decision_tag": _retention_decision_tag(str(retention_advisory.get("status") or "")),
+        "kind": "retention",
+    }
+    recommendations = [retention_recommendation] + recommendations
     open_tickets = len(issues)
     status_counts = {"todo": 0, "in progress": 0, "blocked": 0, "done": 0}
     for issue in issues:
@@ -1072,6 +1245,7 @@ def _build_snapshot(project: ProjectData, config: dict[str, Any]) -> tuple[dict[
             "status_counts": status_counts,
         },
         "source_snapshot": source_snapshot,
+        "retention_advisory": retention_advisory,
         "sections": {
             "now": now_items,
             "next": next_items,
@@ -1079,6 +1253,7 @@ def _build_snapshot(project: ProjectData, config: dict[str, Any]) -> tuple[dict[
             "risks": risks,
             "blockers": blockers,
             "gates": gates,
+            "retention": retention_advisory,
             "timeline": timeline_events,
             "timeline_stats": timeline_feed.get("stats", {}),
             "issues": issues,
@@ -1184,6 +1359,43 @@ def _render_vulgarisation_html(
     delta_status = _clean_text_value(delta_since_last_refresh.get("status")) or "initial"
     delta_hint = _clean_text_value(delta_since_last_refresh.get("hint")) or "Initial baseline created."
     delta_compact = _shorten_text(f"{delta_status}: {delta_hint}", max_len=130)
+    retention_payload = (
+        snapshot.get("retention_advisory") if isinstance(snapshot.get("retention_advisory"), dict) else {}
+    )
+    retention_status = _clean_text_value(retention_payload.get("status")) or "missing"
+    retention_next_compaction = _clean_text_value(retention_payload.get("next_compaction_at")) or "n/a"
+    retention_hint = _shorten_text(
+        _clean_text_value(retention_payload.get("hint")) or "Retention visibility unavailable.",
+        max_len=120,
+    )
+    retention_meta = _shorten_text(
+        f"retention={retention_status} next_compaction={retention_next_compaction}",
+        max_len=120,
+    )
+    retention_owner = _owner_tag(retention_payload.get("owner"), default=RETENTION_OWNER)
+    retention_next_action = _clean_text_value(retention_payload.get("next_action")) or "n/a"
+    retention_evidence_path = _clean_text_value(retention_payload.get("evidence_path"))
+    retention_decision_tag = _clean_text_value(retention_payload.get("decision_tag")) or "defer"
+    retention_policy_version = _clean_text_value(retention_payload.get("policy_version")) or "unknown"
+    retention_generated_at = _clean_text_value(retention_payload.get("generated_at")) or "n/a"
+    retention_totals_raw = retention_payload.get("totals")
+    retention_totals: dict[str, int] = {key: 0 for key in RETENTION_TOTAL_KEYS}
+    if isinstance(retention_totals_raw, dict):
+        for key in RETENTION_TOTAL_KEYS:
+            try:
+                retention_totals[key] = max(0, int(retention_totals_raw.get(key, 0)))
+            except (TypeError, ValueError):
+                retention_totals[key] = 0
+
+    retention_evidence_html = "n/a"
+    if retention_evidence_path:
+        retention_evidence_obj = Path(retention_evidence_path)
+        retention_evidence_uri = _safe_uri(retention_evidence_obj)
+        retention_evidence_label = html.escape(retention_evidence_obj.name or retention_evidence_path)
+        if retention_evidence_uri:
+            retention_evidence_html = f"<a href='{html.escape(retention_evidence_uri)}'>{retention_evidence_label}</a>"
+        else:
+            retention_evidence_html = html.escape(retention_evidence_path)
 
     panels = snapshot.get("panels") if isinstance(snapshot.get("panels"), list) else []
     panel_map: dict[str, dict[str, Any]] = {}
@@ -1361,6 +1573,8 @@ def _render_vulgarisation_html(
     next_limit = 5 if render_mode == "simple" else 5
     blocker_limit = 5 if render_mode == "simple" else 3
     max_simple_actions = 5
+    retention_action_text = _shorten_text(f"[retention:{retention_status}] {retention_next_action}", max_len=130)
+    action_rows.append(("retention", retention_action_text))
     for item in next_items[:next_limit]:
         if isinstance(item, str) and item.strip():
             action_rows.append(("next", item.strip()))
@@ -1423,6 +1637,30 @@ def _render_vulgarisation_html(
     <table>
       <tr><th>Recommendation</th><th>Owner</th><th>Next action</th><th>Evidence</th><th>Decision</th></tr>
       {"".join(recommendation_rows)}
+    </table>
+  </section>
+"""
+
+    retention_status_section = ""
+    if render_mode == "tech":
+        retention_status_section = f"""
+  <section id="retention-status" tabindex="0" aria-label="Retention status">
+    <h2>Retention status</h2>
+    <p class="notice">Retention visibility for operator checkpoints: 7d hot / 30d warm / 90d cool / permanent archive.</p>
+    <table>
+      <tr><th>Field</th><th>Value</th></tr>
+      <tr><td>Status</td><td>{html.escape(retention_status)}</td></tr>
+      <tr><td>Policy version</td><td>{html.escape(retention_policy_version)}</td></tr>
+      <tr><td>Generated at</td><td>{html.escape(retention_generated_at)}</td></tr>
+      <tr><td>Next compaction</td><td>{html.escape(retention_next_compaction)}</td></tr>
+      <tr><td>hot_7d</td><td>{html.escape(str(retention_totals["hot_7d"]))}</td></tr>
+      <tr><td>warm_30d</td><td>{html.escape(str(retention_totals["warm_30d"]))}</td></tr>
+      <tr><td>cool_90d</td><td>{html.escape(str(retention_totals["cool_90d"]))}</td></tr>
+      <tr><td>archive_permanent</td><td>{html.escape(str(retention_totals["archive_permanent"]))}</td></tr>
+      <tr><td>Owner</td><td>{html.escape(retention_owner)}</td></tr>
+      <tr><td>Next action</td><td>{html.escape(retention_next_action)}</td></tr>
+      <tr><td>Evidence</td><td>{retention_evidence_html}</td></tr>
+      <tr><td>Decision tag</td><td>{html.escape(retention_decision_tag)}</td></tr>
     </table>
   </section>
 """
@@ -1621,6 +1859,7 @@ th {{ background: #f8fafc; color: #475569; font-weight: 600; font-size: 12px; te
       | freshness: <span class="chip chip-{html.escape(freshness_status)}">{_panel_status_label(freshness_status)}</span>
       | freshness_hours: {html.escape(freshness_hours)}
       | delta: {html.escape(delta_compact)}
+      | {html.escape(retention_meta)}
       | stale thresholds: warn &gt;24h / critical &gt;72h
     </div>
     <div class="meta">{html.escape(simple_summary_notice)}</div>
@@ -1660,6 +1899,7 @@ th {{ background: #f8fafc; color: #475569; font-weight: 600; font-size: 12px; te
       <tr><td>Pourquoi</td><td>{html.escape(brief_risks)}</td></tr>
       <tr><td>Comment</td><td>{html.escape(brief_how)}</td></tr>
       <tr><td>Delta refresh</td><td>{html.escape(delta_compact)}</td></tr>
+      <tr><td>Retention</td><td>{html.escape(retention_hint)}</td></tr>
     </table>
   </section>
 
@@ -1680,6 +1920,7 @@ th {{ background: #f8fafc; color: #475569; font-weight: 600; font-size: 12px; te
 
   {progress_panel_section}
   {cost_usage_section}
+  {retention_status_section}
 
   {skill_inventory_section}
 </body>

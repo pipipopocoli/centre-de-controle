@@ -1,22 +1,21 @@
 # State
 
 ## Phase
-- Review
+- Ship
 
 ## Objective
-- Lock Wave15 closeout and prepare next feature wave from a green runtime baseline.
+- Lock Wave16 codex-only consolidation and keep dual-root runtime healthy under credit guard until Feb 26.
 
 ## Now
-- Wave14 backend lane closed: CP-0048, CP-0049, CP-0052 Done with proof.
-- Wave14 residual lanes are now closed: CP-0050 and CP-0051 moved to Ship/Done with evidence links.
-- Wave15 recency patch active: stale KPI snapshot is warning-only when pulse is fresh.
-- Healthcheck deterministic suite updated and green.
-- Dual-root runtime checks are healthy after pulse.
+- Wave16 codex-only outage mode locked for active lane (`victor`, `nova`, optional `agent-3`).
+- `nova` temporary routing switched to Codex in project registry/settings.
+- Recency autopulse guard and onboarding contract tests are green.
+- AG/UI expansion lane is paused until Antigravity credits return.
 
 ## Next
-- Push Wave15 snapshot.
-- Dispatch next wave from clean baseline (feature expansion only).
-- Keep pulse/check cadence every 30-45 minutes.
+- Keep pulse/check cadence on both roots every 30-45 minutes.
+- Enforce credit guard (`wave_cap <= 180`, `reserve_floor >= 350`).
+- Resume UI lane only when AG availability is restored.
 
 ## In Progress
 - none
@@ -28,9 +27,9 @@
 - none
 
 ## Risks
-- stale recency warnings can drift back if cadence pulses stop.
-- AppSupport root can show stale KPI if pulse cadence is not respected.
-- closeout docs can drift from issue status if not synced at each wave end.
+- stale recency warnings drift back if pulse cadence is not respected.
+- AG outage can create accidental cross-platform dispatch attempts without codex-only policy.
+- credits can burn too quickly if specialist fanout is reopened before Feb 26.
 
 ## Gates
 - pending_stale_gt24h == 0
@@ -38,6 +37,8 @@
 - queued_runtime_requests <= 3
 - repo_root_healthcheck == healthy
 - appsupport_root_healthcheck == healthy
+- codex_only_dispatch_guard == true
+- credit_reserve_floor_reached == false
 - tournament_auto_dispatch == false
 
 ## Links
@@ -58,3 +59,11 @@
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0053-wave15-dual-root-recency-lock.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0054-wave15-wave14-closeout-sync.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0055-wave15-operator-recence-runbook.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE_MAP_WAVE16_CP0056_CP0060.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0056-wave16-codex-only-outage-mode.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0057-wave16-dirty-tree-consolidation-push.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0058-wave16-credit-guard-dispatch-policy.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0059-wave16-dual-root-recence-ops-cadence.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0060-wave16-nova-retention-operator-digest.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_BACKEND_ONBOARDING_RECENCY_2026-02-23T1318Z.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE16_RETENTION_VISIBILITY_ADVISORY_2026-02-23.md

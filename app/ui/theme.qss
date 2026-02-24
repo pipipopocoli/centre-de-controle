@@ -248,6 +248,122 @@ QPushButton#docsActionButton:hover {
     background-color: rgba(44, 93, 255, 0.08);
 }
 
+/* Control Cues (Standardized Buttons) */
+QPushButton[controlCue="true"] {
+    background-color: #FFFFFF;
+    color: #1C1C1C;
+    border: 1px solid #D9D3C8;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-weight: 600;
+}
+
+QPushButton[controlCue="true"]:hover {
+    background-color: rgba(44, 93, 255, 0.08);
+    color: #2C5DFF;
+    border-color: #C8D9FF;
+}
+
+QPushButton[controlCue="true"]:pressed {
+    background-color: rgba(44, 93, 255, 0.15);
+}
+
+QPushButton[controlCue="true"]:disabled {
+    background-color: #F0ECE6;
+    color: #A0A4AB;
+    border: 1px solid #E6E1D8;
+}
+
+QPushButton[controlCue="primary"] {
+    background-color: #2C5DFF;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-weight: 600;
+}
+
+QPushButton[controlCue="primary"]:hover {
+    background-color: #2454E0;
+}
+
+/* Gates & Recency Visibility Panel */
+QFrame#gateVisibilityPanel {
+    background-color: #FFFFFF;
+    border: 1px solid #D9D3C8;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+QLabel#gateTitle {
+    font-size: 11px;
+    color: #5E6167;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+QLabel[gateState="pass"] {
+    background-color: #F0FDFA;
+    color: #0F766E;
+    border: 1px solid #99F6E4;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+QLabel[gateState="warn"], QLabel[gateState="hold"] {
+    background-color: #FFFBEB;
+    color: #B45309;
+    border: 1px solid #FDE68A;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+QLabel[gateState="fail"], QLabel[gateState="blocked"] {
+    background-color: #FEF2F2;
+    color: #B91C1C;
+    border: 1px solid #FECACA;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+QLabel[gateState="unavailable"] {
+    background-color: #F8FAFC;
+    color: #64748B;
+    border: 1px solid #E2E8F0;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+QLabel[recencyState="fresh"] {
+    color: #0F766E;
+    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+QLabel[recencyState="warn"] {
+    color: #B45309;
+    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+QLabel[recencyState="stale"] {
+    color: #B91C1C;
+    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 11px;
+    font-weight: 700;
+}
+
 QLabel#docsViewerStatus {
     color: #5E6167;
     font-size: 11px;

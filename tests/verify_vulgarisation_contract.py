@@ -73,6 +73,37 @@ def main() -> int:
     assert str(delta.get("status") or "") in {"initial", "changed", "unchanged"}, "invalid delta status"
     assert str(delta.get("hint") or "").strip(), "delta hint must be non-empty"
 
+    retention_advisory = snapshot.get("retention_advisory")
+    assert isinstance(retention_advisory, dict), "missing retention_advisory"
+    required_retention_keys = {
+        "status",
+        "policy_version",
+        "generated_at",
+        "next_compaction_at",
+        "totals",
+        "owner",
+        "next_action",
+        "evidence_path",
+        "decision_tag",
+        "hint",
+    }
+    missing_retention = required_retention_keys - set(retention_advisory.keys())
+    assert not missing_retention, f"missing retention keys: {sorted(missing_retention)}"
+    assert str(retention_advisory.get("status") or "") in {"ok", "warn", "critical", "missing"}
+    assert str(retention_advisory.get("decision_tag") or "") in {"adopt", "defer", "reject"}
+    totals = retention_advisory.get("totals")
+    assert isinstance(totals, dict), "retention totals must be object"
+    for key in ("hot_7d", "warm_30d", "cool_90d", "archive_permanent"):
+        assert key in totals, f"missing retention total key: {key}"
+
+    recommendations = snapshot.get("recommendations")
+    assert isinstance(recommendations, list) and recommendations, "recommendations must be a non-empty list"
+    retention_rows = [row for row in recommendations if isinstance(row, dict) and str(row.get("kind") or "") == "retention"]
+    assert retention_rows, "missing retention recommendation row"
+    retention_row = retention_rows[0]
+    for key in ("owner", "next_action", "evidence_path", "decision_tag"):
+        assert str(retention_row.get(key) or "").strip(), f"retention recommendation missing {key}"
+
     panels = snapshot.get("panels")
     assert isinstance(panels, list) and panels, "missing panels"
 

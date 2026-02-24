@@ -72,8 +72,8 @@
   "nova": {
     "agent_id": "nova",
     "name": "Nova",
-    "engine": "AG",
-    "platform": "antigravity",
+    "engine": "CDX",
+    "platform": "codex",
     "level": 1,
     "lead_id": "clems",
     "role": "creative_science_lead",

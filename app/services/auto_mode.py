@@ -33,6 +33,7 @@ COUNTER_QUEUE_RECOVERY_BLOCKER_TOTAL = "queue_recovery_blocker_total"
 CONTROL_CADENCE_KPI_MIN_INTERVAL_MINUTES = 25
 HEALTHCHECK_KPI_SNAPSHOT_MAX_AGE_SECONDS = 2100
 MISSION_CRITICAL_GATE_FAILED_REASON = "mission_critical_gate_failed"
+CODEX_ONLY_OUTAGE_PAUSED_REASON = "codex_only_outage_paused"
 
 COUNTER_MISSION_CRITICAL_GATE_BLOCKED_TOTAL = "mission_critical_gate_blocked_total"
 COUNTER_MISSION_CRITICAL_GATE_BLOCKED_BY_CODE_PREFIX = "mission_critical_gate_blocked_code"
@@ -559,12 +560,47 @@ def _dispatch_config(settings: dict[str, Any]) -> dict[str, Any]:
     dispatch = settings.get("dispatch") if isinstance(settings.get("dispatch"), dict) else {}
     scoring = dispatch.get("scoring") if isinstance(dispatch.get("scoring"), dict) else {}
     backpressure = dispatch.get("backpressure") if isinstance(dispatch.get("backpressure"), dict) else {}
+    outage = settings.get("outage_mode") if isinstance(settings.get("outage_mode"), dict) else {}
+    credit_guard = settings.get("credit_guard") if isinstance(settings.get("credit_guard"), dict) else {}
+
+    raw_platforms = outage.get("allowed_platforms")
+    allowed_platforms: list[str] = []
+    if isinstance(raw_platforms, list):
+        for item in raw_platforms:
+            token = str(item or "").strip().lower()
+            if token in {"codex", "antigravity", "ollama"} and token not in allowed_platforms:
+                allowed_platforms.append(token)
+
+    codex_only_enabled = _normalize_bool(outage.get("codex_only_enabled"), default=False)
+    if codex_only_enabled and not allowed_platforms:
+        allowed_platforms = ["codex"]
+
+    raw_agents = outage.get("allowed_agents")
+    allowed_agents: list[str] = []
+    if isinstance(raw_agents, list):
+        for item in raw_agents:
+            token = str(item or "").strip()
+            if token and token not in allowed_agents:
+                allowed_agents.append(token)
+
+    max_actions_effective = 0
+    if _normalize_bool(credit_guard.get("enabled"), default=False):
+        try:
+            max_actions_effective = max(0, int(credit_guard.get("max_actions_effective", 0) or 0))
+        except (TypeError, ValueError):
+            max_actions_effective = 0
+
     return {
         "scoring_enabled": _normalize_bool(scoring.get("enabled"), default=False),
         "weights": scoring.get("weights") if isinstance(scoring.get("weights"), dict) else {},
         "backpressure_enabled": _normalize_bool(backpressure.get("enabled"), default=False),
         "queue_target": max(1, int(backpressure.get("queue_target", 3) or 3)),
         "max_actions_hard_cap": max(1, int(backpressure.get("max_actions_hard_cap", 5) or 5)),
+        "codex_only_enabled": codex_only_enabled,
+        "allowed_platforms": allowed_platforms,
+        "allowed_agents": set(allowed_agents),
+        "credit_guard_enabled": _normalize_bool(credit_guard.get("enabled"), default=False),
+        "max_actions_effective": max_actions_effective,
     }
 
 
@@ -1042,6 +1078,11 @@ def dispatch_once(
     project_dir = projects_root / project_id
     settings = _load_project_settings(project_dir)
     dispatch_cfg = _dispatch_config(settings)
+    allowed_agents = dispatch_cfg["allowed_agents"]
+    allowed_platforms = set(dispatch_cfg["allowed_platforms"])
+    max_actions_cap = max_actions
+    if dispatch_cfg["credit_guard_enabled"] and int(dispatch_cfg["max_actions_effective"]) > 0:
+        max_actions_cap = min(max_actions, int(dispatch_cfg["max_actions_effective"]))
 
     _recover_queue_state_with_paths(
         projects_root,
@@ -1177,6 +1218,40 @@ def dispatch_once(
             continue
 
         request_created_at = str(payload.get("created_at") or "").strip() or _utc_now_iso()
+        meta = _agent_meta(project_dir, agent_id, registry)
+        platform_hint = str(meta.get("platform") or resolve_agent_platform(agent_id, registry) or _agent_platform_fallback(agent_id))
+        if platform_hint not in {"codex", "antigravity", "ollama"}:
+            platform_hint = _agent_platform_fallback(agent_id)
+
+        if allowed_agents and agent_id not in allowed_agents:
+            requests[request_id] = _closed_runtime_entry(
+                request_id,
+                request_payload=payload,
+                closed_reason=CODEX_ONLY_OUTAGE_PAUSED_REASON,
+                default_agent_id=agent_id,
+            )
+            processed.append(request_id)
+            processed_set.add(request_id)
+            skipped += 1
+            continue
+
+        if dispatch_cfg["codex_only_enabled"]:
+            platform_hint = "codex"
+            meta["platform"] = "codex"
+            meta["engine"] = "CDX"
+
+        if allowed_platforms and platform_hint not in allowed_platforms:
+            requests[request_id] = _closed_runtime_entry(
+                request_id,
+                request_payload=payload,
+                closed_reason=CODEX_ONLY_OUTAGE_PAUSED_REASON,
+                default_agent_id=agent_id,
+            )
+            processed.append(request_id)
+            processed_set.add(request_id)
+            skipped += 1
+            continue
+
         base_entry = _normalize_runtime_request(
             request_id,
             {
@@ -1192,7 +1267,6 @@ def dispatch_once(
         )
         requests[request_id] = base_entry
 
-        meta = _agent_meta(project_dir, agent_id, registry)
         history = _history_for_agent(counters, agent_id)
         score_value = _candidate_score(meta, payload, history=history, weights=dispatch_cfg["weights"])
 
@@ -1260,7 +1334,7 @@ def dispatch_once(
         inbox_path = inbox_dir / f"{agent_id}.ndjson"
         _append_ndjson(inbox_path, payload)
 
-        if max_actions > 0 and actions_used < max_actions:
+        if max_actions_cap > 0 and actions_used < max_actions_cap:
             prompt = format_prompt(project_id, payload)
             app_to_open = _provider_app(platform, codex_app, ag_app)
             action_scope = str(payload.get("action_scope") or "workspace_only").strip() or "workspace_only"
@@ -1754,6 +1828,68 @@ def emit_control_cadence_kpi_snapshot(
     payload.setdefault("snapshot_path", str(kpi_snapshots_path(projects_root, project_id)))
     payload["min_interval_minutes"] = interval
     return payload
+
+
+def emit_recency_autopulse_guard(
+    projects_root: Path,
+    project_id: str,
+    *,
+    enabled: bool,
+    stale_snapshot: bool,
+    pulse_fresh: bool,
+    hard_issues: list[str] | None = None,
+    now: datetime | None = None,
+    min_interval_minutes: int = CONTROL_CADENCE_KPI_MIN_INTERVAL_MINUTES,
+) -> dict[str, Any]:
+    issues = [str(item).strip() for item in (hard_issues or []) if str(item).strip()]
+    if not enabled:
+        return {
+            "attempted": False,
+            "applied": False,
+            "reason": "disabled",
+            "snapshot_result": None,
+            "hard_issues": issues,
+        }
+    if issues:
+        return {
+            "attempted": False,
+            "applied": False,
+            "reason": "hard_issues_present",
+            "snapshot_result": None,
+            "hard_issues": issues,
+        }
+    if not stale_snapshot:
+        return {
+            "attempted": False,
+            "applied": False,
+            "reason": "snapshot_not_stale",
+            "snapshot_result": None,
+            "hard_issues": issues,
+        }
+    if not pulse_fresh:
+        return {
+            "attempted": False,
+            "applied": False,
+            "reason": "pulse_not_fresh",
+            "snapshot_result": None,
+            "hard_issues": issues,
+        }
+
+    snapshot_result = emit_control_cadence_kpi_snapshot(
+        projects_root,
+        project_id,
+        now=now,
+        min_interval_minutes=min_interval_minutes,
+    )
+    emitted = bool(snapshot_result.get("emitted"))
+    reason = "snapshot_emitted" if emitted else str(snapshot_result.get("reason") or "not_emitted")
+    return {
+        "attempted": True,
+        "applied": emitted,
+        "reason": reason,
+        "snapshot_result": snapshot_result,
+        "hard_issues": issues,
+    }
 
 
 def _write_slo_verdict(projects_root: Path, project_id: str, *, settings: dict[str, Any]) -> dict[str, Any]:

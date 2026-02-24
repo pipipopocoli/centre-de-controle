@@ -209,6 +209,10 @@ def main() -> int:
         assert isinstance(brief_rows, dict), "brief_60s missing"
         for key in ("On est ou", "On va ou", "Pourquoi", "Comment"):
             assert str(brief_rows.get(key) or "").strip(), f"brief row is empty: {key}"
+        retention_payload = partial_first_snapshot.get("retention_advisory")
+        assert isinstance(retention_payload, dict), "retention_advisory missing"
+        assert str(retention_payload.get("status") or "") == "missing", "retention should be missing when file absent"
+        assert str(retention_payload.get("decision_tag") or "") == "defer", "missing retention should defer decision"
 
         partial_first_delta = partial_first_snapshot.get("delta_since_last_refresh", {})
         assert str(partial_first_delta.get("status") or "") == "initial", "first refresh must be initial"
@@ -235,6 +239,46 @@ def main() -> int:
         ), "changed delta must update hash"
         partial_html = partial_third.html_path.read_text(encoding="utf-8")
         assert "Delta refresh" in partial_html
+        assert "retention=" in partial_html.lower()
+
+        overdue_dir = Path(tmp) / "retention-overdue"
+        _seed_project_files(overdue_dir)
+        (overdue_dir / "runs" / "retention").mkdir(parents=True, exist_ok=True)
+        old_generated_at = "2026-02-20T08:00:00+00:00"
+        overdue_next = "2026-02-20T09:00:00+00:00"
+        (overdue_dir / "runs" / "retention" / "retention_status.json").write_text(
+            json.dumps(
+                {
+                    "policy_version": "wave14-7-30-90-permanent-v1",
+                    "project_id": "retention-overdue",
+                    "generated_at": old_generated_at,
+                    "next_compaction_at": overdue_next,
+                    "sources": {},
+                    "totals": {"hot_7d": 1, "warm_30d": 0, "cool_90d": 0, "archive_permanent": 0},
+                    "archive_artifacts": [],
+                    "isolation_check": {
+                        "canonical_project_id": "retention-overdue",
+                        "projects_root": str(overdue_dir.parent),
+                    },
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        overdue_project = ProjectData(
+            project_id="retention-overdue",
+            name="retention-overdue",
+            path=overdue_dir,
+            agents=[],
+            roadmap={},
+            settings={},
+        )
+        overdue_result = update_vulgarisation(overdue_project)
+        overdue_snapshot = json.loads(overdue_result.snapshot_path.read_text(encoding="utf-8"))
+        overdue_retention = overdue_snapshot.get("retention_advisory")
+        assert isinstance(overdue_retention, dict), "overdue retention payload missing"
+        assert str(overdue_retention.get("status") or "") in {"warn", "critical"}, "overdue status must degrade"
+        assert str(overdue_retention.get("decision_tag") or "") in {"defer", "reject"}
     print("OK: monthly estimator source order verified")
 
     app = QApplication.instance() or QApplication([])

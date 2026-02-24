@@ -89,6 +89,27 @@
 - Deep RnD D1
   - D1 | recommendation: adaptive recency threshold by activity intensity (idle vs active windows) with deterministic guardrails. | owner:@victor | next_action:prototype threshold policy in tests before runtime adoption. | evidence_path:/Users/oliviercloutier/Desktop/Cockpit/tests/verify_auto_mode_healthcheck.py | decision_tag:adopt
 
+## Wave16 retention visibility advisory
+- Brief 60s
+  - On est ou: retention advisory is now visible in vulgarisation snapshot + html (Simple+Tech) with owner-routed action.
+  - On va ou: keep manual 2h checkpoints and refresh retention_status before next operator readout.
+  - Pourquoi: stale retention status creates trust drift and weakens operator decisions.
+  - Comment: read retention artifact, publish action-first digest, and keep evidence path explicit.
+- Retention visibility (owner/action/evidence/decision)
+  - status: warn
+  - policy_version: wave14-7-30-90-permanent-v1
+  - generated_at: 2026-02-23T10:27:53+00:00
+  - next_compaction_at: 2026-02-23T12:27:53+00:00
+  - totals: hot_7d=81 warm_30d=109 cool_90d=0 archive_permanent=0
+  - owner: @victor
+  - next_action: run manual retention refresh now, then republish status with evidence.
+  - evidence_path: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/retention/retention_status.json
+  - decision_tag: defer
+- Deep RnD D1 (phase-mapped)
+  - D1 | recommendation: retention confidence rubric combining status/freshness/totals/action clarity into one operator score. | owner:@nova | next_action: validate rubric on 3 consecutive refresh cycles and record decision latency delta. | evidence_path:/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/STATE.md;/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/ROADMAP.md;/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/retention/retention_status.json | decision_tag:defer
+- Cadence
+  - Manual report every 2h in Now/Next/Blockers (chat + memory + rolling report).
+
 ## Links
 - `/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/STATE.md`
 - `/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/ROADMAP.md`

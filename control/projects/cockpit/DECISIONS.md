@@ -163,3 +163,12 @@
 - Consequences: Wave14 prioritizes startup onboarding, mission-critical gate, false-positive hardening, live readability, and retention policy before new feature expansion.
 - Owners: clems, victor, leo, nova
 - References: /Users/oliviercloutier/Desktop/Cockpit/cockpit_v2_final_plan.docx, /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE14_INPUT_FROM_COCKPIT_V2_FINAL_PLAN_2026-02-23.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE14_DISPATCH_2026-02-23.md
+
+## 2026-02-24 - ADR-CP-019 Wave16 codex-only outage and credit guard
+- Status: Accepted
+- Context: Antigravity is unavailable and remaining credits must be preserved until Feb 26 without freezing core backend/advisory delivery.
+- Decision: Execute Wave16 in codex-only mode (`victor`, `nova`, optional `agent-3`) with an explicit outage policy in settings and dispatch enforcement in auto-mode. Apply credit guard with effective action cap = 1, wave cap <=180, reserve floor >=350.
+- Rationale: Keeps delivery moving while avoiding AG dependency and uncontrolled burn.
+- Consequences: Leo/UI expansion lane is paused; AG-targeted requests are closed with explicit outage reason during this window; dual-root pulse/check cadence becomes mandatory to avoid stale-only degraded drift.
+- Owners: clems, victor, nova
+- References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE_MAP_WAVE16_CP0056_CP0060.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/settings.json, /Users/oliviercloutier/Desktop/Cockpit/app/services/auto_mode.py, /Users/oliviercloutier/Desktop/Cockpit/tests/verify_wave16_codex_only_outage_mode.py

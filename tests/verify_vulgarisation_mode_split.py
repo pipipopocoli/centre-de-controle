@@ -38,6 +38,7 @@ def main() -> int:
     assert what_next_block, "simple mode missing what-next section"
     what_next_rows = max(what_next_block.count("<tr><td>") - 1, 0)
     assert what_next_rows <= 5, f"what-next must be <=5 rows, got {what_next_rows}"
+    assert "[retention:" in what_next_block.lower(), "simple mode should surface retention action"
 
     timeline_block = _extract_section(simple_html, "timeline")
     assert timeline_block, "simple mode missing timeline section"
@@ -49,6 +50,7 @@ def main() -> int:
         'id="architecture-overview"',
         'id="progress-panel"',
         'id="cost-usage"',
+        'id="retention-status"',
         'id="skill-inventory"',
     ]
     for marker in required_tech_sections:

@@ -30,6 +30,7 @@ def main() -> int:
     html_doc = html_result.html_path.read_text(encoding="utf-8")
     assert "Brief 60s" in html_doc, "brief section missing from rendered html"
     assert "Delta refresh" in html_doc, "delta signal missing from rendered html"
+    assert "Retention" in html_doc, "retention signal missing from rendered html"
 
     print(
         "OK: comprehension gate verified | "

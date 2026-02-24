@@ -4,27 +4,29 @@
 - Ship Cockpit V2 as an operator-first orchestrator for complex existing repositories, with stable runtime control and strict project isolation.
 
 ## Current checkpoint
-- Wave14 backend and residual lanes complete with proof (CP-0048..CP-0052 all closed).
-- Wave15 closeout complete: dual-root recency lock + runbook + closeout sync.
+- Wave16 codex-only consolidation active due AG outage.
+- Wave16 backend/advisory lock is in repository and moving to final push closeout.
 
 ## Priorities
-- P0: next feature wave kickoff from green runtime baseline.
-- P1: keep mission-critical gate and onboarding stable.
-- P2: keep recency cadence stable on repo + AppSupport.
-- P3: retain operator clarity (UI evidence + retention reports).
+- P0: codex-only outage mode + credit guard until Feb 26.
+- P1: keep onboarding + mission-critical gate deterministic.
+- P2: keep dual-root recency healthy via pulse/check cadence.
+- P3: keep retention operator digest current and actionable.
 - P4: keep tournament preserved and dormant.
 
-## Wave15 sequence
-1. Close Wave14 residual docs: CP-0050 and CP-0051 moved to Ship/Done with proofs.
-2. Patch healthcheck recency semantics (`stale_kpi_snapshot` soft warning on fresh pulse).
-3. Run deterministic tests and dual-root pulse/check commands.
-4. Publish operator recency runbook and closeout receipt.
-5. Mark CP-0053, CP-0054, CP-0055 as Done with references.
+## Wave16 sequence
+1. Lock codex-only outage mode (`CP-0056`) and pause AG/UI lane.
+2. Apply credit guard policy (`CP-0058`) with effective action cap = 1.
+3. Validate onboarding + recency tests + codex-only dispatch test.
+4. Run dual-root pulse/check cadence and publish runbook (`CP-0059`).
+5. Publish retention advisory digest (`CP-0060`).
+6. Consolidate/push snapshot with receipt (`CP-0057`).
 
 ## Next wave entrypoint
-1. Keep lead-first dispatch policy (`@victor`, `@leo`, `@nova`) and 15m ack gate.
-2. Open feature issues only after runtime gates stay green at two checkpoints.
-3. Preserve provider policy (Codex + Antigravity) and tournament dormant guard.
+1. Keep lead-first dispatch policy (`@victor`, `@nova`) while AG is unavailable.
+2. Keep `@leo` lane paused until AG credits recover.
+3. Open feature issues only after runtime gates stay green at two checkpoints.
+4. Preserve tournament dormant guard.
 
 ## Daily control gates
 - pending stale (24h+) must be 0
@@ -47,3 +49,6 @@
 - /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE14_INPUT_FROM_COCKPIT_V2_FINAL_PLAN_2026-02-23.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE14_DISPATCH_2026-02-23.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE_MAP_WAVE15_CP0053_CP0055.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE_MAP_WAVE16_CP0056_CP0060.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_BACKEND_ONBOARDING_RECENCY_2026-02-23T1318Z.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE16_RETENTION_VISIBILITY_ADVISORY_2026-02-23.md

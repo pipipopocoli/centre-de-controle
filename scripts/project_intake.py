@@ -11,6 +11,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
 from app.services.auto_mode import resolve_projects_root  # noqa: E402
+from app.services.project_intake import build_onboarding_pack, write_onboarding_pack  # noqa: E402
 
 
 def _link_repo_settings(project_dir: Path, project_id: str, repo_path: Path) -> None:
@@ -54,6 +55,11 @@ def main() -> int:
         help="Only attach repo without running intake.",
     )
     parser.add_argument("--json", action="store_true", help="Emit JSON summary output.")
+    parser.add_argument(
+        "--output-pack-path",
+        default=None,
+        help="Optional onboarding output pack path (default: <project_dir>/runs/onboarding_pack_latest.json).",
+    )
     args = parser.parse_args()
 
     repo_path = Path(args.repo_path).expanduser().resolve()
@@ -85,6 +91,23 @@ def main() -> int:
         issue_seed_paths = list(result.issue_seed_paths)
         startup_pack_path = str(result.startup_pack_path or startup_pack_path)
 
+    if args.output_pack_path:
+        onboarding_pack_path = Path(args.output_pack_path).expanduser()
+    else:
+        onboarding_pack_path = project_dir(project_id) / "runs" / "onboarding_pack_latest.json"
+
+    onboarding_pack_payload = build_onboarding_pack(
+        project_id=project_id,
+        project_dir=project_dir(project_id),
+        projects_root=projects_root,
+        repo_path=repo_path,
+        run_intake=bool(args.run_intake),
+        startup_pack_path=Path(startup_pack_path),
+        issue_seed_paths=issue_seed_paths,
+        command_path="scripts/project_intake.py",
+    )
+    written_pack_path = write_onboarding_pack(onboarding_pack_path, onboarding_pack_payload)
+
     payload = {
         "project_id": project_id,
         "project_dir": str(project_dir(project_id)),
@@ -93,6 +116,7 @@ def main() -> int:
         "run_intake": bool(args.run_intake),
         "startup_pack_path": startup_pack_path,
         "issue_seed_paths": sorted(issue_seed_paths),
+        "onboarding_pack_path": str(written_pack_path),
     }
     if args.json:
         print(json.dumps(payload, indent=2))
@@ -101,6 +125,7 @@ def main() -> int:
         print(f"project_dir={payload['project_dir']}")
         print(f"startup_pack_path={startup_pack_path}")
         print(f"issue_seed_count={len(issue_seed_paths)}")
+        print(f"onboarding_pack_path={written_pack_path}")
 
     return 0
 

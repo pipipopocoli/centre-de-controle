@@ -95,6 +95,32 @@ def main() -> int:
         assert cli_first["startup_pack_path"] == cli_second["startup_pack_path"] == str(startup_pack)
         assert sorted(cli_first["issue_seed_paths"]) == sorted(cli_second["issue_seed_paths"])
         assert sorted(cli_first["issue_seed_paths"]) == sorted(result_first.issue_seed_paths)
+        onboarding_pack_path = project_dir(project_id_first) / "runs" / "onboarding_pack_latest.json"
+        assert cli_first["onboarding_pack_path"] == str(onboarding_pack_path), cli_first
+        assert cli_second["onboarding_pack_path"] == str(onboarding_pack_path), cli_second
+        assert onboarding_pack_path.exists(), "onboarding pack should be written by intake CLI"
+
+        onboarding_first = json.loads(onboarding_pack_path.read_text(encoding="utf-8"))
+        expected_keys = {
+            "schema_version",
+            "project_id",
+            "project_dir",
+            "projects_root",
+            "repo_path",
+            "run_intake",
+            "startup_pack_path",
+            "issue_seed_paths",
+            "command_path",
+        }
+        assert set(onboarding_first.keys()) == expected_keys, onboarding_first
+        assert onboarding_first["schema_version"] == "wave16_onboarding_pack_v1", onboarding_first
+        assert onboarding_first["project_id"] == project_id_first, onboarding_first
+        assert onboarding_first["run_intake"] is True, onboarding_first
+        assert onboarding_first["issue_seed_paths"] == sorted(onboarding_first["issue_seed_paths"]), onboarding_first
+        assert "generated_at" not in onboarding_first, onboarding_first
+
+        onboarding_second = json.loads(onboarding_pack_path.read_text(encoding="utf-8"))
+        assert onboarding_second == onboarding_first, (onboarding_first, onboarding_second)
 
     print("OK: wave14 startup pack deterministic onboarding verified")
     return 0

@@ -227,8 +227,31 @@ class ProjectPilotageWidget(QFrame):
         self.auto_badge.setObjectName("pilotageModeBadge")
         h_lay.addWidget(self.auto_badge)
 
-
         root.addWidget(header)
+
+        # ── Gate Visibility Panel ──────────────────────────────────────────
+        self._gate_panel = QFrame()
+        self._gate_panel.setObjectName("gateVisibilityPanel")
+        gate_layout = QHBoxLayout(self._gate_panel)
+        gate_layout.setContentsMargins(12, 12, 12, 12)
+        gate_layout.setSpacing(16)
+        
+        gate_title = QLabel("MISSION CRITICAL GATES")
+        gate_title.setObjectName("gateTitle")
+        
+        self._gate_verdict = QLabel("Release: UNKNOWN")
+        self._gate_slo = QLabel("SLO: UNKNOWN")
+        self._gate_approvals = QLabel("Approvals: 0 Blocked")
+        self._gate_recency = QLabel("Freshness: UNKNOWN")
+        
+        gate_layout.addWidget(gate_title)
+        gate_layout.addWidget(self._gate_verdict)
+        gate_layout.addWidget(self._gate_slo)
+        gate_layout.addWidget(self._gate_approvals)
+        gate_layout.addStretch(1)
+        gate_layout.addWidget(self._gate_recency)
+        
+        root.addWidget(self._gate_panel)
 
         # ── Phase bar ───────────────────────────────────────────────
         phase_frame = QFrame()
@@ -502,6 +525,10 @@ class ProjectPilotageWidget(QFrame):
             vulg_snapshot_path = project_dir / "vulgarisation" / "snapshot.json"
             vulg_generated_at = "n/a"
             vulg_freshness = "n/a"
+            vulg_freshness_hours = "n/a"
+            verdict_label = "unavailable"
+            approvals_blocked = 0
+
             if vulg_snapshot_path.exists():
                 try:
                     vulg_payload = json.loads(_read_text(vulg_snapshot_path))
@@ -509,9 +536,53 @@ class ProjectPilotageWidget(QFrame):
                     vulg_payload = {}
                 if isinstance(vulg_payload, dict):
                     vulg_generated_at = str(vulg_payload.get("generated_at") or "n/a")
+                    
+                    signals_payload = vulg_payload.get("signals")
+                    if isinstance(signals_payload, dict):
+                        approvals_blocked = int(signals_payload.get("approvals_blocked", 0))
+
                     freshness_payload = vulg_payload.get("freshness")
                     if isinstance(freshness_payload, dict):
                         vulg_freshness = str(freshness_payload.get("status") or "n/a")
+                        vulg_freshness_hours = str(freshness_payload.get("hours") or "n/a")
+
+                    actions_panels = [p for p in vulg_payload.get("panels", []) if p.get("panel_id") == "actions"]
+                    if actions_panels and "items" in actions_panels[0]:
+                        for item in actions_panels[0]["items"]:
+                            if item.get("label") == "Release verdict":
+                                verdict_label = item.get("value", "unavailable")
+
+            # Update Gate Panel
+            if self._mode == "tech":
+                self._gate_panel.setVisible(True)
+                
+                # SLO Map
+                slo_state = "pass" if slo_verdict == "GO" else ("hold" if slo_verdict == "HOLD" else "unavailable")
+                self._gate_slo.setText(f"SLO: {slo_verdict}")
+                self._gate_slo.setProperty("gateState", slo_state)
+                self._gate_slo.style().polish(self._gate_slo)
+
+                # Verdict Map
+                verdict_status_clean = verdict_label.lower()
+                verdict_state = "pass" if verdict_status_clean == "pass" else ("fail" if verdict_status_clean == "fail" else "unavailable")
+                self._gate_verdict.setText(f"Release: {verdict_label.upper()}")
+                self._gate_verdict.setProperty("gateState", verdict_state)
+                self._gate_verdict.style().polish(self._gate_verdict)
+
+                # Approvals Map
+                app_state = "pass" if approvals_blocked == 0 else "blocked"
+                self._gate_approvals.setText(f"Approvals: {approvals_blocked} Blocked")
+                self._gate_approvals.setProperty("gateState", app_state)
+                self._gate_approvals.style().polish(self._gate_approvals)
+
+                # Recency Map
+                recency_state_map = {"ok": "fresh", "warn": "warn", "critical": "stale"}
+                r_state = recency_state_map.get(vulg_freshness.lower(), "unavailable")
+                self._gate_recency.setText(f"Freshness: {vulg_freshness.upper()} ({vulg_freshness_hours}h)")
+                self._gate_recency.setProperty("recencyState", r_state)
+                self._gate_recency.style().polish(self._gate_recency)
+            else:
+                self._gate_panel.setVisible(False)
 
             if self._mode == "simple":
                 # High-level summary

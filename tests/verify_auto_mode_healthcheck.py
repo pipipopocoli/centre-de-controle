@@ -24,6 +24,8 @@ def _run_healthcheck(
     max_open: int,
     stale_seconds: int = 3600,
     max_snapshot_age_seconds: int | None = None,
+    autopulse_guard: bool = False,
+    autopulse_min_interval_minutes: int | None = None,
 ) -> tuple[int, dict]:
     cmd = [
         sys.executable,
@@ -39,6 +41,10 @@ def _run_healthcheck(
     ]
     if max_snapshot_age_seconds is not None:
         cmd.extend(["--max-snapshot-age-seconds", str(max_snapshot_age_seconds)])
+    if autopulse_guard:
+        cmd.append("--autopulse-guard")
+    if autopulse_min_interval_minutes is not None:
+        cmd.extend(["--autopulse-min-interval-minutes", str(autopulse_min_interval_minutes)])
     proc = subprocess.run(cmd, cwd=str(ROOT_DIR), capture_output=True, text=True, check=False)
     output = proc.stdout.strip()
     json_blob = output.split("\nauto_mode_healthcheck", 1)[0]
@@ -118,6 +124,10 @@ def main() -> int:
         assert "stale_tick" not in payload["issues"], payload
         assert payload["issue_details"] == {}, payload
         assert payload["max_snapshot_age_seconds"] == 2100, payload
+        assert payload["autopulse_guard_enabled"] is False, payload
+        guard_default = payload.get("autopulse_guard_result") or {}
+        assert guard_default.get("attempted") is False, payload
+        assert guard_default.get("reason") == "disabled", payload
 
         # Low close-rate alone should not degrade when queue is already under control.
         runtime_requests = {
@@ -290,6 +300,19 @@ def main() -> int:
         assert payload_pulse_stale["status"] == "degraded", payload_pulse_stale
         assert "pulse_stale" in payload_pulse_stale["issues"], payload_pulse_stale
         assert payload_pulse_stale["issue_details"]["pulse_stale"], payload_pulse_stale
+
+        code_pulse_stale_guard, payload_pulse_stale_guard = _run_healthcheck(
+            projects_root,
+            max_open=2,
+            stale_seconds=1,
+            autopulse_guard=True,
+        )
+        assert code_pulse_stale_guard == 1, payload_pulse_stale_guard
+        assert payload_pulse_stale_guard["status"] == "degraded", payload_pulse_stale_guard
+        assert payload_pulse_stale_guard["autopulse_guard_enabled"] is True, payload_pulse_stale_guard
+        guard_skip = payload_pulse_stale_guard.get("autopulse_guard_result") or {}
+        assert guard_skip.get("attempted") is False, payload_pulse_stale_guard
+        assert guard_skip.get("reason") == "hard_issues_present", payload_pulse_stale_guard
 
         pulse_cmd = [
             sys.executable,

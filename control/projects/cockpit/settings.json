@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-02-22T18:53:27+00:00",
+  "updated_at": "2026-02-24T00:00:00+00:00",
   "agent_tasks": {
     "victor": {
       "current_task": "Wave 1 backend delegation active with @agent-1,@agent-2,@agent-3",
@@ -94,7 +94,26 @@
   },
   "auto_mode": {
     "interval_seconds": 5,
-    "max_actions": 2
+    "max_actions": 1
+  },
+  "outage_mode": {
+    "codex_only_enabled": true,
+    "allowed_platforms": [
+      "codex"
+    ],
+    "allowed_agents": [
+      "victor",
+      "nova",
+      "agent-3"
+    ]
+  },
+  "credit_guard": {
+    "enabled": true,
+    "start_credits": 594,
+    "wave_cap": 180,
+    "reserve_floor": 350,
+    "max_actions_effective": 1,
+    "stop_on_reserve_floor": true
   },
   "automation": {
     "router": {

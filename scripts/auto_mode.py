@@ -73,10 +73,25 @@ def main() -> int:
         default=CONTROL_CADENCE_KPI_MIN_INTERVAL_MINUTES,
         help="Minimum interval between KPI snapshots for cadence mode",
     )
+    parser.add_argument(
+        "--pulse-only",
+        action="store_true",
+        help=(
+            "Run one pulse cycle with no dispatch side effects "
+            "(equivalent to --once --max-actions 0 --no-open --no-clipboard --no-notify)."
+        ),
+    )
     args = parser.parse_args()
 
     project_id = args.project or os.environ.get("COCKPIT_PROJECT_ID") or DEFAULT_PROJECT
     projects_root = resolve_projects_root(args.data_dir)
+
+    if args.pulse_only:
+        args.once = True
+        args.max_actions = 0
+        args.no_open = True
+        args.no_clipboard = True
+        args.no_notify = True
 
     do_open = not args.no_open
     do_clipboard = not args.no_clipboard
