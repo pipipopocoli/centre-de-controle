@@ -3,7 +3,17 @@
   "title": "Cockpit Takeover Wizard Output",
   "type": "object",
   "additionalProperties": true,
-  "required": ["wizard_version", "generated_at_utc", "project_id", "repo_path", "agent_messages", "bmad"],
+  "required": [
+    "wizard_version",
+    "generated_at_utc",
+    "project_id",
+    "repo_path",
+    "agent_messages",
+    "bmad",
+    "roadmap_sections",
+    "decisions_adrs"
+  ],
+  "anyOf": [{ "required": ["state_md"] }, { "required": ["state_sections"] }],
   "properties": {
     "wizard_version": { "type": "string" },
     "generated_at_utc": { "type": "string" },
@@ -93,4 +103,3 @@
     }
   }
 }
-

@@ -94,7 +94,16 @@ def _list_l1_agents(project_id: str, projects_root: Path, override: list[str] | 
 
 
 def _validate_output(payload: dict[str, Any]) -> tuple[bool, str]:
-    required = ["wizard_version", "generated_at_utc", "project_id", "repo_path", "agent_messages", "bmad"]
+    required = [
+        "wizard_version",
+        "generated_at_utc",
+        "project_id",
+        "repo_path",
+        "agent_messages",
+        "bmad",
+        "roadmap_sections",
+        "decisions_adrs",
+    ]
     for key in required:
         if key not in payload:
             return False, f"missing_field:{key}"
@@ -109,6 +118,25 @@ def _validate_output(payload: dict[str, Any]) -> tuple[bool, str]:
     for key in ["product_brief_md", "prd_md", "architecture_md", "stories_md"]:
         if key not in bmad or not isinstance(bmad.get(key), str):
             return False, f"missing_bmad:{key}"
+
+    state_md = payload.get("state_md")
+    state_sections = payload.get("state_sections")
+    if not (isinstance(state_md, str) and state_md.strip()) and not isinstance(state_sections, dict):
+        return False, "missing_state"
+
+    roadmap_sections = payload.get("roadmap_sections")
+    if not isinstance(roadmap_sections, dict):
+        return False, "invalid_roadmap_sections"
+    for key in ["now", "next", "risks"]:
+        raw = roadmap_sections.get(key)
+        if raw is None:
+            continue
+        if not isinstance(raw, list):
+            return False, f"invalid_roadmap_sections:{key}"
+
+    decisions_adrs = payload.get("decisions_adrs")
+    if not isinstance(decisions_adrs, list):
+        return False, "invalid_decisions_adrs"
 
     return True, ""
 
@@ -344,6 +372,7 @@ def _wizard_prompt(
             "- Produce a roundtable for each L1 agent with Now/Next/Blockers (2-3 bullets each).",
             "- Update a draft STATE (phase/objective/now/next/blockers/risks/links).",
             "- Update a draft ROADMAP (now/next/risks).",
+            "- Provide decisions_adrs as a list (can be empty).",
             "",
             "Nova requirement (mandatory):",
             "- Include at least 1 deep research item in Nova output with: owner, next action, evidence path, decision tag (adopt/defer/reject).",
@@ -439,8 +468,7 @@ def apply_takeover_wizard_output(
     roadmap_sections = (
         output_payload.get("roadmap_sections") if isinstance(output_payload.get("roadmap_sections"), dict) else {}
     )
-    if roadmap_sections:
-        _write_text(project_dir / "ROADMAP.md", _roadmap_md_from_sections(roadmap_sections))
+    _write_text(project_dir / "ROADMAP.md", _roadmap_md_from_sections(roadmap_sections))
 
     # DECISIONS
     decisions = output_payload.get("decisions_adrs") if isinstance(output_payload.get("decisions_adrs"), list) else []
@@ -721,4 +749,3 @@ def run_takeover_wizard_async(
     thread = threading.Thread(target=_run, daemon=True)
     thread.start()
     return thread
-
