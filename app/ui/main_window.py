@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from PySide6.QtCore import QTimer, Qt
+from PySide6.QtCore import QObject, QTimer, Qt, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
     QHBoxLayout,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QTabWidget,
@@ -34,6 +37,8 @@ from app.services.brain_manager import BrainManager
 from app.services.chat_parser import parse_mentions, parse_tags
 from app.services.pack_context import build_pack_context, write_pack_context
 from app.services.auto_mode import dispatch_once as auto_mode_dispatch_once
+from app.services.auto_send import SendRoute, send_action
+from app.services.takeover_wizard import TakeoverWizardResult, run_takeover_wizard
 from app.ui.agents_grid import AgentsGridWidget
 from app.ui.chatroom import ChatroomWidget
 from app.ui.doc_viewer import DocsViewerWidget
@@ -41,6 +46,12 @@ from app.ui.project_bible import ProjectBibleWidget
 from app.ui.project_pilotage import ProjectPilotageWidget
 from app.ui.roadmap import RoadmapWidget
 from app.ui.sidebar import SidebarWidget
+
+
+class TakeoverWizardSignals(QObject):
+    started = Signal(str)
+    finished = Signal(object)
+    failed = Signal(str)
 
 
 class MainWindow(QMainWindow):
@@ -90,6 +101,7 @@ class MainWindow(QMainWindow):
         )
         self.sidebar.setFixedWidth(220)
         self.sidebar.new_project_btn.clicked.connect(self.on_new_project)
+        self.sidebar.takeover_wizard_btn.clicked.connect(self.on_takeover_wizard_clicked)
 
         # ── Center: tabbed panels ──────────────────────────────────
         self.center = QWidget()
@@ -180,6 +192,13 @@ class MainWindow(QMainWindow):
         self.project_pilotage.context_selected.connect(self.on_ui_context_selected)
         self.sidebar.auto_mode.toggle.toggled.connect(self.on_auto_mode_toggled)
         self.sidebar.auto_mode.run_once_btn.clicked.connect(self.on_auto_mode_run_once)
+        self.sidebar.auto_mode.auto_send_toggle.toggled.connect(self.on_auto_send_toggled)
+
+        self._takeover_wizard_running = False
+        self._takeover_signals = TakeoverWizardSignals()
+        self._takeover_signals.started.connect(self._on_takeover_wizard_started)
+        self._takeover_signals.finished.connect(self._on_takeover_wizard_finished)
+        self._takeover_signals.failed.connect(self._on_takeover_wizard_failed)
 
         self.brain_manager = BrainManager()
 
@@ -194,6 +213,7 @@ class MainWindow(QMainWindow):
         self.auto_mode_enabled = True
         self.auto_mode_interval_seconds = 5
         self.auto_mode_max_actions = 1
+        self.auto_send_enabled = False
         self.auto_mode_codex_app = "Codex"
         self.auto_mode_ag_app = "Antigravity"
         self.auto_mode_last_error: str | None = None
@@ -429,9 +449,110 @@ class MainWindow(QMainWindow):
         record_mentions(self.current_project_id, payload)
         # Auto-mode should react quickly to operator mentions (when enabled).
         self.run_auto_mode_tick()
+        self._maybe_trigger_takeover_wizard(text, tags)
         self._auto_reply(payload)
         self.chatroom.input.clear()
         self.refresh_chat()
+
+    def _linked_repo_path(self) -> Path | None:
+        if not self.current_project_id:
+            return None
+        settings = self._load_settings_json(self.current_project_id)
+        raw = str(settings.get("linked_repo_path") or "").strip()
+        if not raw:
+            return None
+        candidate = Path(raw).expanduser()
+        try:
+            resolved = candidate.resolve()
+        except OSError:
+            resolved = candidate.absolute()
+        return resolved if resolved.exists() else None
+
+    def _confirm_takeover_wizard(self) -> bool:
+        msg = (
+            "Run Takeover Wizard headless?\n\n"
+            "- Runs 1x codex exec (read-only sandbox)\n"
+            "- Generates BMAD docs + L1 roundtable into this project\n"
+            "- May consume credits\n"
+        )
+        choice = QMessageBox.question(
+            self,
+            "Takeover Wizard",
+            msg,
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        return choice == QMessageBox.Yes
+
+    def _maybe_trigger_takeover_wizard(self, text: str, tags: list[str]) -> None:
+        lowered = (text or "").lower()
+        triggered = False
+        if "wizard" in (tags or []):
+            triggered = True
+        if re.search(r"\blance\s+le\s+wizard\b", lowered):
+            triggered = True
+        if re.search(r"\blaunch\s+wizard\b", lowered):
+            triggered = True
+        if not triggered:
+            return
+        self.on_takeover_wizard_clicked()
+
+    def on_takeover_wizard_clicked(self) -> None:
+        if not self.current_project_id:
+            return
+        if self._takeover_wizard_running:
+            self.sidebar.status_banner.show_warning("Takeover Wizard already running.")
+            return
+
+        repo_path = self._linked_repo_path()
+        if repo_path is None:
+            folder = QFileDialog.getExistingDirectory(self, "Select repo folder for takeover")
+            if not folder:
+                return
+            repo_path = Path(folder)
+            settings = self._load_settings_json(self.current_project_id)
+            settings["linked_repo_path"] = str(repo_path.expanduser())
+            self._save_settings_json(self.current_project_id, settings)
+
+        if not self._confirm_takeover_wizard():
+            return
+
+        self._takeover_wizard_running = True
+
+        def _worker() -> None:
+            self._takeover_signals.started.emit(f"Starting wizard for {repo_path} ...")
+            try:
+                result = run_takeover_wizard(
+                    projects_root=PROJECTS_DIR,
+                    project_id=self.current_project_id,
+                    repo_path=repo_path,
+                    run_intake=True,
+                    headless=True,
+                )
+            except Exception as exc:  # noqa: BLE001
+                self._takeover_signals.failed.emit(str(exc))
+                return
+            self._takeover_signals.finished.emit(result)
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _on_takeover_wizard_started(self, msg: str) -> None:
+        self.sidebar.status_banner.show_warning(msg)
+
+    def _on_takeover_wizard_finished(self, result: object) -> None:
+        self._takeover_wizard_running = False
+        if isinstance(result, TakeoverWizardResult):
+            self.sidebar.status_banner.dismiss()
+            self.sidebar.status_banner.show_warning(f"Wizard complete: {result.run_id}")
+        else:
+            self.sidebar.status_banner.dismiss()
+            self.sidebar.status_banner.show_warning("Wizard complete.")
+        self.refresh_project()
+        self.refresh_chat()
+
+    def _on_takeover_wizard_failed(self, error: str) -> None:
+        self._takeover_wizard_running = False
+        self.sidebar.status_banner.show_error(f"Takeover Wizard failed: {error}")
 
     def _emit_pack_feedback(self, mode: str, path: str) -> None:
         payload = {
@@ -518,6 +639,11 @@ class MainWindow(QMainWindow):
         auto_mode = settings.get("auto_mode") if isinstance(settings.get("auto_mode"), dict) else {}
         interval_seconds = auto_mode.get("interval_seconds", 5)
         max_actions = auto_mode.get("max_actions", 1)
+        auto_send_enabled = auto_mode.get("auto_send_enabled")
+        if auto_send_enabled is None:
+            auto_send_enabled = feature_flags.get("auto_send")
+        if auto_send_enabled is None:
+            auto_send_enabled = False
 
         try:
             interval_seconds = int(interval_seconds)
@@ -534,8 +660,10 @@ class MainWindow(QMainWindow):
         self.auto_mode_enabled = bool(enabled)
         self.auto_mode_interval_seconds = interval_seconds
         self.auto_mode_max_actions = max_actions
+        self.auto_send_enabled = bool(auto_send_enabled)
 
         self.sidebar.auto_mode.set_enabled(self.auto_mode_enabled)
+        self.sidebar.auto_mode.set_auto_send_enabled(self.auto_send_enabled)
         self.auto_mode_timer.setInterval(self.auto_mode_interval_seconds * 1000)
         if self.auto_mode_enabled and not self.auto_mode_timer.isActive():
             self.auto_mode_timer.start()
@@ -551,6 +679,7 @@ class MainWindow(QMainWindow):
             feature_flags = {}
             settings["feature_flags"] = feature_flags
         feature_flags["auto_mode"] = bool(self.auto_mode_enabled)
+        feature_flags["auto_send"] = bool(self.auto_send_enabled)
 
         auto_mode = settings.get("auto_mode")
         if not isinstance(auto_mode, dict):
@@ -558,6 +687,7 @@ class MainWindow(QMainWindow):
             settings["auto_mode"] = auto_mode
         auto_mode["interval_seconds"] = int(self.auto_mode_interval_seconds)
         auto_mode["max_actions"] = int(self.auto_mode_max_actions)
+        auto_mode["auto_send_enabled"] = bool(self.auto_send_enabled)
 
         self._save_settings_json(self.current_project_id, settings)
 
@@ -573,6 +703,11 @@ class MainWindow(QMainWindow):
 
     def on_auto_mode_run_once(self) -> None:
         self.run_auto_mode_tick(manual=True)
+
+    def on_auto_send_toggled(self, enabled: bool) -> None:
+        self.auto_send_enabled = bool(enabled)
+        self._persist_auto_mode_settings()
+        self.sidebar.auto_mode.set_last_error("")
 
     def run_auto_mode_tick(self, manual: bool = False) -> None:
         if not self.current_project_id:
@@ -596,6 +731,29 @@ class MainWindow(QMainWindow):
         # Apply at most max_actions actions (already capped).
         for action in result.actions:
             QApplication.clipboard().setText(action.prompt_text)
+            now = datetime.now().strftime("%H:%M:%S")
+            auto_send_error = ""
+            if self.auto_send_enabled:
+                route = SendRoute(
+                    project_id=self.current_project_id,
+                    agent_id=action.agent_id,
+                    platform=action.platform,
+                    app_name=action.app_to_open,
+                    window_title_contains="",
+                    require_window_match=False,
+                )
+                send_result = send_action(action, route, dry_run=False)
+                if send_result.sent:
+                    self.sidebar.auto_mode.set_last_error("")
+                    self.sidebar.auto_mode.set_last_dispatch(f"{now} sent @{action.agent_id} -> {send_result.app_name}")
+                    continue
+                err = (send_result.error or send_result.status or "auto-send failed").strip()
+                hint = ""
+                if send_result.status == "permission_denied":
+                    hint = " (check macOS Accessibility permissions)"
+                auto_send_error = f"Auto-send {send_result.status}: {err}{hint}"
+                self.sidebar.auto_mode.set_last_error(auto_send_error)
+
             completed = subprocess.run(
                 ["open", "-a", action.app_to_open],
                 capture_output=True,
@@ -606,8 +764,8 @@ class MainWindow(QMainWindow):
                 self.auto_mode_last_error = (completed.stderr or completed.stdout or "open failed").strip()
                 self.sidebar.auto_mode.set_last_error(f"Open error: {self.auto_mode_last_error}")
             else:
-                self.sidebar.auto_mode.set_last_error("")
-            now = datetime.now().strftime("%H:%M:%S")
+                if not auto_send_error:
+                    self.sidebar.auto_mode.set_last_error("")
             self.sidebar.auto_mode.set_last_dispatch(f"{now} @{action.agent_id} -> {action.app_to_open}")
 
         # If there was dispatch activity but no action (max_actions=0), still update status.

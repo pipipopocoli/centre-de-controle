@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Cockpit Takeover Wizard Output",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["wizard_version", "generated_at_utc", "project_id", "repo_path", "agent_messages", "bmad"],
+  "properties": {
+    "wizard_version": { "type": "string" },
+    "generated_at_utc": { "type": "string" },
+    "project_id": { "type": "string" },
+    "repo_path": { "type": "string" },
+    "agent_messages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["agent_id", "text", "now", "next", "blockers", "state_update"],
+        "properties": {
+          "agent_id": { "type": "string" },
+          "text": { "type": "string" },
+          "now": { "type": "array", "items": { "type": "string" } },
+          "next": { "type": "array", "items": { "type": "string" } },
+          "blockers": { "type": "array", "items": { "type": "string" } },
+          "state_update": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["phase", "status", "current_task"],
+            "properties": {
+              "phase": { "type": "string" },
+              "status": { "type": "string" },
+              "current_task": { "type": "string" },
+              "percent": { "type": "integer" },
+              "eta_minutes": { "type": ["integer", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "bmad": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["product_brief_md", "prd_md", "architecture_md", "stories_md"],
+      "properties": {
+        "product_brief_md": { "type": "string" },
+        "prd_md": { "type": "string" },
+        "architecture_md": { "type": "string" },
+        "stories_md": { "type": "string" }
+      }
+    },
+    "state_md": { "type": "string" },
+    "state_sections": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "phase": { "type": "string" },
+        "objective": { "type": "string" },
+        "now": { "type": "array", "items": { "type": "string" } },
+        "next": { "type": "array", "items": { "type": "string" } },
+        "in_progress": { "type": "array", "items": { "type": "string" } },
+        "blockers": { "type": "array", "items": { "type": "string" } },
+        "risks": { "type": "array", "items": { "type": "string" } },
+        "links": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "roadmap_sections": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["now", "next", "risks"],
+      "properties": {
+        "now": { "type": "array", "items": { "type": "string" } },
+        "next": { "type": "array", "items": { "type": "string" } },
+        "risks": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "decisions_adrs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["title", "context", "decision", "consequences", "owners", "references"],
+        "properties": {
+          "title": { "type": "string" },
+          "status": { "type": "string" },
+          "context": { "type": "string" },
+          "decision": { "type": "string" },
+          "rationale": { "type": "string" },
+          "consequences": { "type": "array", "items": { "type": "string" } },
+          "owners": { "type": "array", "items": { "type": "string" } },
+          "references": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}
+

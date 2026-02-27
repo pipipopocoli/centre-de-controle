@@ -13,7 +13,7 @@ What it does:
 - Auto-mode consumes it, writes it to the agent inbox, and (at most once per cycle) copies a ready-to-paste prompt + opens Codex/Antigravity.
 
 Notes:
-- It does not auto-create threads and does not auto-press Send.
+- Auto-send (paste+enter) is OFF by default. If enabled, it may paste+enter via AppleScript and requires macOS permissions.
 - It ignores reminders (`source=reminder`) to avoid loops.
 
 ## What this does (and what it does not)
@@ -26,7 +26,7 @@ Does:
 
 Does not:
 - Automatically create a new Antigravity/Codex thread (no API/CLI integration).
-- Automatically press Send (no AppleScript auto-send).
+- Automatically press Send by default (auto-send is opt-in and may require permissions).
 
 ## Run once
 ```

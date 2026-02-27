@@ -158,7 +158,7 @@ class AutoModePanel(QFrame):
         self.dir_label.setObjectName("autoModeInfo")
         self.dir_label.setWordWrap(True)
         
-        self.microcopy = QLabel("Mentions -> inbox. Auto copie/ouvre 1 mission par cycle.")
+        self.microcopy = QLabel("Mentions -> inbox. Copy/open 1 mission per cycle. Auto-send is opt-in.")
         self.microcopy.setObjectName("autoModeMicrocopy")
         self.microcopy.setWordWrap(True)
 
@@ -169,6 +169,12 @@ class AutoModePanel(QFrame):
         self.last_error.setObjectName("autoModeError")
         self.last_error.setWordWrap(True)
 
+        self.auto_send_toggle = QPushButton("Auto-send OFF")
+        self.auto_send_toggle.setCheckable(True)
+        self.auto_send_toggle.setObjectName("autoSendToggle")
+        self.auto_send_toggle.setCursor(Qt.PointingHandCursor)
+        self.auto_send_toggle.toggled.connect(self._on_auto_send_toggle)
+
         self.run_once_btn = QPushButton("Run once")
         self.run_once_btn.setObjectName("autoModeRunOnce")
         self.run_once_btn.setCursor(Qt.PointingHandCursor)
@@ -178,10 +184,14 @@ class AutoModePanel(QFrame):
         layout.addWidget(self.microcopy)
         layout.addWidget(self.last_dispatch)
         layout.addWidget(self.last_error)
+        layout.addWidget(self.auto_send_toggle)
         layout.addWidget(self.run_once_btn)
 
     def _on_toggle(self, checked: bool) -> None:
         self.toggle.setText("ON" if checked else "OFF")
+
+    def _on_auto_send_toggle(self, checked: bool) -> None:
+        self.auto_send_toggle.setText("Auto-send ON" if checked else "Auto-send OFF")
 
     def set_enabled(self, enabled: bool) -> None:
         self.toggle.blockSignals(True)
@@ -197,6 +207,15 @@ class AutoModePanel(QFrame):
 
     def set_last_error(self, text: str) -> None:
         self.last_error.setText(text)
+
+    def set_auto_send_enabled(self, enabled: bool) -> None:
+        self.auto_send_toggle.blockSignals(True)
+        self.auto_send_toggle.setChecked(bool(enabled))
+        self.auto_send_toggle.blockSignals(False)
+        self.auto_send_toggle.setText("Auto-send ON" if enabled else "Auto-send OFF")
+
+    def is_auto_send_enabled(self) -> bool:
+        return bool(self.auto_send_toggle.isChecked())
 
 
 class RuntimeContextPanel(QFrame):
@@ -375,6 +394,10 @@ class SidebarWidget(QWidget):
         self.new_project_btn.setObjectName("newProjectButton")
         self.new_project_btn.setProperty("controlCue", "primary")
 
+        self.takeover_wizard_btn = QPushButton("Takeover Wizard")
+        self.takeover_wizard_btn.setObjectName("takeoverWizardButton")
+        self.takeover_wizard_btn.setProperty("controlCue", "true")
+
         self.docs_btn = QPushButton("Docs")
         self.docs_btn.setObjectName("sidebarDocsButton")
         self.docs_btn.setProperty("controlCue", "true")
@@ -392,6 +415,7 @@ class SidebarWidget(QWidget):
         layout.addWidget(self.skills_ops)
         layout.addWidget(self.docs_btn)
         layout.addWidget(self.auto_mode)
+        layout.addWidget(self.takeover_wizard_btn)
         layout.addWidget(self.new_project_btn)
 
         if footer_text:

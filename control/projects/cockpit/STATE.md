@@ -4,19 +4,22 @@
 - Ship
 
 ## Objective
-- Reopen AG under credit guard (max_actions_effective=1), keep dual-root runtime healthy, and keep lead-first dispatch deterministic.
+- Ship Takeover Wizard (BMAD + headless L1 roundtable) and keep AG under credit guard (max_actions_effective=1) with deterministic lead-first dispatch.
 
 ## Now
-- Wave17 outage policy: allow AG under guard (`allowed_platforms=[codex,antigravity]`, `allowed_agents=[victor,nova,leo,agent-3]`).
+- Wave17 outage policy: allow AG under guard (`allowed_platforms=[codex,antigravity]`, `allowed_agents=[victor,leo,nova]`).
 - Credit guard remains enabled (`wave_cap <= 180`, `reserve_floor >= 350`, `max_actions_effective=1`).
 - Wave17 dual-root checkpoint is healthy (repo + AppSupport).
 - Recency autopulse guard and onboarding contract tests are green.
 - Agent heartbeats refreshed (UI no longer stale).
 - Public site republished to production (`cockpit-v2-launch`) with Wave16 explainer and diagrams/charts.
-- Lead-first dispatch policy stays active (`@victor` -> `@nova` -> wait -> optional `@agent-3`; `@leo` allowed under guard).
+- Lead-first dispatch policy stays active (`@victor` -> `@nova` -> wait; `@leo` allowed under guard).
+- Wave18 Takeover Wizard is available (UI button + `#wizard` trigger) and writes BMAD + run logs into the project dir.
+- Auto-send toggle is opt-in in Auto-mode panel (paste+enter via AppleScript; permissions may be required).
 - Primary operator app icon switched to single-icon release target (`/Applications/Centre de controle.app`).
 
 ## Next
+- Run 1 wizard on a real repo and confirm BMAD + L1 roundtable outputs are usable without opening Codex/AG.
 - Keep pulse/check cadence on both roots every 30-45 minutes.
 - Enforce credit guard (`wave_cap <= 180`, `reserve_floor >= 350`).
 - Keep fanout closed until 2 consecutive healthy dual-root checkpoints.
@@ -48,6 +51,7 @@
 
 ## Links
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE17_RUNTIME_CHECKPOINT_2026-02-27T0539Z.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/TAKEOVER_WIZARD.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE13_CP0015_CP0042_CLOSEOUT_2026-02-23T0909Z.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE14_VICTOR_LANE_LOCK_2026-02-23T1026Z.md
 - /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE14_CP0050_MEMORY_RETENTION_2026-02-23.md

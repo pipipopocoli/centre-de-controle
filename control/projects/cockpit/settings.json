@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-02-27T05:37:11+00:00",
+  "updated_at": "2026-02-27T10:46:00+00:00",
   "agent_tasks": {
     "victor": {
       "current_task": "Wave 1 backend delegation active with @agent-1,@agent-2,@agent-3",
@@ -104,9 +104,8 @@
     ],
     "allowed_agents": [
       "victor",
-      "nova",
       "leo",
-      "agent-3"
+      "nova"
     ]
   },
   "credit_guard": {

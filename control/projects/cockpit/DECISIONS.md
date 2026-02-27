@@ -190,3 +190,12 @@
 - Consequences: AG lane resumes in a controlled way; requires ongoing dual-root cadence and settings sync between repo + AppSupport.
 - Owners: clems, victor, leo
 - References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/settings.json, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE17_RUNTIME_CHECKPOINT_2026-02-27T0539Z.md
+
+## 2026-02-27 - ADR-CP-022 Takeover Wizard headless (codex exec read-only) + BMAD artifacts
+- Status: Accepted
+- Context: Operator wants a single kickoff flow (one conversation) instead of manually activating @victor/@leo/@nova one by one for every takeover.
+- Decision: Add a Takeover Wizard that runs 1x `codex exec` in sandbox `read-only` and applies a strict JSON output to project artifacts: BMAD docs + L1 roundtable + STATE/ROADMAP/DECISIONS + run logs. Align `outage_mode.allowed_agents` to L1 (`victor, leo, nova`) for lead-first dispatch.
+- Rationale: Improves operator speed and consistency while keeping safety (no repo writes) and cost guardrails (single bundled headless run).
+- Consequences: New UI button + `#wizard` trigger and a CLI entrypoint. Auto-send remains opt-in and may require macOS permissions.
+- Owners: clems, victor, leo (nova FYI)
+- References: /Users/oliviercloutier/Desktop/Cockpit/docs/TAKEOVER_WIZARD.md, /Users/oliviercloutier/Desktop/Cockpit/app/services/takeover_wizard.py, /Users/oliviercloutier/Desktop/Cockpit/scripts/takeover_wizard.py, /Users/oliviercloutier/Desktop/Cockpit/app/services/codex_runner.py, /Users/oliviercloutier/Desktop/Cockpit/app/schemas/takeover_wizard_output.schema.json, /Users/oliviercloutier/Desktop/Cockpit/app/ui/main_window.py, /Users/oliviercloutier/Desktop/Cockpit/app/ui/sidebar.py

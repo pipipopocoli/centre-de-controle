@@ -111,10 +111,12 @@ def ensure_project_structure(project_id: str, project_name: str | None = None) -
         "feature_flags": {
             "deep_mining": False,
             "auto_mode": True,
+            "auto_send": False,
         },
         "auto_mode": {
             "interval_seconds": 5,
             "max_actions": 1,
+            "auto_send_enabled": False,
         },
         "dispatch": {
             "scoring": {

@@ -140,3 +140,118 @@ def run_codex(
                 output_path.unlink(missing_ok=True)
             except OSError:
                 pass
+
+
+def run_codex_exec(
+    prompt: str,
+    cwd: Path,
+    timeout_s: int,
+    *,
+    sandbox_mode: str = "read-only",
+    approval_policy: str = "never",
+    output_schema_path: Path | None = None,
+    output_last_message_path: Path | None = None,
+    ephemeral: bool = True,
+) -> RunnerResult:
+    started_at = _utc_now_iso()
+    started_mono = time.monotonic()
+
+    managed_output = output_last_message_path is None
+    if output_last_message_path is None:
+        tmp = tempfile.NamedTemporaryFile(prefix="cockpit_codex_exec_", suffix=".json", delete=False)
+        output_last_message_path = Path(tmp.name)
+        tmp.close()
+    else:
+        output_last_message_path = Path(output_last_message_path)
+        output_last_message_path.parent.mkdir(parents=True, exist_ok=True)
+
+    command = [
+        "codex",
+        "-a",
+        str(approval_policy),
+        "exec",
+        "-s",
+        str(sandbox_mode),
+        "--skip-git-repo-check",
+        "--cd",
+        str(cwd),
+        "--output-last-message",
+        str(output_last_message_path),
+    ]
+    if output_schema_path is not None:
+        command.extend(["--output-schema", str(Path(output_schema_path))])
+    if ephemeral:
+        command.append("--ephemeral")
+    command.append(prompt)
+
+    try:
+        completed = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=max(int(timeout_s), 30),
+        )
+        duration = max(time.monotonic() - started_mono, 0.0)
+        success = completed.returncode == 0
+        status = "completed" if success else "failed"
+        error = None if success else (completed.stderr.strip() or completed.stdout.strip() or "codex exec failed")
+        output_text = _read_text(output_last_message_path)
+        return RunnerResult(
+            runner="codex",
+            status=status,
+            success=success,
+            launched=True,
+            completed=True,
+            returncode=completed.returncode,
+            stdout=(completed.stdout or "").strip(),
+            stderr=(completed.stderr or "").strip(),
+            error=error,
+            started_at=started_at,
+            finished_at=_utc_now_iso(),
+            duration_seconds=round(duration, 3),
+            output_path=str(output_last_message_path),
+            output_text=output_text,
+        )
+    except subprocess.TimeoutExpired as exc:
+        duration = max(time.monotonic() - started_mono, 0.0)
+        return RunnerResult(
+            runner="codex",
+            status="timeout",
+            success=False,
+            launched=True,
+            completed=False,
+            returncode=None,
+            stdout=(exc.stdout or "").strip(),
+            stderr=(exc.stderr or "").strip(),
+            error=f"codex exec timeout after {max(int(timeout_s), 30)}s",
+            started_at=started_at,
+            finished_at=_utc_now_iso(),
+            duration_seconds=round(duration, 3),
+            output_path=str(output_last_message_path),
+            output_text=_read_text(output_last_message_path),
+        )
+    except OSError as exc:
+        duration = max(time.monotonic() - started_mono, 0.0)
+        return RunnerResult(
+            runner="codex",
+            status="failed",
+            success=False,
+            launched=False,
+            completed=False,
+            returncode=None,
+            stdout="",
+            stderr="",
+            error=f"codex exec unavailable: {exc}",
+            started_at=started_at,
+            finished_at=_utc_now_iso(),
+            duration_seconds=round(duration, 3),
+            output_path=str(output_last_message_path),
+            output_text=_read_text(output_last_message_path),
+        )
+    finally:
+        if managed_output and output_last_message_path is not None:
+            try:
+                output_last_message_path.unlink(missing_ok=True)
+            except OSError:
+                pass

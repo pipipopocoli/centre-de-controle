@@ -9,13 +9,15 @@
 - Wave16 backend/advisory lock is in repository with push receipt published.
 - Public Cockpit V2 explainer is republished on production Vercel.
 - Primary operator launch policy is now single-icon release target.
+- Wave18 Takeover Wizard: BMAD artifacts + headless L1 roundtable (read-only) to avoid per-agent activation.
 
 ## Priorities
-- P0: allow AG under credit guard (cap=1) with lead-first and no fanout until 2 green checkpoints.
-- P1: keep onboarding + mission-critical gate deterministic.
-- P2: keep dual-root recency healthy via pulse/check cadence.
-- P3: keep retention operator digest current and actionable.
-- P4: keep tournament preserved and dormant.
+- P0: Takeover Wizard (BMAD + L1 roundtable) as the default takeover entrypoint.
+- P1: allow AG under credit guard (cap=1) with lead-first and no fanout until 2 green checkpoints.
+- P2: keep onboarding + mission-critical gate deterministic.
+- P3: keep dual-root recency healthy via pulse/check cadence.
+- P4: keep retention operator digest current and actionable.
+- P5: keep tournament preserved and dormant.
 
 ## Wave16 sequence
 1. Lock codex-only outage mode (`CP-0056`) and pause AG/UI lane.
