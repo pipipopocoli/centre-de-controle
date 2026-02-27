@@ -199,3 +199,12 @@
 - Consequences: New UI button + `#wizard` trigger and a CLI entrypoint. Auto-send remains opt-in and may require macOS permissions.
 - Owners: clems, victor, leo (nova FYI)
 - References: /Users/oliviercloutier/Desktop/Cockpit/docs/TAKEOVER_WIZARD.md, /Users/oliviercloutier/Desktop/Cockpit/app/services/takeover_wizard.py, /Users/oliviercloutier/Desktop/Cockpit/scripts/takeover_wizard.py, /Users/oliviercloutier/Desktop/Cockpit/app/services/codex_runner.py, /Users/oliviercloutier/Desktop/Cockpit/app/schemas/takeover_wizard_output.schema.json, /Users/oliviercloutier/Desktop/Cockpit/app/ui/main_window.py, /Users/oliviercloutier/Desktop/Cockpit/app/ui/sidebar.py
+
+## 2026-02-27 - ADR-CP-023 Wizard Live multiagent bundle
+- Status: Accepted
+- Context: Wave18 one-shot kickoff works, but operator flow still needs repeated manual activation for each follow-up turn in chat.
+- Decision: Add Wave19 Wizard Live session mode with command surface `#wizard-live start|run|stop`, one bundled `codex exec` read-only run per turn, L1 fixed to `victor, leo, nova`, and mandatory `@clems` synthesis output.
+- Rationale: Keeps multiagent interaction inside Cockpit chat with low friction while preserving safety and deterministic cost profile.
+- Consequences: New `wizard_live` service, strict output schema, CLI entrypoint, auto-kickoff after new-project and takeover-success events, and per-turn updates to BMAD docs + STATE/ROADMAP/DECISIONS + run logs.
+- Owners: @clems, @victor, @leo (@nova FYI)
+- References: /Users/oliviercloutier/Desktop/Cockpit/docs/WIZARD_LIVE.md, /Users/oliviercloutier/Desktop/Cockpit/app/services/wizard_live.py, /Users/oliviercloutier/Desktop/Cockpit/app/schemas/wizard_live_output.schema.json, /Users/oliviercloutier/Desktop/Cockpit/scripts/wizard_live.py, /Users/oliviercloutier/Desktop/Cockpit/app/ui/main_window.py

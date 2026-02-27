@@ -7,6 +7,11 @@ This wizard generates, in 1 shot:
 - an L1 roundtable (Now/Next/Blockers per agent)
 - updates to STATE/ROADMAP/DECISIONS + a run log
 
+Wave19 adds a live mode for continuous turns in chat:
+- see `docs/WIZARD_LIVE.md`
+- command: `#wizard-live start|run|stop`
+- auto-kickoff runs after new project onboarding and after takeover success
+
 Default output location: `~/Library/Application Support/Cockpit/projects/<project_id>/`.
 
 ## UI (recommended)
@@ -48,7 +53,10 @@ Prompt only (no headless):
 - The wizard must not modify the target repo.
 - The wizard writes only inside the Cockpit project data dir.
 
+## Wave18 vs Wave19
+- Wave18 takeover wizard: one-shot kickoff.
+- Wave19 wizard live: session-based live text roundtable with one bundled run per operator turn.
+
 ## Troubleshooting
 - If headless fails: open the `*_prompt.txt` path from the run log and run it manually in Codex.
 - If UI looks stale after a wizard run: hit `Refresh` or restart the app.
-

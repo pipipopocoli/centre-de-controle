@@ -10,9 +10,10 @@
 - Public Cockpit V2 explainer is republished on production Vercel.
 - Primary operator launch policy is now single-icon release target.
 - Wave18 Takeover Wizard: BMAD artifacts + headless L1 roundtable (read-only) to avoid per-agent activation.
+- Wave19 Wizard Live: session-based L1 multiagent bundle in Cockpit chat (`#wizard-live start|run|stop`).
 
 ## Priorities
-- P0: Takeover Wizard (BMAD + L1 roundtable) as the default takeover entrypoint.
+- P0: Wizard Live (BMAD + L1 live roundtable) as the default takeover and execution entrypoint.
 - P1: allow AG under credit guard (cap=1) with lead-first and no fanout until 2 green checkpoints.
 - P2: keep onboarding + mission-critical gate deterministic.
 - P3: keep dual-root recency healthy via pulse/check cadence.

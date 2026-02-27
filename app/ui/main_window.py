@@ -39,6 +39,14 @@ from app.services.pack_context import build_pack_context, write_pack_context
 from app.services.auto_mode import dispatch_once as auto_mode_dispatch_once
 from app.services.auto_send import SendRoute, send_action
 from app.services.takeover_wizard import TakeoverWizardResult, run_takeover_wizard
+from app.services.wizard_live import (
+    WizardLiveResult,
+    load_wizard_live_session,
+    parse_wizard_live_command,
+    run_wizard_live_turn,
+    start_wizard_live_session,
+    stop_wizard_live_session,
+)
 from app.ui.agents_grid import AgentsGridWidget
 from app.ui.chatroom import ChatroomWidget
 from app.ui.doc_viewer import DocsViewerWidget
@@ -49,6 +57,12 @@ from app.ui.sidebar import SidebarWidget
 
 
 class TakeoverWizardSignals(QObject):
+    started = Signal(str)
+    finished = Signal(object)
+    failed = Signal(str)
+
+
+class WizardLiveSignals(QObject):
     started = Signal(str)
     finished = Signal(object)
     failed = Signal(str)
@@ -199,6 +213,14 @@ class MainWindow(QMainWindow):
         self._takeover_signals.started.connect(self._on_takeover_wizard_started)
         self._takeover_signals.finished.connect(self._on_takeover_wizard_finished)
         self._takeover_signals.failed.connect(self._on_takeover_wizard_failed)
+        self._wizard_live_running = False
+        self._wizard_live_session_active = False
+        self._wizard_live_pending_action: dict | None = None
+        self._wizard_live_repo_path: Path | None = None
+        self._wizard_live_signals = WizardLiveSignals()
+        self._wizard_live_signals.started.connect(self._on_wizard_live_started)
+        self._wizard_live_signals.finished.connect(self._on_wizard_live_finished)
+        self._wizard_live_signals.failed.connect(self._on_wizard_live_failed)
 
         self.brain_manager = BrainManager()
 
@@ -270,6 +292,7 @@ class MainWindow(QMainWindow):
         prev_project_id = self.current_project_id
         self.current_project_id = project.project_id
         project_changed = prev_project_id != self.current_project_id
+        self._sync_wizard_live_session_from_disk()
         self.sidebar.set_runtime_context(
             self.app_stamp,
             self.repo_head,
@@ -283,6 +306,7 @@ class MainWindow(QMainWindow):
             self.sidebar.auto_mode.set_last_error("")
             self.chatroom.reset_feed_state()
             self.chatroom.clear_context_ref()
+            self._wizard_live_pending_action = None
         self.roadmap.set_roadmap(
             project.roadmap.get("now", []),
             project.roadmap.get("next", []),
@@ -365,6 +389,7 @@ class MainWindow(QMainWindow):
         self._reload_projects_list(select_id=project_id)
         project = load_project(project_id)
         self.load_project(project, refresh_chat_now=True, force_portfolio_refresh=True)
+        self._autokick_wizard_live(source="new_project", repo_path=repo_path)
 
     def refresh_project(self) -> None:
         if not self.current_project_id:
@@ -447,10 +472,26 @@ class MainWindow(QMainWindow):
         for tag in tags:
             append_thread_message(self.current_project_id, tag, payload)
         record_mentions(self.current_project_id, payload)
+        wizard_live_command, wizard_live_body = parse_wizard_live_command(text)
+        suppress_auto_reply = False
+        if wizard_live_command:
+            self._handle_wizard_live_command(wizard_live_command, wizard_live_body)
+            suppress_auto_reply = True
+        elif self._wizard_live_session_active:
+            repo_path = self._resolve_wizard_live_repo_path(allow_picker=False)
+            if repo_path is not None:
+                self._queue_wizard_live_action(
+                    mode="run",
+                    trigger="wizard_live_session_message",
+                    operator_message=text,
+                    include_full_intake=False,
+                    repo_path=repo_path,
+                )
         # Auto-mode should react quickly to operator mentions (when enabled).
         self.run_auto_mode_tick()
         self._maybe_trigger_takeover_wizard(text, tags)
-        self._auto_reply(payload)
+        if not suppress_auto_reply:
+            self._auto_reply(payload)
         self.chatroom.input.clear()
         self.refresh_chat()
 
@@ -467,6 +508,236 @@ class MainWindow(QMainWindow):
         except OSError:
             resolved = candidate.absolute()
         return resolved if resolved.exists() else None
+
+    def _sync_wizard_live_session_from_disk(self) -> None:
+        if not self.current_project_id:
+            self._wizard_live_session_active = False
+            self._wizard_live_repo_path = None
+            return
+        payload = load_wizard_live_session(PROJECTS_DIR, self.current_project_id)
+        self._wizard_live_session_active = bool(payload.get("active"))
+        repo_raw = str(payload.get("repo_path") or "").strip()
+        if not repo_raw:
+            self._wizard_live_repo_path = self._linked_repo_path()
+            return
+        candidate = Path(repo_raw).expanduser()
+        try:
+            resolved = candidate.resolve()
+        except OSError:
+            resolved = candidate.absolute()
+        self._wizard_live_repo_path = resolved if resolved.exists() else self._linked_repo_path()
+
+    def _pick_wizard_live_repo_path(self) -> Path | None:
+        folder = QFileDialog.getExistingDirectory(self, "Select repo folder for Wizard Live")
+        if not folder:
+            return None
+        repo_path = Path(folder).expanduser()
+        settings = self._load_settings_json(self.current_project_id)
+        settings["linked_repo_path"] = str(repo_path)
+        self._save_settings_json(self.current_project_id, settings)
+        return repo_path
+
+    def _resolve_wizard_live_repo_path(self, *, allow_picker: bool) -> Path | None:
+        if self._wizard_live_repo_path is not None and self._wizard_live_repo_path.exists():
+            return self._wizard_live_repo_path
+        linked = self._linked_repo_path()
+        if linked is not None:
+            self._wizard_live_repo_path = linked
+            return linked
+        if not allow_picker:
+            return None
+        picked = self._pick_wizard_live_repo_path()
+        if picked is None:
+            return None
+        try:
+            resolved = picked.resolve()
+        except OSError:
+            resolved = picked.absolute()
+        self._wizard_live_repo_path = resolved
+        return resolved
+
+    def _queue_wizard_live_action(
+        self,
+        *,
+        mode: str,
+        trigger: str,
+        operator_message: str,
+        include_full_intake: bool,
+        repo_path: Path | None,
+    ) -> None:
+        action = {
+            "mode": mode,
+            "trigger": trigger,
+            "operator_message": operator_message,
+            "include_full_intake": bool(include_full_intake),
+            "repo_path": repo_path,
+        }
+        if self._wizard_live_running:
+            self._wizard_live_pending_action = action
+            self.sidebar.status_banner.show_warning("Wizard Live busy: last action queued.")
+            return
+        self._run_wizard_live_action(**action)
+
+    def _run_wizard_live_action(
+        self,
+        *,
+        mode: str,
+        trigger: str,
+        operator_message: str,
+        include_full_intake: bool,
+        repo_path: Path | None,
+    ) -> None:
+        if not self.current_project_id:
+            return
+        if mode in {"start", "run"} and repo_path is None:
+            self.sidebar.status_banner.show_error("Wizard Live requires a linked repo path.")
+            return
+        project_id = self.current_project_id
+        self._wizard_live_running = True
+        target = str(repo_path) if repo_path is not None else "-"
+        self._wizard_live_signals.started.emit(f"Wizard Live {mode} started ({target}) ...")
+
+        def _worker() -> None:
+            try:
+                if mode == "start":
+                    result = start_wizard_live_session(
+                        projects_root=PROJECTS_DIR,
+                        project_id=project_id,
+                        repo_path=repo_path or Path("."),
+                        operator_message=operator_message,
+                        trigger=trigger,
+                        run_initial=True,
+                    )
+                elif mode == "stop":
+                    result = stop_wizard_live_session(
+                        projects_root=PROJECTS_DIR,
+                        project_id=project_id,
+                        trigger=trigger,
+                        reason=operator_message,
+                    )
+                else:
+                    result = run_wizard_live_turn(
+                        projects_root=PROJECTS_DIR,
+                        project_id=project_id,
+                        repo_path=repo_path or Path("."),
+                        trigger=trigger,
+                        operator_message=operator_message,
+                        include_full_intake=include_full_intake,
+                        session_active=self._wizard_live_session_active,
+                    )
+            except Exception as exc:  # noqa: BLE001
+                self._wizard_live_signals.failed.emit(str(exc))
+                return
+            self._wizard_live_signals.finished.emit(result)
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _drain_pending_wizard_live_action(self) -> None:
+        if self._wizard_live_running:
+            return
+        if not isinstance(self._wizard_live_pending_action, dict):
+            return
+        action = dict(self._wizard_live_pending_action)
+        self._wizard_live_pending_action = None
+        self._run_wizard_live_action(
+            mode=str(action.get("mode") or "run"),
+            trigger=str(action.get("trigger") or "wizard_live_queued"),
+            operator_message=str(action.get("operator_message") or ""),
+            include_full_intake=bool(action.get("include_full_intake")),
+            repo_path=action.get("repo_path") if isinstance(action.get("repo_path"), Path) else None,
+        )
+
+    def _on_wizard_live_started(self, msg: str) -> None:
+        self.sidebar.status_banner.show_warning(msg)
+
+    def _on_wizard_live_finished(self, result: object) -> None:
+        self._wizard_live_running = False
+        if isinstance(result, WizardLiveResult):
+            if result.repo_path:
+                repo_candidate = Path(result.repo_path).expanduser()
+                try:
+                    self._wizard_live_repo_path = repo_candidate.resolve()
+                except OSError:
+                    self._wizard_live_repo_path = repo_candidate.absolute()
+            self._wizard_live_session_active = bool(result.session_active)
+            if result.status == "stopped":
+                self.sidebar.status_banner.show_warning("Wizard Live stopped.")
+            elif result.status == "ok":
+                self.sidebar.status_banner.show_warning(f"Wizard Live complete: {result.run_id}")
+            elif result.status == "degraded":
+                self.sidebar.status_banner.show_warning("Wizard Live session started in degraded mode.")
+            elif result.status == "failed":
+                self.sidebar.status_banner.show_error(f"Wizard Live failed: {result.error or 'unknown error'}")
+            elif result.status == "started":
+                self.sidebar.status_banner.show_warning("Wizard Live session started.")
+        else:
+            self.sidebar.status_banner.show_warning("Wizard Live complete.")
+        self._sync_wizard_live_session_from_disk()
+        self.refresh_project()
+        self.refresh_chat()
+        self._drain_pending_wizard_live_action()
+
+    def _on_wizard_live_failed(self, error: str) -> None:
+        self._wizard_live_running = False
+        self.sidebar.status_banner.show_error(f"Wizard Live error: {error}")
+        self._sync_wizard_live_session_from_disk()
+        self._drain_pending_wizard_live_action()
+
+    def _handle_wizard_live_command(self, command: str, body: str) -> None:
+        if not self.current_project_id:
+            return
+        if command == "stop":
+            self._queue_wizard_live_action(
+                mode="stop",
+                trigger="wizard_live_stop_command",
+                operator_message=body,
+                include_full_intake=False,
+                repo_path=None,
+            )
+            return
+
+        repo_path = self._resolve_wizard_live_repo_path(allow_picker=True)
+        if repo_path is None:
+            self.sidebar.status_banner.show_error("Wizard Live requires a repo path.")
+            return
+        self._wizard_live_repo_path = repo_path
+
+        if command == "start":
+            self._queue_wizard_live_action(
+                mode="start",
+                trigger="wizard_live_start_command",
+                operator_message=body,
+                include_full_intake=True,
+                repo_path=repo_path,
+            )
+            return
+
+        include_full_intake = not self._wizard_live_session_active
+        self._queue_wizard_live_action(
+            mode="run",
+            trigger="wizard_live_run_command",
+            operator_message=body,
+            include_full_intake=include_full_intake,
+            repo_path=repo_path,
+        )
+
+    def _autokick_wizard_live(self, *, source: str, repo_path: Path | None) -> None:
+        if not self.current_project_id:
+            return
+        if repo_path is None:
+            return
+        if self._wizard_live_session_active:
+            return
+        self._wizard_live_repo_path = repo_path
+        trigger = f"wizard_live_autokick_{source}"
+        message = f"auto kickoff from {source}"
+        self._queue_wizard_live_action(
+            mode="start",
+            trigger=trigger,
+            operator_message=message,
+            include_full_intake=True,
+            repo_path=repo_path,
+        )
 
     def _confirm_takeover_wizard(self) -> bool:
         msg = (
@@ -544,6 +815,9 @@ class MainWindow(QMainWindow):
         if isinstance(result, TakeoverWizardResult):
             self.sidebar.status_banner.dismiss()
             self.sidebar.status_banner.show_warning(f"Wizard complete: {result.run_id}")
+            repo_path = Path(result.repo_path).expanduser() if result.repo_path else None
+            if result.status == "ok" and repo_path is not None:
+                self._autokick_wizard_live(source="takeover", repo_path=repo_path)
         else:
             self.sidebar.status_banner.dismiss()
             self.sidebar.status_banner.show_warning("Wizard complete.")
