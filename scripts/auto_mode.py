@@ -14,24 +14,74 @@ Default data dir (projects root) is macOS App Support:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
 from app.services.auto_mode import (  # noqa: E402
     CONTROL_CADENCE_KPI_MIN_INTERVAL_MINUTES,
+    _dispatch_config,
+    _load_project_settings,
     emit_control_cadence_kpi_snapshot,
 )
+from scripts.auto_mode_healthcheck import evaluate_healthcheck  # noqa: E402
 from scripts.auto_mode_core import (  # noqa: E402
     DEFAULT_PROJECT,
     dispatch_once,
     load_config,
     resolve_projects_root,
 )
+
+
+def _dispatch_audit_snapshot(projects_root: Path, project_id: str, max_actions_requested: int) -> dict[str, Any]:
+    settings = _load_project_settings(projects_root / project_id)
+    dispatch_cfg = _dispatch_config(settings)
+    requested = max(0, int(max_actions_requested))
+    effective = requested
+    reason = "credit_guard_disabled"
+
+    if bool(dispatch_cfg["credit_guard_enabled"]):
+        configured_cap = int(dispatch_cfg["max_actions_effective"])
+        if configured_cap > 0:
+            if requested > configured_cap:
+                effective = configured_cap
+                reason = "credit_guard_cap_applied"
+            else:
+                reason = "credit_guard_enabled_no_cap"
+        else:
+            reason = "credit_guard_enabled_no_cap"
+
+    return {
+        "max_actions_requested": requested,
+        "max_actions_effective": effective,
+        "credit_guard_enabled": bool(dispatch_cfg["credit_guard_enabled"]),
+        "codex_only_enabled": bool(dispatch_cfg["codex_only_enabled"]),
+        "allowed_platforms": list(dispatch_cfg["allowed_platforms"]),
+        "allowed_agents": sorted(str(item) for item in dispatch_cfg["allowed_agents"]),
+        "credit_guard_reason": reason,
+    }
+
+
+def _print_dispatch_audit_line(audit: dict[str, Any]) -> None:
+    allowed_platforms = ",".join(str(item) for item in audit.get("allowed_platforms", []))
+    allowed_agents = ",".join(str(item) for item in audit.get("allowed_agents", []))
+    print(
+        "DispatchAudit "
+        f"codex_only_enabled={str(bool(audit.get('codex_only_enabled'))).lower()} "
+        f"credit_guard_enabled={str(bool(audit.get('credit_guard_enabled'))).lower()} "
+        f"max_actions_requested={int(audit.get('max_actions_requested') or 0)} "
+        f"max_actions_effective={int(audit.get('max_actions_effective') or 0)} "
+        f"credit_guard_reason={str(audit.get('credit_guard_reason') or '')} "
+        f"allowed_platforms={allowed_platforms} "
+        f"allowed_agents={allowed_agents}"
+    )
 
 
 def main() -> int:
@@ -81,6 +131,21 @@ def main() -> int:
             "(equivalent to --once --max-actions 0 --no-open --no-clipboard --no-notify)."
         ),
     )
+    parser.add_argument(
+        "--dual-root-checkpoint",
+        action="store_true",
+        help="Run pulse+health checkpoint for both repo and app roots and emit combined JSON summary.",
+    )
+    parser.add_argument(
+        "--dual-root-repo-data-dir",
+        default="repo",
+        help="Projects root selector/path for repo checkpoint leg (default: repo).",
+    )
+    parser.add_argument(
+        "--dual-root-app-data-dir",
+        default="app",
+        help="Projects root selector/path for app checkpoint leg (default: app).",
+    )
     args = parser.parse_args()
 
     project_id = args.project or os.environ.get("COCKPIT_PROJECT_ID") or DEFAULT_PROJECT
@@ -93,6 +158,66 @@ def main() -> int:
         args.no_clipboard = True
         args.no_notify = True
 
+    if args.dual_root_checkpoint:
+        checkpoint_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        summary: dict[str, Any] = {
+            "checkpoint_at": checkpoint_at,
+            "project_id": project_id,
+        }
+        overall_status = "healthy"
+        root_specs = (
+            ("repo", resolve_projects_root(args.dual_root_repo_data_dir)),
+            ("app", resolve_projects_root(args.dual_root_app_data_dir)),
+        )
+
+        for label, root in root_specs:
+            root_config, _ = load_config(None, root, project_id)
+            pulse_stats = dispatch_once(
+                root,
+                project_id,
+                do_open=False,
+                do_clipboard=False,
+                do_notify=False,
+                max_actions=0,
+                print_prompt=False,
+                config=root_config,
+            )
+            pulse_snapshot = emit_control_cadence_kpi_snapshot(
+                root,
+                project_id,
+                min_interval_minutes=max(int(args.kpi_min_interval_minutes), 1),
+            )
+            health = evaluate_healthcheck(
+                project=project_id,
+                data_dir=str(root),
+                stale_seconds=3600,
+                max_open=3,
+                max_snapshot_age_seconds=2100,
+                autopulse_guard=True,
+                autopulse_min_interval_minutes=max(int(args.kpi_min_interval_minutes), 1),
+            )
+            if str(health.get("status")) != "healthy":
+                overall_status = "degraded"
+
+            summary[label] = {
+                "projects_root": str(root),
+                "pulse": {
+                    "dispatched": int(pulse_stats.get("dispatched") or 0),
+                    "skipped": int(pulse_stats.get("skipped") or 0),
+                    "actions_used": int(pulse_stats.get("actions_used") or 0),
+                    "gate_blocked": int(pulse_stats.get("gate_blocked") or 0),
+                    "state_path": str(pulse_stats.get("state_path") or ""),
+                    "snapshot": pulse_snapshot,
+                },
+                "dispatch_audit": _dispatch_audit_snapshot(root, project_id, 0),
+                "health": health,
+                "status": str(health.get("status") or "degraded"),
+            }
+
+        summary["overall_status"] = overall_status
+        print(json.dumps(summary, indent=2))
+        return 0 if overall_status == "healthy" else 1
+
     do_open = not args.no_open
     do_clipboard = not args.no_clipboard
     do_notify = not args.no_notify
@@ -100,6 +225,7 @@ def main() -> int:
     config_path = Path(args.config).expanduser() if args.config else None
     config, resolved = load_config(config_path, projects_root, project_id)
     max_actions = args.max_actions if args.max_actions is not None else int(config.get("max_actions", 1))
+    dispatch_audit = _dispatch_audit_snapshot(projects_root, project_id, max_actions)
 
     config_hint = str(resolved) if resolved else "(default config)"
     print(f"Auto-mode using projects root: {projects_root}")
@@ -146,6 +272,7 @@ def main() -> int:
             f"GateReport: {stats.get('gate_report_path', '')} | "
             f"State: {stats.get('state_path', '')}"
         )
+        _print_dispatch_audit_line(dispatch_audit)
         emit_snapshot_line()
         return 0
 
@@ -169,6 +296,7 @@ def main() -> int:
                 f"GateReport: {stats.get('gate_report_path', '')} | "
                 f"State: {stats.get('state_path', '')}"
             )
+        _print_dispatch_audit_line(dispatch_audit)
         emit_snapshot_line()
         time.sleep(max(args.interval, 0.5))
 

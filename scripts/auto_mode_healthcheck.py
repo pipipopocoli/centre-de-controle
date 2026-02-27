@@ -162,49 +162,26 @@ def _latest_runtime_activity(state_payload: dict[str, Any]) -> datetime | None:
     return max(valid)
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Healthcheck for Cockpit auto-mode runtime state.")
-    parser.add_argument("--project", default="cockpit", help="Project id")
-    parser.add_argument("--data-dir", default=None, help="Projects root. Special values: repo, app")
-    parser.add_argument("--stale-seconds", type=int, default=180, help="Max age for last tick")
-    parser.add_argument("--max-open", type=int, default=50, help="Max open requests before degraded")
-    parser.add_argument(
-        "--max-snapshot-age-seconds",
-        type=int,
-        default=HEALTHCHECK_KPI_SNAPSHOT_MAX_AGE_SECONDS,
-        help="Max age for latest KPI snapshot before degraded",
-    )
-    parser.add_argument(
-        "--autopulse-guard",
-        action="store_true",
-        help=(
-            "Try a recency-only KPI pulse refresh when snapshot is stale but pulse is fresh "
-            "and no hard issues are present."
-        ),
-    )
-    parser.add_argument(
-        "--autopulse-min-interval-minutes",
-        type=int,
-        default=CONTROL_CADENCE_KPI_MIN_INTERVAL_MINUTES,
-        help="Minimum interval used by recency autopulse guard.",
-    )
-    parser.add_argument("--min-close-rate", type=float, default=80.0, help="Minimum close_rate_24h before degraded")
-    parser.add_argument(
-        "--min-dispatched-close-rate",
-        type=int,
-        default=5,
-        help="Minimum dispatched_external_24h before enforcing close-rate threshold",
-    )
-    args = parser.parse_args()
-
-    projects_root = resolve_projects_root(args.data_dir)
-    project_dir = projects_root / args.project
+def evaluate_healthcheck(
+    *,
+    project: str = "cockpit",
+    data_dir: str | None = None,
+    stale_seconds: int = 180,
+    max_open: int = 50,
+    max_snapshot_age_seconds: int = HEALTHCHECK_KPI_SNAPSHOT_MAX_AGE_SECONDS,
+    min_close_rate: float = 80.0,
+    min_dispatched_close_rate: int = 5,
+    autopulse_guard: bool = False,
+    autopulse_min_interval_minutes: int = CONTROL_CADENCE_KPI_MIN_INTERVAL_MINUTES,
+) -> dict[str, Any]:
+    projects_root = resolve_projects_root(data_dir)
+    project_dir = projects_root / project
     state_path = project_dir / "runs" / "auto_mode_state.json"
     snapshot_path = project_dir / "runs" / "kpi_snapshots.ndjson"
 
     now = datetime.now(timezone.utc)
     state_payload = _read_json(state_path)
-    recovery = recover_queue_state(projects_root, args.project, persist=False, now=now)
+    recovery = recover_queue_state(projects_root, project, persist=False, now=now)
     runtime_requests_map = recovery.get("runtime_requests")
     if not isinstance(runtime_requests_map, dict):
         runtime_requests_map = {}
@@ -240,13 +217,13 @@ def main() -> int:
     )
     open_requests = int(open_external_requests)
 
-    min_dispatched = max(int(args.min_dispatched_close_rate), 1)
-    min_close_rate = float(args.min_close_rate)
-    max_snapshot_age_seconds = max(int(args.max_snapshot_age_seconds), 0)
+    min_dispatched = max(int(min_dispatched_close_rate), 1)
+    min_close_rate = float(min_close_rate)
+    max_snapshot_age_seconds = max(int(max_snapshot_age_seconds), 0)
 
     issues: list[str] = []
     warnings: list[str] = []
-    stale_seconds = max(int(args.stale_seconds), 0)
+    stale_seconds = max(int(stale_seconds), 0)
     pulse_age_seconds: int | None = None
     if not state_path.exists():
         issues.append("missing_state_file")
@@ -258,7 +235,7 @@ def main() -> int:
         pulse_age_seconds = max(int((now - last_pulse_at).total_seconds()), 0)
         if pulse_age_seconds > stale_seconds:
             issues.append("pulse_stale")
-    max_open_threshold = max(int(args.max_open), 0)
+    max_open_threshold = max(int(max_open), 0)
     if open_requests > max_open_threshold:
         issues.append("too_many_open_requests")
 
@@ -289,13 +266,13 @@ def main() -> int:
     hard_issues = [code for code in issues if code != "stale_kpi_snapshot"]
     autopulse_guard_result = emit_recency_autopulse_guard(
         projects_root,
-        args.project,
-        enabled=bool(args.autopulse_guard),
+        project,
+        enabled=bool(autopulse_guard),
         stale_snapshot=snapshot_is_stale,
         pulse_fresh=pulse_is_fresh,
         hard_issues=hard_issues,
         now=now,
-        min_interval_minutes=max(int(args.autopulse_min_interval_minutes), 1),
+        min_interval_minutes=max(int(autopulse_min_interval_minutes), 1),
     )
     if bool(autopulse_guard_result.get("attempted")):
         snapshot_age_seconds = _last_snapshot_age_seconds(snapshot_path, now)
@@ -314,9 +291,9 @@ def main() -> int:
 
     status = "healthy" if not issues else "degraded"
 
-    payload = {
+    return {
         "status": status,
-        "project_id": args.project,
+        "project_id": project,
         "projects_root": str(projects_root),
         "mode": lifecycle_mode,
         "state_path": str(state_path),
@@ -334,7 +311,7 @@ def main() -> int:
         "tick_age_seconds": tick_age_seconds,
         "snapshot_age_seconds": snapshot_age_seconds,
         "max_snapshot_age_seconds": max_snapshot_age_seconds,
-        "autopulse_guard_enabled": bool(args.autopulse_guard),
+        "autopulse_guard_enabled": bool(autopulse_guard),
         "autopulse_guard_result": autopulse_guard_result,
         "kpi": kpi,
         "min_close_rate": min_close_rate,
@@ -347,12 +324,60 @@ def main() -> int:
         "warning_details": {code: WARNING_DETAILS.get(code, "unknown warning code") for code in warnings},
     }
 
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Healthcheck for Cockpit auto-mode runtime state.")
+    parser.add_argument("--project", default="cockpit", help="Project id")
+    parser.add_argument("--data-dir", default=None, help="Projects root. Special values: repo, app")
+    parser.add_argument("--stale-seconds", type=int, default=180, help="Max age for last tick")
+    parser.add_argument("--max-open", type=int, default=50, help="Max open requests before degraded")
+    parser.add_argument(
+        "--max-snapshot-age-seconds",
+        type=int,
+        default=HEALTHCHECK_KPI_SNAPSHOT_MAX_AGE_SECONDS,
+        help="Max age for latest KPI snapshot before degraded",
+    )
+    parser.add_argument(
+        "--autopulse-guard",
+        action="store_true",
+        help=(
+            "Try a recency-only KPI pulse refresh when snapshot is stale but pulse is fresh "
+            "and no hard issues are present."
+        ),
+    )
+    parser.add_argument(
+        "--autopulse-min-interval-minutes",
+        type=int,
+        default=CONTROL_CADENCE_KPI_MIN_INTERVAL_MINUTES,
+        help="Minimum interval used by recency autopulse guard.",
+    )
+    parser.add_argument("--min-close-rate", type=float, default=80.0, help="Minimum close_rate_24h before degraded")
+    parser.add_argument(
+        "--min-dispatched-close-rate",
+        type=int,
+        default=5,
+        help="Minimum dispatched_external_24h before enforcing close-rate threshold",
+    )
+    args = parser.parse_args()
+
+    payload = evaluate_healthcheck(
+        project=args.project,
+        data_dir=args.data_dir,
+        stale_seconds=args.stale_seconds,
+        max_open=args.max_open,
+        max_snapshot_age_seconds=args.max_snapshot_age_seconds,
+        min_close_rate=args.min_close_rate,
+        min_dispatched_close_rate=args.min_dispatched_close_rate,
+        autopulse_guard=args.autopulse_guard,
+        autopulse_min_interval_minutes=args.autopulse_min_interval_minutes,
+    )
+
     print(json.dumps(payload, indent=2))
     print(
-        f"auto_mode_healthcheck status={status} project={args.project} "
-        f"open_requests={open_requests} tick_age_seconds={tick_age_seconds}"
+        f"auto_mode_healthcheck status={payload.get('status')} project={args.project} "
+        f"open_requests={payload.get('open_requests')} tick_age_seconds={payload.get('tick_age_seconds')}"
     )
-    return 0 if status == "healthy" else 1
+    return 0 if payload.get("status") == "healthy" else 1
 
 
 if __name__ == "__main__":

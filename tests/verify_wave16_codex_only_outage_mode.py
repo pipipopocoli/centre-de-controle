@@ -126,6 +126,14 @@ def main() -> int:
         assert result.dispatched_count == 2, result
         assert len(result.actions) == 1, result
         assert all(action.platform == "codex" for action in result.actions), result
+        assert result.max_actions_requested == 5, result
+        assert result.max_actions_effective == 1, result
+        assert result.credit_guard_enabled is True, result
+        assert result.codex_only_enabled is True, result
+        assert result.credit_guard_reason == "credit_guard_cap_applied", result
+        assert result.allowed_platforms == ["codex"], result
+        assert "victor" in result.allowed_agents, result
+        assert "nova" in result.allowed_agents, result
 
         state_path = runs_dir / "auto_mode_state.json"
         state = json.loads(state_path.read_text(encoding="utf-8"))

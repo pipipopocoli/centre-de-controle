@@ -4,13 +4,14 @@
 - Ship Cockpit V2 as an operator-first orchestrator for complex existing repositories, with stable runtime control and strict project isolation.
 
 ## Current checkpoint
-- Wave16 codex-only consolidation active due AG outage.
+- Wave17 partial AG reopen under credit guard (max_actions_effective=1, lead-first, no fanout).
+- Wave17 dual-root runtime checkpoint is healthy (repo + AppSupport).
 - Wave16 backend/advisory lock is in repository with push receipt published.
 - Public Cockpit V2 explainer is republished on production Vercel.
 - Primary operator launch policy is now single-icon release target.
 
 ## Priorities
-- P0: codex-only outage mode + credit guard until Feb 26.
+- P0: allow AG under credit guard (cap=1) with lead-first and no fanout until 2 green checkpoints.
 - P1: keep onboarding + mission-critical gate deterministic.
 - P2: keep dual-root recency healthy via pulse/check cadence.
 - P3: keep retention operator digest current and actionable.
@@ -25,8 +26,8 @@
 6. Consolidate/push snapshot with receipt (`CP-0057`).
 
 ## Next wave entrypoint
-1. Keep lead-first dispatch policy (`@victor`, `@nova`) while AG is unavailable.
-2. Keep `@leo` lane paused until AG credits recover.
+1. Keep lead-first dispatch policy (`@victor`, `@nova`) under credit guard; allow `@leo` lane under guard.
+2. Keep fanout closed until 2 consecutive healthy dual-root checkpoints; keep settings in sync across repo + AppSupport.
 3. Open feature issues only after runtime gates stay green at two checkpoints.
 4. Preserve tournament dormant guard.
 5. Keep release app as primary operator icon; use Dev Live only for engineering iteration.

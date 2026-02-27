@@ -90,11 +90,17 @@
   - D1 | recommendation: adaptive recency threshold by activity intensity (idle vs active windows) with deterministic guardrails. | owner:@victor | next_action:prototype threshold policy in tests before runtime adoption. | evidence_path:/Users/oliviercloutier/Desktop/Cockpit/tests/verify_auto_mode_healthcheck.py | decision_tag:adopt
 
 ## Wave16 retention visibility advisory
+- Trigger
+  - event-driven checkpoint opened on material delta: new Wave16 run artifacts on 2026-02-24.
 - Brief 60s
-  - On est ou: retention advisory is now visible in vulgarisation snapshot + html (Simple+Tech) with owner-routed action.
-  - On va ou: keep manual 2h checkpoints and refresh retention_status before next operator readout.
-  - Pourquoi: stale retention status creates trust drift and weakens operator decisions.
-  - Comment: read retention artifact, publish action-first digest, and keep evidence path explicit.
+  - On est ou: phase is Ship; codex-only guard is active; new Wave16 runtime checkpoint and dispatch artifacts are published.
+  - On va ou: keep dual-root cadence and credit guard until Feb 26, then reopen lanes only if gates stay green.
+  - Pourquoi: retention visibility is still warn and overdue, so stale signals can degrade operator trust.
+  - Comment: publish only on material delta with evidence-first rows (owner, next_action, evidence_path, decision_tag).
+- Recommendations (3 operator rows)
+  - R1 | recommendation: restore retention freshness before next operator decision window. | owner:@victor | next_action: regenerate retention_status and confirm next_compaction_at is in the future. | evidence_path:/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/retention/retention_status.json | decision_tag:adopt
+  - R2 | recommendation: keep dual-root recency cadence under credit guard. | owner:@victor | next_action: execute pulse/check loop every 30-45 min and append proof in Wave16 runtime checkpoint logs. | evidence_path:/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_RUNTIME_CHECKPOINT_2026-02-24T1031Z.md | decision_tag:adopt
+  - R3 | recommendation: keep operator trust wording explicit for codex-only isolation. | owner:@clems | next_action: keep codex-only and AG pause wording in operator updates until credits are restored. | evidence_path:/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE16_DISPATCH_CREDIT_GUARD_2026-02-24.md | decision_tag:adopt
 - Retention visibility (owner/action/evidence/decision)
   - status: warn
   - policy_version: wave14-7-30-90-permanent-v1
@@ -106,9 +112,13 @@
   - evidence_path: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/retention/retention_status.json
   - decision_tag: defer
 - Deep RnD D1 (phase-mapped)
-  - D1 | recommendation: retention confidence rubric combining status/freshness/totals/action clarity into one operator score. | owner:@nova | next_action: validate rubric on 3 consecutive refresh cycles and record decision latency delta. | evidence_path:/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/STATE.md;/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/ROADMAP.md;/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/retention/retention_status.json | decision_tag:defer
-- Cadence
-  - Manual report every 2h in Now/Next/Blockers (chat + memory + rolling report).
+  - D1 | recommendation: retention confidence scorecard from freshness lag + totals stability + checkpoint latency. | owner:@nova | next_action: validate scorecard against three Wave16 artifacts (`runtime checkpoint`, `dispatch guard`, `push receipt`) and record false-alert rate. | evidence_path:/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_RUNTIME_CHECKPOINT_2026-02-24T1031Z.md;/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE16_DISPATCH_CREDIT_GUARD_2026-02-24.md;/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_PUSH_RECEIPT_2026-02-24.md | decision_tag:defer
+- Now/Next/Blockers
+  - Now: Wave16 checkpoint refreshed on material delta with 3 operator recommendations + 1 deep D1.
+  - Next: publish next checkpoint only when retention/run/blocker/phase delta appears.
+  - Blockers: none.
+- Blocker escalation rule
+  - if blocker age >60 min: post Option A + Option B + Recommended + ping @clems.
 
 ## Links
 - `/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/STATE.md`

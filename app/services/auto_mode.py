@@ -62,6 +62,13 @@ class DispatchResult:
     actions: list[AutoModeAction]
     gate_blocked_count: int = 0
     gate_report_path: str = ""
+    max_actions_requested: int = 0
+    max_actions_effective: int = 0
+    credit_guard_enabled: bool = False
+    codex_only_enabled: bool = False
+    allowed_platforms: list[str] = field(default_factory=list)
+    allowed_agents: list[str] = field(default_factory=list)
+    credit_guard_reason: str = "credit_guard_disabled"
 
 
 def _utc_now_iso() -> str:
@@ -1080,9 +1087,20 @@ def dispatch_once(
     dispatch_cfg = _dispatch_config(settings)
     allowed_agents = dispatch_cfg["allowed_agents"]
     allowed_platforms = set(dispatch_cfg["allowed_platforms"])
-    max_actions_cap = max_actions
-    if dispatch_cfg["credit_guard_enabled"] and int(dispatch_cfg["max_actions_effective"]) > 0:
-        max_actions_cap = min(max_actions, int(dispatch_cfg["max_actions_effective"]))
+    max_actions_requested = max(0, int(max_actions))
+    max_actions_cap = max_actions_requested
+    credit_guard_reason = "credit_guard_disabled"
+    credit_guard_enabled = bool(dispatch_cfg["credit_guard_enabled"])
+    if credit_guard_enabled:
+        configured_cap = int(dispatch_cfg["max_actions_effective"])
+        if configured_cap > 0:
+            if max_actions_requested > configured_cap:
+                max_actions_cap = configured_cap
+                credit_guard_reason = "credit_guard_cap_applied"
+            else:
+                credit_guard_reason = "credit_guard_enabled_no_cap"
+        else:
+            credit_guard_reason = "credit_guard_enabled_no_cap"
 
     _recover_queue_state_with_paths(
         projects_root,
@@ -1387,6 +1405,13 @@ def dispatch_once(
         actions=actions,
         gate_blocked_count=gate_blocked_count,
         gate_report_path=str(gate_report_path),
+        max_actions_requested=max_actions_requested,
+        max_actions_effective=max_actions_cap,
+        credit_guard_enabled=credit_guard_enabled,
+        codex_only_enabled=bool(dispatch_cfg["codex_only_enabled"]),
+        allowed_platforms=list(dispatch_cfg["allowed_platforms"]),
+        allowed_agents=sorted(str(item) for item in dispatch_cfg["allowed_agents"]),
+        credit_guard_reason=credit_guard_reason,
     )
 
 

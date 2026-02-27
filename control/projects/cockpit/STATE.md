@@ -4,21 +4,22 @@
 - Ship
 
 ## Objective
-- Lock Wave16 codex-only consolidation, republish public explainer, and keep dual-root runtime healthy under credit guard until Feb 26.
+- Reopen AG under credit guard (max_actions_effective=1), keep dual-root runtime healthy, and keep lead-first dispatch deterministic.
 
 ## Now
-- Wave16 codex-only outage mode locked for active lane (`victor`, `nova`, optional `agent-3`).
-- `nova` temporary routing switched to Codex in project registry/settings.
+- Wave17 outage policy: allow AG under guard (`allowed_platforms=[codex,antigravity]`, `allowed_agents=[victor,nova,leo,agent-3]`).
+- Credit guard remains enabled (`wave_cap <= 180`, `reserve_floor >= 350`, `max_actions_effective=1`).
+- Wave17 dual-root checkpoint is healthy (repo + AppSupport).
 - Recency autopulse guard and onboarding contract tests are green.
-- AG/UI expansion lane is paused until Antigravity credits return.
+- Agent heartbeats refreshed (UI no longer stale).
 - Public site republished to production (`cockpit-v2-launch`) with Wave16 explainer and diagrams/charts.
-- Wave16 lead-first dispatch packet published (`@victor` -> `@nova` -> wait 15m -> optional `@agent-3`).
+- Lead-first dispatch policy stays active (`@victor` -> `@nova` -> wait -> optional `@agent-3`; `@leo` allowed under guard).
 - Primary operator app icon switched to single-icon release target (`/Applications/Centre de controle.app`).
 
 ## Next
 - Keep pulse/check cadence on both roots every 30-45 minutes.
 - Enforce credit guard (`wave_cap <= 180`, `reserve_floor >= 350`).
-- Resume UI lane only when AG availability is restored.
+- Keep fanout closed until 2 consecutive healthy dual-root checkpoints.
 - Track operator usage on release single-icon path and keep Dev Live optional only.
 
 ## In Progress
@@ -32,8 +33,8 @@
 
 ## Risks
 - stale recency warnings drift back if pulse cadence is not respected.
-- AG outage can create accidental cross-platform dispatch attempts without codex-only policy.
-- credits can burn too quickly if specialist fanout is reopened before Feb 26.
+- dual-root settings drift (repo vs AppSupport) can create dispatch confusion.
+- credits can burn too quickly if specialist fanout is reopened too early.
 
 ## Gates
 - pending_stale_gt24h == 0
@@ -41,11 +42,12 @@
 - queued_runtime_requests <= 3
 - repo_root_healthcheck == healthy
 - appsupport_root_healthcheck == healthy
-- codex_only_dispatch_guard == true
+- outage_mode_guard == allow_ag_under_guard
 - credit_reserve_floor_reached == false
 - tournament_auto_dispatch == false
 
 ## Links
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE17_RUNTIME_CHECKPOINT_2026-02-27T0539Z.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE13_CP0015_CP0042_CLOSEOUT_2026-02-23T0909Z.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE14_VICTOR_LANE_LOCK_2026-02-23T1026Z.md
 - /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE14_CP0050_MEMORY_RETENTION_2026-02-23.md

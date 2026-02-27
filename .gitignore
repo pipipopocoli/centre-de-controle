@@ -1,4 +1,5 @@
 .venv/
+.venv*/
 venv/
 __pycache__/
 *.pyc
@@ -11,6 +12,7 @@ build/
 dist/
 build-v5/
 Cockpit-v5-Release/
+local_packages/
 *.egg-info/
 *.app/
 *.spec
@@ -22,6 +24,7 @@ app/ui/styles.py
 app/ui/tokens.py
 **/memory.proposed.md
 **/runs/*.ndjson
+**/runs/*.sqlite3
 control/projects/**/runs/inbox/
 control/projects/**/runs/dispatch_state.json
 control/projects/**/agents/agent-*/

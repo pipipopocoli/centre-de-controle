@@ -181,3 +181,12 @@
 - Consequences: Main `/Applications/Centre de controle.app` now points to release binary (`CFBundleExecutable=Centre de controle`), Dev Live remains optional, and docs are updated to stop framing two-icon behavior as normal for the primary icon path.
 - Owners: clems, victor, nova
 - References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WEB_REPUBLISH_WAVE16_2026-02-24.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE16_DISPATCH_CREDIT_GUARD_2026-02-24.md, /Users/oliviercloutier/Desktop/Cockpit/scripts/packaging/install_release_app.sh, /Users/oliviercloutier/Desktop/Cockpit/docs/PACKAGING.md, /Users/oliviercloutier/Desktop/Cockpit/docs/RUNBOOK.md
+
+## 2026-02-27 - ADR-CP-021 Partial AG reopen under credit guard
+- Status: Accepted
+- Context: Wave16 codex-only window ended; we want to resume AG while preserving credits and keeping dual-root runtime stable.
+- Decision: Set `outage_mode.codex_only_enabled=false`, allow platforms `[codex, antigravity]`, lock allowed agents to `[victor, nova, leo, agent-3]` (lead-first, no fanout), and keep `credit_guard` enabled with `max_actions_effective=1`.
+- Rationale: Reopens AG safely while limiting cost and preventing uncontrolled dispatch fanout.
+- Consequences: AG lane resumes in a controlled way; requires ongoing dual-root cadence and settings sync between repo + AppSupport.
+- Owners: clems, victor, leo
+- References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/settings.json, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE17_RUNTIME_CHECKPOINT_2026-02-27T0539Z.md

@@ -1,13 +1,13 @@
-# Wave16 Retention Visibility Advisory (2026-02-23)
+# Wave16 Retention Visibility Advisory (2026-02-24 checkpoint)
 
 ## Objective
-Run Nova Wave16 advisory lane with retention-first visibility in vulgarisation, a <=60s operator digest, and one deep RnD item mapped to phase.
+Maintain Wave16 advisory lane in event-driven mode with operator-first digest, evidence-backed recommendations, and one deep research item per phase touchpoint.
 
 ## Brief 60s
-- On est ou: retention signal is now rendered in vulgarisation header, Brief 60s, Simple what-next, and Tech retention section.
-- On va ou: keep manual 2h checkpoints and refresh retention_status before next operator decision window.
-- Pourquoi: if retention freshness is stale, operator trust drops and decisions degrade.
-- Comment: keep owner/action/evidence/decision_tag explicit and republish Now/Next/Blockers every checkpoint.
+- On est ou: phase is Ship; codex-only guard is active; new Wave16 runtime checkpoint and dispatch artifacts are available.
+- On va ou: keep dual-root pulse/check cadence and credit guard until Feb 26 while AG lane stays paused.
+- Pourquoi: retention status is still warn/overdue, and stale cadence can reduce operator trust.
+- Comment: checkpoint only on material delta, then publish short action-first rows with owner/action/evidence/decision.
 
 ## Retention visibility (owner/next_action/evidence/decision_tag)
 - status: warn
@@ -19,28 +19,36 @@ Run Nova Wave16 advisory lane with retention-first visibility in vulgarisation, 
 - next_action: run manual retention refresh now, then republish status with evidence.
 - evidence_path: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/retention/retention_status.json
 - decision_tag: defer
-- hint: retention checkpoint is overdue; run immediate refresh.
+
+## Recommendations (3 operator rows)
+- R1 | recommendation: restore retention freshness before next operator decision window. | owner:@victor | next_action: regenerate retention_status and confirm next_compaction_at is in the future. | evidence_path:/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/retention/retention_status.json | decision_tag:adopt
+- R2 | recommendation: keep dual-root recency cadence under credit guard. | owner:@victor | next_action: execute pulse/check loop every 30-45 min and append proof in Wave16 runtime checkpoint logs. | evidence_path:/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_RUNTIME_CHECKPOINT_2026-02-24T1031Z.md | decision_tag:adopt
+- R3 | recommendation: keep operator trust wording explicit for codex-only isolation. | owner:@clems | next_action: keep codex-only and AG pause wording in operator updates until credits are restored. | evidence_path:/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE16_DISPATCH_CREDIT_GUARD_2026-02-24.md | decision_tag:adopt
 
 ## Deep RnD D1 (phase-mapped)
-- D1 | recommendation: retention confidence rubric combining status/freshness/totals/action clarity into one operator score.
+- D1 | recommendation: retention confidence scorecard from freshness lag + totals stability + checkpoint latency.
 - owner: @nova
-- next_action: validate the rubric on 3 consecutive refresh cycles and compare decision latency before/after.
+- next_action: validate scorecard against three Wave16 artifacts (runtime checkpoint, dispatch guard, push receipt) and record false-alert rate.
 - evidence_path:
-  - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/STATE.md
-  - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/ROADMAP.md
-  - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/retention/retention_status.json
+  - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_RUNTIME_CHECKPOINT_2026-02-24T1031Z.md
+  - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE16_DISPATCH_CREDIT_GUARD_2026-02-24.md
+  - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_PUSH_RECEIPT_2026-02-24.md
 - decision_tag: defer
 
 ## Now/Next/Blockers
-- Now: Wave16 retention visibility is active in service output and advisory artifacts.
-- Next: execute manual retention refresh, then publish next 2h checkpoint with updated status and compaction time.
+- Now: event-driven Wave16 checkpoint published on material delta (new 2026-02-24 run artifacts).
+- Next: publish next checkpoint only when retention/run/blocker/phase delta appears.
 - Blockers: none.
 
-## Cadence 2h
-- Manual loop only (no automation in this delivery): chat + memory + this rolling report.
-- Wording/readability pass: @agent-11.
+## Blocker escalation (>60 min)
+- Option A: freeze new lane changes and keep codex-only maintenance until blocker clears.
+- Option B: proceed with limited lane work under manual overrides.
+- Recommended: Option A.
+- Ping: @clems
 
 ## Evidence paths
-- /Users/oliviercloutier/Desktop/Cockpit/app/services/project_bible.py
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/agents/nova/memory.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/retention/retention_status.json
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_RUNTIME_CHECKPOINT_2026-02-24T1031Z.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE16_DISPATCH_CREDIT_GUARD_2026-02-24.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_PUSH_RECEIPT_2026-02-24.md
+- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/agents/nova/memory.md

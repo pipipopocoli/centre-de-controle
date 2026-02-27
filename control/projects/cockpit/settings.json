@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-02-24T00:00:00+00:00",
+  "updated_at": "2026-02-27T05:37:11+00:00",
   "agent_tasks": {
     "victor": {
       "current_task": "Wave 1 backend delegation active with @agent-1,@agent-2,@agent-3",
@@ -97,13 +97,15 @@
     "max_actions": 1
   },
   "outage_mode": {
-    "codex_only_enabled": true,
+    "codex_only_enabled": false,
     "allowed_platforms": [
-      "codex"
+      "codex",
+      "antigravity"
     ],
     "allowed_agents": [
       "victor",
       "nova",
+      "leo",
       "agent-3"
     ]
   },
