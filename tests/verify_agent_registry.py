@@ -35,6 +35,8 @@ def main() -> int:
         assert by_id["victor"].level == 1 and by_id["victor"].lead_id == "clems"
         assert by_id["leo"].level == 1 and by_id["leo"].lead_id == "clems"
         assert by_id["nova"].level == 1 and by_id["nova"].lead_id == "clems"
+        assert by_id["vulgarisation"].level == 1 and by_id["vulgarisation"].lead_id == "clems"
+        assert by_id["vulgarisation"].role == "vulgarisation_lead"
         assert by_id["nova"].role == "creative_science_lead"
         assert by_id["agent-1"].level == 2 and by_id["agent-1"].lead_id == "victor"
         assert by_id["agent-2"].level == 2 and by_id["agent-2"].lead_id == "leo"

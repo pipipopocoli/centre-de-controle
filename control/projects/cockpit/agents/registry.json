@@ -86,6 +86,20 @@
       "research_decision_ledger"
     ]
   },
+  "vulgarisation": {
+    "agent_id": "vulgarisation",
+    "name": "Vulgarisation",
+    "engine": "AG",
+    "platform": "antigravity",
+    "level": 1,
+    "lead_id": "clems",
+    "role": "vulgarisation_lead",
+    "skills": [
+      "plain_language_summary",
+      "audience_adaptation",
+      "clarity_rewrite"
+    ]
+  },
   "victor": {
     "agent_id": "victor",
     "name": "Victor",

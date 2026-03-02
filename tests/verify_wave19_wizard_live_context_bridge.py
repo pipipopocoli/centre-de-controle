@@ -43,6 +43,7 @@ def main() -> int:
         _write(project_dir / "agents" / "victor" / "memory.md", "# Memory victor\n- loop\n")
         _write(project_dir / "agents" / "leo" / "memory.md", "# Memory leo\n- loop\n")
         _write(project_dir / "agents" / "nova" / "memory.md", "# Memory nova\n- loop\n")
+        _write(project_dir / "agents" / "vulgarisation" / "memory.md", "# Memory vulgarisation\n- loop\n")
         _append_ndjson(
             project_dir / "chat" / "threads" / "wizard-live.ndjson",
             {"timestamp": "2026-02-27T12:00:00+00:00", "author": "operator", "text": "hello"},
@@ -59,7 +60,7 @@ def main() -> int:
             include_full_intake=True,
             trigger="test_context",
             operator_message="kickoff",
-            l1_agents=["victor", "leo", "nova"],
+            l1_agents=["victor", "leo", "nova", "vulgarisation"],
         )
         assert context_path.exists()
         content = context_path.read_text(encoding="utf-8")
@@ -76,7 +77,7 @@ def main() -> int:
             include_full_intake=False,
             trigger="test_context_short",
             operator_message="followup",
-            l1_agents=["victor", "leo", "nova"],
+            l1_agents=["victor", "leo", "nova", "vulgarisation"],
         )
         assert context_path_2.exists()
         content_2 = context_path_2.read_text(encoding="utf-8")

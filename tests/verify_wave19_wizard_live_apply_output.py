@@ -65,6 +65,14 @@ def main() -> int:
                     "blockers": [],
                     "state_update": {"phase": "Plan", "status": "planning", "current_task": "research lane"},
                 },
+                {
+                    "agent_id": "vulgarisation",
+                    "text": "Now:\n- simplify\nNext:\n- operator brief\nBlockers:\n- none",
+                    "now": ["simplify"],
+                    "next": ["operator brief"],
+                    "blockers": [],
+                    "state_update": {"phase": "Plan", "status": "planning", "current_task": "summary lane"},
+                },
             ],
             "clems_summary": {
                 "text": "Decision: start with backend and keep guardrails active.",
@@ -133,9 +141,9 @@ def main() -> int:
 
         chat_rows = _read_ndjson(project_dir / "chat" / "global.ndjson")
         authors = {str(item.get("author") or "") for item in chat_rows}
-        assert {"victor", "leo", "nova", "clems", "system"} <= authors
+        assert {"victor", "leo", "nova", "vulgarisation", "clems", "system"} <= authors
 
-        for agent_id in ["victor", "leo", "nova", "clems"]:
+        for agent_id in ["victor", "leo", "nova", "vulgarisation", "clems"]:
             state_path = project_dir / "agents" / agent_id / "state.json"
             assert state_path.exists()
             state_payload = json.loads(state_path.read_text(encoding="utf-8"))

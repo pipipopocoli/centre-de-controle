@@ -5,7 +5,7 @@ import re
 TAG_RE = re.compile(r"(?<!\w)#([A-Za-z0-9][A-Za-z0-9_-]*)")
 MENTION_RE = re.compile(r"(?<!\w)@([A-Za-z0-9][A-Za-z0-9_-]*)")
 AGENT_ID_RE = re.compile(r"^agent-(\d+)$")
-ALLOWED_MENTIONS = {"leo", "victor", "nova", "clems", "clem"}
+ALLOWED_MENTIONS = {"leo", "victor", "nova", "vulgarisation", "clems", "clem"}
 
 
 def parse_tags(text: str) -> list[str]:

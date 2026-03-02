@@ -4,7 +4,7 @@ Goal: stop "activating" @victor/@leo/@nova one by one.
 
 This wizard generates, in 1 shot:
 - BMAD artifacts (Product brief, PRD, Architecture, Stories)
-- an L1 roundtable (Now/Next/Blockers per agent)
+- an L1 roundtable (Now/Next/Blockers per agent, strict roster: `victor`, `leo`, `nova`, `vulgarisation`)
 - updates to STATE/ROADMAP/DECISIONS + a run log
 
 Wave19 adds a live mode for continuous turns in chat:
@@ -52,6 +52,7 @@ Prompt only (no headless):
 - Headless is 1x `codex exec` with sandbox `read-only`.
 - The wizard must not modify the target repo.
 - The wizard writes only inside the Cockpit project data dir.
+- In Wave20 strict API mode, desktop local write actions are blocked by default.
 
 ## Wave18 vs Wave19
 - Wave18 takeover wizard: one-shot kickoff.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -57,10 +58,47 @@ DEFAULT_AGENT_ROSTER = [
         "role": "creative_science_lead",
         "skills": [],
     },
+    {
+        "agent_id": "vulgarisation",
+        "name": "Vulgarisation",
+        "engine": "AG",
+        "platform": "antigravity",
+        "level": 1,
+        "lead_id": "clems",
+        "role": "vulgarisation_lead",
+        "skills": [
+            "plain_language_summary",
+            "audience_adaptation",
+            "clarity_rewrite",
+        ],
+    },
 ]
+
+RUNTIME_BACKEND_ENV = "COCKPIT_RUNTIME_BACKEND"
+STRICT_WRITES_ENV = "COCKPIT_API_STRICT_WRITES"
+
+
+def runtime_backend_mode() -> str:
+    raw = str(os.environ.get(RUNTIME_BACKEND_ENV) or "").strip().lower()
+    if raw in {"", "api", "cloud"}:
+        return "api"
+    if raw in {"local", "legacy", "file"}:
+        return "local"
+    return "api"
+
+
+def api_strict_writes_enabled() -> bool:
+    raw = str(os.environ.get(STRICT_WRITES_ENV) or "").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
+def _assert_local_write_allowed(operation: str) -> None:
+    if api_strict_writes_enabled():
+        raise RuntimeError(f"local_write_blocked_in_api_strict_mode:{operation}")
 
 
 def ensure_projects_root() -> None:
+    _assert_local_write_allowed("ensure_projects_root")
     PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -93,6 +131,7 @@ def _memory_template(agent_id: str) -> str:
 
 
 def ensure_project_structure(project_id: str, project_name: str | None = None) -> Path:
+    _assert_local_write_allowed("ensure_project_structure")
     ensure_projects_root()
     pdir = project_dir(project_id)
     agents_dir = pdir / "agents"
@@ -438,7 +477,7 @@ def _default_level_lead(agent_id: str) -> tuple[int, str | None]:
     value = str(agent_id or "").strip().lower()
     if value == "clems":
         return 0, None
-    if value in {"victor", "leo", "nova"}:
+    if value in {"victor", "leo", "nova", "vulgarisation"}:
         return 1, "clems"
     if value.startswith("agent-"):
         try:
@@ -459,6 +498,8 @@ def _default_role(agent_id: str) -> str:
         return "ui_lead"
     if value == "nova":
         return "creative_science_lead"
+    if value == "vulgarisation":
+        return "vulgarisation_lead"
     return "specialist"
 
 
@@ -573,6 +614,7 @@ def ensure_agent_files(
     platform: str | None = None,
     skills: list[str] | None = None,
 ) -> None:
+    _assert_local_write_allowed("ensure_agent_files")
     agent_dir = project_dir(project_id) / "agents" / agent_id
     agent_dir.mkdir(parents=True, exist_ok=True)
 
@@ -610,6 +652,7 @@ def ensure_agent_files(
 
 
 def ensure_default_roster(project_id: str) -> None:
+    _assert_local_write_allowed("ensure_default_roster")
     agents_dir = project_dir(project_id) / "agents"
     agents_dir.mkdir(parents=True, exist_ok=True)
     registry = _load_registry(project_id)
@@ -669,7 +712,7 @@ def load_project(project_id: str) -> ProjectData:
     has_state_files = False
     if agents_dir.exists():
         has_state_files = any((candidate / "state.json").exists() for candidate in agents_dir.iterdir() if candidate.is_dir())
-    if pdir.exists() and (
+    if pdir.exists() and not api_strict_writes_enabled() and (
         not has_state_files
         or _registry_missing_defaults(registry)
         or _default_state_files_missing(canonical_project_id)
@@ -785,10 +828,12 @@ def chat_thread_path(project_id: str, tag: str) -> Path:
 
 
 def append_chat_message(project_id: str, payload: dict[str, Any]) -> None:
+    _assert_local_write_allowed("append_chat_message")
     _append_ndjson(chat_global_path(project_id), payload)
 
 
 def append_thread_message(project_id: str, tag: str, payload: dict[str, Any]) -> None:
+    _assert_local_write_allowed("append_thread_message")
     safe_tag = "".join(ch for ch in tag if ch.isalnum() or ch in {"-", "_"}).lower()
     if not safe_tag:
         return
@@ -825,6 +870,7 @@ def write_retention_status(
     payload: dict[str, Any],
     projects_root: Path | None = None,
 ) -> Path:
+    _assert_local_write_allowed("write_retention_status")
     path = retention_status_path(project_id, projects_root=projects_root)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
@@ -836,6 +882,7 @@ def run_requests_path(project_id: str) -> Path:
 
 
 def append_run_request(project_id: str, payload: dict[str, Any]) -> None:
+    _assert_local_write_allowed("append_run_request")
     _append_ndjson(run_requests_path(project_id), payload)
 
 
@@ -844,6 +891,7 @@ def agent_journal_path(project_id: str, agent_id: str) -> Path:
 
 
 def append_agent_journal(project_id: str, agent_id: str, payload: dict[str, Any]) -> None:
+    _assert_local_write_allowed("append_agent_journal")
     _append_ndjson(agent_journal_path(project_id, agent_id), payload)
 
 
@@ -998,6 +1046,7 @@ def save_project(project: ProjectData) -> None:
     Updates agent states and settings.
     Used by MCP server.
     """
+    _assert_local_write_allowed("save_project")
     pdir = project.path
 
     # Save settings

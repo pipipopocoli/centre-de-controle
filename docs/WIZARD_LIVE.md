@@ -4,6 +4,7 @@ Goal: run a live text multiagent roundtable in Cockpit with one bundled headless
 
 ## What it does
 - Command surface: `#wizard-live start|run|stop`
+- L1 roster (strict): `victor`, `leo`, `nova`, `vulgarisation`
 - Session mode:
   - `start`: starts session and runs initial full-context turn
   - `run`: one-shot turn without changing session state
@@ -24,6 +25,7 @@ Goal: run a live text multiagent roundtable in Cockpit with one bundled headless
   - approval policy `never`
   - sandbox `read-only`
   - strict output schema validation
+- Runtime policy default is API strict (`COCKPIT_RUNTIME_BACKEND=api`): desktop blocks local write actions in strict mode.
 - No write in target repo. Writes are limited to Cockpit project data.
 
 ## Auto-kickoff
@@ -68,6 +70,8 @@ WizardLiveSummary status=... project_id=... run_id=... session_active=... output
 - Disable session immediately:
   - `#wizard-live stop`
   - or `scripts/wizard_live.py stop ...`
+- Re-enable legacy local mode for maintenance only:
+  - `COCKPIT_RUNTIME_BACKEND=local`
 - Code rollback:
   - `git revert <wave19_commit_sha>`
   - `git push origin main`

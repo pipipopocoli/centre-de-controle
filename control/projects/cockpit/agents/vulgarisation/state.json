@@ -1,0 +1,22 @@
+{
+  "agent_id": "vulgarisation",
+  "name": "Vulgarisation",
+  "engine": "AG",
+  "phase": "Ship",
+  "percent": 0,
+  "eta_minutes": null,
+  "heartbeat": "2026-03-03T00:00:00+00:00",
+  "status": "planning",
+  "blockers": [],
+  "current_task": "Convert wizard outputs into operator-ready summaries",
+  "level": 1,
+  "lead_id": "clems",
+  "role": "vulgarisation_lead",
+  "platform": "antigravity",
+  "skills": [
+    "plain_language_summary",
+    "audience_adaptation",
+    "clarity_rewrite"
+  ],
+  "updated_at": "2026-03-03T00:00:00+00:00"
+}

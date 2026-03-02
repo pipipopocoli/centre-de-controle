@@ -217,3 +217,12 @@
 - Consequences: Introduces `server/` backend foundation, auth/JWT/RBAC contracts, event envelope stream, and device registration for Android push; legacy local-file mode moves behind migration/cutover gates.
 - Owners: @clems, @victor, @leo (polgara validation before model key finalization)
 - References: /Users/oliviercloutier/Desktop/Cockpit/docs/CLOUD_API_PROTOCOL.md, /Users/oliviercloutier/Desktop/Cockpit/docs/PARITY_MATRIX_DESKTOP_ANDROID.md, /Users/oliviercloutier/Desktop/Cockpit/docs/ANDROID_NATIVE_APP.md, /Users/oliviercloutier/Desktop/Cockpit/server/main.py
+
+## 2026-03-03 - ADR-CP-025 Wave20 strict baseline (API strict + L1 vulgarisation)
+- Status: Accepted
+- Context: Wave19 introduced live wizard orchestration, but runtime policy and roster contracts still allowed local drift and L1 ambiguity.
+- Decision: Lock Wave20 baseline to: default `COCKPIT_RUNTIME_BACKEND=api`, startup hard fail on API healthcheck failure, strict Wizard Live schema with L1 exact (`victor`,`leo`,`nova`,`vulgarisation`), and destructive boot cleanup disabled by default behind `COCKPIT_ENABLE_BOOT_CLEANUP=1`.
+- Rationale: Stabilizes runtime contracts before Android/Desktop parity cutover and reduces risk from accidental local writes or schema drift.
+- Consequences: Desktop local write actions are blocked in API strict mode; `vulgarisation` is promoted to L1 defaults in runtime and API repositories; AppSupport drift cleanup moves evozina intake artifacts out of cockpit root.
+- Owners: @clems, @victor, @leo (@nova FYI)
+- References: /Users/oliviercloutier/Desktop/Cockpit/app/main.py, /Users/oliviercloutier/Desktop/Cockpit/app/schemas/wizard_live_output.schema.json, /Users/oliviercloutier/Desktop/Cockpit/app/services/wizard_live.py, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/settings.json

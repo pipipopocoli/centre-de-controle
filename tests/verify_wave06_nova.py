@@ -90,9 +90,10 @@ def main() -> int:
         assert "nova" in rehydrated_by_id, "nova should remain in loaded agents after state recreation"
         assert rehydrated_by_id["nova"].level == 1
 
-        mentions = parse_mentions("Ping @nova @leo @agent-1 @unknown")
+        mentions = parse_mentions("Ping @nova @leo @vulgarisation @agent-1 @unknown")
         assert "nova" in mentions
         assert "leo" in mentions
+        assert "vulgarisation" in mentions
         assert "agent-1" in mentions
         assert "unknown" not in mentions
 

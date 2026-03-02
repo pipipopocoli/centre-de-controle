@@ -11,7 +11,50 @@ from app.services.codex_runner import RunnerResult, run_codex_exec
 
 
 WIZARD_LIVE_VERSION = "wave19_wizard_live_v1"
-DEFAULT_L1_AGENTS = ["victor", "leo", "nova"]
+DEFAULT_L1_AGENTS = ["victor", "leo", "nova", "vulgarisation"]
+
+DEFAULT_AGENT_STATE_META: dict[str, dict[str, Any]] = {
+    "clems": {
+        "name": "Clems",
+        "engine": "CDX",
+        "platform": "codex",
+        "level": 0,
+        "lead_id": None,
+        "role": "orchestrator",
+    },
+    "victor": {
+        "name": "Victor",
+        "engine": "CDX",
+        "platform": "codex",
+        "level": 1,
+        "lead_id": "clems",
+        "role": "backend_lead",
+    },
+    "leo": {
+        "name": "Leo",
+        "engine": "AG",
+        "platform": "antigravity",
+        "level": 1,
+        "lead_id": "clems",
+        "role": "ui_lead",
+    },
+    "nova": {
+        "name": "Nova",
+        "engine": "AG",
+        "platform": "antigravity",
+        "level": 1,
+        "lead_id": "clems",
+        "role": "creative_science_lead",
+    },
+    "vulgarisation": {
+        "name": "Vulgarisation",
+        "engine": "AG",
+        "platform": "antigravity",
+        "level": 1,
+        "lead_id": "clems",
+        "role": "vulgarisation_lead",
+    },
+}
 
 
 @dataclass
@@ -273,6 +316,7 @@ def _wizard_prompt(
             personas.append(f"## Persona - {agent_id}\n{_read_text(persona_path, 12000)}")
 
     l1_list = ", ".join(l1_agents)
+    expected_count = len(DEFAULT_L1_AGENTS)
     return "\n".join(
         [
             "[Cockpit Wave19 Wizard Live]",
@@ -287,7 +331,7 @@ def _wizard_prompt(
             f"Operator message: {_safe_text(operator_message) or '-'}",
             "",
             "Required JSON shape:",
-            "- agent_messages must contain EXACTLY 3 entries: victor, leo, nova.",
+            f"- agent_messages must contain EXACTLY {expected_count} entries: {', '.join(DEFAULT_L1_AGENTS)}.",
             "- Include clems_summary with synthesis and decision-ready next actions.",
             "- Include bmad with brainstorm, product_brief, prd, architecture, stories markdown.",
             "- Include state_sections, roadmap_sections, decisions_adrs.",
@@ -328,7 +372,7 @@ def _validate_output(payload: dict[str, Any]) -> tuple[bool, str]:
             return False, f"missing_field:{key}"
 
     agent_messages = payload.get("agent_messages")
-    if not isinstance(agent_messages, list) or len(agent_messages) != 3:
+    if not isinstance(agent_messages, list) or len(agent_messages) != len(DEFAULT_L1_AGENTS):
         return False, "invalid_agent_messages_count"
     seen_ids: list[str] = []
     for item in agent_messages:
@@ -553,14 +597,15 @@ def _ensure_agent_state(project_dir: Path, agent_id: str) -> Path:
     state_path = project_dir / "agents" / agent_id / "state.json"
     if state_path.exists():
         return state_path
+    defaults = dict(DEFAULT_AGENT_STATE_META.get(agent_id, {}))
     payload = {
         "agent_id": agent_id,
-        "name": agent_id.title(),
-        "engine": "CDX",
-        "platform": "codex",
-        "level": 2,
-        "lead_id": "clems",
-        "role": "specialist",
+        "name": _safe_text(defaults.get("name")) or agent_id.title(),
+        "engine": _safe_text(defaults.get("engine")) or "CDX",
+        "platform": _safe_text(defaults.get("platform")) or "codex",
+        "level": int(defaults.get("level", 2)),
+        "lead_id": defaults.get("lead_id", "clems"),
+        "role": _safe_text(defaults.get("role")) or "specialist",
         "skills": [],
         "phase": "Plan",
         "percent": 0,

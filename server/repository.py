@@ -48,6 +48,15 @@ DEFAULT_AGENTS = [
         "lead_id": "clems",
         "role": "creative_science_lead",
     },
+    {
+        "agent_id": "vulgarisation",
+        "name": "Vulgarisation",
+        "engine": "AG",
+        "platform": "antigravity",
+        "level": 1,
+        "lead_id": "clems",
+        "role": "vulgarisation_lead",
+    },
 ]
 
 

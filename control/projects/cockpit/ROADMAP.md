@@ -10,13 +10,14 @@
 - Public Cockpit V2 explainer is republished on production Vercel.
 - Primary operator launch policy is now single-icon release target.
 - Wave18 Takeover Wizard: BMAD artifacts + headless L1 roundtable (read-only) to avoid per-agent activation.
-- Wave19 Wizard Live: session-based L1 multiagent bundle in Cockpit chat (`#wizard-live start|run|stop`).
-- Wave20 kickoff: cloud API-first foundation started for Desktop + Android native parity (without Telegram/WhatsApp).
+- Wave19 Wizard Live: session-based L1 multiagent bundle in Cockpit chat (`#wizard-live start|run|stop`), now locked to L1=4 (`victor`,`leo`,`nova`,`vulgarisation`).
+- Wave20 strict baseline: API runtime default, strict wizard JSON schema, and boot cleanup opt-in only.
 
 ## Priorities
-- P0: cloud API-first unification (Desktop + Android native parity, RBAC, WS events, wizard-live endpoints).
+- P0: cloud API-first unification (Desktop + Android native parity, RBAC, WS events, wizard-live endpoints) with strict startup health gate.
 - P1: Wizard Live (BMAD + L1 live roundtable) as the default takeover and execution entrypoint.
 - P2: allow AG under credit guard (cap=1) with lead-first and no fanout until 2 green checkpoints.
+- P2.1: keep AppSupport roots clean (`cockpit` operational, `evozina` isolated) to avoid cross-project drift.
 - P3: keep onboarding + mission-critical gate deterministic.
 - P4: keep dual-root recency healthy via pulse/check cadence.
 - P5: keep retention operator digest current and actionable.

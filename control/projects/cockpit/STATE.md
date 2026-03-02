@@ -4,14 +4,17 @@
 - Ship
 
 ## Objective
-- Ship Wave19 Wizard Live (BMAD bundle + L1 live text session) and keep AG under credit guard (max_actions_effective=1) with deterministic lead-first dispatch.
+- Ship Wave20 strict baseline: API-first runtime policy, Wizard Live strict contract with L1=4, and clean AppSupport separation (`cockpit` vs `evozina`).
 
 ## Now
-- Wave17 outage policy: allow AG under guard (`allowed_platforms=[codex,antigravity]`, `allowed_agents=[victor,leo,nova]`).
+- Wave17 outage policy remains guarded (`allowed_platforms=[codex,antigravity]`, `allowed_agents=[victor,leo,nova,vulgarisation]`).
 - Credit guard remains enabled (`wave_cap <= 180`, `reserve_floor >= 350`, `max_actions_effective=1`).
 - Wave17 dual-root checkpoint is healthy (repo + AppSupport).
 - Recency autopulse guard and onboarding contract tests are green.
-- Agent heartbeats refreshed (UI no longer stale).
+- Wave20 strict Wizard schema is locked (`additionalProperties=false`, strict required fields, L1 exact).
+- Wave20 runtime default backend is API (`COCKPIT_RUNTIME_BACKEND=api`) with startup health gate on `/healthz`.
+- Local destructive boot cleanup is disabled by default and requires explicit env opt-in (`COCKPIT_ENABLE_BOOT_CLEANUP=1`).
+- Agent roster now includes `vulgarisation` as L1 lead under `clems`.
 - Public site republished to production (`cockpit-v2-launch`) with Wave16 explainer and diagrams/charts.
 - Lead-first dispatch policy stays active (`@victor` -> `@nova` -> wait; `@leo` allowed under guard).
 - Wave18 Takeover Wizard is available (UI button + `#wizard` trigger) and writes BMAD + run logs into the project dir.
@@ -23,10 +26,11 @@
 - Telegram/WhatsApp are explicitly excluded from the V1 execution scope.
 
 ## Next
-- Run 1 full Wave19 live session on a real repo and confirm repeated turns stay stable.
-- Validate `#wizard-live stop` correctly halts automatic turn execution.
-- Start Desktop migration to API client mode with local fallback behind `offline_mode` debug flag only.
+- Run 1 full Wave19/Wave20 live session on a real repo and confirm repeated turns stay stable with L1=4.
+- Validate strict API startup paths (down => hard fail, up => strict write blocks on local UI actions).
+- Finish desktop API-client cutover to remove remaining local legacy flows.
 - Start Android native client implementation against `/v1/*` + `WS /v1/projects/{id}/events`.
+- Complete AppSupport drift cleanup by moving evozina intake artifacts out of cockpit root.
 - Keep pulse/check cadence on both roots every 30-45 minutes.
 - Enforce credit guard (`wave_cap <= 180`, `reserve_floor >= 350`).
 - Keep fanout closed until 2 consecutive healthy dual-root checkpoints.

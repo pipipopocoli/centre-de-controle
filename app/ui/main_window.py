@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import threading
@@ -87,6 +88,12 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(title)
         self.resize(1400, 860)
         self.current_project_id = project.project_id
+        self.api_strict_mode = str(os.environ.get("COCKPIT_API_STRICT_WRITES") or "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
         self.app_stamp = app_stamp or version_text
         self.repo_head = repo_head
         self.runtime_mode = runtime_mode or "DEV LIVE"
@@ -260,7 +267,10 @@ class MainWindow(QMainWindow):
             self.sidebar.project_list.blockSignals(True)
             self.sidebar.project_list.setCurrentRow(initial_project_row)
             self.sidebar.project_list.blockSignals(False)
-        self.run_auto_mode_tick()
+        if self.api_strict_mode:
+            self.sidebar.status_banner.show_warning("API strict mode: local runtime writes are disabled.")
+        else:
+            self.run_auto_mode_tick()
 
         self.project_refresh_timer = QTimer(self)
         self.project_refresh_timer.setInterval(5000)
@@ -280,7 +290,16 @@ class MainWindow(QMainWindow):
         self.reminder_timer = QTimer(self)
         self.reminder_timer.setInterval(60000)
         self.reminder_timer.timeout.connect(self.check_reminders)
-        self.reminder_timer.start()
+        if not self.api_strict_mode:
+            self.reminder_timer.start()
+
+    def _block_if_api_strict(self, action: str) -> bool:
+        if not self.api_strict_mode:
+            return False
+        self.sidebar.status_banner.show_error(
+            f"API strict mode: local action blocked ({action}). Use Cockpit API endpoints."
+        )
+        return True
 
     def load_project(
         self,
@@ -367,6 +386,8 @@ class MainWindow(QMainWindow):
         self.center_tabs.setCurrentWidget(self.docs_viewer)
 
     def on_new_project(self) -> None:
+        if self._block_if_api_strict("new_project"):
+            return
         folder = QFileDialog.getExistingDirectory(self, "Select project folder")
         if not folder:
             return
@@ -449,6 +470,8 @@ class MainWindow(QMainWindow):
         self.chatroom.set_context_ref(payload)
 
     def on_send_message(self) -> None:
+        if self._block_if_api_strict("chat_send"):
+            return
         if not self.current_project_id:
             return
         text = self.chatroom.input.text().strip()
@@ -769,6 +792,8 @@ class MainWindow(QMainWindow):
         self.on_takeover_wizard_clicked()
 
     def on_takeover_wizard_clicked(self) -> None:
+        if self._block_if_api_strict("takeover_wizard"):
+            return
         if not self.current_project_id:
             return
         if self._takeover_wizard_running:
@@ -841,6 +866,8 @@ class MainWindow(QMainWindow):
         self.refresh_chat()
 
     def on_pack_light(self) -> None:
+        if self._block_if_api_strict("pack_light"):
+            return
         if not self.current_project_id:
             return
         content = build_pack_context(self.current_project_id, "light", None)
@@ -849,6 +876,8 @@ class MainWindow(QMainWindow):
         self._emit_pack_feedback("Light", str(path))
 
     def on_pack_full(self) -> None:
+        if self._block_if_api_strict("pack_full"):
+            return
         if not self.current_project_id:
             return
         thread_tag = self.chatroom.current_thread_tag()
@@ -858,6 +887,8 @@ class MainWindow(QMainWindow):
         self._emit_pack_feedback("Full", str(path))
 
     def on_ping_agents(self) -> None:
+        if self._block_if_api_strict("ping_agents"):
+            return
         if not self.current_project_id:
             return
         context_ref = self.chatroom.consume_context_ref()
@@ -903,6 +934,14 @@ class MainWindow(QMainWindow):
         path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
 
     def _sync_auto_mode_from_settings(self, project: ProjectData) -> None:
+        if self.api_strict_mode:
+            self.auto_mode_enabled = False
+            self.auto_send_enabled = False
+            self.sidebar.auto_mode.set_enabled(False)
+            self.sidebar.auto_mode.set_auto_send_enabled(False)
+            if self.auto_mode_timer.isActive():
+                self.auto_mode_timer.stop()
+            return
         # Read settings from loaded project (fast path).
         settings = project.settings if isinstance(project.settings, dict) else {}
         feature_flags = settings.get("feature_flags") if isinstance(settings.get("feature_flags"), dict) else {}
@@ -966,6 +1005,9 @@ class MainWindow(QMainWindow):
         self._save_settings_json(self.current_project_id, settings)
 
     def on_auto_mode_toggled(self, enabled: bool) -> None:
+        if self._block_if_api_strict("auto_mode_toggle"):
+            self.sidebar.auto_mode.set_enabled(False)
+            return
         self.auto_mode_enabled = bool(enabled)
         self._persist_auto_mode_settings()
         if self.auto_mode_enabled:
@@ -976,14 +1018,21 @@ class MainWindow(QMainWindow):
         self.sidebar.auto_mode.set_last_error("")
 
     def on_auto_mode_run_once(self) -> None:
+        if self._block_if_api_strict("auto_mode_run_once"):
+            return
         self.run_auto_mode_tick(manual=True)
 
     def on_auto_send_toggled(self, enabled: bool) -> None:
+        if self._block_if_api_strict("auto_send_toggle"):
+            self.sidebar.auto_mode.set_auto_send_enabled(False)
+            return
         self.auto_send_enabled = bool(enabled)
         self._persist_auto_mode_settings()
         self.sidebar.auto_mode.set_last_error("")
 
     def run_auto_mode_tick(self, manual: bool = False) -> None:
+        if self.api_strict_mode:
+            return
         if not self.current_project_id:
             return
         if not self.auto_mode_enabled and not manual:

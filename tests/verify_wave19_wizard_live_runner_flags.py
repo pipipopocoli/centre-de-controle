@@ -46,6 +46,14 @@ def _fixture_payload(project_id: str, repo_path: Path) -> dict:
                 "blockers": [],
                 "state_update": {"phase": "Plan", "status": "planning", "current_task": "research lane"},
             },
+            {
+                "agent_id": "vulgarisation",
+                "text": "Now:- simplify Next:- brief Blockers:- none",
+                "now": ["simplify"],
+                "next": ["brief"],
+                "blockers": [],
+                "state_update": {"phase": "Plan", "status": "planning", "current_task": "summary lane"},
+            },
         ],
         "clems_summary": {
             "text": "Decision: keep guardrails and launch wave19.",
