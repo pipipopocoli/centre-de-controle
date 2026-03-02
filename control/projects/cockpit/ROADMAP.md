@@ -11,14 +11,16 @@
 - Primary operator launch policy is now single-icon release target.
 - Wave18 Takeover Wizard: BMAD artifacts + headless L1 roundtable (read-only) to avoid per-agent activation.
 - Wave19 Wizard Live: session-based L1 multiagent bundle in Cockpit chat (`#wizard-live start|run|stop`).
+- Wave20 kickoff: cloud API-first foundation started for Desktop + Android native parity (without Telegram/WhatsApp).
 
 ## Priorities
-- P0: Wizard Live (BMAD + L1 live roundtable) as the default takeover and execution entrypoint.
-- P1: allow AG under credit guard (cap=1) with lead-first and no fanout until 2 green checkpoints.
-- P2: keep onboarding + mission-critical gate deterministic.
-- P3: keep dual-root recency healthy via pulse/check cadence.
-- P4: keep retention operator digest current and actionable.
-- P5: keep tournament preserved and dormant.
+- P0: cloud API-first unification (Desktop + Android native parity, RBAC, WS events, wizard-live endpoints).
+- P1: Wizard Live (BMAD + L1 live roundtable) as the default takeover and execution entrypoint.
+- P2: allow AG under credit guard (cap=1) with lead-first and no fanout until 2 green checkpoints.
+- P3: keep onboarding + mission-critical gate deterministic.
+- P4: keep dual-root recency healthy via pulse/check cadence.
+- P5: keep retention operator digest current and actionable.
+- P6: keep tournament preserved and dormant.
 
 ## Wave16 sequence
 1. Lock codex-only outage mode (`CP-0056`) and pause AG/UI lane.

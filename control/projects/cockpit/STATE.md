@@ -19,10 +19,14 @@
 - Wizard Live auto-kickoff is enabled after `New Project` and after takeover success (no popup).
 - Auto-send toggle is opt-in in Auto-mode panel (paste+enter via AppleScript; permissions may be required).
 - Primary operator app icon switched to single-icon release target (`/Applications/Centre de controle.app`).
+- Cloud API-first foundation scaffolded (`server/`) for Desktop + Android parity, with RBAC/JWT, REST contracts, WS event envelope, and wizard-live endpoints.
+- Telegram/WhatsApp are explicitly excluded from the V1 execution scope.
 
 ## Next
 - Run 1 full Wave19 live session on a real repo and confirm repeated turns stay stable.
 - Validate `#wizard-live stop` correctly halts automatic turn execution.
+- Start Desktop migration to API client mode with local fallback behind `offline_mode` debug flag only.
+- Start Android native client implementation against `/v1/*` + `WS /v1/projects/{id}/events`.
 - Keep pulse/check cadence on both roots every 30-45 minutes.
 - Enforce credit guard (`wave_cap <= 180`, `reserve_floor >= 350`).
 - Keep fanout closed until 2 consecutive healthy dual-root checkpoints.

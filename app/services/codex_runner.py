@@ -168,18 +168,18 @@ def run_codex_exec(
     command = [
         "codex",
         "-a",
-        str(approval_policy),
+        approval_policy,
         "exec",
         "-s",
-        str(sandbox_mode),
-        "--skip-git-repo-check",
+        sandbox_mode,
         "--cd",
         str(cwd),
-        "--output-last-message",
-        str(output_last_message_path),
     ]
     if output_schema_path is not None:
-        command.extend(["--output-schema", str(Path(output_schema_path))])
+        output_schema_path = Path(output_schema_path)
+        command.extend(["--output-schema", str(output_schema_path)])
+    if output_last_message_path is not None:
+        command.extend(["--output-last-message", str(output_last_message_path)])
     if ephemeral:
         command.append("--ephemeral")
     command.append(prompt)
@@ -229,7 +229,7 @@ def run_codex_exec(
             finished_at=_utc_now_iso(),
             duration_seconds=round(duration, 3),
             output_path=str(output_last_message_path),
-            output_text=_read_text(output_last_message_path),
+            output_text="",
         )
     except OSError as exc:
         duration = max(time.monotonic() - started_mono, 0.0)
@@ -247,7 +247,7 @@ def run_codex_exec(
             finished_at=_utc_now_iso(),
             duration_seconds=round(duration, 3),
             output_path=str(output_last_message_path),
-            output_text=_read_text(output_last_message_path),
+            output_text="",
         )
     finally:
         if managed_output and output_last_message_path is not None:

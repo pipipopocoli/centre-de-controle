@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import os
+
+import uvicorn
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Run Cockpit cloud API server (Desktop + Android).")
+    parser.add_argument("--host", default="0.0.0.0", help="Bind host (default: 0.0.0.0).")
+    parser.add_argument("--port", type=int, default=8100, help="Bind port (default: 8100).")
+    parser.add_argument(
+        "--projects-root",
+        default="",
+        help="Override projects root (default: ~/Library/Application Support/Cockpit/projects).",
+    )
+    args = parser.parse_args()
+
+    if args.projects_root:
+        os.environ["COCKPIT_API_PROJECTS_ROOT"] = args.projects_root
+
+    uvicorn.run("server.main:app", host=args.host, port=max(args.port, 1), reload=False)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -208,3 +208,12 @@
 - Consequences: New `wizard_live` service, strict output schema, CLI entrypoint, auto-kickoff after new-project and takeover-success events, and per-turn updates to BMAD docs + STATE/ROADMAP/DECISIONS + run logs.
 - Owners: @clems, @victor, @leo (@nova FYI)
 - References: /Users/oliviercloutier/Desktop/Cockpit/docs/WIZARD_LIVE.md, /Users/oliviercloutier/Desktop/Cockpit/app/services/wizard_live.py, /Users/oliviercloutier/Desktop/Cockpit/app/schemas/wizard_live_output.schema.json, /Users/oliviercloutier/Desktop/Cockpit/scripts/wizard_live.py, /Users/oliviercloutier/Desktop/Cockpit/app/ui/main_window.py
+
+## 2026-03-03 - ADR-CP-024 Cloud API-first unification (Desktop + Android native, no Telegram/WhatsApp)
+- Status: Accepted
+- Context: Desktop local-file runtime does not provide clean parity for Android native and multi-user RBAC in cloud usage.
+- Decision: Adopt cloud API-first architecture as source of truth (projects/state/roadmap/decisions/chat/agents/wizard/runs/BMAD), with Desktop and Android both consuming the same REST/WS contracts. Exclude Telegram/WhatsApp from V1 scope.
+- Rationale: Guarantees same tasks and same state transitions across devices while preserving L0/L1/L2 orchestration model in one backend runtime.
+- Consequences: Introduces `server/` backend foundation, auth/JWT/RBAC contracts, event envelope stream, and device registration for Android push; legacy local-file mode moves behind migration/cutover gates.
+- Owners: @clems, @victor, @leo (polgara validation before model key finalization)
+- References: /Users/oliviercloutier/Desktop/Cockpit/docs/CLOUD_API_PROTOCOL.md, /Users/oliviercloutier/Desktop/Cockpit/docs/PARITY_MATRIX_DESKTOP_ANDROID.md, /Users/oliviercloutier/Desktop/Cockpit/docs/ANDROID_NATIVE_APP.md, /Users/oliviercloutier/Desktop/Cockpit/server/main.py
