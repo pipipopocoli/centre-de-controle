@@ -9,6 +9,8 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 build/
+android/.gradle/
+android/local.properties
 dist/
 build-v5/
 Cockpit-v5-Release/

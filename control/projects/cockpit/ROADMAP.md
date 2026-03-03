@@ -12,10 +12,13 @@
 - Wave18 Takeover Wizard: BMAD artifacts + headless L1 roundtable (read-only) to avoid per-agent activation.
 - Wave19 Wizard Live: session-based L1 multiagent bundle in Cockpit chat (`#wizard-live start|run|stop`), now locked to L1=4 (`victor`,`leo`,`nova`,`vulgarisation`).
 - Wave20 strict baseline: API runtime default, strict wizard JSON schema, and boot cleanup opt-in only.
+- Wave21 launch: OpenRouter-backed model routing + agentic chat/scene + voice STT + Pixel View + Android API bootstrap.
 
 ## Priorities
 - P0: cloud API-first unification (Desktop + Android native parity, RBAC, WS events, wizard-live endpoints) with strict startup health gate.
+- P0.1: OpenRouter runtime control center (`llm-profile`) and agentic-turn surface in desktop chat.
 - P1: Wizard Live (BMAD + L1 live roundtable) as the default takeover and execution entrypoint.
+- P1.1: Pixel activity heatmap from runs/chat/agent states (`/pixel-feed` + desktop tab).
 - P2: allow AG under credit guard (cap=1) with lead-first and no fanout until 2 green checkpoints.
 - P2.1: keep AppSupport roots clean (`cockpit` operational, `evozina` isolated) to avoid cross-project drift.
 - P3: keep onboarding + mission-critical gate deterministic.

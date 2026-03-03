@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,19 +23,26 @@ from app.services.wizard_live import (
 )
 from server.config import APISettings
 from server.contracts import (
+    AgenticTurnRequest,
     AgentStatePatch,
     BmadDocUpdate,
     ChatMessageIn,
     DecisionADR,
     DeviceRegisterRequest,
+    LlmProfile,
     LoginRequest,
+    PixelFeedResponse,
     ProjectCreateRequest,
     ProjectStateSections,
     RefreshRequest,
     RoadmapSections,
+    VoiceTranscribeRequest,
     WizardLiveCommandRequest,
 )
+from server.analytics.pixel_feed import build_pixel_feed
 from server.events import EventBus
+from server.llm.agentic_orchestrator import run_agentic_turn
+from server.llm.openrouter_client import OpenRouterClient
 from server.rbac import has_permission, permissions_for_role, policy_for_role
 from server.repository import DeviceRepository, ProjectRepository, UserRepository
 from server.security import TokenError, create_token, decode_token, verify_password
@@ -109,6 +117,29 @@ def _result_payload(result: Any) -> dict[str, Any]:
     if runner is not None:
         data["runner"] = asdict(runner)
     return data
+
+
+def _run_id(prefix: str) -> str:
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H%M%SZ")
+    return f"{prefix}_{stamp}"
+
+
+def _llm_profile_defaults(settings: APISettings) -> dict[str, Any]:
+    return {
+        "voice_stt_model": settings.model_voice_stt,
+        "l1_model": settings.model_l1,
+        "l2_scene_model": settings.model_l2,
+        "lfm_spawn_max": settings.model_lfm_spawn_max,
+        "stream_enabled": settings.model_stream_enabled,
+    }
+
+
+def _openrouter_client(settings: APISettings) -> OpenRouterClient:
+    return OpenRouterClient(
+        api_key=settings.openrouter_api_key,
+        base_url=settings.openrouter_base_url,
+        timeout_seconds=60,
+    )
 
 
 async def healthz(_: Request) -> JSONResponse:
@@ -409,6 +440,263 @@ async def post_chat(request: Request) -> JSONResponse:
     return _json(payload, status_code=201)
 
 
+async def get_llm_profile(request: Request) -> JSONResponse:
+    _authorize(request, permission="chat:read")
+    repo: ProjectRepository = request.app.state.projects
+    settings: APISettings = request.app.state.settings
+    project_id = request.path_params["project_id"]
+    try:
+        profile = repo.read_llm_profile(project_id, defaults=_llm_profile_defaults(settings))
+        validated = LlmProfile.model_validate(profile)
+    except FileNotFoundError as exc:
+        _http_error(404, str(exc))
+    except ValidationError as exc:
+        _http_error(422, exc.errors()[0]["msg"] if exc.errors() else "validation_error")
+    return _json({"project_id": project_id, "profile": validated.model_dump()})
+
+
+async def put_llm_profile(request: Request) -> JSONResponse:
+    claims = _authorize(request, permission="chat:write")
+    body = await _parse_model(request, LlmProfile)
+    repo: ProjectRepository = request.app.state.projects
+    settings: APISettings = request.app.state.settings
+    project_id = request.path_params["project_id"]
+    try:
+        profile = repo.write_llm_profile(
+            project_id,
+            body.model_dump(),
+            defaults=_llm_profile_defaults(settings),
+        )
+        validated = LlmProfile.model_validate(profile)
+    except FileNotFoundError as exc:
+        _http_error(404, str(exc))
+    await _publish(
+        request,
+        project_id=project_id,
+        event_type="llm.profile.updated",
+        actor=str(claims.get("sub") or ""),
+        payload={"profile": validated.model_dump()},
+    )
+    return _json({"project_id": project_id, "profile": validated.model_dump()})
+
+
+def _agentic_markdown(project_id: str, run_id: str, mode: str, status: str, messages: list[dict[str, Any]]) -> str:
+    lines = [
+        f"# {run_id}",
+        "",
+        f"- project_id: {project_id}",
+        f"- mode: {mode}",
+        f"- status: {status}",
+        f"- generated_at_utc: {_utc_now_iso()}",
+        "",
+        "## Messages",
+    ]
+    for item in messages:
+        author = str(item.get("author") or "unknown")
+        text = str(item.get("text") or "").strip()
+        if len(text) > 500:
+            text = text[:497] + "..."
+        lines.append(f"- {author}: {text}")
+    lines.append("")
+    return "\n".join(lines)
+
+
+async def post_agentic_turn(request: Request) -> JSONResponse:
+    claims = _authorize(request, permission="chat:write")
+    body = await _parse_model(request, AgenticTurnRequest)
+    repo: ProjectRepository = request.app.state.projects
+    settings: APISettings = request.app.state.settings
+    project_id = request.path_params["project_id"]
+    profile_raw = repo.read_llm_profile(project_id, defaults=_llm_profile_defaults(settings))
+    profile = LlmProfile.model_validate(profile_raw)
+
+    await _publish(
+        request,
+        project_id=project_id,
+        event_type="agentic.turn.started",
+        actor=str(claims.get("sub") or ""),
+        payload={"mode": body.mode},
+    )
+    orchestrator_result = run_agentic_turn(
+        _openrouter_client(settings),
+        mode=body.mode,
+        user_text=body.text,
+        l1_model=profile.l1_model,
+        l2_scene_model=profile.l2_scene_model,
+        lfm_spawn_max=profile.lfm_spawn_max,
+        stream_enabled=profile.stream_enabled,
+    )
+
+    run_id = _run_id("AGENTIC_TURN")
+    operator_msg = repo.append_chat(
+        project_id,
+        {
+            "author": str(claims.get("sub") or "operator"),
+            "text": body.text,
+            "thread_id": body.thread_id,
+            "tags": ["agentic", body.mode],
+            "mentions": [],
+            "context_ref": body.context_ref,
+            "event": "agentic.operator",
+        },
+    )
+
+    rendered_messages: list[dict[str, Any]] = [operator_msg]
+    for message in orchestrator_result.messages:
+        if not isinstance(message, dict):
+            continue
+        author = str(message.get("author") or "system").strip() or "system"
+        text = str(message.get("text") or "").strip()
+        if not text:
+            continue
+        persisted = repo.append_chat(
+            project_id,
+            {
+                "author": author,
+                "text": text,
+                "thread_id": body.thread_id,
+                "tags": ["agentic", body.mode],
+                "mentions": [],
+                "event": "agentic.reply",
+            },
+        )
+        if author in {"victor", "leo", "nova", "vulgarisation", "clems"}:
+            try:
+                repo.patch_agent_state(
+                    project_id,
+                    author,
+                    {"status": "executing", "current_task": f"agentic {body.mode} turn", "phase": "Ship"},
+                )
+            except FileNotFoundError:
+                pass
+        rendered_messages.append(persisted)
+
+    run_payload = {
+        "run_id": run_id,
+        "project_id": project_id,
+        "mode": body.mode,
+        "status": orchestrator_result.status,
+        "generated_at_utc": _utc_now_iso(),
+        "profile": profile.model_dump(),
+        "messages": rendered_messages,
+        "clems_summary": orchestrator_result.clems_summary,
+        "spawned_agents_count": orchestrator_result.spawned_agents_count,
+        "model_usage": orchestrator_result.model_usage,
+        "error": orchestrator_result.error,
+    }
+    repo.write_run_artifacts(
+        project_id,
+        run_id,
+        run_payload,
+        _agentic_markdown(project_id, run_id, body.mode, orchestrator_result.status, rendered_messages),
+    )
+
+    await _publish(
+        request,
+        project_id=project_id,
+        event_type="scene.spawned" if body.mode == "scene" else "agentic.turn.completed",
+        actor=str(claims.get("sub") or ""),
+        payload={
+            "run_id": run_id,
+            "mode": body.mode,
+            "status": orchestrator_result.status,
+            "spawned_agents_count": orchestrator_result.spawned_agents_count,
+            "error": orchestrator_result.error,
+        },
+    )
+    await _publish(
+        request,
+        project_id=project_id,
+        event_type="pixel.updated",
+        actor="system",
+        payload={"window": "24h"},
+    )
+    response = {
+        "project_id": project_id,
+        "run_id": run_id,
+        "mode": body.mode,
+        "status": orchestrator_result.status,
+        "messages": rendered_messages,
+        "clems_summary": orchestrator_result.clems_summary,
+        "spawned_agents_count": orchestrator_result.spawned_agents_count,
+        "model_usage": orchestrator_result.model_usage,
+        "error": orchestrator_result.error,
+    }
+    return _json(response)
+
+
+async def post_voice_transcribe(request: Request) -> JSONResponse:
+    claims = _authorize(request, permission="chat:write")
+    body = await _parse_model(request, VoiceTranscribeRequest)
+    repo: ProjectRepository = request.app.state.projects
+    settings: APISettings = request.app.state.settings
+    project_id = request.path_params["project_id"]
+    profile_raw = repo.read_llm_profile(project_id, defaults=_llm_profile_defaults(settings))
+    profile = LlmProfile.model_validate(profile_raw)
+
+    audio_payload = str(body.audio_base64 or "").strip()
+    if not audio_payload:
+        _http_error(400, "audio_base64_required")
+    try:
+        base64.b64decode(audio_payload, validate=True)
+    except Exception:
+        _http_error(400, "audio_base64_invalid")
+
+    started = datetime.now(timezone.utc)
+    result = _openrouter_client(settings).transcribe_audio(
+        model=profile.voice_stt_model,
+        audio_base64=audio_payload,
+        audio_format=body.format,
+    )
+    duration_ms = int((datetime.now(timezone.utc) - started).total_seconds() * 1000)
+    status = "ok" if result.status == "ok" else "failed"
+    payload = {
+        "project_id": project_id,
+        "text": result.text,
+        "model": profile.voice_stt_model,
+        "duration_ms": max(duration_ms, 0),
+        "status": status,
+        "usage": {
+            "input_tokens": result.usage.input_tokens,
+            "output_tokens": result.usage.output_tokens,
+            "reasoning_tokens": result.usage.reasoning_tokens,
+        },
+        "error": result.error,
+    }
+    await _publish(
+        request,
+        project_id=project_id,
+        event_type="voice.transcribed",
+        actor=str(claims.get("sub") or ""),
+        payload={"status": status, "model": profile.voice_stt_model, "duration_ms": payload["duration_ms"]},
+    )
+    await _publish(
+        request,
+        project_id=project_id,
+        event_type="pixel.updated",
+        actor="system",
+        payload={"window": "24h"},
+    )
+    return _json(payload)
+
+
+async def get_pixel_feed(request: Request) -> JSONResponse:
+    _authorize(request, permission="runs:read")
+    repo: ProjectRepository = request.app.state.projects
+    project_id = request.path_params["project_id"]
+    window = str(request.query_params.get("window") or "24h").strip()
+    try:
+        project_path = repo.project_path(project_id)
+    except FileNotFoundError as exc:
+        _http_error(404, str(exc))
+    payload = build_pixel_feed(project_dir=project_path, project_id=project_id, window=window)
+    try:
+        validated = PixelFeedResponse.model_validate(payload)
+    except ValidationError as exc:
+        _http_error(422, exc.errors()[0]["msg"] if exc.errors() else "validation_error")
+    return _json(validated.model_dump())
+
+
 def _resolve_repo_path(repo: ProjectRepository, project_id: str, override: str | None) -> Path:
     if override and str(override).strip():
         return Path(str(override).strip()).expanduser()
@@ -650,6 +938,8 @@ async def websocket_events(websocket: WebSocket) -> None:
 
 def create_app(settings: APISettings | None = None) -> Starlette:
     runtime_settings = settings or APISettings.from_env()
+    if not str(runtime_settings.openrouter_api_key or "").strip():
+        raise RuntimeError("COCKPIT_OPENROUTER_API_KEY is required to start Cockpit API.")
     runtime_settings.projects_root.mkdir(parents=True, exist_ok=True)
 
     app = Starlette(
@@ -672,11 +962,16 @@ def create_app(settings: APISettings | None = None) -> Starlette:
             Route("/v1/projects/{project_id:str}/agents/{agent_id:str}/state", patch_agent_state, methods=["PATCH"]),
             Route("/v1/projects/{project_id:str}/chat", get_chat, methods=["GET"]),
             Route("/v1/projects/{project_id:str}/chat/messages", post_chat, methods=["POST"]),
+            Route("/v1/projects/{project_id:str}/llm-profile", get_llm_profile, methods=["GET"]),
+            Route("/v1/projects/{project_id:str}/llm-profile", put_llm_profile, methods=["PUT"]),
+            Route("/v1/projects/{project_id:str}/chat/agentic-turn", post_agentic_turn, methods=["POST"]),
+            Route("/v1/projects/{project_id:str}/voice/transcribe", post_voice_transcribe, methods=["POST"]),
             Route("/v1/projects/{project_id:str}/wizard-live/start", wizard_start, methods=["POST"]),
             Route("/v1/projects/{project_id:str}/wizard-live/run", wizard_run, methods=["POST"]),
             Route("/v1/projects/{project_id:str}/wizard-live/stop", wizard_stop, methods=["POST"]),
             Route("/v1/projects/{project_id:str}/runs", get_runs, methods=["GET"]),
             Route("/v1/projects/{project_id:str}/runs/{run_id:str}", get_run, methods=["GET"]),
+            Route("/v1/projects/{project_id:str}/pixel-feed", get_pixel_feed, methods=["GET"]),
             Route("/v1/projects/{project_id:str}/bmad/{doc_type:str}", get_bmad, methods=["GET"]),
             Route("/v1/projects/{project_id:str}/bmad/{doc_type:str}", put_bmad, methods=["PUT"]),
             Route("/v1/devices/register", register_device, methods=["POST"]),

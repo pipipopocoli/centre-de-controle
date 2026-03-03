@@ -20,6 +20,14 @@ Goal: run a live text multiagent roundtable in Cockpit with one bundled headless
   - `runs/WIZARD_LIVE_<UTC>.md`
   - updates `STATE.md`, `ROADMAP.md`, `DECISIONS.md`
 
+## Wave21 additions (Agentic runtime)
+- `wizard-live` remains available and unchanged for BMAD roundtables.
+- New API runtime for day-to-day chat:
+  - `POST /v1/projects/{id}/chat/agentic-turn` (`mode=chat|scene`)
+  - `POST /v1/projects/{id}/voice/transcribe` (STT only)
+  - `GET/PUT /v1/projects/{id}/llm-profile` for model routing.
+- Scene mode uses L2 model and can spawn LFM helper subtasks (max 10).
+
 ## Safety model
 - One `codex exec` per turn with:
   - approval policy `never`

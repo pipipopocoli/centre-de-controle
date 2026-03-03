@@ -226,3 +226,12 @@
 - Consequences: Desktop local write actions are blocked in API strict mode; `vulgarisation` is promoted to L1 defaults in runtime and API repositories; AppSupport drift cleanup moves evozina intake artifacts out of cockpit root.
 - Owners: @clems, @victor, @leo (@nova FYI)
 - References: /Users/oliviercloutier/Desktop/Cockpit/app/main.py, /Users/oliviercloutier/Desktop/Cockpit/app/schemas/wizard_live_output.schema.json, /Users/oliviercloutier/Desktop/Cockpit/app/services/wizard_live.py, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/settings.json
+
+## 2026-03-03 - ADR-CP-026 Wave21 OpenRouter launch + Pixel View + Android bootstrap
+- Status: Accepted
+- Context: After Wave20 strict baseline, operator needs end-to-end agentic usage in Cockpit with explicit model routing and parity preparation for Android native.
+- Decision: Add OpenRouter-backed runtime endpoints (`llm-profile`, `chat/agentic-turn`, `voice/transcribe`, `pixel-feed`), wire desktop controls (`Model Routing`, `Vocal`, `Scène`, `Pixel View`), and bootstrap Android module under `/android`.
+- Rationale: Moves Cockpit from static API foundation to usable cloud runtime flow while keeping Telegram/WhatsApp out of scope.
+- Consequences: API now requires `COCKPIT_OPENROUTER_API_KEY` at boot; project settings persist `llm_profile`; scene mode can spawn LFM helpers with hard cap 10; pixel heatmap is sourced from runs/chat/agent state artifacts.
+- Owners: @clems, @victor, @leo (@nova FYI)
+- References: /Users/oliviercloutier/Desktop/Cockpit/server/main.py, /Users/oliviercloutier/Desktop/Cockpit/server/llm/openrouter_client.py, /Users/oliviercloutier/Desktop/Cockpit/server/llm/agentic_orchestrator.py, /Users/oliviercloutier/Desktop/Cockpit/server/analytics/pixel_feed.py, /Users/oliviercloutier/Desktop/Cockpit/app/ui/main_window.py, /Users/oliviercloutier/Desktop/Cockpit/docs/OPENROUTER_SETUP.md, /Users/oliviercloutier/Desktop/Cockpit/docs/PIXEL_VIEW.md, /Users/oliviercloutier/Desktop/Cockpit/android/README.md

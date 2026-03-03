@@ -59,6 +59,14 @@ DEFAULT_AGENTS = [
     },
 ]
 
+DEFAULT_LLM_PROFILE = {
+    "voice_stt_model": "google/gemini-2.5-flash",
+    "l1_model": "liquid/lfm-2.5-1.2b-thinking:free",
+    "l2_scene_model": "arcee-ai/trinity-large-preview:free",
+    "lfm_spawn_max": 10,
+    "stream_enabled": True,
+}
+
 
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
@@ -126,6 +134,13 @@ def _ensure_list(value: Any) -> list[str]:
     return []
 
 
+def _safe_int(value: Any, default: int) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 class ProjectRepository:
     def __init__(self, projects_root: Path) -> None:
         self.projects_root = Path(projects_root).expanduser()
@@ -133,6 +148,12 @@ class ProjectRepository:
 
     def _project_dir(self, project_id: str) -> Path:
         return self.projects_root / _safe_project_id(project_id)
+
+    def project_path(self, project_id: str) -> Path:
+        path = self._project_dir(project_id)
+        if not path.exists():
+            raise FileNotFoundError(f"project not found: {project_id}")
+        return path
 
     def _settings_path(self, project_id: str) -> Path:
         return self._project_dir(project_id) / "settings.json"
@@ -171,6 +192,7 @@ class ProjectRepository:
                     "project_id": project_id,
                     "project_name": name,
                     "linked_repo_path": "",
+                    "llm_profile": dict(DEFAULT_LLM_PROFILE),
                     "updated_at": _utc_now_iso(),
                 },
             )
@@ -270,6 +292,28 @@ class ProjectRepository:
     def write_settings(self, project_id: str, payload: dict[str, Any]) -> None:
         payload["updated_at"] = _utc_now_iso()
         _write_json(self._settings_path(project_id), payload)
+
+    def read_llm_profile(self, project_id: str, defaults: dict[str, Any] | None = None) -> dict[str, Any]:
+        settings = self.get_settings(project_id)
+        profile = settings.get("llm_profile")
+        payload = profile if isinstance(profile, dict) else {}
+        merged = dict(DEFAULT_LLM_PROFILE)
+        if isinstance(defaults, dict):
+            merged.update({key: value for key, value in defaults.items() if value is not None})
+        merged.update({key: value for key, value in payload.items() if value is not None})
+        merged["lfm_spawn_max"] = max(1, min(_safe_int(merged.get("lfm_spawn_max"), 10), 10))
+        merged["stream_enabled"] = bool(merged.get("stream_enabled", True))
+        return merged
+
+    def write_llm_profile(self, project_id: str, payload: dict[str, Any], defaults: dict[str, Any] | None = None) -> dict[str, Any]:
+        settings = self.get_settings(project_id)
+        merged = self.read_llm_profile(project_id, defaults=defaults)
+        merged.update({key: value for key, value in payload.items() if value is not None})
+        merged["lfm_spawn_max"] = max(1, min(_safe_int(merged.get("lfm_spawn_max"), 10), 10))
+        merged["stream_enabled"] = bool(merged.get("stream_enabled", True))
+        settings["llm_profile"] = merged
+        self.write_settings(project_id, settings)
+        return merged
 
     def linked_repo_path(self, project_id: str) -> str | None:
         settings = self.get_settings(project_id)
@@ -552,6 +596,18 @@ class ProjectRepository:
             "content": normalized,
             "updated_at": datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc).isoformat(),
         }
+
+    def write_run_artifacts(self, project_id: str, run_id: str, payload: dict[str, Any], markdown: str) -> dict[str, str]:
+        run_token = str(run_id or "").strip()
+        if not run_token:
+            raise ValueError("run_id required")
+        runs_dir = self._runs_dir(project_id)
+        runs_dir.mkdir(parents=True, exist_ok=True)
+        json_path = runs_dir / f"{run_token}.json"
+        md_path = runs_dir / f"{run_token}.md"
+        _write_json(json_path, payload)
+        md_path.write_text(str(markdown or "").strip() + "\n", encoding="utf-8")
+        return {"json_path": str(json_path), "md_path": str(md_path)}
 
 
 class UserRepository:

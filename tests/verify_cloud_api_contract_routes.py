@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import base64
 import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 from starlette.testclient import TestClient
 
@@ -10,6 +12,8 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
 from server.config import APISettings  # noqa: E402
+from server.llm.agentic_orchestrator import AgenticTurnResult  # noqa: E402
+from server.llm.openrouter_client import OpenRouterChatResult, OpenRouterUsage  # noqa: E402
 from server.main import create_app  # noqa: E402
 
 
@@ -33,6 +37,7 @@ def main() -> int:
             issuer="test-issuer",
             access_ttl_seconds=3600,
             refresh_ttl_seconds=7200,
+            openrouter_api_key="test-openrouter-key",
         )
         app = create_app(settings)
         client = TestClient(app)
@@ -105,8 +110,58 @@ def main() -> int:
             headers=headers,
             json={"text": "hello api"},
         ).status_code == 201
+        assert client.get("/v1/projects/cockpit/llm-profile", headers=headers).status_code == 200
+        assert client.put(
+            "/v1/projects/cockpit/llm-profile",
+            headers=headers,
+            json={
+                "voice_stt_model": "google/gemini-2.5-flash",
+                "l1_model": "liquid/lfm-2.5-1.2b-thinking:free",
+                "l2_scene_model": "arcee-ai/trinity-large-preview:free",
+                "lfm_spawn_max": 6,
+                "stream_enabled": True,
+            },
+        ).status_code == 200
+        fake_turn = AgenticTurnResult(
+            status="ok",
+            mode="chat",
+            messages=[
+                {"author": "victor", "text": "backend"},
+                {"author": "leo", "text": "ui"},
+                {"author": "nova", "text": "research owner=nova next_action=... evidence_path=... decision_tag=adopt"},
+                {"author": "vulgarisation", "text": "simple"},
+                {"author": "clems", "text": "summary"},
+            ],
+            clems_summary="summary",
+            spawned_agents_count=0,
+            model_usage={"calls": []},
+            error=None,
+        )
+        with patch("server.main.run_agentic_turn", return_value=fake_turn):
+            assert client.post(
+                "/v1/projects/cockpit/chat/agentic-turn",
+                headers=headers,
+                json={"text": "launch", "mode": "chat"},
+            ).status_code == 200
+
+        fake_voice = OpenRouterChatResult(
+            status="ok",
+            model="google/gemini-2.5-flash",
+            text="bonjour",
+            usage=OpenRouterUsage(1, 1, 0, {}),
+            raw={},
+            error=None,
+        )
+        audio_base64 = base64.b64encode(b"RIFF....WAVE").decode("ascii")
+        with patch("server.main.OpenRouterClient.transcribe_audio", return_value=fake_voice):
+            assert client.post(
+                "/v1/projects/cockpit/voice/transcribe",
+                headers=headers,
+                json={"audio_base64": audio_base64, "format": "wav"},
+            ).status_code == 200
 
         assert client.get("/v1/projects/cockpit/runs", headers=headers).status_code == 200
+        assert client.get("/v1/projects/cockpit/pixel-feed?window=24h", headers=headers).status_code == 200
         assert client.get("/v1/projects/cockpit/bmad/brainstorm", headers=headers).status_code == 200
         assert client.put(
             "/v1/projects/cockpit/bmad/brainstorm",

@@ -100,11 +100,19 @@ class ChatroomWidget(QFrame):
         self.ping_btn = QPushButton("Ping Team")
         self.ping_btn.setToolTip("Ping Leo + Victor + Nova")
         self.ping_btn.setCursor(Qt.PointingHandCursor)
+        self.voice_btn = QPushButton("Vocal")
+        self.voice_btn.setToolTip("Upload audio and transcribe via API")
+        self.voice_btn.setCursor(Qt.PointingHandCursor)
+        self.scene_btn = QPushButton("Scène")
+        self.scene_btn.setToolTip("Run L2 scene mode")
+        self.scene_btn.setCursor(Qt.PointingHandCursor)
         # ------------------------------------------------
         
         actions.addWidget(self.pack_light_btn)
         actions.addWidget(self.pack_full_btn)
         actions.addWidget(self.ping_btn)
+        actions.addWidget(self.voice_btn)
+        actions.addWidget(self.scene_btn)
 
         layout.addWidget(title)
         layout.addWidget(self.tabs, 1)

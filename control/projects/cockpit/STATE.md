@@ -4,7 +4,7 @@
 - Ship
 
 ## Objective
-- Ship Wave20 strict baseline: API-first runtime policy, Wizard Live strict contract with L1=4, and clean AppSupport separation (`cockpit` vs `evozina`).
+- Ship Wave21 API-native operations: OpenRouter model routing, agentic chat/scene turns, voice STT, Pixel View, and Android bootstrap aligned to cloud API.
 
 ## Now
 - Wave17 outage policy remains guarded (`allowed_platforms=[codex,antigravity]`, `allowed_agents=[victor,leo,nova,vulgarisation]`).
@@ -24,12 +24,17 @@
 - Primary operator app icon switched to single-icon release target (`/Applications/Centre de controle.app`).
 - Cloud API-first foundation scaffolded (`server/`) for Desktop + Android parity, with RBAC/JWT, REST contracts, WS event envelope, and wizard-live endpoints.
 - Telegram/WhatsApp are explicitly excluded from the V1 execution scope.
+- Wave21 endpoints are live for model routing and agentic runtime (`/llm-profile`, `/chat/agentic-turn`, `/voice/transcribe`, `/pixel-feed`).
+- Desktop now exposes `Model Routing` and `Pixel View` tabs, plus `Vocal` and `Scène` actions in chat.
+- OpenRouter runtime defaults are wired (`gemini-2.5-flash` STT, `lfm-2.5-thinking` L1, `trinity-large-preview` L2 scene) with LFM spawn cap 10.
+- Android native bootstrap module exists under `/android` with Compose entrypoint and Retrofit API skeleton.
 
 ## Next
 - Run 1 full Wave19/Wave20 live session on a real repo and confirm repeated turns stay stable with L1=4.
 - Validate strict API startup paths (down => hard fail, up => strict write blocks on local UI actions).
 - Finish desktop API-client cutover to remove remaining local legacy flows.
 - Start Android native client implementation against `/v1/*` + `WS /v1/projects/{id}/events`.
+- Implement Android parity screens + websocket live sync + FCM worker wiring (post-bootstrap).
 - Complete AppSupport drift cleanup by moving evozina intake artifacts out of cockpit root.
 - Keep pulse/check cadence on both roots every 30-45 minutes.
 - Enforce credit guard (`wave_cap <= 180`, `reserve_floor >= 350`).
@@ -64,6 +69,10 @@
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE17_RUNTIME_CHECKPOINT_2026-02-27T0539Z.md
 - /Users/oliviercloutier/Desktop/Cockpit/docs/TAKEOVER_WIZARD.md
 - /Users/oliviercloutier/Desktop/Cockpit/docs/WIZARD_LIVE.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/OPENROUTER_SETUP.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/PIXEL_VIEW.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/CLOUD_API_PROTOCOL.md
+- /Users/oliviercloutier/Desktop/Cockpit/android/README.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE13_CP0015_CP0042_CLOSEOUT_2026-02-23T0909Z.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE14_VICTOR_LANE_LOCK_2026-02-23T1026Z.md
 - /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE14_CP0050_MEMORY_RETENTION_2026-02-23.md

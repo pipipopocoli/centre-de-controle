@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RbacPolicy(BaseModel):
@@ -181,6 +181,71 @@ class DeviceRegisterResponse(BaseModel):
 class DeviceDeleteResponse(BaseModel):
     device_id: str
     status: Literal["deleted"] = "deleted"
+
+
+class LlmProfile(BaseModel):
+    voice_stt_model: str = "google/gemini-2.5-flash"
+    l1_model: str = "liquid/lfm-2.5-1.2b-thinking:free"
+    l2_scene_model: str = "arcee-ai/trinity-large-preview:free"
+    lfm_spawn_max: int = Field(default=10, ge=1, le=10)
+    stream_enabled: bool = True
+
+
+class AgenticTurnRequest(BaseModel):
+    text: str
+    mode: Literal["chat", "scene"] = "chat"
+    thread_id: str | None = None
+    context_ref: dict[str, Any] | None = None
+
+
+class AgenticTurnResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
+    project_id: str
+    run_id: str
+    mode: Literal["chat", "scene"]
+    status: str
+    messages: list[ChatMessageOut] = Field(default_factory=list)
+    clems_summary: str = ""
+    spawned_agents_count: int = 0
+    model_usage: dict[str, Any] = Field(default_factory=dict)
+    error: str | None = None
+
+
+class VoiceTranscribeRequest(BaseModel):
+    audio_base64: str
+    format: Literal["wav", "m4a", "mp3", "ogg"] = "wav"
+
+
+class VoiceTranscribeResponse(BaseModel):
+    project_id: str
+    text: str
+    model: str
+    duration_ms: int
+    status: str
+    usage: dict[str, Any] = Field(default_factory=dict)
+    error: str | None = None
+
+
+class PixelFeedCell(BaseModel):
+    bucket_start: str
+    intensity: int
+    chat_messages: int = 0
+    run_events: int = 0
+    state_updates: int = 0
+
+
+class PixelFeedRow(BaseModel):
+    agent_id: str
+    cells: list[PixelFeedCell] = Field(default_factory=list)
+
+
+class PixelFeedResponse(BaseModel):
+    project_id: str
+    window: Literal["24h", "7d", "30d"]
+    bucket_minutes: int
+    generated_at_utc: str
+    rows: list[PixelFeedRow] = Field(default_factory=list)
 
 
 class EventEnvelope(BaseModel):

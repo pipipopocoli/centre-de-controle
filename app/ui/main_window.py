@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import os
 import re
@@ -48,11 +49,22 @@ from app.services.wizard_live import (
     start_wizard_live_session,
     stop_wizard_live_session,
 )
+from app.services.cloud_api_client import (
+    get_llm_profile as api_get_llm_profile,
+    get_pixel_feed as api_get_pixel_feed,
+    post_agentic_turn as api_post_agentic_turn,
+    post_chat_message as api_post_chat_message,
+    post_voice_transcribe as api_post_voice_transcribe,
+    put_llm_profile as api_put_llm_profile,
+)
+from app.services.pixel_feed_local import build_local_pixel_feed
 from app.ui.agents_grid import AgentsGridWidget
 from app.ui.chatroom import ChatroomWidget
 from app.ui.doc_viewer import DocsViewerWidget
+from app.ui.model_routing import ModelRoutingWidget
 from app.ui.project_bible import ProjectBibleWidget
 from app.ui.project_pilotage import ProjectPilotageWidget
+from app.ui.pixel_view import PixelViewWidget
 from app.ui.roadmap import RoadmapWidget
 from app.ui.sidebar import SidebarWidget
 
@@ -162,6 +174,14 @@ class MainWindow(QMainWindow):
         self.docs_viewer = DocsViewerWidget()
         self.center_tabs.addTab(self.docs_viewer, "Docs")
 
+        # Tab 5: Model routing (OpenRouter)
+        self.model_routing = ModelRoutingWidget()
+        self.center_tabs.addTab(self.model_routing, "Model Routing")
+
+        # Tab 6: Pixel activity heatmap
+        self.pixel_view = PixelViewWidget()
+        self.center_tabs.addTab(self.pixel_view, "Pixel View")
+
         # Corner Widget for UI Toggles
         self.corner_widget = QWidget()
         corner_layout = QHBoxLayout(self.corner_widget)
@@ -208,6 +228,11 @@ class MainWindow(QMainWindow):
         self.chatroom.pack_light_btn.clicked.connect(self.on_pack_light)
         self.chatroom.pack_full_btn.clicked.connect(self.on_pack_full)
         self.chatroom.ping_btn.clicked.connect(self.on_ping_agents)
+        self.chatroom.voice_btn.clicked.connect(self.on_voice_transcribe_clicked)
+        self.chatroom.scene_btn.clicked.connect(self.on_scene_turn_clicked)
+        self.model_routing.load_requested.connect(self.on_load_model_routing)
+        self.model_routing.save_requested.connect(self.on_save_model_routing)
+        self.pixel_view.window_selector.currentIndexChanged.connect(self.refresh_pixel_feed)
         self.sidebar.docs_btn.clicked.connect(self.on_show_docs)
         self.agents_grid.context_selected.connect(self.on_ui_context_selected)
         self.project_pilotage.context_selected.connect(self.on_ui_context_selected)
@@ -277,6 +302,11 @@ class MainWindow(QMainWindow):
         self.project_refresh_timer.timeout.connect(self.refresh_project)
         self.project_refresh_timer.start()
 
+        self.pixel_refresh_timer = QTimer(self)
+        self.pixel_refresh_timer.setInterval(7000)
+        self.pixel_refresh_timer.timeout.connect(self.refresh_pixel_feed)
+        self.pixel_refresh_timer.start()
+
         self.chat_refresh_timer = QTimer(self)
         self.chat_refresh_timer.setInterval(1500)
         self.chat_refresh_timer.timeout.connect(self.refresh_chat)
@@ -338,6 +368,8 @@ class MainWindow(QMainWindow):
         portfolio_projects = self._get_portfolio_projects(project, force=force_portfolio_refresh or project_changed)
         self.project_pilotage.set_project(project, portfolio=portfolio_projects, refresh=True)
         self._sync_auto_mode_from_settings(project)
+        self.refresh_model_routing_from_settings()
+        self.refresh_pixel_feed()
         if refresh_chat_now:
             self.refresh_chat()
         if project_changed:
@@ -418,6 +450,7 @@ class MainWindow(QMainWindow):
         project = load_project(self.current_project_id)
         self.load_project(project, refresh_chat_now=False, force_portfolio_refresh=False)
         self.refresh_bible(force=False)
+        self.refresh_pixel_feed()
 
     def refresh_bible(self, *, force: bool = False) -> None:
         if not self.current_project_id:
@@ -470,12 +503,13 @@ class MainWindow(QMainWindow):
         self.chatroom.set_context_ref(payload)
 
     def on_send_message(self) -> None:
-        if self._block_if_api_strict("chat_send"):
-            return
         if not self.current_project_id:
             return
         text = self.chatroom.input.text().strip()
         if not text:
+            return
+        if self.api_strict_mode:
+            self._send_message_via_api(text)
             return
         context_ref = self.chatroom.consume_context_ref()
         tags = parse_tags(text)
@@ -517,6 +551,103 @@ class MainWindow(QMainWindow):
             self._auto_reply(payload)
         self.chatroom.input.clear()
         self.refresh_chat()
+
+    def _send_message_via_api(self, text: str) -> None:
+        thread_tag = self.chatroom.current_thread_tag() or None
+        wizard_live_command, wizard_live_body = parse_wizard_live_command(text)
+        if wizard_live_command:
+            self._handle_wizard_live_command(wizard_live_command, wizard_live_body)
+            self.chatroom.input.clear()
+            return
+        try:
+            api_post_chat_message(self.current_project_id, text, thread_id=thread_tag)
+            response = api_post_agentic_turn(self.current_project_id, text, mode="chat", thread_id=thread_tag)
+        except Exception as exc:  # noqa: BLE001
+            self.sidebar.status_banner.show_error(f"API chat send failed: {exc}")
+            return
+        run_id = str(response.get("run_id") or "-")
+        status = str(response.get("status") or "unknown")
+        self.sidebar.status_banner.show_warning(f"Agentic chat turn: {run_id} ({status})")
+        self.chatroom.input.clear()
+        self.refresh_chat()
+        self.refresh_project()
+
+    def on_scene_turn_clicked(self) -> None:
+        if not self.current_project_id:
+            return
+        text = self.chatroom.input.text().strip()
+        if not text:
+            self.sidebar.status_banner.show_warning("Scène: ajoute d abord un message.")
+            return
+        if self.api_strict_mode:
+            try:
+                response = api_post_agentic_turn(
+                    self.current_project_id,
+                    text,
+                    mode="scene",
+                    thread_id=self.chatroom.current_thread_tag() or None,
+                )
+            except Exception as exc:  # noqa: BLE001
+                self.sidebar.status_banner.show_error(f"Scene turn failed: {exc}")
+                return
+            run_id = str(response.get("run_id") or "-")
+            spawned = int(response.get("spawned_agents_count") or 0)
+            self.sidebar.status_banner.show_warning(f"Scène complete: {run_id} (spawn={spawned})")
+            self.chatroom.input.clear()
+            self.refresh_chat()
+            self.refresh_project()
+            return
+
+        payload = {
+            "message_id": self._make_message_id("operator"),
+            "timestamp": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "author": "operator",
+            "text": f"[scene] {text}",
+            "tags": ["scene"],
+            "mentions": [],
+        }
+        append_chat_message(self.current_project_id, payload)
+        self._auto_reply(payload)
+        self.chatroom.input.clear()
+        self.refresh_chat()
+
+    def on_voice_transcribe_clicked(self) -> None:
+        if not self.current_project_id:
+            return
+        if not self.api_strict_mode:
+            self.sidebar.status_banner.show_error("Vocal transcription requires API strict mode.")
+            return
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select audio file",
+            "",
+            "Audio files (*.wav *.m4a *.mp3 *.ogg)",
+        )
+        if not file_path:
+            return
+        candidate = Path(file_path)
+        if not candidate.exists():
+            self.sidebar.status_banner.show_error("Audio file not found.")
+            return
+        raw = candidate.read_bytes()
+        encoded = base64.b64encode(raw).decode("ascii")
+        ext = candidate.suffix.lower().lstrip(".")
+        audio_format = ext if ext in {"wav", "m4a", "mp3", "ogg"} else "wav"
+        try:
+            payload = api_post_voice_transcribe(
+                self.current_project_id,
+                audio_base64=encoded,
+                audio_format=audio_format,
+            )
+        except Exception as exc:  # noqa: BLE001
+            self.sidebar.status_banner.show_error(f"Voice transcription failed: {exc}")
+            return
+        transcript = str(payload.get("text") or "").strip()
+        if transcript:
+            self.chatroom.input.setText(transcript)
+            self.sidebar.status_banner.show_warning("Voice transcribed into composer.")
+        else:
+            self.sidebar.status_banner.show_warning("Voice transcription returned empty text.")
 
     def _linked_repo_path(self) -> Path | None:
         if not self.current_project_id:
@@ -917,6 +1048,15 @@ class MainWindow(QMainWindow):
     def _settings_path(self, project_id: str) -> Path:
         return project_dir(project_id) / "settings.json"
 
+    def _default_llm_profile(self) -> dict:
+        return {
+            "voice_stt_model": "google/gemini-2.5-flash",
+            "l1_model": "liquid/lfm-2.5-1.2b-thinking:free",
+            "l2_scene_model": "arcee-ai/trinity-large-preview:free",
+            "lfm_spawn_max": 10,
+            "stream_enabled": True,
+        }
+
     def _load_settings_json(self, project_id: str) -> dict:
         path = self._settings_path(project_id)
         if not path.exists():
@@ -932,6 +1072,70 @@ class MainWindow(QMainWindow):
         settings["updated_at"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
+
+    def refresh_model_routing_from_settings(self) -> None:
+        if not self.current_project_id:
+            return
+        if self.api_strict_mode:
+            try:
+                payload = api_get_llm_profile(self.current_project_id)
+            except Exception:
+                payload = self._default_llm_profile()
+            self.model_routing.set_profile_payload(payload)
+            return
+        settings = self._load_settings_json(self.current_project_id)
+        profile = settings.get("llm_profile") if isinstance(settings.get("llm_profile"), dict) else {}
+        payload = dict(self._default_llm_profile())
+        payload.update(profile)
+        self.model_routing.set_profile_payload(payload)
+
+    def on_load_model_routing(self) -> None:
+        if not self.current_project_id:
+            return
+        if not self.api_strict_mode:
+            self.refresh_model_routing_from_settings()
+            self.sidebar.status_banner.show_warning("Model routing loaded from local settings.")
+            return
+        try:
+            payload = api_get_llm_profile(self.current_project_id)
+        except Exception as exc:  # noqa: BLE001
+            self.sidebar.status_banner.show_error(f"Load model routing failed: {exc}")
+            return
+        self.model_routing.set_profile_payload(payload)
+        self.sidebar.status_banner.show_warning("Model routing loaded from API.")
+
+    def on_save_model_routing(self) -> None:
+        if not self.current_project_id:
+            return
+        payload = self.model_routing.profile_payload()
+        if self.api_strict_mode:
+            try:
+                saved = api_put_llm_profile(self.current_project_id, payload)
+            except Exception as exc:  # noqa: BLE001
+                self.sidebar.status_banner.show_error(f"Save model routing failed: {exc}")
+                return
+            self.model_routing.set_profile_payload(saved)
+            self.sidebar.status_banner.show_warning("Model routing saved to API.")
+            return
+
+        settings = self._load_settings_json(self.current_project_id)
+        settings["llm_profile"] = payload
+        self._save_settings_json(self.current_project_id, settings)
+        self.sidebar.status_banner.show_warning("Model routing saved in local settings.")
+
+    def refresh_pixel_feed(self, *_args: object) -> None:
+        if not self.current_project_id:
+            return
+        window = self.pixel_view.selected_window()
+        try:
+            if self.api_strict_mode:
+                payload = api_get_pixel_feed(self.current_project_id, window=window)
+            else:
+                payload = build_local_pixel_feed(self.current_project_id, window=window)
+        except Exception as exc:  # noqa: BLE001
+            self.pixel_view.status_label.setText(f"Pixel feed error: {exc}")
+            return
+        self.pixel_view.set_feed(payload)
 
     def _sync_auto_mode_from_settings(self, project: ProjectData) -> None:
         if self.api_strict_mode:

@@ -55,6 +55,7 @@ def main() -> int:
             issuer="wizard-issuer",
             access_ttl_seconds=3600,
             refresh_ttl_seconds=7200,
+            openrouter_api_key="test-openrouter-key",
         )
         app = create_app(settings)
         client = TestClient(app)

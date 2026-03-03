@@ -2,6 +2,19 @@
 
 Date: 2026-03-03
 
+## Wave21 bootstrap status
+
+- Bootstrap module added under `/Users/oliviercloutier/Desktop/Cockpit/android/`.
+- Includes:
+  - Compose `MainActivity`
+  - Retrofit interface for auth/projects/chat/wizard/agentic endpoints
+  - Gradle project skeleton (`settings.gradle`, root/app `build.gradle`)
+- Not yet delivered:
+  - full parity screens
+  - websocket live stream
+  - FCM worker delivery path
+  - voice capture UI
+
 ## Stack
 
 - Kotlin

@@ -21,6 +21,8 @@ def main() -> int:
     if args.projects_root:
         os.environ["COCKPIT_API_PROJECTS_ROOT"] = args.projects_root
 
+    if not str(os.environ.get("COCKPIT_OPENROUTER_API_KEY") or "").strip():
+        raise SystemExit("Missing required env: COCKPIT_OPENROUTER_API_KEY")
     uvicorn.run("server.main:app", host=args.host, port=max(args.port, 1), reload=False)
     return 0
 
