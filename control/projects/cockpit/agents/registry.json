@@ -1,14 +1,4 @@
 {
-  "agent-1": {
-    "agent_id": "agent-1",
-    "name": "agent-1",
-    "engine": "AG",
-    "platform": "antigravity",
-    "level": 2,
-    "lead_id": "victor",
-    "role": "specialist",
-    "skills": []
-  },
   "agent-11": {
     "agent_id": "agent-11",
     "name": "agent-11",
@@ -29,44 +19,24 @@
     "role": "specialist",
     "skills": []
   },
-  "agent-6": {
-    "agent_id": "agent-6",
-    "name": "agent-6",
-    "engine": "AG",
-    "platform": "antigravity",
-    "level": 2,
-    "lead_id": "leo",
-    "role": "specialist",
+  "victor": {
+    "agent_id": "victor",
+    "name": "Victor",
+    "engine": "CDX",
+    "platform": "codex",
+    "level": 1,
+    "lead_id": "clems",
+    "role": "backend_lead",
     "skills": []
   },
-  "agent-7": {
-    "agent_id": "agent-7",
-    "name": "agent-7",
+  "agent-1": {
+    "agent_id": "agent-1",
+    "name": "agent-1",
     "engine": "AG",
     "platform": "antigravity",
     "level": 2,
     "lead_id": "victor",
     "role": "specialist",
-    "skills": []
-  },
-  "clems": {
-    "agent_id": "clems",
-    "name": "Clems",
-    "engine": "CDX",
-    "platform": "codex",
-    "level": 0,
-    "lead_id": null,
-    "role": "orchestrator",
-    "skills": []
-  },
-  "leo": {
-    "agent_id": "leo",
-    "name": "Leo",
-    "engine": "AG",
-    "platform": "antigravity",
-    "level": 1,
-    "lead_id": "clems",
-    "role": "ui_lead",
     "skills": []
   },
   "nova": {
@@ -86,6 +56,26 @@
       "research_decision_ledger"
     ]
   },
+  "agent-12": {
+    "agent_id": "agent-12",
+    "name": "agent-12",
+    "engine": "CDX",
+    "platform": "cockpit-next",
+    "level": 2,
+    "lead_id": "victor",
+    "role": "specialist",
+    "skills": []
+  },
+  "leo": {
+    "agent_id": "leo",
+    "name": "Leo",
+    "engine": "AG",
+    "platform": "antigravity",
+    "level": 1,
+    "lead_id": "clems",
+    "role": "ui_lead",
+    "skills": []
+  },
   "vulgarisation": {
     "agent_id": "vulgarisation",
     "name": "Vulgarisation",
@@ -100,14 +90,14 @@
       "clarity_rewrite"
     ]
   },
-  "victor": {
-    "agent_id": "victor",
-    "name": "Victor",
-    "engine": "CDX",
-    "platform": "codex",
-    "level": 1,
-    "lead_id": "clems",
-    "role": "backend_lead",
+  "agent-6": {
+    "agent_id": "agent-6",
+    "name": "agent-6",
+    "engine": "AG",
+    "platform": "antigravity",
+    "level": 2,
+    "lead_id": "leo",
+    "role": "specialist",
     "skills": []
   },
   "antigravity": {
@@ -117,6 +107,26 @@
     "platform": "antigravity",
     "level": 2,
     "lead_id": null,
+    "role": "specialist",
+    "skills": []
+  },
+  "clems": {
+    "agent_id": "clems",
+    "name": "Clems",
+    "engine": "CDX",
+    "platform": "codex",
+    "level": 0,
+    "lead_id": null,
+    "role": "orchestrator",
+    "skills": []
+  },
+  "agent-7": {
+    "agent_id": "agent-7",
+    "name": "agent-7",
+    "engine": "AG",
+    "platform": "antigravity",
+    "level": 2,
+    "lead_id": "victor",
     "role": "specialist",
     "skills": []
   }

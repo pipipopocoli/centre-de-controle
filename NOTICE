@@ -1,0 +1,16 @@
+Cockpit Next third-party notices
+
+1) Pixel Agents reference assets and engine snippets
+- Source: https://github.com/pablodelucca/pixel-agents
+- Copyright: pablodelucca contributors
+- License: MIT
+- Usage in this repository:
+  - Character sprite strips: char_0.png .. char_5.png
+  - Wall atlas: walls.png
+  - Theme/loading parity logic adapted for Cockpit Next local runtime
+
+2) Office Tileset (Donarg)
+- Source: user-provided purchased asset pack
+- Redistribution policy:
+  - Not redistributed by default from this repository
+  - Imported locally by operator via scripts/import_office_tileset.sh

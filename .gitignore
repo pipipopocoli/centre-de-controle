@@ -37,5 +37,14 @@ control/projects/**/chat/threads/
 control/projects/**/packs/
 control/projects/**/runs/auto_mode_state.json
 control/_archive_local/
+_cleanup_archive/
 brainfs/profiles/*.json
 !brainfs/profiles/template.json
+apps/**/node_modules/
+apps/**/dist/
+apps/**/src-tauri/target/
+apps/**/src-tauri/gen/
+apps/cockpit-next-desktop/public/local-assets/
+crates/**/target/
+docs/swarm/_runs/
+docs/swarm/_cache/

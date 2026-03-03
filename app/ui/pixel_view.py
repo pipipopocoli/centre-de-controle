@@ -64,7 +64,7 @@ class PixelViewWidget(QFrame):
             self.grid.clear()
             self.grid.setRowCount(0)
             self.grid.setColumnCount(0)
-            self.status_label.setText("No activity data")
+            self.status_label.setText("📊 Aucune activité d'agent détectée — les données apparaîtront ici automatiquement")
             return
         first = rows[0] if isinstance(rows[0], dict) else {}
         cells = first.get("cells")
