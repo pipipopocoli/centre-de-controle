@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import sys
+import os
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -15,6 +16,9 @@ from server.config import APISettings  # noqa: E402
 from server.llm.agentic_orchestrator import AgenticTurnResult  # noqa: E402
 from server.llm.openrouter_client import OpenRouterChatResult, OpenRouterUsage  # noqa: E402
 from server.main import create_app  # noqa: E402
+
+
+TEST_OWNER_PASSWORD = "test-owner-pass"
 
 
 def _auth_headers(token: str) -> dict[str, str]:
@@ -39,10 +43,11 @@ def main() -> int:
             refresh_ttl_seconds=7200,
             openrouter_api_key="test-openrouter-key",
         )
+        os.environ["COCKPIT_API_BOOTSTRAP_OWNER_PASSWORD"] = TEST_OWNER_PASSWORD
         app = create_app(settings)
         client = TestClient(app)
 
-        owner_token = _login(client, "owner", "owner123!")
+        owner_token = _login(client, "owner", TEST_OWNER_PASSWORD)
         headers = _auth_headers(owner_token)
 
         create_response = client.post(

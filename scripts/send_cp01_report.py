@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import uuid
 
 # Project directory
-PROJECT_ROOT = Path("/Users/oliviercloutier/Desktop/Cockpit")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CHAT_FILE = PROJECT_ROOT / "control/projects/cockpit/chat/global.ndjson"
 
 report_content = """# CP01 UI QA - Closure Report (2H)

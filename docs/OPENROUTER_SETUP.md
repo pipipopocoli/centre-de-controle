@@ -15,13 +15,14 @@ export COCKPIT_MODEL_L1="liquid/lfm-2.5-1.2b-thinking:free"
 export COCKPIT_MODEL_L2="arcee-ai/trinity-large-preview:free"
 export COCKPIT_MODEL_LFM_SPAWN_MAX="10"
 export COCKPIT_API_USERNAME="owner"
-export COCKPIT_API_PASSWORD="owner123!"
+export COCKPIT_API_PASSWORD="<GENERATE_STRONG_PASSWORD>"
+export COCKPIT_API_BOOTSTRAP_OWNER_PASSWORD="<GENERATE_STRONG_PASSWORD>"
 ```
 
 ## Start API
 
 ```bash
-./.venv/bin/python /Users/oliviercloutier/Desktop/Cockpit/scripts/run_cockpit_api.py --port 8100
+./.venv/bin/python scripts/run_cockpit_api.py --port 8100
 ```
 
 ## Verify routes
@@ -36,4 +37,3 @@ export COCKPIT_API_PASSWORD="owner123!"
 - Do not store API keys in project files.
 - Do not commit `.zshrc`, `.zprofile`, or shell secrets.
 - API rejects startup when `COCKPIT_OPENROUTER_API_KEY` is missing.
-

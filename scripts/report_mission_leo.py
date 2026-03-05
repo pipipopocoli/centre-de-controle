@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 # Add project root to sys.path
-PROJECT_ROOT = Path("/Users/oliviercloutier/Desktop/Cockpit")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(PROJECT_ROOT))
 
 # Attempt to import handle_post_message

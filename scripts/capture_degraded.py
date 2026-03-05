@@ -12,6 +12,8 @@ from PySide6.QtWidgets import QApplication
 from app.ui.project_pilotage import ProjectPilotageWidget
 from app.data.model import ProjectData
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 OUTPUT_DIR = Path("docs/reports/cp01-ui-qa/evidence")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -33,7 +35,7 @@ def main(mock_run):
     widget = ProjectPilotageWidget()
     widget.resize(1000, 800)
     
-    real_project_path = Path("/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit")
+    real_project_path = PROJECT_ROOT / "control" / "projects" / "cockpit"
     
     project = ProjectData(
         project_id="cockpit",

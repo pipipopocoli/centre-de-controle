@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import os
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -13,6 +14,9 @@ sys.path.insert(0, str(ROOT_DIR))
 from server.config import APISettings  # noqa: E402
 from server.llm.agentic_orchestrator import AgenticTurnResult  # noqa: E402
 from server.main import create_app  # noqa: E402
+
+
+TEST_OWNER_PASSWORD = "test-owner-pass"
 
 
 def _auth_headers(token: str) -> dict[str, str]:
@@ -35,9 +39,10 @@ def main() -> int:
             refresh_ttl_seconds=7200,
             openrouter_api_key="test-openrouter-key",
         )
+        os.environ["COCKPIT_API_BOOTSTRAP_OWNER_PASSWORD"] = TEST_OWNER_PASSWORD
         app = create_app(settings)
         client = TestClient(app)
-        owner = _login(client, "owner", "owner123!")
+        owner = _login(client, "owner", TEST_OWNER_PASSWORD)
         headers = _auth_headers(owner)
 
         create = client.post("/v1/projects", headers=headers, json={"project_id": "cockpit", "name": "Cockpit"})

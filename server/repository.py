@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import secrets
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,8 +17,8 @@ DEFAULT_AGENTS = [
     {
         "agent_id": "clems",
         "name": "Clems",
-        "engine": "CDX",
-        "platform": "codex",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 0,
         "lead_id": None,
         "role": "orchestrator",
@@ -24,8 +26,8 @@ DEFAULT_AGENTS = [
     {
         "agent_id": "victor",
         "name": "Victor",
-        "engine": "CDX",
-        "platform": "codex",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 1,
         "lead_id": "clems",
         "role": "backend_lead",
@@ -33,8 +35,8 @@ DEFAULT_AGENTS = [
     {
         "agent_id": "leo",
         "name": "Leo",
-        "engine": "AG",
-        "platform": "antigravity",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 1,
         "lead_id": "clems",
         "role": "ui_lead",
@@ -42,8 +44,8 @@ DEFAULT_AGENTS = [
     {
         "agent_id": "nova",
         "name": "Nova",
-        "engine": "CDX",
-        "platform": "codex",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 1,
         "lead_id": "clems",
         "role": "creative_science_lead",
@@ -51,8 +53,8 @@ DEFAULT_AGENTS = [
     {
         "agent_id": "vulgarisation",
         "name": "Vulgarisation",
-        "engine": "AG",
-        "platform": "antigravity",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 1,
         "lead_id": "clems",
         "role": "vulgarisation_lead",
@@ -620,23 +622,34 @@ class UserRepository:
     def _ensure_default_users(self) -> None:
         if self.path.exists():
             return
+        owner_password = str(os.environ.get("COCKPIT_API_BOOTSTRAP_OWNER_PASSWORD") or "").strip()
+        lead_password = str(os.environ.get("COCKPIT_API_BOOTSTRAP_LEAD_PASSWORD") or "").strip()
+        viewer_password = str(os.environ.get("COCKPIT_API_BOOTSTRAP_VIEWER_PASSWORD") or "").strip()
+
+        if not owner_password:
+            owner_password = secrets.token_urlsafe(18)
+        if not lead_password:
+            lead_password = secrets.token_urlsafe(18)
+        if not viewer_password:
+            viewer_password = secrets.token_urlsafe(18)
+
         payload = {
             "owner": {
                 "user_id": "owner",
                 "username": "owner",
-                "password_hash": hash_password("owner123!"),
+                "password_hash": hash_password(owner_password),
                 "role": "owner",
             },
             "lead": {
                 "user_id": "lead",
                 "username": "lead",
-                "password_hash": hash_password("lead123!"),
+                "password_hash": hash_password(lead_password),
                 "role": "lead",
             },
             "viewer": {
                 "user_id": "viewer",
                 "username": "viewer",
-                "password_hash": hash_password("viewer123!"),
+                "password_hash": hash_password(viewer_password),
                 "role": "viewer",
             },
         }

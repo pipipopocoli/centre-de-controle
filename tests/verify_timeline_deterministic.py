@@ -1,10 +1,11 @@
 import sys
 from pathlib import Path
+
 from app.data.model import ProjectData
 from app.services.timeline_feed import build_project_timeline_feed
 
 # Mock Project
-project_root = Path("/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit")
+project_root = Path(__file__).resolve().parents[1] / "control" / "projects" / "cockpit"
 project = ProjectData(
     project_id="cockpit",
     path=project_root,

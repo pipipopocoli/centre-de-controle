@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import os
 import tempfile
 from pathlib import Path
 
@@ -11,6 +12,11 @@ sys.path.insert(0, str(ROOT_DIR))
 
 from server.config import APISettings  # noqa: E402
 from server.main import create_app  # noqa: E402
+
+
+TEST_OWNER_PASSWORD = "test-owner-pass"
+TEST_LEAD_PASSWORD = "test-lead-pass"
+TEST_VIEWER_PASSWORD = "test-viewer-pass"
 
 
 def _auth_headers(token: str) -> dict[str, str]:
@@ -33,12 +39,15 @@ def main() -> int:
             refresh_ttl_seconds=7200,
             openrouter_api_key="test-openrouter-key",
         )
+        os.environ["COCKPIT_API_BOOTSTRAP_OWNER_PASSWORD"] = TEST_OWNER_PASSWORD
+        os.environ["COCKPIT_API_BOOTSTRAP_LEAD_PASSWORD"] = TEST_LEAD_PASSWORD
+        os.environ["COCKPIT_API_BOOTSTRAP_VIEWER_PASSWORD"] = TEST_VIEWER_PASSWORD
         app = create_app(settings)
         client = TestClient(app)
 
-        owner = _login(client, "owner", "owner123!")
-        lead = _login(client, "lead", "lead123!")
-        viewer = _login(client, "viewer", "viewer123!")
+        owner = _login(client, "owner", TEST_OWNER_PASSWORD)
+        lead = _login(client, "lead", TEST_LEAD_PASSWORD)
+        viewer = _login(client, "viewer", TEST_VIEWER_PASSWORD)
 
         create = client.post(
             "/v1/projects",
