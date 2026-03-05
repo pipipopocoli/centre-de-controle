@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.services.codex_runner import RunnerResult, run_codex_exec
+from app.services.openrouter_runner import RunnerResult, run_openrouter_exec
 
 
 WIZARD_LIVE_VERSION = "wave19_wizard_live_v1"
@@ -16,40 +16,40 @@ DEFAULT_L1_AGENTS = ["victor", "leo", "nova", "vulgarisation"]
 DEFAULT_AGENT_STATE_META: dict[str, dict[str, Any]] = {
     "clems": {
         "name": "Clems",
-        "engine": "CDX",
-        "platform": "codex",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 0,
         "lead_id": None,
         "role": "orchestrator",
     },
     "victor": {
         "name": "Victor",
-        "engine": "CDX",
-        "platform": "codex",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 1,
         "lead_id": "clems",
         "role": "backend_lead",
     },
     "leo": {
         "name": "Leo",
-        "engine": "AG",
-        "platform": "antigravity",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 1,
         "lead_id": "clems",
         "role": "ui_lead",
     },
     "nova": {
         "name": "Nova",
-        "engine": "AG",
-        "platform": "antigravity",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 1,
         "lead_id": "clems",
         "role": "creative_science_lead",
     },
     "vulgarisation": {
         "name": "Vulgarisation",
-        "engine": "AG",
-        "platform": "antigravity",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 1,
         "lead_id": "clems",
         "role": "vulgarisation_lead",
@@ -601,8 +601,8 @@ def _ensure_agent_state(project_dir: Path, agent_id: str) -> Path:
     payload = {
         "agent_id": agent_id,
         "name": _safe_text(defaults.get("name")) or agent_id.title(),
-        "engine": _safe_text(defaults.get("engine")) or "CDX",
-        "platform": _safe_text(defaults.get("platform")) or "codex",
+        "engine": _safe_text(defaults.get("engine")) or "OR",
+        "platform": _safe_text(defaults.get("platform")) or "openrouter",
         "level": int(defaults.get("level", 2)),
         "lead_id": defaults.get("lead_id", "clems"),
         "role": _safe_text(defaults.get("role")) or "specialist",
@@ -926,14 +926,14 @@ def run_wizard_live_turn(
     if not schema_path.exists():
         schema_path = Path(__file__).resolve().parents[2] / "app" / "schemas" / "wizard_live_output.schema.json"
 
-    runner_result = run_codex_exec(
+    runner_result = run_openrouter_exec(
         prompt,
         cwd=repo_path,
         timeout_s=timeout_s,
         sandbox_mode="read-only",
         approval_policy="never",
         output_schema_path=schema_path if schema_path.exists() else None,
-        output_last_message_path=runs_dir / f"{run_id}_codex_output.json",
+        output_last_message_path=runs_dir / f"{run_id}_openrouter_output.json",
         ephemeral=True,
     )
 

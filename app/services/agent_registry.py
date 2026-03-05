@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 
-SUPPORTED_PLATFORMS = {"codex", "antigravity", "ollama"}
+SUPPORTED_PLATFORMS = {"openrouter"}
 
 
 @dataclass(frozen=True)
@@ -27,24 +27,16 @@ def registry_path(project_id: str, projects_root: Path) -> Path:
 
 def _normalize_engine(value: Any) -> str:
     raw = str(value or "").strip().lower()
-    if raw in {"cdx", "codex"}:
-        return "CDX"
-    if raw in {"ag", "antigravity", "anti-gravity"}:
-        return "AG"
-    if raw in {"ollama", "local"}:
-        return "OLLAMA"
-    return "CDX"
+    if raw in {"or", "openrouter", "cdx", "codex", "ag", "antigravity", "anti-gravity", "ollama", "local"}:
+        return "OR"
+    return "OR"
 
 
 def _normalize_platform(value: Any, engine: str) -> str:
     raw = str(value or "").strip().lower()
-    if raw in SUPPORTED_PLATFORMS:
-        return raw
-    if engine == "AG":
-        return "antigravity"
-    if engine == "OLLAMA":
-        return "ollama"
-    return "codex"
+    if raw in {"openrouter", "or", "codex", "antigravity", "anti-gravity", "ollama", "local"}:
+        return "openrouter"
+    return "openrouter"
 
 
 def _coerce_int(value: Any, default: int) -> int:
@@ -115,8 +107,8 @@ def resolve_agent_platform(agent_id: str, registry: dict[str, AgentMeta]) -> str
     if not meta:
         # Wave 6: Nova is Global L1 fallback
         if str(agent_id).strip().lower() == "nova":
-            return "antigravity"
-        return "codex"
+            return "openrouter"
+        return "openrouter"
     return meta.platform
 
 

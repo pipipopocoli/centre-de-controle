@@ -33,7 +33,7 @@ COUNTER_QUEUE_RECOVERY_BLOCKER_TOTAL = "queue_recovery_blocker_total"
 CONTROL_CADENCE_KPI_MIN_INTERVAL_MINUTES = 25
 HEALTHCHECK_KPI_SNAPSHOT_MAX_AGE_SECONDS = 2100
 MISSION_CRITICAL_GATE_FAILED_REASON = "mission_critical_gate_failed"
-CODEX_ONLY_OUTAGE_PAUSED_REASON = "codex_only_outage_paused"
+OPENROUTER_ONLY_OUTAGE_PAUSED_REASON = "openrouter_only_outage_paused"
 
 COUNTER_MISSION_CRITICAL_GATE_BLOCKED_TOTAL = "mission_critical_gate_blocked_total"
 COUNTER_MISSION_CRITICAL_GATE_BLOCKED_BY_CODE_PREFIX = "mission_critical_gate_blocked_code"
@@ -47,8 +47,8 @@ class AutoModeAction:
     app_to_open: str
     notify_text: str
     project_id: str = ""
-    platform: str = "codex"
-    execution_mode: str = "codex_headless"
+    platform: str = "openrouter"
+    execution_mode: str = "openrouter_headless"
     action_scope: str = "workspace_only"
     requested_skills: list[str] = field(default_factory=list)
     approval_ref: str | None = None
@@ -529,27 +529,20 @@ def _increment_counter(counters: dict[str, Any], key: str, delta: int = 1) -> No
 
 
 def _agent_platform_fallback(agent_id: str) -> str:
-    if agent_id == "leo":
-        return "antigravity"
-    if agent_id == "nova":
-        return "antigravity"
-    if agent_id == "victor":
-        return "codex"
-    if agent_id.startswith("agent-"):
-        try:
-            n = int(agent_id.split("-", 1)[1])
-        except (IndexError, ValueError):
-            return "codex"
-        return "codex" if (n % 2 == 1) else "antigravity"
-    return "codex"
+    _ = agent_id
+    return "openrouter"
+
+
+def _normalize_platform(value: Any) -> str:
+    token = str(value or "").strip().lower()
+    if token in {"openrouter", "or", "codex", "cdx", "antigravity", "anti-gravity", "ag", "ollama", "local"}:
+        return "openrouter"
+    return "openrouter"
 
 
 def _execution_mode_for_platform(platform: str) -> str:
-    if platform == "antigravity":
-        return "antigravity_supervised"
-    if platform == "ollama":
-        return "ollama_local"
-    return "codex_headless"
+    _ = platform
+    return "openrouter_headless"
 
 
 def _load_project_settings(project_dir: Path) -> dict[str, Any]:
@@ -574,13 +567,15 @@ def _dispatch_config(settings: dict[str, Any]) -> dict[str, Any]:
     allowed_platforms: list[str] = []
     if isinstance(raw_platforms, list):
         for item in raw_platforms:
-            token = str(item or "").strip().lower()
-            if token in {"codex", "antigravity", "ollama"} and token not in allowed_platforms:
+            token = _normalize_platform(item)
+            if token not in allowed_platforms:
                 allowed_platforms.append(token)
 
-    codex_only_enabled = _normalize_bool(outage.get("codex_only_enabled"), default=False)
-    if codex_only_enabled and not allowed_platforms:
-        allowed_platforms = ["codex"]
+    openrouter_only_enabled = _normalize_bool(outage.get("openrouter_only_enabled"), default=False) or _normalize_bool(
+        outage.get("codex_only_enabled"), default=False
+    )
+    if openrouter_only_enabled and not allowed_platforms:
+        allowed_platforms = ["openrouter"]
 
     raw_agents = outage.get("allowed_agents")
     allowed_agents: list[str] = []
@@ -603,7 +598,7 @@ def _dispatch_config(settings: dict[str, Any]) -> dict[str, Any]:
         "backpressure_enabled": _normalize_bool(backpressure.get("enabled"), default=False),
         "queue_target": max(1, int(backpressure.get("queue_target", 3) or 3)),
         "max_actions_hard_cap": max(1, int(backpressure.get("max_actions_hard_cap", 5) or 5)),
-        "codex_only_enabled": codex_only_enabled,
+        "openrouter_only_enabled": openrouter_only_enabled,
         "allowed_platforms": allowed_platforms,
         "allowed_agents": set(allowed_agents),
         "credit_guard_enabled": _normalize_bool(credit_guard.get("enabled"), default=False),
@@ -662,7 +657,7 @@ def _agent_meta(
     registry_meta = registry.get(agent_id)
     if registry_meta is None:
         platform = _agent_platform_fallback(agent_id)
-        engine = "AG" if platform == "antigravity" else ("OLLAMA" if platform == "ollama" else "CDX")
+        engine = "OR"
         return {
             "agent_id": agent_id,
             "name": agent_id,
@@ -678,8 +673,8 @@ def _agent_meta(
     return {
         "agent_id": registry_meta.agent_id,
         "name": registry_meta.name,
-        "platform": registry_meta.platform,
-        "engine": registry_meta.engine,
+        "platform": _normalize_platform(registry_meta.platform),
+        "engine": "OR",
         "level": registry_meta.level,
         "lead_id": registry_meta.lead_id,
         "role": registry_meta.role,
@@ -1055,10 +1050,7 @@ def _dispatch_cap(
 
 
 def _provider_app(platform: str, codex_app: str, ag_app: str) -> str:
-    if platform == "antigravity":
-        return ag_app
-    if platform == "ollama":
-        return "Terminal"
+    _ = (platform, ag_app)
     return codex_app
 
 
@@ -1077,8 +1069,8 @@ def dispatch_once(
     project_id: str,
     *,
     max_actions: int = 1,
-    codex_app: str = "Codex",
-    ag_app: str = "Antigravity",
+    codex_app: str = "OpenRouter",
+    ag_app: str = "OpenRouter",
     state_path: Path | None = None,
 ) -> DispatchResult:
     requests_path, inbox_dir, resolved_state = _paths(projects_root, project_id, state_path)
@@ -1237,15 +1229,15 @@ def dispatch_once(
 
         request_created_at = str(payload.get("created_at") or "").strip() or _utc_now_iso()
         meta = _agent_meta(project_dir, agent_id, registry)
-        platform_hint = str(meta.get("platform") or resolve_agent_platform(agent_id, registry) or _agent_platform_fallback(agent_id))
-        if platform_hint not in {"codex", "antigravity", "ollama"}:
-            platform_hint = _agent_platform_fallback(agent_id)
+        platform_hint = _normalize_platform(
+            meta.get("platform") or resolve_agent_platform(agent_id, registry) or _agent_platform_fallback(agent_id)
+        )
 
         if allowed_agents and agent_id not in allowed_agents:
             requests[request_id] = _closed_runtime_entry(
                 request_id,
                 request_payload=payload,
-                closed_reason=CODEX_ONLY_OUTAGE_PAUSED_REASON,
+                closed_reason=OPENROUTER_ONLY_OUTAGE_PAUSED_REASON,
                 default_agent_id=agent_id,
             )
             processed.append(request_id)
@@ -1253,16 +1245,16 @@ def dispatch_once(
             skipped += 1
             continue
 
-        if dispatch_cfg["codex_only_enabled"]:
-            platform_hint = "codex"
-            meta["platform"] = "codex"
-            meta["engine"] = "CDX"
+        if dispatch_cfg["openrouter_only_enabled"]:
+            platform_hint = "openrouter"
+            meta["platform"] = "openrouter"
+            meta["engine"] = "OR"
 
         if allowed_platforms and platform_hint not in allowed_platforms:
             requests[request_id] = _closed_runtime_entry(
                 request_id,
                 request_payload=payload,
-                closed_reason=CODEX_ONLY_OUTAGE_PAUSED_REASON,
+                closed_reason=OPENROUTER_ONLY_OUTAGE_PAUSED_REASON,
                 default_agent_id=agent_id,
             )
             processed.append(request_id)
@@ -1329,9 +1321,9 @@ def dispatch_once(
         request_created_at = str(payload.get("created_at") or "").strip() or _utc_now_iso()
         now_iso = _utc_now_iso()
 
-        platform = str(meta.get("platform") or resolve_agent_platform(agent_id, registry) or _agent_platform_fallback(agent_id))
-        if platform not in {"codex", "antigravity", "ollama"}:
-            platform = _agent_platform_fallback(agent_id)
+        platform = _normalize_platform(
+            meta.get("platform") or resolve_agent_platform(agent_id, registry) or _agent_platform_fallback(agent_id)
+        )
 
         requests[request_id] = _normalize_runtime_request(
             request_id,
@@ -1408,7 +1400,7 @@ def dispatch_once(
         max_actions_requested=max_actions_requested,
         max_actions_effective=max_actions_cap,
         credit_guard_enabled=credit_guard_enabled,
-        codex_only_enabled=bool(dispatch_cfg["codex_only_enabled"]),
+        codex_only_enabled=bool(dispatch_cfg["openrouter_only_enabled"]),
         allowed_platforms=list(dispatch_cfg["allowed_platforms"]),
         allowed_agents=sorted(str(item) for item in dispatch_cfg["allowed_agents"]),
         credit_guard_reason=credit_guard_reason,
@@ -1420,8 +1412,8 @@ def dispatch_once_with_counters(
     project_id: str,
     *,
     max_actions: int = 1,
-    codex_app: str = "Codex",
-    ag_app: str = "Antigravity",
+    codex_app: str = "OpenRouter",
+    ag_app: str = "OpenRouter",
     state_path: Path | None = None,
 ) -> DispatchResult:
     return dispatch_once(
@@ -1444,8 +1436,8 @@ def _agent_platform(
         registry = load_agent_registry(project_id, projects_root)
         if registry:
             resolved = resolve_agent_platform(agent_id, registry)
-            if resolved in {"codex", "antigravity", "ollama"}:
-                return resolved
+            if resolved:
+                return _normalize_platform(resolved)
     return _agent_platform_fallback(agent_id)
 
 
@@ -1561,24 +1553,16 @@ def update_request_execution(
         processed.append(request_id)
 
     _increment_counter(counters, "execution_updates_total", 1)
-    if runner == "codex":
-        _increment_counter(counters, "runner_codex_total", 1)
+    normalized_runner = _normalize_platform(runner)
+    if normalized_runner == "openrouter":
+        _increment_counter(counters, "runner_openrouter_total", 1)
         if close_request and completed:
-            _increment_counter(counters, "runner_codex_success", 1)
+            _increment_counter(counters, "runner_openrouter_success", 1)
             _increment_counter(counters, f"agent_success_{agent_id}", 1)
+        elif launched:
+            _increment_counter(counters, "runner_openrouter_pending", 1)
         else:
-            _increment_counter(counters, "runner_codex_failed", 1)
-    elif runner == "antigravity":
-        if launched:
-            _increment_counter(counters, "runner_ag_launch", 1)
-            _increment_counter(counters, "runner_ag_pending", 1)
-        else:
-            _increment_counter(counters, "runner_ag_failed", 1)
-    elif runner == "ollama":
-        _increment_counter(counters, "runner_ollama_total", 1)
-        if close_request and completed:
-            _increment_counter(counters, "runner_ollama_success", 1)
-            _increment_counter(counters, f"agent_success_{agent_id}", 1)
+            _increment_counter(counters, "runner_openrouter_failed", 1)
 
     _save_state(resolved_state, processed, requests, counters)
     settings = _load_project_settings(projects_root / project_id)

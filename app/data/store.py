@@ -14,15 +14,15 @@ from app.data.paths import PROJECTS_DIR, project_dir
 DEFAULT_ROADMAP = {
     "now": ["Bootstrap Centre de controle UI"],
     "next": ["Wire local data store"],
-    "risks": ["Codex App Server protocol changes"],
+    "risks": ["Runtime protocol changes"],
 }
 
 DEFAULT_AGENT_ROSTER = [
     {
         "agent_id": "clems",
         "name": "Clems",
-        "engine": "CDX",
-        "platform": "codex",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 0,
         "lead_id": None,
         "role": "orchestrator",
@@ -31,8 +31,8 @@ DEFAULT_AGENT_ROSTER = [
     {
         "agent_id": "victor",
         "name": "Victor",
-        "engine": "CDX",
-        "platform": "codex",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 1,
         "lead_id": "clems",
         "role": "backend_lead",
@@ -41,8 +41,8 @@ DEFAULT_AGENT_ROSTER = [
     {
         "agent_id": "leo",
         "name": "Leo",
-        "engine": "AG",
-        "platform": "antigravity",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 1,
         "lead_id": "clems",
         "role": "ui_lead",
@@ -51,8 +51,8 @@ DEFAULT_AGENT_ROSTER = [
     {
         "agent_id": "nova",
         "name": "Nova",
-        "engine": "AG",
-        "platform": "antigravity",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 1,
         "lead_id": "clems",
         "role": "creative_science_lead",
@@ -61,8 +61,8 @@ DEFAULT_AGENT_ROSTER = [
     {
         "agent_id": "vulgarisation",
         "name": "Vulgarisation",
-        "engine": "AG",
-        "platform": "antigravity",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 1,
         "lead_id": "clems",
         "role": "vulgarisation_lead",
@@ -175,9 +175,8 @@ def ensure_project_structure(project_id: str, project_name: str | None = None) -
         },
         "automation": {
             "router": {
-                "providers_order": ["codex", "antigravity", "ollama"],
-                "ollama_enabled": False,
-                "ollama_model": "llama3.2",
+                "providers_order": ["openrouter"],
+                "openrouter_enabled": True,
             },
         },
         "cost": {
@@ -205,11 +204,11 @@ def ensure_project_structure(project_id: str, project_name: str | None = None) -
 
     _write_text_if_missing(
         roadmap_yml,
-        """now:\n  - Bootstrap Centre de controle UI\nnext:\n  - Wire local data store\nrisks:\n  - Codex App Server protocol changes\n""",
+        """now:\n  - Bootstrap Centre de controle UI\nnext:\n  - Wire local data store\nrisks:\n  - Runtime protocol changes\n""",
     )
     _write_text_if_missing(
         roadmap_md,
-        "# Roadmap\n\n## Now\n- Bootstrap Centre de controle UI\n\n## Next\n- Wire local data store\n\n## Risks\n- Codex App Server protocol changes\n",
+        "# Roadmap\n\n## Now\n- Bootstrap Centre de controle UI\n\n## Next\n- Wire local data store\n\n## Risks\n- Runtime protocol changes\n",
     )
     _write_text_if_missing(
         state_md,
@@ -428,27 +427,18 @@ def _normalize_phase(phase: str | None) -> str:
 
 def _normalize_engine(engine: Any) -> str:
     if not engine:
-        return "CDX"
+        return "OR"
     value = str(engine).strip().lower()
-    if value in {"ag", "antigravity", "anti-gravity"}:
-        return "AG"
-    if value in {"cdx", "codex"}:
-        return "CDX"
-    if value in {"ollama", "local"}:
-        return "OLLAMA"
-    # Canonical engines for the grid are CDX/AG; default unknown to AG.
-    return "AG"
+    if value in {"or", "openrouter", "cdx", "codex", "ag", "antigravity", "anti-gravity", "ollama", "local"}:
+        return "OR"
+    return "OR"
 
 
 def _normalize_platform(platform: Any, engine: str) -> str:
     value = str(platform or "").strip().lower()
-    if value in {"codex", "antigravity", "ollama"}:
-        return value
-    if engine == "AG":
-        return "antigravity"
-    if engine == "OLLAMA":
-        return "ollama"
-    return "codex"
+    if value in {"openrouter", "or", "codex", "antigravity", "anti-gravity", "ollama", "local"}:
+        return "openrouter"
+    return "openrouter"
 
 
 def _normalize_level(value: Any, default: int = 2) -> int:

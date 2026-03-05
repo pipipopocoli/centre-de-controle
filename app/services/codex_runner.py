@@ -1,42 +1,8 @@
 from __future__ import annotations
 
-import subprocess
-import tempfile
-import time
-from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
 
-
-@dataclass(frozen=True)
-class RunnerResult:
-    runner: str
-    status: str
-    success: bool
-    launched: bool
-    completed: bool
-    returncode: int | None
-    stdout: str
-    stderr: str
-    error: str | None
-    started_at: str
-    finished_at: str
-    duration_seconds: float
-    output_path: str | None
-    output_text: str
-
-
-def _utc_now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-
-
-def _read_text(path: Path | None) -> str:
-    if path is None or not path.exists():
-        return ""
-    try:
-        return path.read_text(encoding="utf-8").strip()
-    except OSError:
-        return ""
+from app.services.openrouter_runner import RunnerResult, run_openrouter, run_openrouter_exec
 
 
 def run_codex(
@@ -45,101 +11,8 @@ def run_codex(
     timeout_s: int,
     output_path: Path | None = None,
 ) -> RunnerResult:
-    started_at = _utc_now_iso()
-    started_mono = time.monotonic()
-
-    managed_output = output_path is None
-    if output_path is None:
-        tmp = tempfile.NamedTemporaryFile(prefix="cockpit_codex_", suffix=".txt", delete=False)
-        output_path = Path(tmp.name)
-        tmp.close()
-    else:
-        output_path = Path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    command = [
-        "codex",
-        "exec",
-        "--full-auto",
-        "--skip-git-repo-check",
-        "--cd",
-        str(cwd),
-        "--output-last-message",
-        str(output_path),
-        prompt,
-    ]
-
-    try:
-        completed = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=max(int(timeout_s), 30),
-        )
-        duration = max(time.monotonic() - started_mono, 0.0)
-        success = completed.returncode == 0
-        status = "completed" if success else "failed"
-        error = None if success else (completed.stderr.strip() or completed.stdout.strip() or "codex exec failed")
-        output_text = _read_text(output_path)
-        return RunnerResult(
-            runner="codex",
-            status=status,
-            success=success,
-            launched=True,
-            completed=True,
-            returncode=completed.returncode,
-            stdout=(completed.stdout or "").strip(),
-            stderr=(completed.stderr or "").strip(),
-            error=error,
-            started_at=started_at,
-            finished_at=_utc_now_iso(),
-            duration_seconds=round(duration, 3),
-            output_path=str(output_path),
-            output_text=output_text,
-        )
-    except subprocess.TimeoutExpired as exc:
-        duration = max(time.monotonic() - started_mono, 0.0)
-        return RunnerResult(
-            runner="codex",
-            status="timeout",
-            success=False,
-            launched=True,
-            completed=False,
-            returncode=None,
-            stdout=(exc.stdout or "").strip(),
-            stderr=(exc.stderr or "").strip(),
-            error=f"codex exec timeout after {max(int(timeout_s), 30)}s",
-            started_at=started_at,
-            finished_at=_utc_now_iso(),
-            duration_seconds=round(duration, 3),
-            output_path=str(output_path),
-            output_text="",
-        )
-    except OSError as exc:
-        duration = max(time.monotonic() - started_mono, 0.0)
-        return RunnerResult(
-            runner="codex",
-            status="failed",
-            success=False,
-            launched=False,
-            completed=False,
-            returncode=None,
-            stdout="",
-            stderr="",
-            error=f"codex exec unavailable: {exc}",
-            started_at=started_at,
-            finished_at=_utc_now_iso(),
-            duration_seconds=round(duration, 3),
-            output_path=str(output_path),
-            output_text="",
-        )
-    finally:
-        if managed_output and output_path is not None:
-            try:
-                output_path.unlink(missing_ok=True)
-            except OSError:
-                pass
+    # Legacy compatibility shim. Runtime is OpenRouter-only.
+    return run_openrouter(prompt, cwd=cwd, timeout_s=timeout_s, output_path=output_path)
 
 
 def run_codex_exec(
@@ -153,105 +26,14 @@ def run_codex_exec(
     output_last_message_path: Path | None = None,
     ephemeral: bool = True,
 ) -> RunnerResult:
-    started_at = _utc_now_iso()
-    started_mono = time.monotonic()
-
-    managed_output = output_last_message_path is None
-    if output_last_message_path is None:
-        tmp = tempfile.NamedTemporaryFile(prefix="cockpit_codex_exec_", suffix=".json", delete=False)
-        output_last_message_path = Path(tmp.name)
-        tmp.close()
-    else:
-        output_last_message_path = Path(output_last_message_path)
-        output_last_message_path.parent.mkdir(parents=True, exist_ok=True)
-
-    command = [
-        "codex",
-        "-a",
-        approval_policy,
-        "exec",
-        "-s",
-        sandbox_mode,
-        "--cd",
-        str(cwd),
-    ]
-    if output_schema_path is not None:
-        output_schema_path = Path(output_schema_path)
-        command.extend(["--output-schema", str(output_schema_path)])
-    if output_last_message_path is not None:
-        command.extend(["--output-last-message", str(output_last_message_path)])
-    if ephemeral:
-        command.append("--ephemeral")
-    command.append(prompt)
-
-    try:
-        completed = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=max(int(timeout_s), 30),
-        )
-        duration = max(time.monotonic() - started_mono, 0.0)
-        success = completed.returncode == 0
-        status = "completed" if success else "failed"
-        error = None if success else (completed.stderr.strip() or completed.stdout.strip() or "codex exec failed")
-        output_text = _read_text(output_last_message_path)
-        return RunnerResult(
-            runner="codex",
-            status=status,
-            success=success,
-            launched=True,
-            completed=True,
-            returncode=completed.returncode,
-            stdout=(completed.stdout or "").strip(),
-            stderr=(completed.stderr or "").strip(),
-            error=error,
-            started_at=started_at,
-            finished_at=_utc_now_iso(),
-            duration_seconds=round(duration, 3),
-            output_path=str(output_last_message_path),
-            output_text=output_text,
-        )
-    except subprocess.TimeoutExpired as exc:
-        duration = max(time.monotonic() - started_mono, 0.0)
-        return RunnerResult(
-            runner="codex",
-            status="timeout",
-            success=False,
-            launched=True,
-            completed=False,
-            returncode=None,
-            stdout=(exc.stdout or "").strip(),
-            stderr=(exc.stderr or "").strip(),
-            error=f"codex exec timeout after {max(int(timeout_s), 30)}s",
-            started_at=started_at,
-            finished_at=_utc_now_iso(),
-            duration_seconds=round(duration, 3),
-            output_path=str(output_last_message_path),
-            output_text="",
-        )
-    except OSError as exc:
-        duration = max(time.monotonic() - started_mono, 0.0)
-        return RunnerResult(
-            runner="codex",
-            status="failed",
-            success=False,
-            launched=False,
-            completed=False,
-            returncode=None,
-            stdout="",
-            stderr="",
-            error=f"codex exec unavailable: {exc}",
-            started_at=started_at,
-            finished_at=_utc_now_iso(),
-            duration_seconds=round(duration, 3),
-            output_path=str(output_last_message_path),
-            output_text="",
-        )
-    finally:
-        if managed_output and output_last_message_path is not None:
-            try:
-                output_last_message_path.unlink(missing_ok=True)
-            except OSError:
-                pass
+    # Legacy compatibility shim. Runtime is OpenRouter-only.
+    return run_openrouter_exec(
+        prompt,
+        cwd=cwd,
+        timeout_s=timeout_s,
+        sandbox_mode=sandbox_mode,
+        approval_policy=approval_policy,
+        output_schema_path=output_schema_path,
+        output_last_message_path=output_last_message_path,
+        ephemeral=ephemeral,
+    )

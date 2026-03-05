@@ -273,7 +273,7 @@ def evaluate_policy(context: PolicyContext) -> PolicyDecision:
     requires = scope in ELEVATED_SCOPES
     parity_key = _policy_parity_key(scope, skills, requires)
 
-    if runner not in {"codex", "antigravity"}:
+    if runner not in {"openrouter", "codex", "antigravity", "ollama"}:
         return PolicyDecision(
             allowed=False,
             reason_code="invalid_runner",
