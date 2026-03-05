@@ -20,7 +20,9 @@ use crate::{
         ChatMessage, CreateAgentRequest, CreateAgentResponse, DeliveryMode, LiveTurnRequest,
         LiveTurnResponse, MessageVisibility, PixelAgentStatus, PixelFeedResponse, TerminalOpenRequest,
         TerminalSendRequest, TerminalSession, WsEventEnvelope,
+        LlmProfile, LlmProfileResponse, UpdateLlmProfileRequest, RoadmapDraftRequest, RoadmapDraftResponse,
     },
+    openrouter,
     orchestrator,
     state::AppState,
     storage,
@@ -58,6 +60,8 @@ pub fn build_router(state: AppState) -> Router {
         .route("/v1/projects/{id}/pixel-feed", get(pixel_feed))
         .route("/v1/projects/{id}/layout", get(get_layout).put(put_layout))
         .route("/v1/projects/{id}/events", get(ws_events))
+        .route("/v1/projects/{id}/llm-profile", get(get_llm_profile).put(put_llm_profile))
+        .route("/v1/projects/{id}/roadmap/clems-draft", post(post_roadmap_clems_draft))
         .layer(CorsLayer::permissive())
         .with_state(state)
 }
@@ -856,6 +860,101 @@ fn default_agent_profile(agent_id: &str) -> (String, &'static str, u8, Option<St
     }
 }
 
+async fn get_llm_profile(
+    Path(project_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<LlmProfileResponse>, ApiError> {
+    use std::collections::HashMap;
+    use std::path::Path;
+    
+    let cockpit_dir = storage::project_root(state.control_root.as_ref(), &project_id).join(".cockpit");
+    let profile_path = cockpit_dir.join("llm-profile.json");
+    
+    let profile = if profile_path.exists() {
+        let content = tokio::fs::read_to_string(&profile_path)
+            .await
+            .map_err(|e| ApiError::bad_request(format!("failed to read profile: {}", e)))?;
+        serde_json::from_str(&content)
+            .map_err(|e| ApiError::bad_request(format!("invalid profile format: {}", e)))?
+    } else {
+        LlmProfile {
+            provider: "openrouter".to_string(),
+            default_model: "openai/gpt-4o-mini".to_string(),
+            fallback_model: Some("liquid/lfm-2.5-1.2b-thinking:free".to_string()),
+            legacy_mapping: Some({
+                let mut m = HashMap::new();
+                m.insert("CDX".to_string(), "openai/gpt-4o-mini".to_string());
+                m.insert("AG".to_string(), "liquid/lfm-2.5-1.2b-thinking:free".to_string());
+                m.insert("OLL".to_string(), "arcee-ai/trinity-large-preview:free".to_string());
+                m
+            }),
+            max_tokens: Some(4096),
+            temperature: Some(0.7),
+        }
+    };
+    
+    Ok(Json(LlmProfileResponse {
+        project_id,
+        profile,
+    }))
+}
+
+async fn put_llm_profile(
+    Path(project_id): Path<String>,
+    State(state): State<AppState>,
+    Json(payload): Json<UpdateLlmProfileRequest>,
+) -> Result<Json<LlmProfileResponse>, ApiError> {
+    use std::collections::HashMap;
+    
+    let cockpit_dir = storage::project_root(state.control_root.as_ref(), &project_id).join(".cockpit");
+    let profile_path = cockpit_dir.join("llm-profile.json");
+    
+    tokio::fs::create_dir_all(&cockpit_dir).await
+        .map_err(|e| ApiError::bad_request(format!("failed to create directory: {}", e)))?;
+    
+    let mut profile = if profile_path.exists() {
+        let content = tokio::fs::read_to_string(&profile_path)
+            .await
+            .map_err(|e| ApiError::bad_request(format!("failed to read profile: {}", e)))?;
+        serde_json::from_str(&content)
+            .map_err(|e| ApiError::bad_request(format!("invalid profile format: {}", e)))?
+    } else {
+        LlmProfile {
+            provider: "openrouter".to_string(),
+            default_model: "openai/gpt-4o-mini".to_string(),
+            fallback_model: Some("liquid/lfm-2.5-1.2b-thinking:free".to_string()),
+            legacy_mapping: Some(HashMap::new()),
+            max_tokens: Some(4096),
+            temperature: Some(0.7),
+        }
+    };
+    
+    if let Some(model) = payload.default_model {
+        profile.default_model = model;
+    }
+    if let Some(fallback) = payload.fallback_model {
+        profile.fallback_model = Some(fallback);
+    }
+    if let Some(tokens) = payload.max_tokens {
+        profile.max_tokens = Some(tokens);
+    }
+    if let Some(temp) = payload.temperature {
+        profile.temperature = Some(temp);
+    }
+    
+    profile.provider = "openrouter".to_string();
+    
+    let json = serde_json::to_string_pretty(&profile)
+        .map_err(|e| ApiError::bad_request(format!("serialization failed: {}", e)))?;
+    tokio::fs::write(&profile_path, json).await
+        .map_err(|e| ApiError::bad_request(format!("failed to write profile: {}", e)))?;
+    
+    Ok(Json(LlmProfileResponse {
+        project_id,
+        profile,
+    }))
+}
+
 fn validate_layout(layout: &Value) -> Result<(), ApiError> {
     let obj = layout
         .as_object()
@@ -917,6 +1016,45 @@ impl IntoResponse for ApiError {
         )
             .into_response()
     }
+}
+
+async fn post_roadmap_clems_draft(
+    Path(project_id): Path<String>,
+    State(state): State<AppState>,
+    Json(payload): Json<RoadmapDraftRequest>,
+) -> Result<Json<RoadmapDraftResponse>, ApiError> {
+    use chrono::Utc;
+    
+    let run_id = format!("rmp_{}", Uuid::new_v4().simple());
+    
+    let system_prompt = "You are @clems, L0 orchestrator. Generate a structured roadmap draft in JSON format with sections: summary, phases, milestones, risks, and next_actions. Respond with valid JSON only.";
+    let user_prompt = format!("Context: {}\n\nPrompt: {}", payload.context, payload.prompt);
+    
+    let result = openrouter::chat_completion(
+        "openai/gpt-4o-mini",
+        system_prompt,
+        &user_prompt,
+    ).await;
+    
+    if let Some(err) = &result.error {
+        return Err(ApiError {
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+            message: format!("openrouter failed: {}", err),
+        });
+    }
+    
+    let draft_value = serde_json::from_str(&result.text)
+        .unwrap_or_else(|_| json!({
+            "raw_text": result.text,
+            "generated_at": Utc::now().to_rfc3339(),
+            "prompt": payload.prompt
+        }));
+    
+    Ok(Json(RoadmapDraftResponse {
+        run_id,
+        draft: draft_value,
+        model_usage: result.usage,
+    }))
 }
 
 #[cfg(test)]

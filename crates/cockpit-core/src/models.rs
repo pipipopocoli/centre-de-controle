@@ -267,3 +267,66 @@ impl WsEventEnvelope {
         }
     }
 }
+
+// LLM Profile models for Wave20R A9-001
+use std::collections::HashMap;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LlmProfile {
+    #[serde(default = "default_provider")]
+    pub provider: String,
+    pub default_model: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fallback_model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub legacy_mapping: Option<HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_tokens: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub temperature: Option<f32>,
+}
+
+fn default_provider() -> String {
+    "openrouter".to_string()
+}
+
+impl Default for LlmProfile {
+    fn default() -> Self {
+        Self {
+            provider: default_provider(),
+            default_model: "openai/gpt-4o-mini".to_string(),
+            fallback_model: Some("liquid/lfm-2.5-1.2b-thinking:free".to_string()),
+            legacy_mapping: Some(HashMap::new()),
+            max_tokens: Some(4096),
+            temperature: Some(0.7),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LlmProfileResponse {
+    pub project_id: String,
+    pub profile: LlmProfile,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateLlmProfileRequest {
+    pub default_model: Option<String>,
+    pub fallback_model: Option<String>,
+    pub max_tokens: Option<u32>,
+    pub temperature: Option<f32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RoadmapDraftRequest {
+    pub prompt: String,
+    #[serde(default)]
+    pub context: Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RoadmapDraftResponse {
+    pub run_id: String,
+    pub draft: Value,
+    pub model_usage: Value,
+}

@@ -12,6 +12,27 @@ pub struct LlmCallResult {
     pub error: Option<String>,
 }
 
+/// Maps legacy provider codes to OpenRouter model identifiers.
+/// Ensures OpenRouter-only execution while preserving backward compatibility.
+/// ISSUE-W20R-A9-005: Legacy provider normalization
+pub fn normalize_legacy_provider(provider: &str) -> String {
+    match provider.to_uppercase().as_str() {
+        "CDX" => "openai/gpt-4o-mini".to_string(),
+        "AG" => "liquid/lfm-2.5-1.2b-thinking:free".to_string(),
+        "OLL" => "arcee-ai/trinity-large-preview:free".to_string(),
+        "OPENROUTER" => "openai/gpt-4o-mini".to_string(),
+        _ => {
+            // If it contains '/', assume it's already an OpenRouter model path
+            if provider.contains('/') {
+                provider.to_string()
+            } else {
+                // Default fallback for unrecognized providers
+                "openai/gpt-4o-mini".to_string()
+            }
+        }
+    }
+}
+
 fn api_key() -> String {
     env::var("COCKPIT_OPENROUTER_API_KEY")
         .unwrap_or_default()

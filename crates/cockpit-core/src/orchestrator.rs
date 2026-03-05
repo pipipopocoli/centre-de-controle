@@ -20,6 +20,42 @@ const DEFAULT_MODEL_L1: &str = "liquid/lfm-2.5-1.2b-thinking:free";
 const DEFAULT_MODEL_L2: &str = "arcee-ai/trinity-large-preview:free";
 const OVERLAP_WINDOW_MINUTES: i64 = 30;
 
+// Hierarchical delegation metadata and policy guards
+// ISSUE-W20R-A9-004: L0->L1/L1->L2 enforcement
+const L0_AGENTS: &[&str] = &["clems"];
+const L1_AGENTS: &[&str] = &["victor", "leo", "nova", "vulgarisation"];
+const L2_PREFIX: &str = "agent-";
+
+/// Returns the delegation level (0, 1, or 2) for an agent ID
+pub fn delegation_level(agent_id: &str) -> u8 {
+    if L0_AGENTS.contains(&agent_id) {
+        0
+    } else if L1_AGENTS.contains(&agent_id) {
+        1
+    } else if agent_id.starts_with(L2_PREFIX) {
+        2
+    } else {
+        2 // Unknown agents default to L2 specialist
+    }
+}
+
+/// Validates delegation per hierarchical policy: L0->L1/L2 OK, L1->L2 OK, no lateral/upward
+pub fn validate_delegation(from: &str, to: &str) -> Result<(), String> {
+    let from_level = delegation_level(from);
+    let to_level = delegation_level(to);
+    
+    match (from_level, to_level) {
+        (0, 1) => Ok(()), // L0 -> L1 OK
+        (0, 2) => Ok(()), // L0 -> L2 OK
+        (1, 2) => Ok(()), // L1 -> L2 OK
+        (0, 0) => Err(format!("L0 cannot delegate to L0: {} -> {}", from, to)),
+        (1, 0) => Err(format!("L1 cannot delegate to L0: {} -> {}", from, to)),
+        (1, 1) => Err(format!("L1 cannot delegate to L1: {} -> {}", from, to)),
+        (2, _) => Err(format!("L2 cannot delegate: {} -> {}", from, to)),
+        _ => Err(format!("Invalid delegation: {} (L{}) -> {} (L{})", from, from_level, to, to_level)),
+    }
+}
+
 #[derive(Debug)]
 pub struct OrchestrationResult {
     pub messages: Vec<ChatMessage>,

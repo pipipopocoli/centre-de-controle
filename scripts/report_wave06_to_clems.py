@@ -14,7 +14,7 @@ except ImportError:
     from mcp_server import handle_post_message
 
 async def main():
-    agent_id = "antigravity"
+    agent_id = "openrouter"
     project_id = "cockpit"
 
     msg = (

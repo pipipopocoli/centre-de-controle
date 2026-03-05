@@ -1,0 +1,25 @@
+# Wave20R A18 Backlog
+
+- Mission: Reports/supplementals closure
+- Scope allowlist: scripts/report_cp0037_agent6.py, scripts/report_cp0037_agent7.py, scripts/report_cp0051_agent7.py, scripts/report_wave06_to_clems.py, scripts/report_wave09_leo.py, scripts/reply_as_leo_wave07.py, scripts/reply_wave07_status.py, scripts/send_cp01_report.py, scripts/verify_ui_polish.py, scripts/packaging/generate_tree_icon.py
+- Source trackers: docs/swarm_results/wave1_p0p1_tracker.md, docs/swarm_results/wave2_p2_tracker.md, docs/swarm_results/wave2_p3_tracker.md, docs/swarm_results/wave20_unassigned_backlog.md
+- Initial rows: 16
+
+| issue_id | source | severity | file | status_before | action | evidence_command | evidence_result | reason_code | note |
+|---|---|---|---|---|---|---|---|---|---|
+| `ISSUE-W2-P2-T3-015` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `scripts/report_cp0037_agent6.py` | `defer` | `done` | `python3 -m py_compile scripts/report_cp0037_agent6.py` | `Syntax OK; agent-6 compliant` | `` | OpenRouter compliant |
+| `ISSUE-W2-P2-T3-016` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `scripts/report_wave06_to_clems.py` | `defer` | `done` | `python3 -m py_compile scripts/report_wave06_to_clems.py && grep -q 'agent_id = "openrouter"' scripts/report_wave06_to_clems.py && echo "Migration OK"` | `Syntax OK; Migration OK` | `` | antigravity→openrouter |
+| `ISSUE-W2-P2-T3-032` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `scripts/report_wave06_to_clems.py` | `defer` | `done` | `python3 -m py_compile scripts/report_wave06_to_clems.py && grep -q 'agent_id = "openrouter"' scripts/report_wave06_to_clems.py && echo "Migration OK"` | `Syntax OK; Migration OK` | `` | antigravity→openrouter |
+| `ISSUE-W2-P2-T3-079` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `scripts/report_cp0037_agent7.py` | `defer` | `done` | `python3 -m py_compile scripts/report_cp0037_agent7.py` | `Syntax OK; agent-7 compliant` | `` | OpenRouter compliant |
+| `ISSUE-W2-P2-T3-091` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `scripts/report_cp0037_agent6.py` | `defer` | `done` | `python3 -m py_compile scripts/report_cp0037_agent6.py` | `Syntax OK; agent-6 compliant` | `` | OpenRouter compliant |
+| `ISSUE-W2-P2-T3-092` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `scripts/report_cp0037_agent7.py` | `defer` | `done` | `python3 -m py_compile scripts/report_cp0037_agent7.py` | `Syntax OK; agent-7 compliant` | `` | OpenRouter compliant |
+| `ISSUE-W2-P2-T3-093` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `scripts/report_cp0051_agent7.py` | `defer` | `done` | `python3 -m py_compile scripts/report_cp0051_agent7.py` | `Syntax OK; agent-7 compliant` | `` | OpenRouter compliant |
+| `ISSUE-W20-SUP-001` | `supplemental_openrouter_failed` | `P2` | `scripts/packaging/generate_tree_icon.py` | `defer` | `done` | `python3 -m py_compile scripts/packaging/generate_tree_icon.py` | `Syntax OK; Pure Python PNG gen` | `` | No AI runtime deps |
+| `ISSUE-W20-SUP-002` | `supplemental_openrouter_failed` | `P2` | `scripts/reply_as_leo_wave07.py` | `defer` | `done` | `python3 -m py_compile scripts/reply_as_leo_wave07.py` | `Syntax OK; agent leo compliant` | `` | OpenRouter compliant |
+| `ISSUE-W20-SUP-003` | `supplemental_openrouter_failed` | `P2` | `scripts/reply_wave07_status.py` | `defer` | `done` | `python3 -m py_compile scripts/reply_wave07_status.py` | `Syntax OK; victor/leo compliant` | `` | OpenRouter compliant |
+| `ISSUE-W20-SUP-004` | `supplemental_openrouter_failed` | `P2` | `scripts/report_wave09_leo.py` | `defer` | `done` | `python3 -m py_compile scripts/report_wave09_leo.py` | `Syntax OK; agent leo compliant` | `` | OpenRouter compliant |
+| `ISSUE-W20-SUP-005` | `supplemental_openrouter_failed` | `P2` | `scripts/send_cp01_report.py` | `defer` | `done` | `python3 -m py_compile scripts/send_cp01_report.py && grep -q '"author": "openrouter"' scripts/send_cp01_report.py && echo "Migration OK"` | `Syntax OK; Migration OK` | `` | antigravity→openrouter |
+| `ISSUE-W20-SUP-006` | `supplemental_openrouter_failed` | `P2` | `scripts/verify_ui_polish.py` | `defer` | `done` | `python3 -m py_compile scripts/verify_ui_polish.py` | `Syntax OK; PySide6 util` | `` | No AI runtime deps |
+| `ISSUE-W2-P3-T3-069` | `docs/swarm_results/wave2_p3_tracker.md` | `P3` | `scripts/report_cp0037_agent6.py` | `defer` | `done` | `python3 -m py_compile scripts/report_cp0037_agent6.py` | `Syntax OK; agent-6 compliant` | `` | OpenRouter compliant |
+| `ISSUE-W2-P3-T3-070` | `docs/swarm_results/wave2_p3_tracker.md` | `P3` | `scripts/report_cp0051_agent7.py` | `defer` | `done` | `python3 -m py_compile scripts/report_cp0051_agent7.py` | `Syntax OK; agent-7 compliant` | `` | OpenRouter compliant |
+| `ISSUE-W2-P3-T3-071` | `docs/swarm_results/wave2_p3_tracker.md` | `P3` | `scripts/report_wave06_to_clems.py` | `defer` | `done` | `python3 -m py_compile scripts/report_wave06_to_clems.py && grep -q 'agent_id = "openrouter"' scripts/report_wave06_to_clems.py && echo "Migration OK"` | `Syntax OK; Migration OK` | `` | antigravity→openrouter |

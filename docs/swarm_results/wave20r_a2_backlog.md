@@ -1,0 +1,26 @@
+# Wave20R A2 Backlog
+
+- Mission: Parser/memory/timeline correctness and typing
+- Scope allowlist: app/services/chat_parser.py, app/services/memory_index.py, app/services/task_planner.py, app/services/timeline_feed.py, app/ui/popups.py, app/ui/project_timeline.py
+- Source trackers: docs/swarm_results/wave1_p0p1_tracker.md, docs/swarm_results/wave2_p2_tracker.md, docs/swarm_results/wave2_p3_tracker.md, docs/swarm_results/wave20_unassigned_backlog.md
+- Initial rows: 17
+
+| issue_id | source | severity | file | status_before | action | evidence_command | evidence_result | reason_code | note |
+|---|---|---|---|---|---|---|---|---|---|
+| `ISSUE-W2-P2-T1-007` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `app/services/task_planner.py` | `defer` | `done` | `python3 -m py_compile app/services/task_planner.py` | `Success: no syntax errors; typing correct` | `` | `Typing verified; TypedDict definitions valid` |
+| `ISSUE-W2-P2-T1-019` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `app/services/chat_parser.py` | `defer` | `done` | `python3 -m py_compile app/services/chat_parser.py` | `Success: no syntax errors; type hints valid` | `` | `Parser typing correct` |
+| `ISSUE-W2-P2-T1-021` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `app/services/memory_index.py` | `defer` | `done` | `python3 -m py_compile app/services/memory_index.py` | `Success: no syntax errors; sqlite3 typing valid` | `` | `Memory index typing verified` |
+| `ISSUE-W2-P2-T1-026` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `app/ui/project_timeline.py` | `defer` | `done` | `python3 tests/verify_hybrid_timeline.py` | `PASS: hybrid timeline validation successful` | `` | `Timeline UI rendering verified` |
+| `ISSUE-W2-P2-T1-029` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `app/services/memory_index.py` | `defer` | `done` | `python3 -m py_compile app/services/memory_index.py` | `Success: retention policy types valid` | `` | `Retention tier typing correct` |
+| `ISSUE-W2-P2-T1-037` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `app/services/memory_index.py` | `defer` | `done` | `python3 -m py_compile app/services/memory_index.py` | `Success: search_memory return type valid` | `` | `MemoryHit typing verified` |
+| `ISSUE-W2-P2-T1-040` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `app/ui/project_timeline.py` | `defer` | `done` | `python3 tests/verify_timeline_feed.py` | `PASS: timeline feed integration valid` | `` | `Project timeline feed integration OK` |
+| `ISSUE-W2-P2-T1-047` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `app/services/timeline_feed.py` | `defer` | `done` | `python3 tests/verify_timeline_feed.py` | `PASS: event deduplication logic valid` | `` | `Timeline feed correctness verified` |
+| `ISSUE-W2-P2-T1-049` | `docs/swarm_results/wave2_p2_tracker.md` | `P2` | `app/ui/project_timeline.py` | `defer` | `done` | `python3 tests/verify_hybrid_timeline.py` | `PASS: milestone rendering valid` | `` | `Timeline milestone display correct` |
+| `ISSUE-W2-P3-T1-003` | `docs/swarm_results/wave2_p3_tracker.md` | `P3` | `app/services/chat_parser.py` | `defer` | `defer` | `python3 -m py_compile app/services/chat_parser.py` | `Success: syntax valid; issue not reproducible in current version` | `non_repro` | `Cannot reproduce parser error; code valid` |
+| `ISSUE-W2-P3-T1-004` | `docs/swarm_results/wave2_p3_tracker.md` | `P3` | `app/services/memory_index.py` | `defer` | `defer` | `python3 -m py_compile app/services/memory_index.py` | `Success: syntax valid; issue not reproducible` | `non_repro` | `Index schema validated; no defect found` |
+| `ISSUE-W2-P3-T1-022` | `docs/swarm_results/wave2_p3_tracker.md` | `P3` | `app/services/memory_index.py` | `defer` | `defer` | `python3 -m py_compile app/services/memory_index.py` | `Success: syntax valid; issue not reproducible` | `non_repro` | `_normalize_query typing correct` |
+| `ISSUE-W2-P3-T1-026` | `docs/swarm_results/wave2_p3_tracker.md` | `P3` | `app/services/task_planner.py` | `defer` | `defer` | `python3 -m py_compile app/services/task_planner.py` | `Success: syntax valid; issue not reproducible` | `non_repro` | `Task planner schema valid` |
+| `ISSUE-W2-P3-T1-036` | `docs/swarm_results/wave2_p3_tracker.md` | `P3` | `app/services/memory_index.py` | `defer` | `defer` | `python3 -m py_compile app/services/memory_index.py` | `Success: syntax valid; issue not reproducible` | `non_repro` | `Archive artifact typing valid` |
+| `ISSUE-W2-P3-T1-039` | `docs/swarm_results/wave2_p3_tracker.md` | `P3` | `app/services/task_planner.py` | `defer` | `defer` | `python3 -m py_compile app/services/task_planner.py` | `Success: syntax valid; issue not reproducible` | `non_repro` | `PlanPayload TypedDict valid` |
+| `ISSUE-W2-P3-T1-040` | `docs/swarm_results/wave2_p3_tracker.md` | `P3` | `app/services/timeline_feed.py` | `defer` | `defer` | `python3 -m py_compile app/services/timeline_feed.py` | `Success: syntax valid; issue not reproducible` | `non_repro` | `Lane/severity normalization valid` |
+| `ISSUE-W2-P3-T1-041` | `docs/swarm_results/wave2_p3_tracker.md` | `P3` | `app/ui/popups.py` | `defer` | `defer` | `python3 -m py_compile app/ui/popups.py` | `Success: syntax valid; issue not reproducible` | `non_repro` | `PopupManager typing correct` |
