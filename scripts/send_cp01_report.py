@@ -40,7 +40,7 @@ def post_message():
     new_message = {
         "message_id": f"msg_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}",
         "timestamp": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-        "author": "antigravity",
+        "author": "openrouter",
         "text": f"@clems Voici le rapport de fermeture de la phase QA UI pour le chantier Pilotage/Timeline.\n\n{report_content}",
         "tags": ["report", "qa", "cp01", "ui"],
         "mentions": ["clems"],

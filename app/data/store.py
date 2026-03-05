@@ -814,6 +814,27 @@ def _append_ndjson(path: Path, payload: dict[str, Any]) -> None:
         handle.write(json.dumps(payload) + "\n")
 
 
+def _write_ndjson(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = "".join(json.dumps(row) + "\n" for row in rows if isinstance(row, dict))
+    path.write_text(payload, encoding="utf-8")
+
+
+def _message_signature(payload: dict[str, Any]) -> str:
+    if not isinstance(payload, dict):
+        return ""
+    message_id = str(payload.get("message_id") or "").strip()
+    if message_id:
+        return message_id
+    timestamp = str(payload.get("timestamp") or "").strip()
+    author = str(payload.get("author") or "").strip()
+    text = str(payload.get("text") or "").strip()
+    event = str(payload.get("event") or "").strip()
+    if not (timestamp or author or text or event):
+        return ""
+    return f"{timestamp}|{author}|{event}|{text}"
+
+
 def chat_global_path(project_id: str) -> Path:
     return project_dir(project_id) / "chat" / "global.ndjson"
 
@@ -838,6 +859,59 @@ def append_thread_message(project_id: str, tag: str, payload: dict[str, Any]) ->
     if not safe_tag:
         return
     _append_ndjson(chat_thread_path(project_id, safe_tag), payload)
+
+
+def archive_ping_reminders(project_id: str, bucket: str = "bain") -> dict[str, Any]:
+    _assert_local_write_allowed("archive_ping_reminders")
+    global_path = chat_global_path(project_id)
+    global_rows = _read_ndjson(global_path, limit=0)
+    if not global_rows:
+        return {"archived_count": 0, "archive_path": "", "threads_touched": 0}
+
+    matched: list[dict[str, Any]] = []
+    remaining: list[dict[str, Any]] = []
+    for row in global_rows:
+        author = str(row.get("author") or "").strip().lower()
+        event = str(row.get("event") or "").strip().lower()
+        text = str(row.get("text") or "").strip().lower()
+        is_ping = author == "clems" and (
+            event == "clems_reminder" or (text.startswith("rappel @") and "ping" in text)
+        )
+        if is_ping:
+            matched.append(row)
+        else:
+            remaining.append(row)
+
+    if not matched:
+        return {"archived_count": 0, "archive_path": "", "threads_touched": 0}
+
+    archive_bucket = "".join(ch for ch in str(bucket or "bain").lower() if ch.isalnum() or ch in {"-", "_"}).strip()
+    if not archive_bucket:
+        archive_bucket = "bain"
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H%M%SZ")
+    archive_path = project_dir(project_id) / "chat" / archive_bucket / f"ping_archive_{stamp}.ndjson"
+    _write_ndjson(archive_path, matched)
+    _write_ndjson(global_path, remaining)
+
+    signatures = {token for token in (_message_signature(row) for row in matched) if token}
+    touched = 0
+    threads_dir = chat_threads_dir(project_id)
+    if signatures and threads_dir.exists():
+        for path in threads_dir.glob("*.ndjson"):
+            rows = _read_ndjson(path, limit=0)
+            if not rows:
+                continue
+            filtered = [row for row in rows if _message_signature(row) not in signatures]
+            if len(filtered) == len(rows):
+                continue
+            _write_ndjson(path, filtered)
+            touched += 1
+
+    return {
+        "archived_count": len(matched),
+        "archive_path": str(archive_path),
+        "threads_touched": touched,
+    }
 
 
 def retention_dir(project_id: str, projects_root: Path | None = None) -> Path:

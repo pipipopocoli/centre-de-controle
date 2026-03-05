@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 from app.data.model import ProjectData
 from app.data.paths import PROJECTS_DIR, project_dir
 from app.data.store import (
+    archive_ping_reminders,
     append_chat_message,
     append_thread_message,
     list_chat_threads,
@@ -37,6 +38,7 @@ from app.data.store import (
 )
 from app.services.brain_manager import BrainManager
 from app.services.chat_parser import parse_mentions, parse_tags
+from app.services.llm_chat import send_message_async as llm_send_async, reset_history as llm_reset_history
 from app.services.pack_context import build_pack_context, write_pack_context
 from app.services.auto_mode import dispatch_once as auto_mode_dispatch_once
 from app.services.auto_send import SendRoute, send_action
@@ -79,6 +81,11 @@ class WizardLiveSignals(QObject):
     started = Signal(str)
     finished = Signal(object)
     failed = Signal(str)
+
+
+class LLMChatSignals(QObject):
+    response_ready = Signal(str, str)  # (response_text, reply_to_message_id)
+    error = Signal(str)
 
 
 class MainWindow(QMainWindow):
@@ -253,6 +260,17 @@ class MainWindow(QMainWindow):
         self._wizard_live_signals.started.connect(self._on_wizard_live_started)
         self._wizard_live_signals.finished.connect(self._on_wizard_live_finished)
         self._wizard_live_signals.failed.connect(self._on_wizard_live_failed)
+        self.agent_ping_reminders_enabled = str(os.environ.get("COCKPIT_ENABLE_AGENT_PING_REMINDERS") or "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        self._ping_archive_done_projects: set[str] = set()
+
+        self._llm_chat_signals = LLMChatSignals()
+        self._llm_chat_signals.response_ready.connect(self._on_llm_chat_response)
+        self._llm_chat_signals.error.connect(self._on_llm_chat_error)
 
         self.brain_manager = BrainManager()
 
@@ -356,6 +374,7 @@ class MainWindow(QMainWindow):
             self.chatroom.reset_feed_state()
             self.chatroom.clear_context_ref()
             self._wizard_live_pending_action = None
+        self._archive_ping_messages_once()
         self.roadmap.set_roadmap(
             project.roadmap.get("now", []),
             project.roadmap.get("next", []),
@@ -1073,6 +1092,26 @@ class MainWindow(QMainWindow):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
 
+    def _archive_ping_messages_once(self) -> None:
+        if self.agent_ping_reminders_enabled:
+            return
+        if not self.current_project_id:
+            return
+        if self.current_project_id in self._ping_archive_done_projects:
+            return
+        self._ping_archive_done_projects.add(self.current_project_id)
+        try:
+            summary = archive_ping_reminders(self.current_project_id, bucket="bain")
+        except Exception:
+            return
+        archived_count = int(summary.get("archived_count") or 0)
+        if archived_count <= 0:
+            return
+        archive_path = str(summary.get("archive_path") or "").strip() or "chat/bain"
+        self.sidebar.status_banner.show_warning(
+            f"Archived {archived_count} ping reminders -> {archive_path}"
+        )
+
     def refresh_model_routing_from_settings(self) -> None:
         if not self.current_project_id:
             return
@@ -1335,38 +1374,24 @@ class MainWindow(QMainWindow):
         eta = eta.strip() or None
         return phase, objective, next_items, eta
 
-    def _build_clems_reply(self, text: str, mentions: list[str]) -> tuple[str, bool]:
-        lower = text.lower()
+    def _build_project_context(self) -> str:
+        """Build a compact project state context string for the LLM."""
         phase, objective, next_items, eta = self._read_state_summary()
-
-        if any(key in lower for key in ["next", "prochaine", "etape", "roadmap", "etat", "status"]):
-            lines = ["Etat actuel:"]
-            if phase:
-                lines.append(f"- Etape: {phase}")
-            if objective:
-                lines.append(f"- Cible: {objective}")
-            if eta:
-                lines.append(f"- ETA: {eta}")
-            if next_items:
-                lines.append("- Suite:")
-                for item in next_items[:3]:
-                    lines.append(f"  - {item}")
-            return "\n".join(lines), False
-
-        if any(key in lower for key in ["data", "dossier", "chemin", "projects"]):
-            return f"Data dir actif: {PROJECTS_DIR}", False
-
-        if any(key in lower for key in ["repond", "reponse", "personne", "reply"]):
-            return "Les agents ne repondent pas automatiquement. Je ping les agents tags et je te reviens.", False
-
-        ack = "Recu. Je m en occupe."
-        if mentions:
-            action = "Action: ping " + " ".join(f"@{m}" for m in mentions)
-            return f"{ack}\n{action}", False
-        question = "Peux tu preciser l objectif, le scope, et la deadline?"
-        return f"{ack}\n{question}", True
+        lines: list[str] = []
+        if phase:
+            lines.append(f"Phase: {phase}")
+        if objective:
+            lines.append(f"Objectif: {objective}")
+        if eta:
+            lines.append(f"ETA: {eta}")
+        if next_items:
+            lines.append("Prochaines etapes: " + ", ".join(next_items[:5]))
+        lines.append(f"Projet: {self.current_project_id}")
+        lines.append(f"Data dir: {PROJECTS_DIR}")
+        return "\n".join(lines)
 
     def _auto_reply(self, payload: dict) -> None:
+        """Send operator message to LLM for AI response (async)."""
         author = payload.get("author", "")
         if author != "operator":
             return
@@ -1379,25 +1404,58 @@ class MainWindow(QMainWindow):
         self._clems_seen.add(key)
 
         text = str(payload.get("text", ""))
-        mentions = payload.get("mentions") or []
-        reply_text, asked = self._build_clems_reply(text, mentions)
+        message_id = payload.get("message_id", "")
+
+        # Show typing indicator
+        self.chatroom.show_typing()
+        self.chatroom.set_status("Clems réfléchit...")
+
+        # Build project context for the LLM
+        project_context = self._build_project_context()
+
+        # Fire async LLM call
+        signals = self._llm_chat_signals
+        llm_send_async(
+            text,
+            project_context=project_context,
+            on_success=lambda resp: signals.response_ready.emit(resp, message_id),
+            on_error=lambda err: signals.error.emit(err),
+        )
+
+    def _on_llm_chat_response(self, response_text: str, reply_to_id: str) -> None:
+        """Handle LLM response on main thread (via signal)."""
+        self.chatroom.hide_typing()
+        self.chatroom.set_status("")
 
         reply = {
             "message_id": self._make_message_id("clems"),
             "timestamp": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
             "author": "clems",
-            "text": reply_text,
+            "text": response_text,
             "tags": [],
             "mentions": [],
-            "event": "clems_autoreply",
-            "reply_to": payload.get("message_id"),
+            "event": "clems_llm_reply",
+            "reply_to": reply_to_id,
         }
         append_chat_message(self.current_project_id, reply)
         self.refresh_chat()
 
-        if asked:
-            self._clems_pending_question_at = reply["timestamp"]
-            self._clems_pinged_operator = False
+    def _on_llm_chat_error(self, error: str) -> None:
+        """Handle LLM error on main thread."""
+        self.chatroom.hide_typing()
+        self.chatroom.set_status("")
+
+        reply = {
+            "message_id": self._make_message_id("clems"),
+            "timestamp": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "author": "clems",
+            "text": f"⚠️ Erreur: {error}",
+            "tags": [],
+            "mentions": [],
+            "event": "clems_error",
+        }
+        append_chat_message(self.current_project_id, reply)
+        self.refresh_chat()
 
     def _ack_agent_message(self, messages: list[dict]) -> None:
         if not messages:
@@ -1437,50 +1495,51 @@ class MainWindow(QMainWindow):
         now = datetime.now(timezone.utc)
         global_messages = load_chat_global(self.current_project_id)
 
-        # Agent reminders (run requests)
-        runs_path = project_dir(self.current_project_id) / "runs" / "requests.ndjson"
-        if runs_path.exists():
-            for raw in runs_path.read_text(encoding="utf-8").splitlines():
-                if not raw.strip():
-                    continue
-                try:
-                    req = json.loads(raw)
-                except Exception:
-                    continue
-                request_id = req.get("request_id")
-                if not request_id or request_id in self._clems_reminded_requests:
-                    continue
-                if req.get("source") != "mention":
-                    continue
-                created_at = self._parse_iso(str(req.get("created_at", "")))
-                agent_id = req.get("agent_id")
-                if not created_at or not agent_id:
-                    continue
-                if now - created_at < timedelta(minutes=30):
-                    continue
-                replied = False
-                for msg in reversed(global_messages[-200:]):
-                    msg_time = self._parse_iso(str(msg.get("timestamp", "")))
-                    if not msg_time or msg_time < created_at:
+        # Agent reminders (run requests) are opt-in to avoid ping loops.
+        if self.agent_ping_reminders_enabled:
+            runs_path = project_dir(self.current_project_id) / "runs" / "requests.ndjson"
+            if runs_path.exists():
+                for raw in runs_path.read_text(encoding="utf-8").splitlines():
+                    if not raw.strip():
                         continue
-                    if msg.get("author") == agent_id:
-                        replied = True
-                        break
-                if replied:
+                    try:
+                        req = json.loads(raw)
+                    except Exception:
+                        continue
+                    request_id = req.get("request_id")
+                    if not request_id or request_id in self._clems_reminded_requests:
+                        continue
+                    if req.get("source") != "mention":
+                        continue
+                    created_at = self._parse_iso(str(req.get("created_at", "")))
+                    agent_id = req.get("agent_id")
+                    if not created_at or not agent_id:
+                        continue
+                    if now - created_at < timedelta(minutes=30):
+                        continue
+                    replied = False
+                    for msg in reversed(global_messages[-200:]):
+                        msg_time = self._parse_iso(str(msg.get("timestamp", "")))
+                        if not msg_time or msg_time < created_at:
+                            continue
+                        if msg.get("author") == agent_id:
+                            replied = True
+                            break
+                    if replied:
+                        self._clems_reminded_requests.add(request_id)
+                        continue
+                    reminder = {
+                        "message_id": self._make_message_id("clems"),
+                        "timestamp": now.replace(microsecond=0).isoformat(),
+                        "author": "clems",
+                        "text": f"Rappel @{agent_id}: ping en attente.",
+                        "tags": [],
+                        "mentions": [agent_id],
+                        "event": "clems_reminder",
+                    }
+                    append_chat_message(self.current_project_id, reminder)
+                    record_mentions(self.current_project_id, reminder)
                     self._clems_reminded_requests.add(request_id)
-                    continue
-                reminder = {
-                    "message_id": self._make_message_id("clems"),
-                    "timestamp": now.replace(microsecond=0).isoformat(),
-                    "author": "clems",
-                    "text": f"Rappel @{agent_id}: ping en attente.",
-                    "tags": [],
-                    "mentions": [agent_id],
-                    "event": "clems_reminder",
-                }
-                append_chat_message(self.current_project_id, reminder)
-                record_mentions(self.current_project_id, reminder)
-                self._clems_reminded_requests.add(request_id)
 
         # Operator reminder after question
         if self._clems_pending_question_at and not self._clems_pinged_operator:

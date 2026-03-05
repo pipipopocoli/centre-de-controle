@@ -1,26 +1,65 @@
-# Cockpit V2
+# Cockpit Next
 
-**Status**: Wave 06 Launched (Pilotage & Vulgarisation) 🚀
-**Last Updated**: 2026-02-20
+Date reference: 2026-03-03.
 
-## Overview
-Cockpit is a mission control interface for managing autonomous agents. V2 introduces a "Matrix" architecture where agents share skills and memory, moving away from proper silos.
+Cockpit Next is now the default product runtime:
+- Frontend: React + Vite
+- Desktop shell: Tauri
+- Core backend: Rust (Axum + Tokio)
 
-## Current Phase: Launch
-The project is currently in the **Launch** phase for **Wave 06 UI Lane**.
-- **Pilotage**: Hybrid timeline view (Simple/Tech) + Portfolio mode.
-- **Vulgarisation**: Simplified "60s Brief" cards for non-technical stakeholders.
+## Launch (default)
 
-## Documentation
-- **Roadmap**: `docs/cockpit_v2_roadmap.html` (Visual Gantt)
-- **Whitepaper**: `docs/cockpit_v2_whitepaper.html` (Concepts)
-- **Tournament**: `control/projects/cockpit/tournament-v1/TOURNAMENT_ARENA.html` (Highlander 16)
+Development stack (backend + frontend):
 
-## Quick Start
 ```bash
 ./launch_cockpit.sh
 ```
 
-## Active Lanes
-- **UI**: Wave 06 (Locked & Launched)
-- **Backend**: Wave 05 (Contracts, Registry, Scoring)
+Desktop Tauri mode:
+
+```bash
+./launch_cockpit.sh tauri
+```
+
+Direct scripts:
+
+```bash
+./scripts/run_cockpit_next_dev.sh
+./scripts/run_cockpit_next_tauri.sh
+```
+
+## Donarg Tileset (local licensed import)
+
+Import your purchased pack locally (not tracked in git):
+
+```bash
+./scripts/import_office_tileset.sh "/absolute/path/Office Tileset (Donarg).zip"
+```
+
+Imported files are stored in:
+
+`apps/cockpit-next-desktop/public/local-assets/donarg`
+
+## Pixel reference assets (MIT style parity)
+
+Import PixelAgent reference sprites locally:
+
+```bash
+./scripts/import_pixel_reference_assets.sh
+```
+
+This imports:
+- `public/local-assets/pixel-reference/characters/char_0..5.png`
+- `public/local-assets/pixel-reference/walls.png`
+
+## Runbook
+
+- [Cockpit Next Runbook](/Users/oliviercloutier/Desktop/Cockpit/docs/COCKPIT_NEXT_RUNBOOK.md)
+
+## Legacy (manual fallback only)
+
+Legacy Python/Qt is no longer the default launch path.
+
+```bash
+./launch_cockpit_legacy.sh
+```

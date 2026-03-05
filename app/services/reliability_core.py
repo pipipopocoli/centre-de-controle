@@ -594,7 +594,7 @@ def deterministic_retry_decision(
             reason="max_attempts_reached",
         )
 
-    retryable = str(error_kind).strip().lower() in {"timeout", "transient", "retryable"}
+    retryable = str(error_kind).strip().lower() in RETRYABLE_STATUSES
     if not retryable:
         return RetryDecision(
             state="failed_terminal",
