@@ -10,7 +10,7 @@ from typing import Any
 
 from app.services.agent_registry import load_agent_registry
 from app.services.brain_manager import BrainManager
-from app.services.codex_runner import RunnerResult, run_codex_exec
+from app.services.openrouter_runner import RunnerResult, run_openrouter_exec
 from app.services.project_intake import scan_repo
 
 
@@ -273,8 +273,8 @@ def _ensure_agent_state(project_dir: Path, agent_id: str) -> Path:
     payload = {
         "agent_id": agent_id,
         "name": agent_id.title(),
-        "engine": "CDX",
-        "platform": "codex",
+        "engine": "OR",
+        "platform": "openrouter",
         "level": 2,
         "lead_id": "clems",
         "role": "specialist",
@@ -635,19 +635,19 @@ def run_takeover_wizard(
             error=None,
         )
 
-    runner_result = run_codex_exec(
+    runner_result = run_openrouter_exec(
         prompt,
         cwd=repo_path,
         timeout_s=timeout_s,
         sandbox_mode="read-only",
         approval_policy="never",
         output_schema_path=schema_path if schema_path.exists() else None,
-        output_last_message_path=runs_dir / f"{run_id}_codex_output.json",
+        output_last_message_path=runs_dir / f"{run_id}_openrouter_output.json",
         ephemeral=True,
     )
 
     if not runner_result.success or not runner_result.output_text.strip():
-        error = runner_result.error or "codex_exec_failed"
+        error = runner_result.error or "openrouter_exec_failed"
         _append_chat(
             project_dir,
             author="system",

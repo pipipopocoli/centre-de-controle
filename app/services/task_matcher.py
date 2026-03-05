@@ -14,9 +14,7 @@ DEFAULT_WEIGHTS = {
 RANK_TIE_BREAK_CONTRACT = ("score_desc", "agent_id_asc", "request_id_asc")
 
 PROVIDER_COST_SCORE = {
-    "codex": 0.55,
-    "antigravity": 0.72,
-    "ollama": 0.90,
+    "openrouter": 0.80,
 }
 
 WAITING_STATUSES = {"queued", "dispatched", "reminded", "pinged", "waiting_reconfirm"}
@@ -94,7 +92,7 @@ def _availability(agent_meta: dict[str, Any]) -> float:
 
 
 def _cost_score(agent_meta: dict[str, Any], cost: dict[str, Any] | None) -> float:
-    provider = str(agent_meta.get("platform") or "codex").strip().lower()
+    provider = str(agent_meta.get("platform") or "openrouter").strip().lower()
     if isinstance(cost, dict):
         provider_map = cost.get("provider_score")
         if isinstance(provider_map, dict) and provider in provider_map:

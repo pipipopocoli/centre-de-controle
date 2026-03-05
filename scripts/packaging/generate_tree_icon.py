@@ -6,6 +6,8 @@ import struct
 import zlib
 from pathlib import Path
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
+
 
 def _png_chunk(tag: bytes, payload: bytes) -> bytes:
     return (
@@ -132,7 +134,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Generate a deterministic local tree icon PNG.")
     parser.add_argument(
         "--out",
-        default="/Users/oliviercloutier/Desktop/Cockpit/assets/tree-icon.png",
+        default=str(ROOT_DIR / "assets" / "tree-icon.png"),
         help="Output PNG path",
     )
     parser.add_argument("--size", type=int, default=1024, help="Square icon size in px")

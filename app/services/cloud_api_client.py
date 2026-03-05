@@ -5,6 +5,7 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
+from threading import Lock
 from typing import Any
 
 
@@ -14,6 +15,7 @@ API_PASSWORD_ENV = "COCKPIT_API_PASSWORD"
 DEFAULT_API_BASE_URL = "http://127.0.0.1:8100"
 
 _ACCESS_TOKEN: str | None = None
+_ACCESS_TOKEN_LOCK = Lock()
 
 
 def _api_base_url() -> str:
@@ -21,8 +23,12 @@ def _api_base_url() -> str:
 
 
 def _credentials() -> tuple[str, str]:
-    username = str(os.environ.get(API_USERNAME_ENV) or "owner").strip() or "owner"
-    password = str(os.environ.get(API_PASSWORD_ENV) or "owner123!").strip() or "owner123!"
+    username = str(os.environ.get(API_USERNAME_ENV) or "").strip()
+    password = str(os.environ.get(API_PASSWORD_ENV) or "").strip()
+    if not username:
+        raise RuntimeError(f"missing_env:{API_USERNAME_ENV}")
+    if not password:
+        raise RuntimeError(f"missing_env:{API_PASSWORD_ENV}")
     return username, password
 
 
@@ -85,10 +91,11 @@ def _login() -> str:
 
 def _auth_token(force_refresh: bool = False) -> str:
     global _ACCESS_TOKEN
-    if _ACCESS_TOKEN and not force_refresh:
+    with _ACCESS_TOKEN_LOCK:
+        if _ACCESS_TOKEN and not force_refresh:
+            return _ACCESS_TOKEN
+        _ACCESS_TOKEN = _login()
         return _ACCESS_TOKEN
-    _ACCESS_TOKEN = _login()
-    return _ACCESS_TOKEN
 
 
 def _authed_request(method: str, path: str, *, payload: dict[str, Any] | None = None) -> dict[str, Any] | list[Any]:
@@ -103,7 +110,7 @@ def _authed_request(method: str, path: str, *, payload: dict[str, Any] | None = 
 
 
 def get_llm_profile(project_id: str) -> dict[str, Any]:
-    payload = _authed_request("GET", f"/v1/projects/{project_id}/llm-profile")
+    payload = _authed_request("GET", f"/v1/projects/{urllib.parse.quote(project_id, safe='')}/llm-profile")
     if not isinstance(payload, dict):
         raise RuntimeError("llm_profile_invalid_payload")
     profile = payload.get("profile")
@@ -113,7 +120,7 @@ def get_llm_profile(project_id: str) -> dict[str, Any]:
 
 
 def put_llm_profile(project_id: str, profile: dict[str, Any]) -> dict[str, Any]:
-    payload = _authed_request("PUT", f"/v1/projects/{project_id}/llm-profile", payload=profile)
+    payload = _authed_request("PUT", f"/v1/projects/{urllib.parse.quote(project_id, safe='')}/llm-profile", payload=profile)
     if not isinstance(payload, dict):
         raise RuntimeError("llm_profile_put_invalid_payload")
     out = payload.get("profile")
@@ -125,7 +132,7 @@ def put_llm_profile(project_id: str, profile: dict[str, Any]) -> dict[str, Any]:
 def post_agentic_turn(project_id: str, text: str, *, mode: str, thread_id: str | None = None) -> dict[str, Any]:
     payload = _authed_request(
         "POST",
-        f"/v1/projects/{project_id}/chat/agentic-turn",
+        f"/v1/projects/{urllib.parse.quote(project_id, safe='')}/chat/agentic-turn",
         payload={
             "text": text,
             "mode": mode,
@@ -140,7 +147,7 @@ def post_agentic_turn(project_id: str, text: str, *, mode: str, thread_id: str |
 def post_voice_transcribe(project_id: str, *, audio_base64: str, audio_format: str) -> dict[str, Any]:
     payload = _authed_request(
         "POST",
-        f"/v1/projects/{project_id}/voice/transcribe",
+        f"/v1/projects/{urllib.parse.quote(project_id, safe='')}/voice/transcribe",
         payload={
             "audio_base64": audio_base64,
             "format": audio_format,
@@ -153,7 +160,7 @@ def post_voice_transcribe(project_id: str, *, audio_base64: str, audio_format: s
 
 def get_pixel_feed(project_id: str, window: str = "24h") -> dict[str, Any]:
     query = urllib.parse.urlencode({"window": window})
-    payload = _authed_request("GET", f"/v1/projects/{project_id}/pixel-feed?{query}")
+    payload = _authed_request("GET", f"/v1/projects/{urllib.parse.quote(project_id, safe='')}/pixel-feed?{query}")
     if not isinstance(payload, dict):
         raise RuntimeError("pixel_feed_invalid_payload")
     return payload
@@ -162,10 +169,9 @@ def get_pixel_feed(project_id: str, window: str = "24h") -> dict[str, Any]:
 def post_chat_message(project_id: str, text: str, *, thread_id: str | None = None) -> dict[str, Any]:
     payload = _authed_request(
         "POST",
-        f"/v1/projects/{project_id}/chat/messages",
+        f"/v1/projects/{urllib.parse.quote(project_id, safe='')}/chat/messages",
         payload={"text": text, "thread_id": thread_id},
     )
     if not isinstance(payload, dict):
         raise RuntimeError("chat_post_invalid_payload")
     return payload
-

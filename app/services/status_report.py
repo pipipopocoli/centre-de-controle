@@ -22,7 +22,7 @@ DEFAULT_TEST_CHECKS = [
     "tests/verify_wave19_wizard_live_runner_flags.py",
     "tests/verify_takeover_wizard_output_apply.py",
     "tests/verify_takeover_wizard_prompt.py",
-    "tests/verify_codex_runner.py",
+    "tests/verify_openrouter_runner.py",
 ]
 
 DEFAULT_SCRIPT_CHECKS = [
@@ -270,16 +270,18 @@ def _findings_from_snapshot(snapshot: dict[str, Any]) -> tuple[list[dict[str, An
     bugs: list[dict[str, Any]] = []
     missing: list[dict[str, Any]] = []
 
-    codex_runner = _check_result(checks, "tests/verify_codex_runner.py")
-    codex_failed = codex_runner is not None and not bool(codex_runner.get("ok"))
-    if codex_failed:
+    openrouter_runner = _check_result(checks, "tests/verify_openrouter_runner.py")
+    openrouter_failed = openrouter_runner is not None and not bool(openrouter_runner.get("ok"))
+    if openrouter_failed:
         bugs.append(
             {
-                "id": "codex_runner_contract",
+                "id": "openrouter_runner_contract",
                 "priority": "P0",
-                "title": "Contrat runner cassé: tests/verify_codex_runner.py en échec",
-                "evidence": codex_runner.get("stderr") or codex_runner.get("stdout") or codex_runner.get("command"),
-                "action": "Restaurer le contrat run_codex_exec attendu par Wave18/Wave19.",
+                "title": "Contrat runner casse: tests/verify_openrouter_runner.py en echec",
+                "evidence": openrouter_runner.get("stderr")
+                or openrouter_runner.get("stdout")
+                or openrouter_runner.get("command"),
+                "action": "Restaurer le contrat run_openrouter_exec attendu par Wave20.",
             }
         )
 
@@ -492,7 +494,7 @@ def collect_status_snapshot(
     snapshot["functioning"] = functioning
     snapshot["next_steps"] = {
         "h24": [
-            "Corriger la régression run_codex_exec pour remettre tests/verify_codex_runner.py au vert.",
+            "Corriger la regression run_openrouter_exec pour remettre tests/verify_openrouter_runner.py au vert.",
             "Retirer/neutraliser le wipe automatique de _boot_cleanup au démarrage.",
             "Fixer ou retirer scripts/render_presentation_pdf.py pour éviter les faux outils en panne.",
         ],
@@ -642,7 +644,7 @@ def build_status_html(snapshot: dict[str, Any], *, language: str = "fr") -> str:
   <ul>
     <li>La capacité Wave19 est présente côté code/docs, mais la réalité runtime reste partiellement décalée entre repo et AppSupport.</li>
     <li>Le working tree local n'est pas propre, avec des changements actifs sur le runner, l'UI et la couche startup.</li>
-    <li>Les checks Wave19/Wave18 sont majoritairement verts; un échec P0 persiste sur <code>tests/verify_codex_runner.py</code>.</li>
+    <li>Les checks Wave19/Wave18 sont majoritairement verts; un echec P0 persiste sur <code>tests/verify_openrouter_runner.py</code>.</li>
     <li>Un risque critique est détecté: <code>_boot_cleanup</code> supprime des dossiers runtime au démarrage.</li>
     <li>Le script PDF historique de présentation est en panne (template manquant), ce qui masquait l'absence d'un pipeline status robuste.</li>
     <li>La preuve d'exécution Wave19 live est incomplète sur le cockpit principal (logs <code>WIZARD_LIVE_*</code> absents).</li>

@@ -286,8 +286,8 @@ class MainWindow(QMainWindow):
         self.auto_mode_interval_seconds = 5
         self.auto_mode_max_actions = 1
         self.auto_send_enabled = False
-        self.auto_mode_codex_app = "Codex"
-        self.auto_mode_ag_app = "Antigravity"
+        self.auto_mode_codex_app = "OpenRouter"
+        self.auto_mode_ag_app = "OpenRouter"
         self.auto_mode_last_error: str | None = None
         self._portfolio_cache: list[ProjectData] = []
         self._portfolio_cache_at: datetime | None = None
@@ -915,7 +915,7 @@ class MainWindow(QMainWindow):
     def _confirm_takeover_wizard(self) -> bool:
         msg = (
             "Run Takeover Wizard headless?\n\n"
-            "- Runs 1x codex exec (read-only sandbox)\n"
+            "- Runs 1x openrouter exec (read-only sandbox)\n"
             "- Generates BMAD docs + L1 roundtable into this project\n"
             "- May consume credits\n"
         )

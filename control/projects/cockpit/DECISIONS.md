@@ -235,3 +235,12 @@
 - Consequences: API now requires `COCKPIT_OPENROUTER_API_KEY` at boot; project settings persist `llm_profile`; scene mode can spawn LFM helpers with hard cap 10; pixel heatmap is sourced from runs/chat/agent state artifacts.
 - Owners: @clems, @victor, @leo (@nova FYI)
 - References: /Users/oliviercloutier/Desktop/Cockpit/server/main.py, /Users/oliviercloutier/Desktop/Cockpit/server/llm/openrouter_client.py, /Users/oliviercloutier/Desktop/Cockpit/server/llm/agentic_orchestrator.py, /Users/oliviercloutier/Desktop/Cockpit/server/analytics/pixel_feed.py, /Users/oliviercloutier/Desktop/Cockpit/app/ui/main_window.py, /Users/oliviercloutier/Desktop/Cockpit/docs/OPENROUTER_SETUP.md, /Users/oliviercloutier/Desktop/Cockpit/docs/PIXEL_VIEW.md, /Users/oliviercloutier/Desktop/Cockpit/android/README.md
+
+## 2026-03-06 - ADR-CP-027 OpenRouter-only runtime descope final
+- Status: Accepted
+- Context: Wave20R-R3 closeout required removing active runtime execution paths tied to Codex/Antigravity/Ollama while preserving backward-read compatibility for existing data.
+- Decision: Lock active runtime execution to OpenRouter only. Keep legacy provider values only in normalization/migration adapters, and persist normalized provider as `openrouter`.
+- Rationale: Eliminates runtime ambiguity, reduces security and operational drift, and aligns desktop + cloud paths to one provider contract.
+- Consequences: `execution_router`, `auto_mode`, wizard services, and runner shims now execute through OpenRouter; UI runtime copy now references OpenRouter as active engine.
+- Owners: @clems, @victor, @leo
+- References: app/services/execution_router.py, app/services/auto_mode.py, app/services/wizard_live.py, app/services/takeover_wizard.py, app/services/codex_runner.py, app/services/antigravity_runner.py, app/services/ollama_runner.py

@@ -114,7 +114,7 @@ class AgentCard(QFrame):
         badge.setObjectName("agentBadge")
         badge.setAlignment(Qt.AlignCenter)
         badge.setFixedWidth(50)  # Slightly wider for better padding
-        engine_hint = "Engine: Codex" if state.engine == "CDX" else "Engine: Antigravity"
+        engine_hint = "Engine: OpenRouter"
         badge.setToolTip(engine_hint)
 
         header.addWidget(name)

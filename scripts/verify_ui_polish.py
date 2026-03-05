@@ -11,6 +11,8 @@ from PySide6.QtCore import QSize
 from app.ui.project_pilotage import ProjectPilotageWidget
 from app.data.model import ProjectData
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 OUTPUT_DIR = Path("docs/reports/cp01-ui-qa/evidence")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -40,7 +42,7 @@ def main():
     # run this against the REAL project (Cockpit) to see real data.
     # This is "Verify against production data" approach.
     
-    real_project_path = Path("/Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit")
+    real_project_path = PROJECT_ROOT / "control" / "projects" / "cockpit"
     if not real_project_path.exists():
         print("Real project path not found, cannot verify against real data.")
         sys.exit(1)
