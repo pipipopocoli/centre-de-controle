@@ -1,7 +1,7 @@
 # Wave20R Control Tower Snapshot
 
-- generated_at_utc: `2026-03-05T17:08:36+00:00`
-- repo_root: `/Users/oliviercloutier/Desktop/Cockpit-wave20r/offline-recovery-r2`
+- generated_at_utc: `2026-03-05T18:39:02+00:00`
+- repo_root: `/Users/oliviercloutier/Desktop/Cockpit`
 
 ## Coverage
 - total_rows: `520`
