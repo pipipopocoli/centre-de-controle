@@ -4,15 +4,15 @@
 - Ship
 
 ## Objective
-- Ship Wave21 API-native operations: OpenRouter model routing, agentic chat/scene turns, voice STT, Pixel View, and Android bootstrap aligned to cloud API.
+- Ship Wave20R-R3 release hardening with OpenRouter-only runtime and security/policy debt closed on active source.
 
 ## Now
 - Wave20R release-hardening branch is active on `codex/wave20r-release-hardening` (resynced from `origin/main`).
 - Wave20R control snapshot is clean (`rows_open=0`, `invalid_action=0`, `defer_missing_reason=0`) via strict control-tower run.
 - Technical gates are green: `python -m py_compile`, desktop `npm lint`, desktop `npm build`, `cargo check` (core + tauri).
 - Target verification tests passed: `tests/verify_hybrid_timeline.py`, `tests/verify_timeline_feed.py`, `tests/verify_execution_router.py`.
-- Policy gate scan found unresolved production debt (`owner123!`, absolute local paths in scripts, legacy provider runtime references in active services).
-- Wave17 outage policy remains guarded (`allowed_platforms=[codex,antigravity]`, `allowed_agents=[victor,leo,nova,vulgarisation]`).
+- Policy gate scan on active source is clean for credentials and personal absolute paths.
+- Runtime execution path is OpenRouter-only; legacy provider tokens are accepted only via migration adapters.
 - Credit guard remains enabled (`wave_cap <= 180`, `reserve_floor >= 350`, `max_actions_effective=1`).
 - Wave17 dual-root checkpoint is healthy (repo + AppSupport).
 - Recency autopulse guard and onboarding contract tests are green.
@@ -35,10 +35,9 @@
 - Android native bootstrap module exists under `/android` with Compose entrypoint and Retrofit API skeleton.
 
 ## Next
-- Remove hardcoded default credentials from active source (`app/services/cloud_api_client.py`, seed in `server/repository.py`).
-- Remove user-specific absolute paths from active scripts under `/scripts`.
-- Complete OpenRouter-only cleanup in active runtime paths (`app/services/*`, `app/data/store.py`, `app/services/execution_router.py`, registry defaults).
-- Re-run policy gates on active source after cleanup and lock release checklist for PR.
+- Run final git diff review and split commits by lane (security, runtime migration, tests, docs/governance).
+- Push `codex/wave20r-release-hardening` and open PR to `main` with gate evidence and residual risks.
+- Validate one real end-to-end wizard session (`#wizard-live start/run/stop`) on a linked repo before merge.
 - Run 1 full Wave19/Wave20 live session on a real repo and confirm repeated turns stay stable with L1=4.
 - Validate strict API startup paths (down => hard fail, up => strict write blocks on local UI actions).
 - Finish desktop API-client cutover to remove remaining local legacy flows.
@@ -54,8 +53,7 @@
 - none
 
 ## Blockers
-- `starlette` (and related API test deps) missing in current Python env; cloud API route tests cannot run until env is completed.
-- `scripts/wave20r_control_tower.py` is not present on `main`; strict run currently relies on snapshot copy from archived branch.
+- none
 
 ## Deferred debt
 - none
@@ -64,7 +62,7 @@
 - stale recency warnings drift back if pulse cadence is not respected.
 - dual-root settings drift (repo vs AppSupport) can create dispatch confusion.
 - credits can burn too quickly if specialist fanout is reopened too early.
-- release can regress security posture if policy debt (`owner123!`, absolute paths, legacy providers) is not closed before merge.
+- release can regress if non-active docs/reports absolute paths are mistaken for runtime defects during final scan.
 
 ## Gates
 - pending_stale_gt24h == 0
