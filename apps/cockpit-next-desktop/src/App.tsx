@@ -1467,9 +1467,12 @@ function App() {
     const agentsTotal = feed?.agents.length ?? 0
     const runningTerminals = feed?.terminals_alive ?? 0
     const queueDepth = feed?.queue_depth ?? 0
+    const chatReadyCount = rosterAgents.filter((agent) => agent.chat_targetable).length
+    const leadsCount = rosterAgents.filter((agent) => agent.level === 1).length
     const latestOperator = operatorChatMessages.slice(-8).reverse()
     const latestInternal = internalChatMessages.slice(-8).reverse()
     const latestEvents = eventLog.slice(0, 20)
+    const recentTasks = [...tasks].sort(compareTasksByFreshness).slice(0, 5)
     const taskCounts = STATUS_ORDER.reduce<Record<TaskStatus, number>>(
       (accumulator, status) => ({
         ...accumulator,
@@ -1592,37 +1595,73 @@ function App() {
                 </div>
               </div>
             </section>
-            <aside className="secondary-card concierge-side-card">
-              <h3>Room context</h3>
-              <ul className="data-list">
-                <li>
-                  <span>Approvals pending</span>
-                  <strong>{approvals.length}</strong>
-                </li>
-                <li>
-                  <span>Open tasks</span>
-                  <strong>{taskCounts.todo + taskCounts.in_progress + taskCounts.blocked}</strong>
-                </li>
-                <li>
-                  <span>WS</span>
-                  <strong>{composerLabel}</strong>
-                </li>
-                <li>
-                  <span>Last event</span>
-                  <strong>{lastEventAt ? new Date(lastEventAt).toLocaleTimeString() : 'none'}</strong>
-                </li>
-              </ul>
-              <div className="events-log">
-                <p><strong>Selected agent:</strong> {selectedAgent ? `@${selectedAgent.agent_id}` : 'none'}</p>
-                <p><strong>Direct target:</strong> {directTargetLabel}</p>
-                <p><strong>Latest internal messages:</strong></p>
-                {latestInternal.slice(0, 5).map((message) => (
-                  <p key={message.message_id}>
-                    <strong>@{message.author}</strong> {message.text}
-                  </p>
-                ))}
-                {latestInternal.length === 0 ? <p>No internal room traces yet.</p> : null}
-              </div>
+            <aside className="concierge-side-stack">
+              <section className="secondary-card concierge-side-card">
+                <h3>Room snapshot</h3>
+                <div className="concierge-score-grid">
+                  <article>
+                    <span>Active agents</span>
+                    <strong>{agentsTotal}</strong>
+                  </article>
+                  <article>
+                    <span>Chat ready</span>
+                    <strong>{chatReadyCount}</strong>
+                  </article>
+                  <article>
+                    <span>Approvals</span>
+                    <strong>{approvals.length}</strong>
+                  </article>
+                  <article>
+                    <span>Open tasks</span>
+                    <strong>{taskCounts.todo + taskCounts.in_progress + taskCounts.blocked}</strong>
+                  </article>
+                </div>
+                <ul className="data-list">
+                  <li>
+                    <span>Selected agent</span>
+                    <strong>{selectedAgent ? `@${selectedAgent.agent_id}` : 'none'}</strong>
+                  </li>
+                  <li>
+                    <span>Direct target</span>
+                    <strong>{directTargetLabel}</strong>
+                  </li>
+                  <li>
+                    <span>WS</span>
+                    <strong>{composerLabel}</strong>
+                  </li>
+                  <li>
+                    <span>Last event</span>
+                    <strong>{lastEventAt ? new Date(lastEventAt).toLocaleTimeString() : 'none'}</strong>
+                  </li>
+                </ul>
+              </section>
+              <section className="secondary-card concierge-side-card">
+                <h3>Active roster</h3>
+                <div className="concierge-roster-list">
+                  {rosterAgents.slice(0, 8).map((agent) => (
+                    <div key={agent.agent_id} className="concierge-roster-row">
+                      <div>
+                        <strong>@{agent.agent_id}</strong>
+                        <p>{agent.role}</p>
+                      </div>
+                      <span className={`dot ${agent.chat_targetable ? 'green' : 'gray'}`}>
+                        {agent.chat_targetable ? 'chat ready' : 'chat unavailable'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+              <section className="secondary-card concierge-side-card">
+                <h3>Internal trace</h3>
+                <div className="events-log">
+                  {latestInternal.slice(0, 6).map((message) => (
+                    <p key={message.message_id}>
+                      <strong>@{message.author}</strong> {message.text}
+                    </p>
+                  ))}
+                  {latestInternal.length === 0 ? <p>No internal room traces yet.</p> : null}
+                </div>
+              </section>
             </aside>
           </div>
         </section>
@@ -1698,22 +1737,21 @@ function App() {
             <h2>Overview</h2>
             <span className="hint">project heartbeat, tasks, and runtime truth</span>
           </div>
-          <div className="secondary-grid">
-            <article>
-              <h3>Backend status</h3>
-              <p>{backendHealth?.status ?? 'unknown'}</p>
+          <div className="secondary-hero-grid">
+            <article className="overview-hero-card">
+              <span className="overview-hero-label">Runtime</span>
+              <strong>{backendHealth?.status ?? 'unknown'}</strong>
+              <p>ws {composerLabel} - build {buildStamp}</p>
             </article>
-            <article>
-              <h3>Build SHA</h3>
-              <p>{buildStamp}</p>
+            <article className="overview-hero-card">
+              <span className="overview-hero-label">Agents live</span>
+              <strong>{agentsTotal}</strong>
+              <p>{chatReadyCount} chat ready - {runningTerminals} terminals live</p>
             </article>
-            <article>
-              <h3>Assets loaded</h3>
-              <p>{assetsStatus.donarg && assetsStatus.pixelRef ? 'yes' : 'partial'}</p>
-            </article>
-            <article>
-              <h3>Clock</h3>
-              <p>{clockNow.toLocaleTimeString()}</p>
+            <article className="overview-hero-card">
+              <span className="overview-hero-label">Execution load</span>
+              <strong>{taskCounts.todo + taskCounts.in_progress + taskCounts.blocked}</strong>
+              <p>{approvals.length} approvals - queue {queueDepth}</p>
             </article>
           </div>
           <div className="secondary-columns">
@@ -1766,12 +1804,51 @@ function App() {
             </section>
             <section className="secondary-card">
               <h3>Operational focus</h3>
+              <ul className="overview-focus-list">
+                <li>
+                  <span>Direct target</span>
+                  <strong>{directTargetLabel}</strong>
+                </li>
+                <li>
+                  <span>Selected agent</span>
+                  <strong>{selectedAgent ? `@${selectedAgent.agent_id}` : 'none'}</strong>
+                </li>
+                <li>
+                  <span>L1 leads</span>
+                  <strong>{leadsCount}</strong>
+                </li>
+                <li>
+                  <span>Assets loaded</span>
+                  <strong>{assetsStatus.donarg && assetsStatus.pixelRef ? 'yes' : 'partial'}</strong>
+                </li>
+              </ul>
+            </section>
+            <section className="secondary-card">
+              <h3>Recent task movement</h3>
               <div className="events-log">
-                <p><strong>Direct target:</strong> {directTargetLabel}</p>
-                <p><strong>Selected agent:</strong> {selectedAgent ? `@${selectedAgent.agent_id}` : 'none'}</p>
-                <p><strong>Chat transport:</strong> {composerLabel}</p>
-                <p><strong>Approvals pending:</strong> {approvals.length}</p>
-                <p><strong>Open tasks:</strong> {taskCounts.todo + taskCounts.in_progress + taskCounts.blocked}</p>
+                {recentTasks.length === 0 ? (
+                  <p>No tasks yet.</p>
+                ) : (
+                  recentTasks.map((task) => (
+                    <p key={task.task_id}>
+                      <strong>{task.title}</strong> - {STATUS_LABELS[task.status]} - @{task.owner}
+                    </p>
+                  ))
+                )}
+              </div>
+            </section>
+            <section className="secondary-card">
+              <h3>Latest operator touch</h3>
+              <div className="events-log">
+                {latestOperator.length === 0 ? (
+                  <p>No operator messages yet.</p>
+                ) : (
+                  latestOperator.slice(0, 6).map((message) => (
+                    <p key={message.message_id}>
+                      <strong>@{message.author}</strong> {message.text}
+                    </p>
+                  ))
+                )}
               </div>
             </section>
           </div>

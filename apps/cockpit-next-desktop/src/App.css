@@ -954,6 +954,13 @@
   gap: 12px;
 }
 
+.concierge-side-stack {
+  min-height: 0;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
 .concierge-chat-card {
   min-height: 0;
   display: grid;
@@ -963,6 +970,59 @@
 
 .concierge-side-card {
   align-content: start;
+}
+
+.concierge-score-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.concierge-score-grid article {
+  border: 1px solid var(--line);
+  background: rgba(243, 250, 255, 0.92);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: 4px;
+}
+
+.concierge-score-grid span {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--fg-1);
+}
+
+.concierge-score-grid strong {
+  font-size: 20px;
+  color: #214a70;
+}
+
+.concierge-roster-list {
+  display: grid;
+  gap: 8px;
+}
+
+.concierge-roster-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: rgba(248, 252, 255, 0.98);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.concierge-roster-row strong,
+.concierge-roster-row p {
+  margin: 0;
+}
+
+.concierge-roster-row p {
+  color: var(--fg-1);
+  font-size: 12px;
+  margin-top: 3px;
 }
 
 .concierge-banner {
@@ -1377,6 +1437,41 @@
   gap: 12px;
 }
 
+.secondary-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.overview-hero-card {
+  border: 1px solid rgba(104, 138, 167, 0.4);
+  background: linear-gradient(180deg, rgba(252, 254, 255, 0.98), rgba(243, 249, 254, 0.98));
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.overview-hero-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--fg-1);
+  letter-spacing: 0.4px;
+}
+
+.overview-hero-card strong {
+  font-size: 28px;
+  line-height: 1;
+  color: #1f4667;
+}
+
+.overview-hero-card p {
+  margin: 0;
+  color: #537086;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .secondary-grid article {
   border: 1px solid var(--line);
   background: rgba(251, 254, 255, 0.96);
@@ -1489,6 +1584,36 @@
 .data-list li strong {
   color: #1a4a74;
   font-size: 13px;
+}
+
+.overview-focus-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.overview-focus-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid rgba(104, 138, 167, 0.18);
+  padding-bottom: 8px;
+  font-size: 13px;
+}
+
+.overview-focus-list li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.overview-focus-list span {
+  color: var(--fg-1);
+}
+
+.overview-focus-list strong {
+  color: #214a70;
 }
 
 .command-box {
@@ -1768,6 +1893,10 @@
     grid-template-columns: repeat(2, minmax(200px, 1fr));
   }
 
+  .secondary-hero-grid {
+    grid-template-columns: 1fr;
+  }
+
   .todo-layout,
   .routing-layout,
   .concierge-layout {
@@ -1889,6 +2018,11 @@
   }
 
   .secondary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .secondary-hero-grid,
+  .concierge-score-grid {
     grid-template-columns: 1fr;
   }
 
