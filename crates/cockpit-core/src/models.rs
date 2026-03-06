@@ -307,6 +307,25 @@ pub struct TasksResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillLibraryEntry {
+    pub skill_id: String,
+    pub name: String,
+    pub description: String,
+    pub source_path: String,
+    pub project_locked: bool,
+    pub project_status: Option<String>,
+    #[serde(default)]
+    pub assigned_agents: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillsLibraryResponse {
+    pub project_id: String,
+    pub generated_at: String,
+    pub skills: Vec<SkillLibraryEntry>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateTaskRequest {
     pub title: String,
     pub owner: Option<String>,

@@ -98,6 +98,22 @@ export interface TaskRecord {
   updated_at: string
 }
 
+export interface SkillLibraryEntry {
+  skill_id: string
+  name: string
+  description: string
+  source_path: string
+  project_locked: boolean
+  project_status: string | null
+  assigned_agents: string[]
+}
+
+export interface SkillsLibraryResponse {
+  project_id: string
+  generated_at: string
+  skills: SkillLibraryEntry[]
+}
+
 export interface LiveTurnRequest {
   text: string
   chat_mode: ChatMode
@@ -196,7 +212,7 @@ export async function getAgents(projectId: string): Promise<AgentRecord[]> {
 
 export async function createAgent(
   projectId: string,
-  payload: { agent_id?: string; name?: string; role?: string; cwd?: string },
+  payload: { agent_id?: string; name?: string; role?: string; cwd?: string; skills?: string[] },
 ): Promise<{ agent: AgentRecord; terminal: TerminalSession }> {
   return request(`/v1/projects/${projectId}/agents`, {
     method: 'POST',
@@ -357,6 +373,10 @@ export async function putLlmProfile(
 
 export async function getTasks(projectId: string): Promise<{ project_id: string; generated_at: string; tasks: TaskRecord[] }> {
   return request(`/v1/projects/${projectId}/tasks`)
+}
+
+export async function getSkillsLibrary(projectId: string): Promise<SkillsLibraryResponse> {
+  return request(`/v1/projects/${projectId}/skills/library`)
 }
 
 export async function createTask(

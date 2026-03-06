@@ -14,12 +14,14 @@ import {
   createAgent,
   deleteAgent,
   getApiUrl,
+  getAgents,
   getApprovals,
   getChat,
   getHealth,
   getLayout,
   getLlmProfile,
   getPixelFeed,
+  getSkillsLibrary,
   getTasks,
   liveTurn,
   openTerminal,
@@ -33,6 +35,7 @@ import {
   updateTask,
 } from './lib/cockpitClient'
 import type {
+  AgentRecord,
   ApprovalRequest,
   ChatMessage,
   ChatMode,
@@ -40,6 +43,7 @@ import type {
   HealthzResponse,
   LlmProfile,
   PixelFeedResponse,
+  SkillLibraryEntry,
   TaskRecord,
   TaskStatus,
   WsEventEnvelope,
@@ -48,11 +52,24 @@ import { openOsTerminal } from './lib/tauriOps'
 
 const DEFAULT_PROJECT_ID = import.meta.env.VITE_DEFAULT_PROJECT_ID ?? 'cockpit'
 
-type TopTab = 'pixel_home' | 'overview' | 'pilotage' | 'docs' | 'todo' | 'model_routing'
+type TopTab = 'pixel_home' | 'concierge_room' | 'overview' | 'pilotage' | 'docs' | 'todo' | 'model_routing'
 type WorkspaceTab = 'agent' | 'layout' | 'settings'
 type ComposerStatus = 'live' | 'reconnecting' | 'http_fallback'
 type DirectTargetMode = 'clems' | 'selected_agent'
 type WorkbenchPanel = 'chat' | 'terminal' | 'approvals' | 'events'
+type DocsPanel = 'runbook' | 'skills_library'
+
+type RosterAgentView = {
+  agent_id: string
+  name: string
+  level: number
+  lead_id: string | null
+  role: string
+  chat_targetable: boolean
+  terminal_state: string
+  terminal_session_id: string | null
+  skills: string[]
+}
 
 type TaskEditorState = {
   title: string
@@ -91,6 +108,22 @@ const L2_MODEL_OPTIONS = [
   { id: 'moonshotai/kimi-k2.5', label: 'Kimi K2.5', note: 'precise fallback' },
   { id: 'deepseek/deepseek-chat-v3.1', label: 'DeepSeek Chat V3.1', note: 'bounded execution' },
 ] as const
+
+const QUICK_AGENT_PRESETS = [
+  { agent_id: 'clems', label: 'Clems' },
+  { agent_id: 'victor', label: 'Victor' },
+  { agent_id: 'leo', label: 'Leo' },
+  { agent_id: 'nova', label: 'Nova' },
+  { agent_id: 'vulgarisation', label: 'Vulgarisation' },
+] as const
+
+function parseSkillsInput(raw: string): string[] {
+  return [...new Set(raw.split(',').map((item) => item.trim()).filter(Boolean))]
+}
+
+function formatSkillChip(skillId: string): string {
+  return skillId.replaceAll('-', ' ')
+}
 
 function modelLabel(modelId: string): string {
   const found = [...CLEMS_MODEL_OPTIONS, ...L1_MODEL_OPTIONS, ...L2_MODEL_OPTIONS].find(
@@ -147,9 +180,9 @@ function App() {
   const [apiError, setApiError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [feed, setFeed] = useState<PixelFeedResponse | null>(null)
+  const [agentRecords, setAgentRecords] = useState<AgentRecord[]>([])
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
-  const [chatMode, setChatMode] = useState<ChatMode>('direct')
   const [executionMode, setExecutionMode] = useState<ExecutionMode>('chat')
   const [wsConnected, setWsConnected] = useState(false)
   const [composerStatus, setComposerStatus] = useState<ComposerStatus>('reconnecting')
@@ -160,6 +193,7 @@ function App() {
   const [eventLog, setEventLog] = useState<WsEventEnvelope[]>([])
   const [createAgentId, setCreateAgentId] = useState('')
   const [createAgentName, setCreateAgentName] = useState('')
+  const [createAgentSkills, setCreateAgentSkills] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSendingChat, setIsSendingChat] = useState(false)
   const [showAddMenu, setShowAddMenu] = useState(false)
@@ -191,6 +225,9 @@ function App() {
   const [clockNow, setClockNow] = useState(() => new Date())
   const [lastEventAt, setLastEventAt] = useState<string | null>(null)
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null)
+  const [docsPanel, setDocsPanel] = useState<DocsPanel>('runbook')
+  const [skillsLibrary, setSkillsLibrary] = useState<SkillLibraryEntry[]>([])
+  const [skillsLibraryLoading, setSkillsLibraryLoading] = useState(false)
   const [assetsStatus, setAssetsStatus] = useState<{ donarg: boolean; pixelRef: boolean }>({
     donarg: false,
     pixelRef: false,
@@ -200,6 +237,7 @@ function App() {
   const editorState = useMemo(() => new EditorState(), [])
   const panRef = useRef({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
+  const createAgentIdInputRef = useRef<HTMLInputElement>(null)
   const wsConnectedRef = useRef(false)
   const fallbackPollingRef = useRef(false)
   const fallbackPollTimerRef = useRef<number | null>(null)
@@ -286,6 +324,8 @@ function App() {
     () => chatMessages.filter((message) => message.visibility === 'internal'),
     [chatMessages],
   )
+
+  const activeChatMode: ChatMode = activeTab === 'concierge_room' ? 'conceal_room' : 'direct'
 
   const stopFallbackPolling = useCallback(
     (nextStatus?: ComposerStatus) => {
@@ -406,7 +446,7 @@ function App() {
         if (previous && ids.has(previous)) {
           return previous
         }
-        return nextFeed.agents[0]?.agent_id ?? null
+        return ids.has('clems') ? 'clems' : nextFeed.agents[0]?.agent_id ?? null
       })
 
       setAgentTools(tools)
@@ -422,6 +462,38 @@ function App() {
     markSynced()
   }, [markSynced, projectId, syncOfficeAgents])
 
+  const refreshAgentWorkspace = useCallback(async () => {
+    const [nextFeed, nextAgents] = await Promise.all([getPixelFeed(projectId), getAgents(projectId)])
+    setFeed(nextFeed)
+    setAgentRecords(nextAgents)
+    syncOfficeAgents(nextFeed)
+    markSynced()
+    return { nextFeed, nextAgents }
+  }, [markSynced, projectId, syncOfficeAgents])
+
+  const refreshSkillsLibrary = useCallback(async () => {
+    setSkillsLibraryLoading(true)
+    try {
+      const response = await getSkillsLibrary(projectId)
+      setSkillsLibrary(response.skills)
+      markSynced()
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setSkillsLibraryLoading(false)
+    }
+  }, [markSynced, projectId])
+
+  const ensureClemsAgent = useCallback(async () => {
+    let nextAgents = await getAgents(projectId)
+    if (!nextAgents.some((agent) => agent.agent_id === 'clems')) {
+      await createAgent(projectId, { agent_id: 'clems' })
+      nextAgents = await getAgents(projectId)
+    }
+    setAgentRecords(nextAgents)
+    return nextAgents
+  }, [projectId])
+
   const refreshTasks = useCallback(async () => {
     const response = await getTasks(projectId)
     setTasks(response.tasks)
@@ -435,6 +507,8 @@ function App() {
 
     try {
       const [themeLoaded, pixelRefLoaded] = await Promise.all([loadDonargTheme(), loadPixelReferenceTheme()])
+
+      await ensureClemsAgent()
 
       const [layout, pixel, chat, pendingApprovals, health, profile, taskPayload] = await Promise.all([
         getLayout(projectId),
@@ -477,8 +551,22 @@ function App() {
         pixelRef: pixelRefLoaded,
       })
       setLastEventAt(health.time ?? null)
+      setActiveTab('pixel_home')
+      setWorkspaceTab('agent')
+      setWorkbenchPanel('chat')
+      setSelectedAgentId('clems')
+      setDirectTarget('clems')
       markSynced()
       syncOfficeAgents(pixel)
+
+      if (health.status === 'ok') {
+        try {
+          await openTerminal(projectId, 'clems')
+          await refreshPixelFeed()
+        } catch {
+          setUiNotice('clems terminal did not auto-open. open it from the terminal panel.')
+        }
+      }
 
       if (!themeLoaded) {
         setUiNotice('donarg assets not loaded. run import_office_tileset.sh if needed.')
@@ -490,7 +578,7 @@ function App() {
     } finally {
       setLoading(false)
     }
-  }, [markSynced, mergeChatMessages, officeState, projectId, syncOfficeAgents])
+  }, [ensureClemsAgent, markSynced, mergeChatMessages, officeState, projectId, refreshPixelFeed, syncOfficeAgents])
 
   const selectedTask = useMemo(
     () => tasks.find((task) => task.task_id === selectedTaskId) ?? null,
@@ -575,7 +663,13 @@ function App() {
 
         if (
           event.type === 'agent.created' ||
-          event.type === 'agent.updated' ||
+          event.type === 'agent.updated'
+        ) {
+          void refreshAgentWorkspace()
+          return
+        }
+
+        if (
           event.type === 'pixel.updated' ||
           event.type === 'layout.updated' ||
           event.type === 'agent.spawn.completed'
@@ -600,7 +694,13 @@ function App() {
       disconnect()
       stopFallbackPolling()
     }
-  }, [projectId, mergeChatMessages, refreshApprovals, refreshPixelFeed, refreshTasks, stopFallbackPolling])
+  }, [projectId, mergeChatMessages, refreshAgentWorkspace, refreshApprovals, refreshPixelFeed, refreshTasks, stopFallbackPolling])
+
+  useEffect(() => {
+    if (activeTab === 'docs' && docsPanel === 'skills_library') {
+      void refreshSkillsLibrary()
+    }
+  }, [activeTab, docsPanel, refreshSkillsLibrary])
 
   useEffect(() => {
     const listener = (rawEvent: Event) => {
@@ -674,6 +774,7 @@ function App() {
 
   const handleSelectAgent = useCallback((agentId: string) => {
     setSelectedAgentId(agentId)
+    setDirectTarget(agentId === 'clems' ? 'clems' : 'selected_agent')
   }, [])
 
   const handleCreateAgent = useCallback(
@@ -689,19 +790,21 @@ function App() {
         const payload = {
           agent_id: createAgentId.trim() || undefined,
           name: createAgentName.trim() || undefined,
+          skills: parseSkillsInput(createAgentSkills),
         }
         const created = await createAgent(projectId, payload)
         setCreateAgentId('')
         setCreateAgentName('')
+        setCreateAgentSkills('')
         setSelectedAgentId(created.agent.agent_id)
-        await refreshPixelFeed()
+        await refreshAgentWorkspace()
       } catch (error) {
         setApiError(error instanceof Error ? error.message : String(error))
       } finally {
         setIsSubmitting(false)
       }
     },
-    [createAgentId, createAgentName, isSubmitting, projectId, refreshPixelFeed],
+    [createAgentId, createAgentName, createAgentSkills, isSubmitting, projectId, refreshAgentWorkspace],
   )
 
   const handleDeleteAgent = useCallback(
@@ -709,12 +812,12 @@ function App() {
       setApiError(null)
       try {
         await deleteAgent(projectId, agentId)
-        await refreshPixelFeed()
+        await refreshAgentWorkspace()
       } catch (error) {
         setApiError(error instanceof Error ? error.message : String(error))
       }
     },
-    [projectId, refreshPixelFeed],
+    [projectId, refreshAgentWorkspace],
   )
 
   const handleCreateTask = useCallback(async () => {
@@ -819,14 +922,28 @@ function App() {
     [handleDeleteAgent],
   )
 
+  const rosterAgents = useMemo<RosterAgentView[]>(() => {
+    const skillsByAgentId = new Map(agentRecords.map((agent) => [agent.agent_id, agent.skills]))
+    return (feed?.agents ?? []).map((agent) => ({
+      ...agent,
+      skills: skillsByAgentId.get(agent.agent_id) ?? [],
+    }))
+  }, [agentRecords, feed])
+
   const selectedAgent = useMemo(
-    () => feed?.agents.find((agent) => agent.agent_id === selectedAgentId) ?? null,
-    [feed, selectedAgentId],
+    () => rosterAgents.find((agent) => agent.agent_id === selectedAgentId) ?? null,
+    [rosterAgents, selectedAgentId],
   )
 
   const selectedAgentChatReady = selectedAgent?.chat_targetable ?? false
 
-  const handleSendChat = useCallback(async (targetMode: DirectTargetMode = directTarget) => {
+  const handleSendChat = useCallback(async ({
+    targetMode = directTarget,
+    chatMode = activeChatMode,
+  }: {
+    targetMode?: DirectTargetMode
+    chatMode?: ChatMode
+  } = {}) => {
     const text = chatInput.trim()
     if (!text || isSendingChat) {
       return
@@ -877,8 +994,8 @@ function App() {
       setIsSendingChat(false)
     }
   }, [
+    activeChatMode,
     chatInput,
-    chatMode,
     directTarget,
     executionMode,
     isSendingChat,
@@ -934,6 +1051,32 @@ function App() {
       setApiError(error instanceof Error ? error.message : String(error))
     }
   }, [projectId, selectedAgentId])
+
+  const handleQuickAgent = useCallback(
+    async (agentId: string) => {
+      setApiError(null)
+      setActiveTab('pixel_home')
+      setWorkspaceTab('agent')
+      setWorkbenchPanel('chat')
+      try {
+        if (!agentRecords.some((agent) => agent.agent_id === agentId)) {
+          await createAgent(projectId, { agent_id: agentId })
+          await refreshAgentWorkspace()
+        }
+
+        setSelectedAgentId(agentId)
+        if (agentId === 'clems') {
+          setDirectTarget('clems')
+          await ensureAgentTerminal('clems')
+        } else {
+          setDirectTarget('selected_agent')
+        }
+      } catch (error) {
+        setApiError(error instanceof Error ? error.message : String(error))
+      }
+    },
+    [agentRecords, ensureAgentTerminal, projectId, refreshAgentWorkspace],
+  )
 
   const handleApproval = useCallback(
     async (requestId: string, decision: 'approve' | 'reject') => {
@@ -1016,11 +1159,11 @@ function App() {
   }, [])
 
   const agentNumericIds = useMemo(() => {
-    if (!feed) {
+    if (rosterAgents.length === 0) {
       return []
     }
-    return feed.agents.map((agent) => toNumericId(agent.agent_id))
-  }, [feed, toNumericId])
+    return rosterAgents.map((agent) => toNumericId(agent.agent_id))
+  }, [rosterAgents, toNumericId])
 
   const selectedLog = useMemo(() => {
     if (!selectedAgentId) {
@@ -1035,12 +1178,10 @@ function App() {
     return JSON.stringify(llmProfile) !== JSON.stringify(profileDraft)
   }, [llmProfile, profileDraft])
   const l1Agents = useMemo(() => {
-    const fromFeed = (feed?.agents ?? [])
-      .filter((agent) => agent.level === 1)
-      .map((agent) => agent.agent_id)
+    const fromFeed = rosterAgents.filter((agent) => agent.level === 1).map((agent) => agent.agent_id)
     const fromProfile = profileDraft ? Object.keys(profileDraft.l1_models ?? {}) : []
     return [...new Set([...fromFeed, ...fromProfile])].sort()
-  }, [feed?.agents, profileDraft])
+  }, [profileDraft, rosterAgents])
   const directTargetLabel =
     directTarget === 'selected_agent'
       ? selectedAgent
@@ -1053,6 +1194,7 @@ function App() {
   const topTabs = useMemo(
     () => [
       { id: 'pixel_home' as const, label: 'Pixel Home' },
+      { id: 'concierge_room' as const, label: 'Concierge Room' },
       { id: 'overview' as const, label: 'Overview' },
       { id: 'pilotage' as const, label: 'Pilotage' },
       { id: 'docs' as const, label: 'Docs' },
@@ -1064,7 +1206,7 @@ function App() {
 
   const workspaceTabs = useMemo(
     () => [
-      { id: 'agent' as const, label: '+ Agent' },
+      { id: 'agent' as const, label: 'Agents' },
       { id: 'layout' as const, label: 'Layout' },
       { id: 'settings' as const, label: 'Settings' },
     ],
@@ -1146,7 +1288,7 @@ function App() {
             <span className="hint">Runtime</span>
           </div>
           <ul className="settings-list">
-            <li>chat mode: {chatMode}</li>
+            <li>chat mode: {activeChatMode}</li>
             <li>execution mode: {executionMode}</li>
             <li>ws: {wsConnected ? 'connected' : 'reconnecting'}</li>
             <li>api: {getApiUrl()}</li>
@@ -1160,12 +1302,32 @@ function App() {
       <section className="workspace-section workspace-section-agents">
         <div className="section-title-row compact">
           <h2>Agents</h2>
-          <span className="hint">chat + terminal</span>
+          <span className="hint">stable roster + quick launch</span>
         </div>
 
         <div className="agent-create-card">
+          <div className="quick-agent-row">
+            {QUICK_AGENT_PRESETS.map((preset) => {
+              const isSelected = selectedAgentId === preset.agent_id
+              const exists = agentRecords.some((agent) => agent.agent_id === preset.agent_id)
+              return (
+                <button
+                  key={preset.agent_id}
+                  className={`quick-agent-btn ${isSelected ? 'active' : ''}`}
+                  onClick={() => {
+                    void handleQuickAgent(preset.agent_id)
+                  }}
+                  type="button"
+                >
+                  <span>{preset.label}</span>
+                  <span className="quick-agent-meta">{exists ? 'ready' : 'create'}</span>
+                </button>
+              )
+            })}
+          </div>
           <form className="create-form compact" onSubmit={handleCreateAgent}>
             <input
+              ref={createAgentIdInputRef}
               placeholder="agent id (optional)"
               value={createAgentId}
               onChange={(event) => setCreateAgentId(event.target.value)}
@@ -1175,26 +1337,44 @@ function App() {
               value={createAgentName}
               onChange={(event) => setCreateAgentName(event.target.value)}
             />
+            <input
+              placeholder="skills (comma separated)"
+              value={createAgentSkills}
+              onChange={(event) => setCreateAgentSkills(event.target.value)}
+            />
             <button type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Creating...' : '+ Agent'}
             </button>
           </form>
+          <p className="small-copy">
+            Clems is always available. L1 leads are one click away. Add skills now or assign them later from your workflow.
+          </p>
         </div>
 
         <div className="agent-cards">
-          {feed?.agents.map((agent) => (
+          {rosterAgents.map((agent) => (
             <article key={agent.agent_id} className={`agent-card ${selectedAgentId === agent.agent_id ? 'active' : ''}`}>
               <button className="agent-card-main" onClick={() => handleSelectAgent(agent.agent_id)}>
                 <div className="agent-card-head">
                   <div>
                     <p className="agent-name">{agent.name}</p>
-                    <p className="agent-meta">
-                      @{agent.agent_id}
-                    </p>
+                    <p className="agent-meta">@{agent.agent_id}</p>
                   </div>
                   <span className="agent-level-pill">L{agent.level}</span>
                 </div>
                 <p className="agent-role">{agent.role}</p>
+                {agent.skills.length > 0 ? (
+                  <div className="agent-skill-row">
+                    {agent.skills.slice(0, 3).map((skill) => (
+                      <span key={skill} className="skill-chip" title={skill}>
+                        {formatSkillChip(skill)}
+                      </span>
+                    ))}
+                    {agent.skills.length > 3 ? <span className="skill-chip overflow">+{agent.skills.length - 3}</span> : null}
+                  </div>
+                ) : (
+                  <p className="agent-skill-empty">No skills assigned yet.</p>
+                )}
                 <div className="agent-card-statuses">
                   <span className={`dot ${agent.chat_targetable ? 'green' : 'gray'}`}>
                     {agent.chat_targetable ? 'chat ready' : 'chat unavailable'}
@@ -1209,11 +1389,23 @@ function App() {
                   className="agent-action"
                   onClick={() => {
                     setSelectedAgentId(agent.agent_id)
+                    setActiveTab('pixel_home')
                     setWorkbenchPanel('terminal')
                     void ensureAgentTerminal(agent.agent_id)
                   }}
                 >
                   Open terminal
+                </button>
+                <button
+                  className="agent-action"
+                  onClick={() => {
+                    setSelectedAgentId(agent.agent_id)
+                    setActiveTab('pixel_home')
+                    setWorkbenchPanel('chat')
+                    setDirectTarget(agent.agent_id === 'clems' ? 'clems' : 'selected_agent')
+                  }}
+                >
+                  Chat
                 </button>
                 {agent.agent_id !== 'clems' ? (
                   <button
@@ -1263,6 +1455,140 @@ function App() {
       { label: 'Queue', value: String(queueDepth) },
       { label: 'Tasks open', value: String(taskCounts.todo + taskCounts.in_progress + taskCounts.blocked) },
     ]
+
+    if (activeTab === 'concierge_room') {
+      return (
+        <section className="secondary-tab panel concierge-tab">
+          <div className="secondary-header">
+            <h2>Concierge Room</h2>
+            <span className="hint">multi-agent room with Clems summary on top</span>
+          </div>
+          <div className="concierge-layout">
+            <section className="secondary-card concierge-chat-card">
+              <div className="section-title-row">
+                <h3>Room chat</h3>
+                <div className="chat-actions">
+                  <span className={`chat-status ${composerStatus}`}>{composerLabel}</span>
+                  <span className="chat-target">room fanout via @clems</span>
+                </div>
+              </div>
+              <div className="concierge-banner">
+                <p>
+                  Use this tab when you want one operator prompt to fan out across your active agents and come back as a single Clems-facing room summary.
+                </p>
+              </div>
+              <div className="mode-row concierge-controls">
+                <div className="mode-pill-row">
+                  <span className="mode-pill active">Concierge Room</span>
+                  <span className="mode-pill">active agents {agentsTotal}</span>
+                </div>
+                <div className="exec-toggle">
+                  <button
+                    className={executionMode === 'chat' ? 'active' : ''}
+                    onClick={() => setExecutionMode('chat')}
+                  >
+                    chat
+                  </button>
+                  <button
+                    className={executionMode === 'scene' ? 'active' : ''}
+                    onClick={() => setExecutionMode('scene')}
+                  >
+                    scene
+                  </button>
+                </div>
+              </div>
+              <div className="chat-log concierge-log">
+                {operatorChatMessages.length === 0 ? (
+                  <p className="chat-empty">No room traffic yet. Send a first operator instruction to fan out across the active agents.</p>
+                ) : (
+                  operatorChatMessages.map((message) => (
+                    <article key={message.message_id} className="chat-row">
+                      <header>
+                        <div className="chat-row-meta">
+                          <strong className="chat-author">@{message.author}</strong>
+                          {messageKindLabel(message) ? <span className="chat-kind">{messageKindLabel(message)}</span> : null}
+                        </div>
+                        <time className="chat-time">{new Date(message.timestamp).toLocaleTimeString()}</time>
+                      </header>
+                      <p className="chat-body">{message.text}</p>
+                    </article>
+                  ))
+                )}
+              </div>
+              <div className="composer-stack">
+                <div className="composer-row">
+                  <div className="plus-wrap">
+                    <button className="plus-btn" onClick={() => setShowAddMenu((value) => !value)}>
+                      +
+                    </button>
+                    {showAddMenu ? (
+                      <div className="plus-menu">
+                        <button onClick={() => addMention('clems')}>mention @clems</button>
+                        <button onClick={() => addMention('victor')}>mention @victor</button>
+                        <button onClick={() => addMention('leo')}>mention @leo</button>
+                        <button onClick={() => addMention('nova')}>mention @nova</button>
+                      </div>
+                    ) : null}
+                  </div>
+                  <input
+                    value={chatInput}
+                    onChange={(event) => setChatInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        void handleSendChat({ chatMode: 'conceal_room' })
+                      }
+                    }}
+                    placeholder="Concierge Room prompt for all active agents"
+                  />
+                </div>
+                <div className="composer-actions-row">
+                  <button
+                    className="send-btn"
+                    onClick={() => void handleSendChat({ chatMode: 'conceal_room' })}
+                    disabled={isSendingChat}
+                  >
+                    {isSendingChat ? 'Sending...' : 'Send to Concierge Room'}
+                  </button>
+                </div>
+              </div>
+            </section>
+            <aside className="secondary-card concierge-side-card">
+              <h3>Room context</h3>
+              <ul className="data-list">
+                <li>
+                  <span>Approvals pending</span>
+                  <strong>{approvals.length}</strong>
+                </li>
+                <li>
+                  <span>Open tasks</span>
+                  <strong>{taskCounts.todo + taskCounts.in_progress + taskCounts.blocked}</strong>
+                </li>
+                <li>
+                  <span>WS</span>
+                  <strong>{composerLabel}</strong>
+                </li>
+                <li>
+                  <span>Last event</span>
+                  <strong>{lastEventAt ? new Date(lastEventAt).toLocaleTimeString() : 'none'}</strong>
+                </li>
+              </ul>
+              <div className="events-log">
+                <p><strong>Selected agent:</strong> {selectedAgent ? `@${selectedAgent.agent_id}` : 'none'}</p>
+                <p><strong>Direct target:</strong> {directTargetLabel}</p>
+                <p><strong>Latest internal messages:</strong></p>
+                {latestInternal.slice(0, 5).map((message) => (
+                  <p key={message.message_id}>
+                    <strong>@{message.author}</strong> {message.text}
+                  </p>
+                ))}
+                {latestInternal.length === 0 ? <p>No internal room traces yet.</p> : null}
+              </div>
+            </aside>
+          </div>
+        </section>
+      )
+    }
 
     if (activeTab === 'pilotage') {
       return (
@@ -1576,46 +1902,108 @@ function App() {
         <section className="secondary-tab panel">
           <div className="secondary-header">
             <h2>Docs</h2>
-            <span className="hint">daily path, contracts, and launch truth</span>
+            <span className="hint">runbook truth + local skills library</span>
           </div>
-          <div className="secondary-grid">
-            <article>
-              <h3>Official app path</h3>
-              <p>/Applications/Cockpit.app</p>
-            </article>
-            <article>
-              <h3>Preflight contracts</h3>
-              <p>/healthz + /chat/approvals + /llm-profile</p>
-            </article>
-            <article>
-              <h3>Runtime mode</h3>
-              <p>{backendHealth?.app_mode ?? 'cockpit_local'}</p>
-            </article>
-            <article>
-              <h3>Daily command</h3>
-              <p>open "/Applications/Cockpit.app"</p>
-            </article>
+          <div className="docs-subnav">
+            <button
+              className={`docs-subnav-btn ${docsPanel === 'runbook' ? 'active' : ''}`}
+              onClick={() => setDocsPanel('runbook')}
+            >
+              Runbook
+            </button>
+            <button
+              className={`docs-subnav-btn ${docsPanel === 'skills_library' ? 'active' : ''}`}
+              onClick={() => setDocsPanel('skills_library')}
+            >
+              Skills Library
+            </button>
           </div>
-          <div className="secondary-columns">
-            <section className="secondary-card">
-              <h3>Operator checklist</h3>
-              <div className="events-log">
-                <p>1. Launch Cockpit.app</p>
-                <p>2. Check backend and WS badges</p>
-                <p>3. Verify approvals and llm-profile routes</p>
-                <p>4. Work from Pixel Home, To Do, and Model Routing only</p>
+          {docsPanel === 'runbook' ? (
+            <>
+              <div className="secondary-grid">
+                <article>
+                  <h3>Official app path</h3>
+                  <p>/Applications/Cockpit.app</p>
+                </article>
+                <article>
+                  <h3>Preflight contracts</h3>
+                  <p>/healthz + /chat/approvals + /llm-profile</p>
+                </article>
+                <article>
+                  <h3>Runtime mode</h3>
+                  <p>{backendHealth?.app_mode ?? 'cockpit_local'}</p>
+                </article>
+                <article>
+                  <h3>Daily command</h3>
+                  <p>open "/Applications/Cockpit.app"</p>
+                </article>
               </div>
-            </section>
-            <section className="secondary-card">
-              <h3>Reference docs</h3>
-              <div className="events-log">
-                <p><strong>Runbook:</strong> docs/COCKPIT_NEXT_RUNBOOK.md</p>
-                <p><strong>Protocol:</strong> docs/CLOUD_API_PROTOCOL.md</p>
-                <p><strong>Packaging:</strong> docs/PACKAGING.md</p>
-                <p><strong>Status:</strong> docs/STATUS_REPORT.md</p>
+              <div className="secondary-columns">
+                <section className="secondary-card">
+                  <h3>Operator checklist</h3>
+                  <div className="events-log">
+                    <p>1. Launch Cockpit.app</p>
+                    <p>2. Check backend and WS badges</p>
+                    <p>3. Verify approvals and llm-profile routes</p>
+                    <p>4. Work from Pixel Home, To Do, Concierge Room, and Model Routing</p>
+                  </div>
+                </section>
+                <section className="secondary-card">
+                  <h3>Reference docs</h3>
+                  <div className="events-log">
+                    <p><strong>Runbook:</strong> docs/COCKPIT_NEXT_RUNBOOK.md</p>
+                    <p><strong>Protocol:</strong> docs/CLOUD_API_PROTOCOL.md</p>
+                    <p><strong>Packaging:</strong> docs/PACKAGING.md</p>
+                    <p><strong>Status:</strong> docs/STATUS_REPORT.md</p>
+                  </div>
+                </section>
               </div>
-            </section>
-          </div>
+            </>
+          ) : (
+            <div className="skills-library-layout">
+              <section className="secondary-card">
+                <h3>Installed local skills</h3>
+                <p className="small-copy">
+                  Read-only view from your local Codex skills folder plus project lock state when available.
+                </p>
+              </section>
+              <div className="skills-library-grid">
+                {skillsLibraryLoading ? (
+                  <section className="secondary-card">
+                    <p>Loading skills library...</p>
+                  </section>
+                ) : skillsLibrary.length === 0 ? (
+                  <section className="secondary-card">
+                    <p>No local skills were discovered for this project yet.</p>
+                  </section>
+                ) : (
+                  skillsLibrary.map((skill) => (
+                    <article key={skill.skill_id} className="secondary-card skill-library-card">
+                      <div className="skill-library-head">
+                        <div>
+                          <h3>{skill.name}</h3>
+                          <p className="skill-library-id">{skill.skill_id}</p>
+                        </div>
+                        <div className="skill-library-badges">
+                          {skill.project_locked ? <span className="skill-chip project">project locked</span> : null}
+                          {skill.assigned_agents.length > 0 ? <span className="skill-chip assigned">assigned</span> : <span className="skill-chip">local only</span>}
+                        </div>
+                      </div>
+                      <p className="small-copy">{skill.description}</p>
+                      <div className="events-log">
+                        <p><strong>Source:</strong> {skill.source_path}</p>
+                        <p><strong>Status:</strong> {skill.project_status ?? 'not locked'}</p>
+                        <p>
+                          <strong>Assigned agents:</strong>{' '}
+                          {skill.assigned_agents.length > 0 ? skill.assigned_agents.map((agentId) => `@${agentId}`).join(', ') : 'none'}
+                        </p>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </section>
       )
     }
@@ -1875,11 +2263,60 @@ function App() {
       ) : (
         <main className="pixel-shell panel">
           <aside className="left-rail">
-            <button className="rail-btn active">home</button>
-            <button className="rail-btn">agents</button>
-            <button className="rail-btn">layout</button>
-            <button className="rail-btn">chat</button>
-            <button className="rail-btn">term</button>
+            <button
+              className={`rail-btn ${workspaceTab === 'agent' && workbenchPanel === 'chat' && directTarget === 'clems' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('pixel_home')
+                setWorkspaceTab('agent')
+                setWorkbenchPanel('chat')
+                setSelectedAgentId('clems')
+                setDirectTarget('clems')
+              }}
+            >
+              home
+            </button>
+            <button
+              className={`rail-btn ${workspaceTab === 'agent' && !(workbenchPanel === 'chat' && directTarget === 'clems') ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('pixel_home')
+                setWorkspaceTab('agent')
+                window.requestAnimationFrame(() => createAgentIdInputRef.current?.focus())
+              }}
+            >
+              agents
+            </button>
+            <button
+              className={`rail-btn ${workspaceTab === 'layout' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('pixel_home')
+                setWorkspaceTab('layout')
+              }}
+            >
+              layout
+            </button>
+            <button
+              className={`rail-btn ${workbenchPanel === 'chat' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('pixel_home')
+                setWorkbenchPanel('chat')
+                if (selectedAgentId && selectedAgentId !== 'clems' && selectedAgentChatReady) {
+                  setDirectTarget('selected_agent')
+                } else {
+                  setDirectTarget('clems')
+                }
+              }}
+            >
+              chat
+            </button>
+            <button
+              className={`rail-btn ${workbenchPanel === 'terminal' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('pixel_home')
+                setWorkbenchPanel('terminal')
+              }}
+            >
+              term
+            </button>
             <div className="rail-stats">
               <p>L0 {feed?.l0_count ?? 0}</p>
               <p>L1 {feed?.l1_count ?? 0}</p>
@@ -1964,7 +2401,7 @@ function App() {
                         ))}
                       </div>
                       <div className="workbench-summary">
-                        <span className="chat-target">Target {chatMode === 'direct' ? directTargetLabel : 'conceal room'}</span>
+                        <span className="chat-target">Target {directTargetLabel}</span>
                         <span className={`chat-status ${composerStatus}`}>{composerLabel}</span>
                         <span className="workbench-mini-pill">
                           terminal {selectedAgent?.terminal_state === 'running' ? 'live' : selectedAgentId ? 'offline' : 'none'}
@@ -1977,25 +2414,16 @@ function App() {
                         <div className="section-title-row">
                           <h2>Live Chat</h2>
                           <div className="chat-actions">
+                            <span className="chat-target">Direct</span>
                             <button className="small-btn" onClick={() => void handleResetChat()}>
                               Reset chat
                             </button>
                           </div>
                         </div>
-                        <div className="mode-row">
-                          <div className="mode-toggle">
-                            <button
-                              className={chatMode === 'direct' ? 'active' : ''}
-                              onClick={() => setChatMode('direct')}
-                            >
-                              Direct
-                            </button>
-                            <button
-                              className={chatMode === 'conceal_room' ? 'active' : ''}
-                              onClick={() => setChatMode('conceal_room')}
-                            >
-                              Conceal Room
-                            </button>
+                        <div className="mode-row direct-chat-row">
+                          <div className="mode-pill-row">
+                            <span className="mode-pill active">Direct</span>
+                            <span className="mode-pill">Concierge Room lives in the top tab</span>
                           </div>
                           <div className="exec-toggle">
                             <button
@@ -2013,37 +2441,33 @@ function App() {
                           </div>
                         </div>
 
-                        {chatMode === 'direct' ? (
-                          <div className="chat-target-card">
-                            <div className="chat-target-actions">
-                              <button
-                                className={`target-btn ${directTarget === 'clems' ? 'active' : ''}`}
-                                onClick={() => setDirectTarget('clems')}
-                              >
-                                Talk to Clems
-                              </button>
-                              <button
-                                className={`target-btn ${directTarget === 'selected_agent' ? 'active' : ''}`}
-                                onClick={() => setDirectTarget('selected_agent')}
-                                disabled={!selectedAgentChatReady}
-                              >
-                                Talk to selected agent
-                              </button>
-                            </div>
-                            <div className="chat-target-details">
-                              <p className="small-copy">Agent chat uses the model lane directly. Terminal state stays separate.</p>
-                              <p className="chat-target-detail">
-                                {selectedAgent
-                                  ? selectedAgentChatReady
-                                    ? `Selected target: @${selectedAgent.agent_id}`
-                                    : `Selected target: @${selectedAgent.agent_id} is not chat-ready`
-                                  : 'No agent selected yet. Pick one from the roster to enable direct agent chat.'}
-                              </p>
-                            </div>
+                        <div className="chat-target-card">
+                          <div className="chat-target-actions">
+                            <button
+                              className={`target-btn ${directTarget === 'clems' ? 'active' : ''}`}
+                              onClick={() => setDirectTarget('clems')}
+                            >
+                              Talk to Clems
+                            </button>
+                            <button
+                              className={`target-btn ${directTarget === 'selected_agent' ? 'active' : ''}`}
+                              onClick={() => setDirectTarget('selected_agent')}
+                              disabled={!selectedAgentChatReady}
+                            >
+                              Talk to selected agent
+                            </button>
                           </div>
-                        ) : (
-                          <p className="small-copy">Conceal Room fans out to L1 and returns a Clems operator summary.</p>
-                        )}
+                          <div className="chat-target-details">
+                            <p className="small-copy">Direct chat uses the model lane. Terminal state stays separate from LLM availability.</p>
+                            <p className="chat-target-detail">
+                              {selectedAgent
+                                ? selectedAgentChatReady
+                                  ? `Selected target: @${selectedAgent.agent_id}`
+                                  : `Selected target: @${selectedAgent.agent_id} is not chat-ready`
+                                : 'No agent selected yet. Pick one from the roster to enable direct agent chat.'}
+                            </p>
+                          </div>
+                        </div>
 
                         <div className="chat-log">
                           {operatorChatMessages.length === 0 ? (
@@ -2090,41 +2514,33 @@ function App() {
                                 }
                               }}
                               placeholder={
-                                chatMode === 'direct'
-                                  ? directTarget === 'selected_agent'
-                                    ? selectedAgentChatReady
-                                      ? `Send to @${selectedAgent?.agent_id}`
-                                      : 'Select a chat-ready agent or switch back to Clems.'
-                                    : 'Talk to Clems directly.'
-                                  : 'Conceal Room: L1 live fanout + Clems summary'
+                                directTarget === 'selected_agent'
+                                  ? selectedAgentChatReady
+                                    ? `Send to @${selectedAgent?.agent_id}`
+                                    : 'Select a chat-ready agent or switch back to Clems.'
+                                  : 'Talk to Clems directly.'
                               }
                             />
                           </div>
                           <div className="composer-actions-row">
-                            {chatMode === 'direct' ? (
-                              <div className="composer-actions">
-                                <button
-                                  className="send-btn"
-                                  onClick={() => void handleSendChat('clems')}
-                                  disabled={isSendingChat}
-                                >
-                                  {isSendingChat && directTarget === 'clems' ? 'Sending...' : 'Talk to Clems'}
-                                </button>
-                                <button
-                                  className="send-btn alt"
-                                  onClick={() => void handleSendChat('selected_agent')}
-                                  disabled={isSendingChat || !selectedAgentChatReady}
-                                >
-                                  {isSendingChat && directTarget === 'selected_agent'
-                                    ? 'Sending...'
-                                    : 'Talk to selected agent'}
-                                </button>
-                              </div>
-                            ) : (
-                              <button className="send-btn" onClick={() => void handleSendChat()} disabled={isSendingChat}>
-                                {isSendingChat ? 'Sending...' : 'Send to room'}
+                            <div className="composer-actions">
+                              <button
+                                className="send-btn"
+                                onClick={() => void handleSendChat({ targetMode: 'clems', chatMode: 'direct' })}
+                                disabled={isSendingChat}
+                              >
+                                {isSendingChat && directTarget === 'clems' ? 'Sending...' : 'Talk to Clems'}
                               </button>
-                            )}
+                              <button
+                                className="send-btn alt"
+                                onClick={() => void handleSendChat({ targetMode: 'selected_agent', chatMode: 'direct' })}
+                                disabled={isSendingChat || !selectedAgentChatReady}
+                              >
+                                {isSendingChat && directTarget === 'selected_agent'
+                                  ? 'Sending...'
+                                  : 'Talk to selected agent'}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </section>
@@ -2264,7 +2680,12 @@ function App() {
                 <button
                   key={tab.id}
                   className={`workspace-tab ${workspaceTab === tab.id ? 'active' : ''}`}
-                  onClick={() => setWorkspaceTab(tab.id)}
+                  onClick={() => {
+                    setWorkspaceTab(tab.id)
+                    if (tab.id === 'agent') {
+                      window.requestAnimationFrame(() => createAgentIdInputRef.current?.focus())
+                    }
+                  }}
                 >
                   {tab.label}
                 </button>

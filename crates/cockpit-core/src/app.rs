@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
-    path::PathBuf,
+    env, fs,
+    path::{Path as FsPath, PathBuf},
 };
 
 use axum::{
@@ -26,8 +27,9 @@ use crate::{
         ChatHistoryResponse, ChatMessage, CreateAgentRequest, CreateAgentResponse,
         CreateTaskRequest, DeliveryMode, LiveTurnRequest, LiveTurnResponse, LlmProfileResponse,
         MessageVisibility, PixelAgentStatus, PixelFeedResponse, RoadmapDraftRequest,
-        RoadmapDraftResponse, TasksResponse, TerminalOpenRequest, TerminalSendRequest,
-        TerminalSession, UpdateLlmProfileRequest, UpdateTaskRequest, WsEventEnvelope,
+        RoadmapDraftResponse, SkillLibraryEntry, SkillsLibraryResponse, TasksResponse,
+        TerminalOpenRequest, TerminalSendRequest, TerminalSession, UpdateLlmProfileRequest,
+        UpdateTaskRequest, WsEventEnvelope,
     },
     openrouter, orchestrator,
     state::AppState,
@@ -67,6 +69,7 @@ pub fn build_router(state: AppState) -> Router {
             post(reject_approval),
         )
         .route("/v1/projects/{id}/pixel-feed", get(pixel_feed))
+        .route("/v1/projects/{id}/skills/library", get(get_skills_library))
         .route("/v1/projects/{id}/tasks", get(get_tasks).post(post_task))
         .route("/v1/projects/{id}/tasks/{task_id}", axum::routing::patch(patch_task))
         .route("/v1/projects/{id}/layout", get(get_layout).put(put_layout))
@@ -93,6 +96,20 @@ async fn healthz() -> Json<Value> {
         "build_sha": build.build_sha,
         "build_time": build.build_time,
         "app_mode": build.app_mode,
+    }))
+}
+
+async fn get_skills_library(
+    Path(project_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<SkillsLibraryResponse>, ApiError> {
+    let agents_map = storage::load_agents(state.control_root.as_ref(), &project_id)?;
+    let skills = build_skills_library(state.control_root.as_ref(), &project_id, &agents_map)?;
+
+    Ok(Json(SkillsLibraryResponse {
+        project_id,
+        generated_at: Utc::now().to_rfc3339(),
+        skills,
     }))
 }
 
@@ -991,6 +1008,204 @@ fn default_agent_profile(
             "specialist",
         ),
     }
+}
+
+fn build_skills_library(
+    control_root: &FsPath,
+    project_id: &str,
+    agents: &HashMap<String, AgentRecord>,
+) -> Result<Vec<SkillLibraryEntry>, ApiError> {
+    let skills_root = codex_home().join("skills");
+    let lock_map = load_project_skill_lock_map(control_root, project_id);
+    let mut entries = Vec::new();
+    let mut skill_files = Vec::new();
+
+    collect_skill_markdowns(&skills_root, &mut skill_files).map_err(|error| ApiError {
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+        message: format!("unable to scan local skills: {error}"),
+    })?;
+
+    for skill_path in skill_files {
+        let skill_id = skill_path
+            .parent()
+            .and_then(|path| path.file_name())
+            .and_then(|value| value.to_str())
+            .unwrap_or("unknown")
+            .to_string();
+        let (name, description) = parse_skill_markdown(&skill_path);
+        let assigned_agents = agents
+            .values()
+            .filter(|agent| agent.skills.iter().any(|skill| skill == &skill_id))
+            .map(|agent| agent.agent_id.clone())
+            .collect::<Vec<_>>();
+        let project_status = lock_map.get(&skill_id).cloned();
+
+        entries.push(SkillLibraryEntry {
+            skill_id,
+            name,
+            description,
+            source_path: skill_path.display().to_string(),
+            project_locked: project_status.is_some(),
+            project_status,
+            assigned_agents,
+        });
+    }
+
+    entries.sort_by(|left, right| left.name.to_lowercase().cmp(&right.name.to_lowercase()));
+    Ok(entries)
+}
+
+fn codex_home() -> PathBuf {
+    if let Some(value) = env::var_os("CODEX_HOME") {
+        return PathBuf::from(value);
+    }
+    if let Some(home) = env::var_os("HOME") {
+        return PathBuf::from(home).join(".codex");
+    }
+    PathBuf::from(".codex")
+}
+
+fn collect_skill_markdowns(root: &FsPath, output: &mut Vec<PathBuf>) -> std::io::Result<()> {
+    if !root.exists() {
+        return Ok(());
+    }
+
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        let path = entry.path();
+        let file_name = entry.file_name();
+        let file_name = file_name.to_string_lossy();
+        if file_name.starts_with('.') {
+            continue;
+        }
+
+        if path.is_dir() {
+            collect_skill_markdowns(&path, output)?;
+            continue;
+        }
+
+        if file_name == "SKILL.md" {
+            output.push(path);
+        }
+    }
+
+    Ok(())
+}
+
+fn parse_skill_markdown(path: &FsPath) -> (String, String) {
+    let raw = match fs::read_to_string(path) {
+        Ok(content) => content,
+        Err(_) => return fallback_skill_label(path),
+    };
+
+    let mut in_frontmatter = false;
+    let mut seen_frontmatter = false;
+    let mut name: Option<String> = None;
+    let mut description: Option<String> = None;
+    let mut heading_name: Option<String> = None;
+
+    for line in raw.lines() {
+        let trimmed = line.trim();
+        if trimmed == "---" {
+            if !seen_frontmatter {
+                seen_frontmatter = true;
+                in_frontmatter = true;
+                continue;
+            }
+            if in_frontmatter {
+                in_frontmatter = false;
+                continue;
+            }
+        }
+
+        if in_frontmatter {
+            if let Some(value) = trimmed.strip_prefix("name:") {
+                let parsed = value.trim();
+                if !parsed.is_empty() {
+                    name = Some(parsed.trim_matches('"').to_string());
+                }
+            }
+            if let Some(value) = trimmed.strip_prefix("description:") {
+                let parsed = value.trim();
+                if !parsed.is_empty() {
+                    description = Some(parsed.trim_matches('"').to_string());
+                }
+            }
+            continue;
+        }
+
+        if heading_name.is_none() && trimmed.starts_with("# ") {
+            heading_name = Some(trimmed.trim_start_matches("# ").trim().to_string());
+            continue;
+        }
+
+        if description.is_none() && !trimmed.is_empty() && !trimmed.starts_with('#') {
+            description = Some(trimmed.to_string());
+        }
+    }
+
+    let fallback = fallback_skill_label(path);
+    (
+        name.or(heading_name).unwrap_or(fallback.0),
+        description.unwrap_or(fallback.1),
+    )
+}
+
+fn fallback_skill_label(path: &FsPath) -> (String, String) {
+    let name = path
+        .parent()
+        .and_then(|value| value.file_name())
+        .and_then(|value| value.to_str())
+        .unwrap_or("Unknown skill")
+        .replace('-', " ");
+    let normalized = name
+        .split_whitespace()
+        .map(|part| {
+            let mut chars = part.chars();
+            match chars.next() {
+                Some(first) => format!("{}{}", first.to_uppercase(), chars.as_str()),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    (normalized, "Installed local skill".to_string())
+}
+
+fn load_project_skill_lock_map(control_root: &FsPath, project_id: &str) -> HashMap<String, String> {
+    let lock_path = storage::project_root(control_root, project_id)
+        .join("skills")
+        .join("skills.lock.json");
+    let raw = match fs::read_to_string(lock_path) {
+        Ok(content) => content,
+        Err(_) => return HashMap::new(),
+    };
+    let payload: Value = match serde_json::from_str(&raw) {
+        Ok(value) => value,
+        Err(_) => return HashMap::new(),
+    };
+
+    payload
+        .get("skills")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|item| {
+            let skill_id = item
+                .get("skill_id")
+                .or_else(|| item.get("name"))
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())?;
+            let status = item
+                .get("status")
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .unwrap_or("active");
+            Some((skill_id.to_string(), status.to_string()))
+        })
+        .collect()
 }
 
 async fn get_llm_profile(
