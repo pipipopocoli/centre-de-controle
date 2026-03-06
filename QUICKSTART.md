@@ -2,16 +2,31 @@
 
 Date reference: 2026-03-03.
 
-## Product launch (Cockpit Next default)
+## Product launch (Cockpit default)
 
 Use these commands for the actual app runtime:
 
 ```bash
 ./scripts/run_cockpit_next_dev.sh
 ./scripts/run_cockpit_next_tauri.sh
+open "/Applications/Cockpit.app"
 ```
 
-`./launch_cockpit.sh` points to Cockpit Next by default.
+`./launch_cockpit.sh` points to Cockpit by default.
+
+### Local env for agent chat
+
+If you launch the installed app from Finder, add your OpenRouter key to:
+
+```bash
+mkdir -p "$HOME/Library/Application Support/Cockpit"
+cat > "$HOME/Library/Application Support/Cockpit/.env" <<'EOF'
+COCKPIT_OPENROUTER_API_KEY=your_key_here
+OPENROUTER_API_KEY=your_key_here
+EOF
+```
+
+This keeps the key outside git and lets `Cockpit.app` start chat-capable agents without needing a terminal export.
 
 ## MCP quickstart (integration only)
 

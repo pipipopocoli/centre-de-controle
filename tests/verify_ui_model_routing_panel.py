@@ -16,16 +16,23 @@ def main() -> int:
     widget = ModelRoutingWidget()
     payload = {
         "voice_stt_model": "google/gemini-2.5-flash",
-        "l1_model": "liquid/lfm-2.5-1.2b-thinking:free",
-        "l2_scene_model": "arcee-ai/trinity-large-preview:free",
+        "clems_model": "anthropic/claude-sonnet-4.6",
+        "l1_models": {
+            "victor": "openai/gpt-5.4",
+            "leo": "moonshotai/kimi-k2.5",
+            "nova": "google/gemini-3.1-pro-preview",
+            "vulgarisation": "moonshotai/kimi-k2.5",
+        },
+        "l2_default_model": "minimax/minimax-m2.5",
         "lfm_spawn_max": 6,
         "stream_enabled": False,
     }
     widget.set_profile_payload(payload)
     out = widget.profile_payload()
     assert out["voice_stt_model"] == payload["voice_stt_model"]
-    assert out["l1_model"] == payload["l1_model"]
-    assert out["l2_scene_model"] == payload["l2_scene_model"]
+    assert out["clems_model"] == payload["clems_model"]
+    assert out["l1_models"]["victor"] == payload["l1_models"]["victor"]
+    assert out["l2_default_model"] == payload["l2_default_model"]
     assert out["lfm_spawn_max"] == payload["lfm_spawn_max"]
     assert out["stream_enabled"] == payload["stream_enabled"]
     app.quit()
@@ -35,4 +42,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

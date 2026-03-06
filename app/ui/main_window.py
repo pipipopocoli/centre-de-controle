@@ -1070,8 +1070,34 @@ class MainWindow(QMainWindow):
     def _default_llm_profile(self) -> dict:
         return {
             "voice_stt_model": "google/gemini-2.5-flash",
-            "l1_model": "liquid/lfm-2.5-1.2b-thinking:free",
-            "l2_scene_model": "arcee-ai/trinity-large-preview:free",
+            "provider": "openrouter",
+            "clems_model": "moonshotai/kimi-k2.5",
+            "clems_catalog": [
+                "moonshotai/kimi-k2.5",
+                "anthropic/claude-sonnet-4.6",
+                "anthropic/claude-opus-4.6",
+            ],
+            "l1_models": {
+                "victor": "moonshotai/kimi-k2.5",
+                "leo": "moonshotai/kimi-k2.5",
+                "nova": "moonshotai/kimi-k2.5",
+                "vulgarisation": "moonshotai/kimi-k2.5",
+            },
+            "l1_catalog": [
+                "moonshotai/kimi-k2.5",
+                "anthropic/claude-sonnet-4.6",
+                "anthropic/claude-opus-4.6",
+                "openai/gpt-5.4",
+                "google/gemini-3.1-pro-preview",
+                "x-ai/grok-4",
+            ],
+            "l2_default_model": "minimax/minimax-m2.5",
+            "l2_pool": [
+                "minimax/minimax-m2.5",
+                "moonshotai/kimi-k2.5",
+                "deepseek/deepseek-chat-v3.1",
+            ],
+            "l2_selection_mode": "manual_primary",
             "lfm_spawn_max": 10,
             "stream_enabled": True,
         }

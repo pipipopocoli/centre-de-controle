@@ -69,11 +69,11 @@ Unifier Desktop et Android sur une source de vérité unique via API/WS.
 ## Run Server
 
 ```bash
-./.venv/bin/python /Users/oliviercloutier/Desktop/Cockpit/scripts/run_cockpit_api.py --port 8100
+./.venv/bin/python scripts/run_cockpit_api.py --port 8100
 ```
 
 Override root:
 
 ```bash
-COCKPIT_API_PROJECTS_ROOT="/path/to/projects" ./.venv/bin/python /Users/oliviercloutier/Desktop/Cockpit/scripts/run_cockpit_api.py
+COCKPIT_API_PROJECTS_ROOT="/path/to/projects" ./.venv/bin/python scripts/run_cockpit_api.py
 ```

@@ -10,37 +10,136 @@ import { loadDonargTheme } from './office/themes/donargTheme.js'
 import { loadPixelReferenceTheme } from './office/themes/pixelReferenceTheme.js'
 import {
   approveApproval,
+  createTask,
   createAgent,
   deleteAgent,
   getApiUrl,
   getApprovals,
   getChat,
+  getHealth,
   getLayout,
+  getLlmProfile,
   getPixelFeed,
+  getTasks,
   liveTurn,
   openTerminal,
+  putLlmProfile,
   putLayout,
   resetChat,
   restartTerminal,
   sendTerminalInput,
   connectEvents,
   rejectApproval,
+  updateTask,
 } from './lib/cockpitClient'
 import type {
   ApprovalRequest,
   ChatMessage,
   ChatMode,
   ExecutionMode,
+  HealthzResponse,
+  LlmProfile,
   PixelFeedResponse,
+  TaskRecord,
+  TaskStatus,
   WsEventEnvelope,
 } from './lib/cockpitClient'
 import { openOsTerminal } from './lib/tauriOps'
 
 const DEFAULT_PROJECT_ID = import.meta.env.VITE_DEFAULT_PROJECT_ID ?? 'cockpit'
 
-type TopTab = 'pixel_home' | 'overview' | 'pilotage' | 'docs' | 'model_routing'
+type TopTab = 'pixel_home' | 'overview' | 'pilotage' | 'docs' | 'todo' | 'model_routing'
 type WorkspaceTab = 'agent' | 'layout' | 'settings'
 type ComposerStatus = 'live' | 'reconnecting' | 'http_fallback'
+type DirectTargetMode = 'clems' | 'selected_agent'
+
+type TaskEditorState = {
+  title: string
+  owner: string
+  phase: string
+  status: TaskStatus
+  objective: string
+  done_definition: string
+}
+
+const STATUS_ORDER: TaskStatus[] = ['todo', 'in_progress', 'blocked', 'done']
+const STATUS_LABELS: Record<TaskStatus, string> = {
+  todo: 'Todo',
+  in_progress: 'In Progress',
+  blocked: 'Blocked',
+  done: 'Done',
+}
+
+const CLEMS_MODEL_OPTIONS = [
+  { id: 'moonshotai/kimi-k2.5', label: 'Kimi K2.5', note: 'default L0' },
+  { id: 'anthropic/claude-sonnet-4.6', label: 'Claude Sonnet 4.6', note: 'higher reasoning' },
+  { id: 'anthropic/claude-opus-4.6', label: 'Claude Opus 4.6', note: 'max depth' },
+] as const
+
+const L1_MODEL_OPTIONS = [
+  { id: 'moonshotai/kimi-k2.5', label: 'Kimi K2.5', note: 'fast default' },
+  { id: 'anthropic/claude-sonnet-4.6', label: 'Claude Sonnet 4.6', note: 'strong lead' },
+  { id: 'anthropic/claude-opus-4.6', label: 'Claude Opus 4.6', note: 'max depth' },
+  { id: 'openai/gpt-5.4', label: 'GPT-5.4', note: 'broad reasoning' },
+  { id: 'google/gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview', note: 'wide context' },
+  { id: 'x-ai/grok-4', label: 'Grok 4', note: 'current OpenRouter grok 4.x entry' },
+] as const
+
+const L2_MODEL_OPTIONS = [
+  { id: 'minimax/minimax-m2.5', label: 'MiniMax M2.5', note: 'surgical primary' },
+  { id: 'moonshotai/kimi-k2.5', label: 'Kimi K2.5', note: 'precise fallback' },
+  { id: 'deepseek/deepseek-chat-v3.1', label: 'DeepSeek Chat V3.1', note: 'bounded execution' },
+] as const
+
+function modelLabel(modelId: string): string {
+  const found = [...CLEMS_MODEL_OPTIONS, ...L1_MODEL_OPTIONS, ...L2_MODEL_OPTIONS].find(
+    (option) => option.id === modelId,
+  )
+  return found ? found.label : `${modelId} (unavailable)`
+}
+
+function isUnavailableModel(modelId: string): boolean {
+  return modelLabel(modelId).endsWith('(unavailable)')
+}
+
+function emptyTaskEditor(): TaskEditorState {
+  return {
+    title: '',
+    owner: 'clems',
+    phase: 'Implement',
+    status: 'todo',
+    objective: '',
+    done_definition: '',
+  }
+}
+
+function compareTasksByFreshness(left: TaskRecord, right: TaskRecord): number {
+  const leftTime = Date.parse(left.updated_at)
+  const rightTime = Date.parse(right.updated_at)
+  if (Number.isNaN(leftTime) || Number.isNaN(rightTime)) {
+    return left.task_id.localeCompare(right.task_id)
+  }
+  return rightTime - leftTime
+}
+
+function messageKindLabel(message: ChatMessage): string | null {
+  const rawKind = typeof message.metadata?.kind === 'string' ? message.metadata.kind : null
+  if (!rawKind) {
+    return message.author === 'operator' ? 'operator' : null
+  }
+
+  const labels: Record<string, string> = {
+    direct_reply: 'direct reply',
+    direct_summary: 'internal summary',
+    conceal_reply: 'room reply',
+    conceal_summary: 'room summary',
+    approval_pending: 'approval pending',
+    approval_spawn: 'approval spawn',
+    terminal_online_ack: 'terminal ready',
+  }
+
+  return labels[rawKind] ?? rawKind.replaceAll('_', ' ')
+}
 
 function App() {
   const [projectId, setProjectId] = useState(DEFAULT_PROJECT_ID)
@@ -54,6 +153,7 @@ function App() {
   const [wsConnected, setWsConnected] = useState(false)
   const [composerStatus, setComposerStatus] = useState<ComposerStatus>('reconnecting')
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
+  const [directTarget, setDirectTarget] = useState<DirectTargetMode>('clems')
   const [terminalInput, setTerminalInput] = useState('')
   const [terminalLogs, setTerminalLogs] = useState<Record<string, string[]>>({})
   const [eventLog, setEventLog] = useState<WsEventEnvelope[]>([])
@@ -78,6 +178,21 @@ function App() {
   const [uiNotice, setUiNotice] = useState<string | null>(null)
   const [zoom, setZoom] = useState(2)
   const [workbenchCollapsed, setWorkbenchCollapsed] = useState(false)
+  const [backendHealth, setBackendHealth] = useState<HealthzResponse | null>(null)
+  const [llmProfile, setLlmProfile] = useState<LlmProfile | null>(null)
+  const [profileDraft, setProfileDraft] = useState<LlmProfile | null>(null)
+  const [tasks, setTasks] = useState<TaskRecord[]>([])
+  const [taskEditor, setTaskEditor] = useState<TaskEditorState>(emptyTaskEditor)
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [isSavingTask, setIsSavingTask] = useState(false)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [clockNow, setClockNow] = useState(() => new Date())
+  const [lastEventAt, setLastEventAt] = useState<string | null>(null)
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null)
+  const [assetsStatus, setAssetsStatus] = useState<{ donarg: boolean; pixelRef: boolean }>({
+    donarg: false,
+    pixelRef: false,
+  })
 
   const officeState = useMemo(() => new OfficeState(), [])
   const editorState = useMemo(() => new EditorState(), [])
@@ -188,14 +303,19 @@ function App() {
     [],
   )
 
+  const markSynced = useCallback(() => {
+    setLastSyncAt(new Date().toISOString())
+  }, [])
+
   const refreshApprovals = useCallback(async () => {
     try {
       const response = await getApprovals(projectId, 'pending')
       setApprovals(response.approvals)
+      markSynced()
     } catch {
       // keep silent to avoid noisy UI while reconnecting
     }
-  }, [projectId])
+  }, [markSynced, projectId])
 
   const startFallbackPolling = useCallback(() => {
     if (fallbackPollingRef.current) {
@@ -280,21 +400,32 @@ function App() {
         ]
       }
 
-      if (!selectedAgentId || !ids.has(selectedAgentId)) {
-        setSelectedAgentId(nextFeed.agents[0]?.agent_id ?? null)
-      }
+      setSelectedAgentId((previous) => {
+        if (previous && ids.has(previous)) {
+          return previous
+        }
+        return nextFeed.agents[0]?.agent_id ?? null
+      })
 
       setAgentTools(tools)
       setRefreshTick((value) => value + 1)
     },
-    [officeState, selectedAgentId, styleForAgent, toNumericId],
+    [officeState, styleForAgent, toNumericId],
   )
 
   const refreshPixelFeed = useCallback(async () => {
     const nextFeed = await getPixelFeed(projectId)
     setFeed(nextFeed)
     syncOfficeAgents(nextFeed)
-  }, [projectId, syncOfficeAgents])
+    markSynced()
+  }, [markSynced, projectId, syncOfficeAgents])
+
+  const refreshTasks = useCallback(async () => {
+    const response = await getTasks(projectId)
+    setTasks(response.tasks)
+    setSelectedTaskId((previous) => previous ?? response.tasks[0]?.task_id ?? null)
+    markSynced()
+  }, [markSynced, projectId])
 
   const bootstrap = useCallback(async () => {
     setLoading(true)
@@ -303,11 +434,14 @@ function App() {
     try {
       const [themeLoaded, pixelRefLoaded] = await Promise.all([loadDonargTheme(), loadPixelReferenceTheme()])
 
-      const [layout, pixel, chat, pendingApprovals] = await Promise.all([
+      const [layout, pixel, chat, pendingApprovals, health, profile, taskPayload] = await Promise.all([
         getLayout(projectId),
         getPixelFeed(projectId),
         getChat(projectId, 300, 'all'),
         getApprovals(projectId, 'pending'),
+        getHealth(),
+        getLlmProfile(projectId),
+        getTasks(projectId),
       ])
 
       const presetKey = `cockpit.video_preset_applied.${projectId}`
@@ -331,6 +465,17 @@ function App() {
       setFeed(pixel)
       mergeChatMessages(chat.messages)
       setApprovals(pendingApprovals.approvals)
+      setBackendHealth(health)
+      setLlmProfile(profile)
+      setProfileDraft(profile)
+      setTasks(taskPayload.tasks)
+      setSelectedTaskId((previous) => previous ?? taskPayload.tasks[0]?.task_id ?? null)
+      setAssetsStatus({
+        donarg: themeLoaded,
+        pixelRef: pixelRefLoaded,
+      })
+      setLastEventAt(health.time ?? null)
+      markSynced()
       syncOfficeAgents(pixel)
 
       if (!themeLoaded) {
@@ -343,7 +488,32 @@ function App() {
     } finally {
       setLoading(false)
     }
-  }, [mergeChatMessages, officeState, projectId, syncOfficeAgents])
+  }, [markSynced, mergeChatMessages, officeState, projectId, syncOfficeAgents])
+
+  const selectedTask = useMemo(
+    () => tasks.find((task) => task.task_id === selectedTaskId) ?? null,
+    [selectedTaskId, tasks],
+  )
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setClockNow(new Date()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    if (!selectedTask) {
+      setTaskEditor(emptyTaskEditor())
+      return
+    }
+    setTaskEditor({
+      title: selectedTask.title,
+      owner: selectedTask.owner,
+      phase: selectedTask.phase,
+      status: selectedTask.status,
+      objective: selectedTask.objective,
+      done_definition: selectedTask.done_definition,
+    })
+  }, [selectedTask])
 
   useEffect(() => {
     void bootstrap()
@@ -354,6 +524,7 @@ function App() {
       projectId,
       (event) => {
         setEventLog((previous) => [event, ...previous].slice(0, 160))
+        setLastEventAt(event.timestamp)
 
         if (event.type === 'chat.message.created') {
           const message = event.payload.message as ChatMessage | undefined
@@ -372,6 +543,11 @@ function App() {
 
         if (event.type === 'approval.requested' || event.type === 'approval.updated') {
           void refreshApprovals()
+          return
+        }
+
+        if (event.type === 'task.created' || event.type === 'task.updated') {
+          void refreshTasks()
           return
         }
 
@@ -422,7 +598,7 @@ function App() {
       disconnect()
       stopFallbackPolling()
     }
-  }, [projectId, mergeChatMessages, refreshApprovals, refreshPixelFeed, stopFallbackPolling])
+  }, [projectId, mergeChatMessages, refreshApprovals, refreshPixelFeed, refreshTasks, stopFallbackPolling])
 
   useEffect(() => {
     const listener = (rawEvent: Event) => {
@@ -494,6 +670,10 @@ function App() {
     [projectId],
   )
 
+  const handleSelectAgent = useCallback((agentId: string) => {
+    setSelectedAgentId(agentId)
+  }, [])
+
   const handleCreateAgent = useCallback(
     async (event: FormEvent) => {
       event.preventDefault()
@@ -535,6 +715,85 @@ function App() {
     [projectId, refreshPixelFeed],
   )
 
+  const handleCreateTask = useCallback(async () => {
+    if (!taskEditor.title.trim() || isSavingTask) {
+      return
+    }
+    setIsSavingTask(true)
+    setApiError(null)
+    try {
+      const created = await createTask(projectId, {
+        title: taskEditor.title.trim(),
+        owner: taskEditor.owner.trim() || 'clems',
+        phase: taskEditor.phase.trim() || 'Implement',
+        status: taskEditor.status,
+        source: 'manual',
+        objective: taskEditor.objective.trim(),
+        done_definition: taskEditor.done_definition.trim(),
+      })
+      setTasks((previous) => [created, ...previous])
+      setSelectedTaskId(created.task_id)
+      setTaskEditor(emptyTaskEditor())
+      setUiNotice(`task created: ${created.task_id}`)
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setIsSavingTask(false)
+    }
+  }, [isSavingTask, projectId, taskEditor])
+
+  const handleSaveTask = useCallback(async () => {
+    if (!selectedTaskId || isSavingTask) {
+      return
+    }
+    setIsSavingTask(true)
+    setApiError(null)
+    try {
+      const updated = await updateTask(projectId, selectedTaskId, taskEditor)
+      setTasks((previous) =>
+        previous.map((task) => (task.task_id === updated.task_id ? updated : task)),
+      )
+      setUiNotice(`task updated: ${updated.task_id}`)
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setIsSavingTask(false)
+    }
+  }, [isSavingTask, projectId, selectedTaskId, taskEditor])
+
+  const handleTaskStatusMove = useCallback(
+    async (taskId: string, status: TaskStatus) => {
+      setApiError(null)
+      try {
+        const updated = await updateTask(projectId, taskId, { status })
+        setTasks((previous) =>
+          previous.map((task) => (task.task_id === updated.task_id ? updated : task)),
+        )
+      } catch (error) {
+        setApiError(error instanceof Error ? error.message : String(error))
+      }
+    },
+    [projectId],
+  )
+
+  const handleSaveLlmProfile = useCallback(async () => {
+    if (!profileDraft || isSavingProfile) {
+      return
+    }
+    setIsSavingProfile(true)
+    setApiError(null)
+    try {
+      const saved = await putLlmProfile(projectId, profileDraft)
+      setLlmProfile(saved)
+      setProfileDraft(saved)
+      setUiNotice('model routing saved')
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setIsSavingProfile(false)
+    }
+  }, [isSavingProfile, profileDraft, projectId])
+
   const handleOfficeClick = useCallback(
     async (numericId: number) => {
       const agentId = numericToIdRef.current.get(numericId)
@@ -558,9 +817,23 @@ function App() {
     [handleDeleteAgent],
   )
 
-  const handleSendChat = useCallback(async () => {
+  const selectedAgent = useMemo(
+    () => feed?.agents.find((agent) => agent.agent_id === selectedAgentId) ?? null,
+    [feed, selectedAgentId],
+  )
+
+  const selectedAgentChatReady = selectedAgent?.chat_targetable ?? false
+
+  const handleSendChat = useCallback(async (targetMode: DirectTargetMode = directTarget) => {
     const text = chatInput.trim()
     if (!text || isSendingChat) {
+      return
+    }
+
+    const targetAgentId =
+      chatMode === 'direct' && targetMode === 'selected_agent' ? (selectedAgent?.chat_targetable ? selectedAgent.agent_id : null) : null
+    if (chatMode === 'direct' && targetMode === 'selected_agent' && !targetAgentId) {
+      setUiNotice('select a chat-ready agent first')
       return
     }
 
@@ -568,12 +841,16 @@ function App() {
     setApiError(null)
     setUiNotice(null)
     setIsSendingChat(true)
+    if (chatMode === 'direct') {
+      setDirectTarget(targetMode)
+    }
 
     try {
       const response = await liveTurn(projectId, {
         text,
         chat_mode: chatMode,
         execution_mode: executionMode,
+        target_agent_id: targetAgentId,
       })
 
       mergeChatMessages(response.messages)
@@ -600,11 +877,13 @@ function App() {
   }, [
     chatInput,
     chatMode,
+    directTarget,
     executionMode,
     isSendingChat,
     mergeChatMessages,
     projectId,
     refreshApprovals,
+    selectedAgent,
     startFallbackPolling,
   ])
 
@@ -747,6 +1026,27 @@ function App() {
     }
     return terminalLogs[selectedAgentId] ?? []
   }, [selectedAgentId, terminalLogs])
+  const profileDirty = useMemo(() => {
+    if (!llmProfile || !profileDraft) {
+      return false
+    }
+    return JSON.stringify(llmProfile) !== JSON.stringify(profileDraft)
+  }, [llmProfile, profileDraft])
+  const l1Agents = useMemo(() => {
+    const fromFeed = (feed?.agents ?? [])
+      .filter((agent) => agent.level === 1)
+      .map((agent) => agent.agent_id)
+    const fromProfile = profileDraft ? Object.keys(profileDraft.l1_models ?? {}) : []
+    return [...new Set([...fromFeed, ...fromProfile])].sort()
+  }, [feed?.agents, profileDraft])
+  const directTargetLabel =
+    directTarget === 'selected_agent'
+      ? selectedAgent
+        ? selectedAgentChatReady
+          ? `@${selectedAgent.agent_id}`
+          : `@${selectedAgent.agent_id} unavailable`
+        : 'selected agent unavailable'
+      : '@clems'
 
   const topTabs = useMemo(
     () => [
@@ -754,6 +1054,7 @@ function App() {
       { id: 'overview' as const, label: 'Overview' },
       { id: 'pilotage' as const, label: 'Pilotage' },
       { id: 'docs' as const, label: 'Docs' },
+      { id: 'todo' as const, label: 'To Do' },
       { id: 'model_routing' as const, label: 'Model Routing' },
     ],
     [],
@@ -772,7 +1073,7 @@ function App() {
     return (
       <div className="loading-screen">
         <div className="loading-card">
-          <h1>Cockpit Next</h1>
+          <h1>Cockpit</h1>
           <p>Loading Pixel Home...</p>
         </div>
       </div>
@@ -836,6 +1137,7 @@ function App() {
             <li>execution mode: {executionMode}</li>
             <li>ws: {wsConnected ? 'connected' : 'reconnecting'}</li>
             <li>api: {getApiUrl()}</li>
+            <li>last sync: {lastSyncAt ? new Date(lastSyncAt).toLocaleTimeString() : 'none'}</li>
           </ul>
         </section>
       )
@@ -845,7 +1147,7 @@ function App() {
       <section className="workspace-section">
         <div className="section-title-row">
           <h2>Agents</h2>
-          <span className="hint">1 agent = 1 terminal</span>
+          <span className="hint">select for chat, open terminal on demand</span>
         </div>
 
         <form className="create-form" onSubmit={handleCreateAgent}>
@@ -869,9 +1171,7 @@ function App() {
             <button
               key={agent.agent_id}
               className={`agent-card ${selectedAgentId === agent.agent_id ? 'active' : ''}`}
-              onClick={() => {
-                void ensureAgentTerminal(agent.agent_id)
-              }}
+              onClick={() => handleSelectAgent(agent.agent_id)}
             >
               <div>
                 <p className="agent-name">{agent.name}</p>
@@ -880,9 +1180,21 @@ function App() {
                 </p>
               </div>
               <div className="agent-card-right">
-                <span className={`dot ${agent.terminal_state === 'running' ? 'green' : 'gray'}`}>
-                  {agent.terminal_state}
+                <span className={`dot ${agent.chat_targetable ? 'green' : 'gray'}`}>
+                  {agent.chat_targetable ? 'chat ready' : 'chat unavailable'}
                 </span>
+                <span className={`dot ${agent.terminal_state === 'running' ? 'green' : 'gray'}`}>
+                  terminal {agent.terminal_state === 'running' ? 'live' : 'offline'}
+                </span>
+                <button
+                  className="agent-action"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    void ensureAgentTerminal(agent.agent_id)
+                  }}
+                >
+                  Open term
+                </button>
                 {agent.agent_id !== 'clems' ? (
                   <span
                     className="agent-delete"
@@ -903,41 +1215,556 @@ function App() {
   }
 
   const renderSecondaryTab = () => {
-    const title = topTabs.find((tab) => tab.id === activeTab)?.label ?? 'Overview'
+    const agentsTotal = feed?.agents.length ?? 0
+    const runningTerminals = feed?.terminals_alive ?? 0
+    const queueDepth = feed?.queue_depth ?? 0
+    const latestOperator = operatorChatMessages.slice(-8).reverse()
+    const latestInternal = internalChatMessages.slice(-8).reverse()
+    const latestEvents = eventLog.slice(0, 20)
+    const taskCounts = STATUS_ORDER.reduce<Record<TaskStatus, number>>(
+      (accumulator, status) => ({
+        ...accumulator,
+        [status]: tasks.filter((task) => task.status === status).length,
+      }),
+      {
+        todo: 0,
+        in_progress: 0,
+        blocked: 0,
+        done: 0,
+      },
+    )
+
+    const quickStatus = [
+      { label: 'Backend', value: backendHealth?.status ?? 'unknown' },
+      { label: 'WS', value: composerLabel },
+      { label: 'Agents', value: String(agentsTotal) },
+      { label: 'Terminals live', value: String(runningTerminals) },
+      { label: 'Queue', value: String(queueDepth) },
+      { label: 'Tasks open', value: String(taskCounts.todo + taskCounts.in_progress + taskCounts.blocked) },
+    ]
+
     if (activeTab === 'pilotage') {
       return (
         <section className="secondary-tab panel">
           <div className="secondary-header">
             <h2>Pilotage</h2>
-            <span className="hint">diagnostics stream (visibility=all)</span>
+            <span className="hint">live operations stream and execution health</span>
           </div>
           <div className="secondary-grid">
             <article>
-              <h3>Operator chat msgs</h3>
+              <h3>Operator messages</h3>
               <p>{operatorChatMessages.length}</p>
             </article>
             <article>
-              <h3>Internal msgs</h3>
+              <h3>Internal messages</h3>
               <p>{internalChatMessages.length}</p>
             </article>
             <article>
-              <h3>Pending approvals</h3>
+              <h3>Approvals pending</h3>
               <p>{approvals.length}</p>
             </article>
             <article>
-              <h3>WS status</h3>
+              <h3>Delivery mode</h3>
               <p>{composerLabel}</p>
             </article>
           </div>
-          <div className="events-log">
-            {chatMessages
-              .slice(-30)
-              .reverse()
-              .map((message) => (
-                <p key={message.message_id}>
-                  <strong>@{message.author}</strong> [{message.visibility}] {message.text}
-                </p>
+          <div className="secondary-columns">
+            <section className="secondary-card">
+              <h3>Latest operator chat</h3>
+              <div className="events-log">
+                {latestOperator.length === 0 ? (
+                  <p>No operator messages yet.</p>
+                ) : (
+                  latestOperator.map((message) => (
+                    <p key={message.message_id}>
+                      <strong>@{message.author}</strong> {message.text}
+                    </p>
+                  ))
+                )}
+              </div>
+            </section>
+            <section className="secondary-card">
+              <h3>Latest internal + events</h3>
+              <div className="events-log">
+                {latestInternal.slice(0, 6).map((message) => (
+                  <p key={message.message_id}>
+                    <strong>@{message.author}</strong> [{message.visibility}] {message.text}
+                  </p>
+                ))}
+                {latestEvents.slice(0, 10).map((event, index) => (
+                  <p key={`${event.timestamp}-${index}`}>
+                    <strong>{event.type}</strong> {new Date(event.timestamp).toLocaleTimeString()}
+                  </p>
+                ))}
+                {latestInternal.length === 0 && latestEvents.length === 0 ? <p>No diagnostics yet.</p> : null}
+              </div>
+            </section>
+          </div>
+        </section>
+      )
+    }
+
+    if (activeTab === 'overview') {
+      const buildStamp = backendHealth?.build_sha ? backendHealth.build_sha.slice(0, 12) : 'unknown'
+      return (
+        <section className="secondary-tab panel">
+          <div className="secondary-header">
+            <h2>Overview</h2>
+            <span className="hint">project heartbeat, tasks, and runtime truth</span>
+          </div>
+          <div className="secondary-grid">
+            <article>
+              <h3>Backend status</h3>
+              <p>{backendHealth?.status ?? 'unknown'}</p>
+            </article>
+            <article>
+              <h3>Build SHA</h3>
+              <p>{buildStamp}</p>
+            </article>
+            <article>
+              <h3>Assets loaded</h3>
+              <p>{assetsStatus.donarg && assetsStatus.pixelRef ? 'yes' : 'partial'}</p>
+            </article>
+            <article>
+              <h3>Clock</h3>
+              <p>{clockNow.toLocaleTimeString()}</p>
+            </article>
+          </div>
+          <div className="secondary-columns">
+            <section className="secondary-card">
+              <h3>Runtime quick status</h3>
+              <ul className="data-list">
+                {quickStatus.map((item) => (
+                  <li key={item.label}>
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section className="secondary-card">
+              <h3>Build and environment</h3>
+              <ul className="data-list">
+                <li>
+                  <span>Project</span>
+                  <strong>{projectId}</strong>
+                </li>
+                <li>
+                  <span>Approvals pending</span>
+                  <strong>{approvals.length}</strong>
+                </li>
+                <li>
+                  <span>API</span>
+                  <strong>{getApiUrl()}</strong>
+                </li>
+                <li>
+                  <span>Build time</span>
+                  <strong>{backendHealth?.build_time ?? 'unknown'}</strong>
+                </li>
+                <li>
+                  <span>Last event</span>
+                  <strong>{lastEventAt ? new Date(lastEventAt).toLocaleTimeString() : 'none'}</strong>
+                </li>
+              </ul>
+            </section>
+            <section className="secondary-card">
+              <h3>Task board snapshot</h3>
+              <ul className="data-list">
+                {STATUS_ORDER.map((status) => (
+                  <li key={status}>
+                    <span>{STATUS_LABELS[status]}</span>
+                    <strong>{taskCounts[status]}</strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section className="secondary-card">
+              <h3>Operational focus</h3>
+              <div className="events-log">
+                <p><strong>Direct target:</strong> {directTargetLabel}</p>
+                <p><strong>Selected agent:</strong> {selectedAgent ? `@${selectedAgent.agent_id}` : 'none'}</p>
+                <p><strong>Chat transport:</strong> {composerLabel}</p>
+                <p><strong>Approvals pending:</strong> {approvals.length}</p>
+                <p><strong>Open tasks:</strong> {taskCounts.todo + taskCounts.in_progress + taskCounts.blocked}</p>
+              </div>
+            </section>
+          </div>
+        </section>
+      )
+    }
+
+    if (activeTab === 'todo') {
+      const tasksByStatus = STATUS_ORDER.map((status) => ({
+        status,
+        label: STATUS_LABELS[status],
+        items: tasks.filter((task) => task.status === status),
+      }))
+
+      return (
+        <section className="secondary-tab panel todo-tab">
+          <div className="secondary-header">
+            <h2>To Do</h2>
+            <span className="hint">issue-backed board with operator + AI tasks</span>
+          </div>
+          <div className="todo-layout">
+            <section className="todo-board">
+              {tasksByStatus.map((column) => (
+                <article key={column.status} className="todo-column">
+                  <header>
+                    <h3>{column.label}</h3>
+                    <span>{column.items.length}</span>
+                  </header>
+                  <div className="todo-column-body">
+                    {column.items.length === 0 ? (
+                      <p className="terminal-empty">No items.</p>
+                    ) : (
+                      [...column.items].sort(compareTasksByFreshness).map((task) => (
+                        <button
+                          key={task.task_id}
+                          className={`todo-card ${selectedTaskId === task.task_id ? 'active' : ''}`}
+                          onClick={() => setSelectedTaskId(task.task_id)}
+                        >
+                          <div className="todo-card-top">
+                            <strong>{task.title}</strong>
+                            <span className={`task-source ${task.source === 'ai_auto' ? 'ai' : 'manual'}`}>
+                              {task.source}
+                            </span>
+                          </div>
+                          <p>{task.task_id}</p>
+                          <div className="todo-card-meta">
+                            <span>@{task.owner}</span>
+                            <span>{task.phase}</span>
+                          </div>
+                          <div className="todo-card-actions">
+                            {STATUS_ORDER.filter((status) => status !== task.status).map((status) => (
+                              <button
+                                key={status}
+                                className="small-btn"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  void handleTaskStatusMove(task.task_id, status)
+                                }}
+                              >
+                                {STATUS_LABELS[status]}
+                              </button>
+                            ))}
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </article>
               ))}
+            </section>
+            <aside className="todo-editor">
+              <section className="secondary-card">
+                <h3>{selectedTask ? 'Task detail' : 'Create task'}</h3>
+                <div className="form-grid">
+                  <label>
+                    <span>Title</span>
+                    <input
+                      value={taskEditor.title}
+                      onChange={(event) => setTaskEditor((previous) => ({ ...previous, title: event.target.value }))}
+                      placeholder="Task title"
+                    />
+                  </label>
+                  <label>
+                    <span>Owner</span>
+                    <input
+                      value={taskEditor.owner}
+                      onChange={(event) => setTaskEditor((previous) => ({ ...previous, owner: event.target.value }))}
+                      placeholder="@clems"
+                    />
+                  </label>
+                  <label>
+                    <span>Phase</span>
+                    <input
+                      value={taskEditor.phase}
+                      onChange={(event) => setTaskEditor((previous) => ({ ...previous, phase: event.target.value }))}
+                      placeholder="Implement"
+                    />
+                  </label>
+                  <label>
+                    <span>Status</span>
+                    <select
+                      value={taskEditor.status}
+                      onChange={(event) =>
+                        setTaskEditor((previous) => ({ ...previous, status: event.target.value as TaskStatus }))
+                      }
+                    >
+                      {STATUS_ORDER.map((status) => (
+                        <option key={status} value={status}>
+                          {STATUS_LABELS[status]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="wide">
+                    <span>Objective</span>
+                    <textarea
+                      value={taskEditor.objective}
+                      onChange={(event) =>
+                        setTaskEditor((previous) => ({ ...previous, objective: event.target.value }))
+                      }
+                      placeholder="What should be delivered?"
+                    />
+                  </label>
+                  <label className="wide">
+                    <span>Done definition</span>
+                    <textarea
+                      value={taskEditor.done_definition}
+                      onChange={(event) =>
+                        setTaskEditor((previous) => ({ ...previous, done_definition: event.target.value }))
+                      }
+                      placeholder="Verifiable definition of done"
+                    />
+                  </label>
+                </div>
+                <div className="todo-editor-actions">
+                  <button className="send-btn" onClick={() => void handleCreateTask()} disabled={isSavingTask}>
+                    {isSavingTask && !selectedTask ? 'Creating...' : 'Create task'}
+                  </button>
+                  <button
+                    className="send-btn alt"
+                    onClick={() => void handleSaveTask()}
+                    disabled={isSavingTask || !selectedTask}
+                  >
+                    {isSavingTask && selectedTask ? 'Saving...' : 'Save selected'}
+                  </button>
+                </div>
+                {selectedTask ? (
+                  <div className="todo-detail-meta">
+                    <p><strong>Path:</strong> {selectedTask.path}</p>
+                    <p><strong>Updated:</strong> {new Date(selectedTask.updated_at).toLocaleString()}</p>
+                    <p><strong>Source:</strong> {selectedTask.source}</p>
+                  </div>
+                ) : (
+                  <p className="small-copy">
+                    AI-created task lists from @clems and L1 agents land here automatically with source <code>ai_auto</code>.
+                  </p>
+                )}
+              </section>
+            </aside>
+          </div>
+        </section>
+      )
+    }
+
+    if (activeTab === 'docs') {
+      return (
+        <section className="secondary-tab panel">
+          <div className="secondary-header">
+            <h2>Docs</h2>
+            <span className="hint">daily path, contracts, and launch truth</span>
+          </div>
+          <div className="secondary-grid">
+            <article>
+              <h3>Official app path</h3>
+              <p>/Applications/Cockpit.app</p>
+            </article>
+            <article>
+              <h3>Preflight contracts</h3>
+              <p>/healthz + /chat/approvals + /llm-profile</p>
+            </article>
+            <article>
+              <h3>Runtime mode</h3>
+              <p>{backendHealth?.app_mode ?? 'cockpit_local'}</p>
+            </article>
+            <article>
+              <h3>Daily command</h3>
+              <p>open "/Applications/Cockpit.app"</p>
+            </article>
+          </div>
+          <div className="secondary-columns">
+            <section className="secondary-card">
+              <h3>Operator checklist</h3>
+              <div className="events-log">
+                <p>1. Launch Cockpit.app</p>
+                <p>2. Check backend and WS badges</p>
+                <p>3. Verify approvals and llm-profile routes</p>
+                <p>4. Work from Pixel Home, To Do, and Model Routing only</p>
+              </div>
+            </section>
+            <section className="secondary-card">
+              <h3>Reference docs</h3>
+              <div className="events-log">
+                <p><strong>Runbook:</strong> docs/COCKPIT_NEXT_RUNBOOK.md</p>
+                <p><strong>Protocol:</strong> docs/CLOUD_API_PROTOCOL.md</p>
+                <p><strong>Packaging:</strong> docs/PACKAGING.md</p>
+                <p><strong>Status:</strong> docs/STATUS_REPORT.md</p>
+              </div>
+            </section>
+          </div>
+        </section>
+      )
+    }
+
+    if (activeTab === 'model_routing' && profileDraft) {
+      return (
+        <section className="secondary-tab panel">
+          <div className="secondary-header">
+            <h2>Model Routing</h2>
+            <span className="hint">role-based OpenRouter routing with project persistence</span>
+          </div>
+          <div className="routing-layout">
+            <section className="secondary-card">
+              <h3>Clems (L0)</h3>
+              <div className="option-grid">
+                {CLEMS_MODEL_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    className={`route-option ${profileDraft.clems_model === option.id ? 'active' : ''}`}
+                    onClick={() =>
+                      setProfileDraft((previous) =>
+                        previous ? { ...previous, clems_model: option.id, clems_catalog: CLEMS_MODEL_OPTIONS.map((item) => item.id) } : previous,
+                      )
+                    }
+                  >
+                    <strong>{option.label}</strong>
+                    <span>{option.note}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+            <section className="secondary-card">
+              <h3>L1 models</h3>
+              <div className="routing-agent-list">
+                {l1Agents.map((agentId) => (
+                  <label key={agentId} className="routing-agent-row">
+                    <span>@{agentId}</span>
+                    <select
+                      value={profileDraft.l1_models[agentId] ?? 'moonshotai/kimi-k2.5'}
+                      onChange={(event) =>
+                        setProfileDraft((previous) =>
+                          previous
+                            ? {
+                                ...previous,
+                                l1_catalog: L1_MODEL_OPTIONS.map((item) => item.id),
+                                l1_models: {
+                                  ...previous.l1_models,
+                                  [agentId]: event.target.value,
+                                },
+                              }
+                            : previous,
+                        )
+                      }
+                    >
+                      {L1_MODEL_OPTIONS.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            </section>
+            <section className="secondary-card">
+              <h3>L2 surgical pool</h3>
+              <label className="routing-primary">
+                <span>Primary model</span>
+                <select
+                  value={profileDraft.l2_default_model}
+                  onChange={(event) =>
+                    setProfileDraft((previous) =>
+                      previous
+                        ? {
+                            ...previous,
+                            l2_default_model: event.target.value,
+                            l2_pool: previous.l2_pool.includes(event.target.value)
+                              ? previous.l2_pool
+                              : [event.target.value, ...previous.l2_pool],
+                          }
+                        : previous,
+                    )
+                  }
+                >
+                  {L2_MODEL_OPTIONS.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="routing-pool">
+                {L2_MODEL_OPTIONS.map((option) => {
+                  const active = profileDraft.l2_pool.includes(option.id)
+                  return (
+                    <button
+                      key={option.id}
+                      className={`route-option compact ${active ? 'active' : ''}`}
+                      onClick={() =>
+                        setProfileDraft((previous) => {
+                          if (!previous) {
+                            return previous
+                          }
+                          const nextPool = active
+                            ? previous.l2_pool.filter((item) => item !== option.id)
+                            : [...previous.l2_pool, option.id]
+                          const normalizedPool = nextPool.length === 0 ? [previous.l2_default_model] : nextPool
+                          return {
+                            ...previous,
+                            l2_pool: normalizedPool,
+                            l2_default_model: normalizedPool.includes(previous.l2_default_model)
+                              ? previous.l2_default_model
+                              : normalizedPool[0],
+                          }
+                        })
+                      }
+                    >
+                      <strong>{option.label}</strong>
+                      <span>{option.note}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              <ul className="data-list">
+                <li>
+                  <span>Selection mode</span>
+                  <strong>{profileDraft.l2_selection_mode}</strong>
+                </li>
+                <li>
+                  <span>Stream enabled</span>
+                  <strong>{profileDraft.stream_enabled ? 'yes' : 'no'}</strong>
+                </li>
+              </ul>
+            </section>
+            <section className="secondary-card">
+              <h3>Current profile</h3>
+              <ul className="data-list">
+                <li>
+                  <span>Clems</span>
+                  <strong>{modelLabel(profileDraft.clems_model)}</strong>
+                </li>
+                <li>
+                  <span>Voice STT</span>
+                  <strong>{profileDraft.voice_stt_model}</strong>
+                </li>
+                <li>
+                  <span>L2 primary</span>
+                  <strong>{modelLabel(profileDraft.l2_default_model)}</strong>
+                </li>
+                <li>
+                  <span>Unavailable refs</span>
+                  <strong>
+                    {[profileDraft.clems_model, ...Object.values(profileDraft.l1_models), ...profileDraft.l2_pool].some(
+                      (modelId) => isUnavailableModel(modelId),
+                    )
+                      ? 'review'
+                      : 'none'}
+                  </strong>
+                </li>
+                <li>
+                  <span>Draft</span>
+                  <strong>{profileDirty ? 'unsaved changes' : 'saved'}</strong>
+                </li>
+              </ul>
+              <div className="todo-editor-actions">
+                <button className="send-btn" onClick={() => void handleSaveLlmProfile()} disabled={isSavingProfile}>
+                  {isSavingProfile ? 'Saving...' : 'Save model routing'}
+                </button>
+              </div>
+            </section>
           </div>
         </section>
       )
@@ -946,8 +1773,8 @@ function App() {
     return (
       <section className="secondary-tab panel">
         <div className="secondary-header">
-          <h2>{title}</h2>
-          <span className="hint">Cockpit tab preserved in first release</span>
+          <h2>Diagnostics</h2>
+          <span className="hint">fallback runtime snapshot</span>
         </div>
         <div className="secondary-grid">
           <article>
@@ -975,8 +1802,11 @@ function App() {
     <div className="app-shell">
       <header className="app-header panel">
         <div>
-          <p className="eyebrow">Cockpit Next Rewrite</p>
+          <p className="eyebrow">Cockpit official</p>
           <h1>Pixel Home</h1>
+          <p className="header-subcopy">
+            {clockNow.toLocaleDateString()} - local control tower for pixel operations, tasks, and model routing
+          </p>
         </div>
         <div className="header-status">
           <label className="project-input">
@@ -986,8 +1816,21 @@ function App() {
               onChange={(event) => setProjectId(event.target.value.trim() || DEFAULT_PROJECT_ID)}
             />
           </label>
+          <div className={`status-pill ${backendHealth?.status === 'ok' ? 'ok' : 'warn'}`}>
+            Backend {backendHealth?.status ?? 'unknown'}
+          </div>
           <div className={`status-pill ${wsConnected ? 'ok' : 'warn'}`}>WS {composerLabel}</div>
+          <div className="status-pill neutral">Time {clockNow.toLocaleTimeString()}</div>
+          <div className="status-pill neutral">
+            Sync {lastSyncAt ? new Date(lastSyncAt).toLocaleTimeString() : 'none'}
+          </div>
           <div className="status-pill neutral">API {getApiUrl()}</div>
+          <div className="status-pill neutral">
+            Build {(backendHealth?.build_sha ?? 'unknown').slice(0, 12)}
+          </div>
+          <div className="status-pill neutral">
+            Event {lastEventAt ? new Date(lastEventAt).toLocaleTimeString() : 'none'}
+          </div>
         </div>
       </header>
 
@@ -1090,6 +1933,7 @@ function App() {
                       <div className="section-title-row">
                         <h2>Live Chat</h2>
                         <div className="chat-actions">
+                          <span className="chat-target">Target {chatMode === 'direct' ? directTargetLabel : 'conceal room'}</span>
                           <button className="small-btn" onClick={() => void handleResetChat()}>
                             Reset Chat
                           </button>
@@ -1127,16 +1971,53 @@ function App() {
                         </div>
                       </div>
 
+                      {chatMode === 'direct' ? (
+                        <>
+                          <div className="chat-target-row">
+                            <button
+                              className={`target-btn ${directTarget === 'clems' ? 'active' : ''}`}
+                              onClick={() => setDirectTarget('clems')}
+                            >
+                              Talk to Clems
+                            </button>
+                            <button
+                              className={`target-btn ${directTarget === 'selected_agent' ? 'active' : ''}`}
+                              onClick={() => setDirectTarget('selected_agent')}
+                              disabled={!selectedAgentChatReady}
+                            >
+                              Talk to selected agent
+                            </button>
+                            <span className="hint">
+                              {selectedAgent
+                                ? selectedAgentChatReady
+                                  ? `selected: @${selectedAgent.agent_id}`
+                                  : `selected: @${selectedAgent.agent_id} not chat-ready`
+                                : 'select an agent to enable direct agent chat'}
+                            </span>
+                          </div>
+                          <p className="small-copy">Agent chat uses the model lane directly. Terminal state is separate.</p>
+                        </>
+                      ) : (
+                        <p className="small-copy">Conceal Room fans out to L1 and returns a Clems operator summary.</p>
+                      )}
+
                       <div className="chat-log">
-                        {operatorChatMessages.map((message) => (
-                          <article key={message.message_id} className="chat-row">
-                            <header>
-                              <strong>@{message.author}</strong>
-                              <time>{new Date(message.timestamp).toLocaleTimeString()}</time>
-                            </header>
-                            <p>{message.text}</p>
-                          </article>
-                        ))}
+                        {operatorChatMessages.length === 0 ? (
+                          <p className="chat-empty">No chat yet. Send a first message to start live flow.</p>
+                        ) : (
+                          operatorChatMessages.map((message) => (
+                            <article key={message.message_id} className="chat-row">
+                              <header>
+                                <div className="chat-row-meta">
+                                  <strong className="chat-author">@{message.author}</strong>
+                                  {messageKindLabel(message) ? <span className="chat-kind">{messageKindLabel(message)}</span> : null}
+                                </div>
+                                <time className="chat-time">{new Date(message.timestamp).toLocaleTimeString()}</time>
+                              </header>
+                              <p className="chat-body">{message.text}</p>
+                            </article>
+                          ))
+                        )}
                       </div>
 
                       <div className="composer-row">
@@ -1165,20 +2046,52 @@ function App() {
                           }}
                           placeholder={
                             chatMode === 'direct'
-                              ? 'Say hello. Clems replies by default.'
+                              ? directTarget === 'selected_agent'
+                                ? selectedAgentChatReady
+                                  ? `Send to @${selectedAgent?.agent_id}`
+                                  : 'Select a chat-ready agent or switch back to Clems.'
+                                : 'Talk to Clems directly.'
                               : 'Conceal Room: L1 live fanout + Clems summary'
                           }
                         />
-                        <button className="send-btn" onClick={() => void handleSendChat()} disabled={isSendingChat}>
-                          {isSendingChat ? 'Sending...' : 'Send'}
-                        </button>
+                        {chatMode === 'direct' ? (
+                          <div className="composer-actions">
+                            <button
+                              className="send-btn"
+                              onClick={() => void handleSendChat('clems')}
+                              disabled={isSendingChat}
+                            >
+                              {isSendingChat && directTarget === 'clems' ? 'Sending...' : 'Talk to Clems'}
+                            </button>
+                            <button
+                              className="send-btn alt"
+                              onClick={() => void handleSendChat('selected_agent')}
+                              disabled={isSendingChat || !selectedAgentChatReady}
+                            >
+                              {isSendingChat && directTarget === 'selected_agent'
+                                ? 'Sending...'
+                                : 'Talk to selected agent'}
+                            </button>
+                          </div>
+                        ) : (
+                          <button className="send-btn" onClick={() => void handleSendChat()} disabled={isSendingChat}>
+                            {isSendingChat ? 'Sending...' : 'Send to room'}
+                          </button>
+                        )}
                       </div>
                     </section>
 
                     <section className="terminal-section">
                       <div className="section-title-row">
                         <h2>Terminal</h2>
-                        <span className="hint">{selectedAgentId ? `@${selectedAgentId}` : 'no agent selected'}</span>
+                        <div className="chat-actions">
+                          <span className="hint">{selectedAgentId ? `@${selectedAgentId}` : 'no agent selected'}</span>
+                          {selectedAgentId && selectedAgent?.terminal_state !== 'running' ? (
+                            <button className="small-btn" onClick={() => void ensureAgentTerminal(selectedAgentId)}>
+                              Open terminal
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
                       <div className="terminal-log">
                         {selectedLog.length === 0 ? (

@@ -1,8 +1,14 @@
-use std::{collections::{HashMap, HashSet}, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
 use axum::{
     Json, Router,
-    extract::{Path, Query, State, WebSocketUpgrade, ws::{Message, WebSocket}},
+    extract::{
+        Path, Query, State, WebSocketUpgrade,
+        ws::{Message, WebSocket},
+    },
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{delete, get, post},
@@ -16,14 +22,14 @@ use uuid::Uuid;
 use crate::{
     chat,
     models::{
-        AgentRecord, ApprovalDecisionRequest, ApprovalStatus, ChatApprovalsResponse, ChatHistoryResponse,
-        ChatMessage, CreateAgentRequest, CreateAgentResponse, DeliveryMode, LiveTurnRequest,
-        LiveTurnResponse, MessageVisibility, PixelAgentStatus, PixelFeedResponse, TerminalOpenRequest,
-        TerminalSendRequest, TerminalSession, WsEventEnvelope,
-        LlmProfile, LlmProfileResponse, UpdateLlmProfileRequest, RoadmapDraftRequest, RoadmapDraftResponse,
+        AgentRecord, ApprovalDecisionRequest, ApprovalStatus, ChatApprovalsResponse,
+        ChatHistoryResponse, ChatMessage, CreateAgentRequest, CreateAgentResponse,
+        CreateTaskRequest, DeliveryMode, LiveTurnRequest, LiveTurnResponse, LlmProfileResponse,
+        MessageVisibility, PixelAgentStatus, PixelFeedResponse, RoadmapDraftRequest,
+        RoadmapDraftResponse, TasksResponse, TerminalOpenRequest, TerminalSendRequest,
+        TerminalSession, UpdateLlmProfileRequest, UpdateTaskRequest, WsEventEnvelope,
     },
-    openrouter,
-    orchestrator,
+    openrouter, orchestrator,
     state::AppState,
     storage,
 };
@@ -31,7 +37,10 @@ use crate::{
 pub fn build_router(state: AppState) -> Router {
     Router::new()
         .route("/healthz", get(healthz))
-        .route("/v1/projects/{id}/agents", post(create_agent).get(list_agents))
+        .route(
+            "/v1/projects/{id}/agents",
+            post(create_agent).get(list_agents),
+        )
         .route("/v1/projects/{id}/agents/{agent_id}", delete(delete_agent))
         .route(
             "/v1/projects/{id}/agents/{agent_id}/terminal/open",
@@ -58,20 +67,32 @@ pub fn build_router(state: AppState) -> Router {
             post(reject_approval),
         )
         .route("/v1/projects/{id}/pixel-feed", get(pixel_feed))
+        .route("/v1/projects/{id}/tasks", get(get_tasks).post(post_task))
+        .route("/v1/projects/{id}/tasks/{task_id}", axum::routing::patch(patch_task))
         .route("/v1/projects/{id}/layout", get(get_layout).put(put_layout))
         .route("/v1/projects/{id}/events", get(ws_events))
-        .route("/v1/projects/{id}/llm-profile", get(get_llm_profile).put(put_llm_profile))
-        .route("/v1/projects/{id}/roadmap/clems-draft", post(post_roadmap_clems_draft))
+        .route(
+            "/v1/projects/{id}/llm-profile",
+            get(get_llm_profile).put(put_llm_profile),
+        )
+        .route(
+            "/v1/projects/{id}/roadmap/clems-draft",
+            post(post_roadmap_clems_draft),
+        )
         .layer(CorsLayer::permissive())
         .with_state(state)
 }
 
 async fn healthz() -> Json<Value> {
+    let build = crate::build_info::runtime_build_info();
     Json(json!({
         "status": "ok",
         "mode": "owner_local",
         "date_ref": "2026-03-03",
         "time": Utc::now().to_rfc3339(),
+        "build_sha": build.build_sha,
+        "build_time": build.build_time,
+        "app_mode": build.app_mode,
     }))
 }
 
@@ -107,7 +128,7 @@ async fn create_agent(
         agent_id: agent_id.clone(),
         name: payload.name.unwrap_or_else(|| defaults.0.clone()),
         engine: payload.engine.unwrap_or_else(|| defaults.1.to_string()),
-        platform: payload.platform.unwrap_or_else(|| "cockpit-next".to_string()),
+        platform: payload.platform.unwrap_or_else(|| "openrouter".to_string()),
         level: payload.level.unwrap_or(defaults.2),
         lead_id: payload.lead_id.or(defaults.3),
         role: payload.role.unwrap_or_else(|| defaults.4.to_string()),
@@ -215,9 +236,10 @@ async fn restart_terminal(
     State(state): State<AppState>,
     Json(payload): Json<TerminalOpenRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let session = state
-        .terminal_manager
-        .restart(&project_id, &agent_id, payload.cwd.map(PathBuf::from))?;
+    let session =
+        state
+            .terminal_manager
+            .restart(&project_id, &agent_id, payload.cwd.map(PathBuf::from))?;
     emit_clems_online_ack_if_needed(&state, &project_id, &agent_id, &session)?;
 
     Ok(Json(json!({ "session": session })))
@@ -245,7 +267,8 @@ async fn live_turn(
     mentions.extend(chat::extract_mentions(&payload.text));
     mentions = dedup(mentions);
 
-    let mut operator_msg = ChatMessage::new("operator", payload.text.clone(), payload.thread_id.clone());
+    let mut operator_msg =
+        ChatMessage::new("operator", payload.text.clone(), payload.thread_id.clone());
     operator_msg.mentions = mentions.clone();
     operator_msg.metadata = json!({
         "project_id": project_id,
@@ -336,6 +359,24 @@ async fn live_turn(
                 "author": message.author,
             }),
         );
+
+        let auto_tasks = storage::create_tasks_from_ai_message(
+            state.control_root.as_ref(),
+            &project_id,
+            &message.author,
+            &message.text,
+        )?;
+        for task in auto_tasks {
+            state.emit_event(
+                &project_id,
+                "task.created",
+                json!({
+                    "task": task,
+                    "run_id": run_id,
+                    "author": message.author,
+                }),
+            );
+        }
     }
 
     state.emit_event(
@@ -443,7 +484,10 @@ async fn chat_approvals(
 ) -> Result<Json<ChatApprovalsResponse>, ApiError> {
     let status = parse_approval_status(query.status.as_deref())?;
     let approvals = storage::list_approvals(state.control_root.as_ref(), &project_id, status)?;
-    Ok(Json(ChatApprovalsResponse { project_id, approvals }))
+    Ok(Json(ChatApprovalsResponse {
+        project_id,
+        approvals,
+    }))
 }
 
 async fn approve_approval(
@@ -606,6 +650,7 @@ async fn pixel_feed(
             level: agent.level,
             lead_id: agent.lead_id,
             role: agent.role,
+            chat_targetable: chat::is_directable_agent(&agent.agent_id),
             terminal_state: terminal
                 .as_ref()
                 .map(|s| s.state.clone())
@@ -626,6 +671,94 @@ async fn pixel_feed(
         l2_count,
         agents: statuses,
     }))
+}
+
+async fn get_tasks(
+    Path(project_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<TasksResponse>, ApiError> {
+    let tasks = storage::list_tasks(state.control_root.as_ref(), &project_id)?;
+    Ok(Json(TasksResponse {
+        project_id,
+        generated_at: Utc::now().to_rfc3339(),
+        tasks,
+    }))
+}
+
+async fn post_task(
+    Path(project_id): Path<String>,
+    State(state): State<AppState>,
+    Json(payload): Json<CreateTaskRequest>,
+) -> Result<(StatusCode, Json<Value>), ApiError> {
+    let title = payload.title.trim();
+    if title.is_empty() {
+        return Err(ApiError::bad_request("task title is required"));
+    }
+
+    let task = storage::create_task(
+        state.control_root.as_ref(),
+        &project_id,
+        title,
+        payload.owner.as_deref(),
+        payload.phase.as_deref(),
+        payload.status.unwrap_or_default(),
+        payload.source.as_deref(),
+        payload.objective.as_deref(),
+        payload.done_definition.as_deref(),
+        &payload.links,
+        &payload.risks,
+    )?;
+
+    state.emit_event(
+        &project_id,
+        "task.created",
+        json!({
+            "task": task,
+            "source": "operator",
+        }),
+    );
+
+    Ok((
+        StatusCode::CREATED,
+        Json(json!({
+            "ok": true,
+            "task": task,
+        })),
+    ))
+}
+
+async fn patch_task(
+    Path((project_id, task_id)): Path<(String, String)>,
+    State(state): State<AppState>,
+    Json(payload): Json<UpdateTaskRequest>,
+) -> Result<Json<Value>, ApiError> {
+    let patch = storage::TaskRecordPatch {
+        title: payload.title,
+        owner: payload.owner,
+        phase: payload.phase,
+        status: payload.status,
+        source: payload.source,
+        objective: payload.objective,
+        done_definition: payload.done_definition,
+        links: payload.links,
+        risks: payload.risks,
+    };
+
+    let task = storage::update_task(state.control_root.as_ref(), &project_id, &task_id, &patch)?
+        .ok_or_else(|| ApiError::not_found(format!("unknown task {task_id}")))?;
+
+    state.emit_event(
+        &project_id,
+        "task.updated",
+        json!({
+            "task": task,
+        }),
+    );
+
+    Ok(Json(json!({
+        "ok": true,
+        "task": task,
+    })))
 }
 
 async fn get_layout(
@@ -814,20 +947,14 @@ fn normalize_decider(decided_by: Option<String>) -> Result<String, ApiError> {
     if normalized == "olivier" || normalized == "clems" {
         return Ok(normalized);
     }
-    Err(ApiError::bad_request(
-        "decided_by must be olivier or clems",
-    ))
+    Err(ApiError::bad_request("decided_by must be olivier or clems"))
 }
 
-fn default_agent_profile(agent_id: &str) -> (String, &'static str, u8, Option<String>, &'static str) {
+fn default_agent_profile(
+    agent_id: &str,
+) -> (String, &'static str, u8, Option<String>, &'static str) {
     match agent_id {
-        "clems" => (
-            "Clems".to_string(),
-            "CDX",
-            0,
-            None,
-            "orchestrator",
-        ),
+        "clems" => ("Clems".to_string(), "CDX", 0, None, "orchestrator"),
         "victor" => (
             "Victor".to_string(),
             "CDX",
@@ -856,7 +983,13 @@ fn default_agent_profile(agent_id: &str) -> (String, &'static str, u8, Option<St
             Some("clems".to_string()),
             "vulgarisation_lead",
         ),
-        _ => (agent_id.to_string(), "CDX", 2, Some("victor".to_string()), "specialist"),
+        _ => (
+            agent_id.to_string(),
+            "CDX",
+            2,
+            Some("victor".to_string()),
+            "specialist",
+        ),
     }
 }
 
@@ -864,35 +997,8 @@ async fn get_llm_profile(
     Path(project_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<LlmProfileResponse>, ApiError> {
-    use std::collections::HashMap;
-    use std::path::Path;
-    
-    let cockpit_dir = storage::project_root(state.control_root.as_ref(), &project_id).join(".cockpit");
-    let profile_path = cockpit_dir.join("llm-profile.json");
-    
-    let profile = if profile_path.exists() {
-        let content = tokio::fs::read_to_string(&profile_path)
-            .await
-            .map_err(|e| ApiError::bad_request(format!("failed to read profile: {}", e)))?;
-        serde_json::from_str(&content)
-            .map_err(|e| ApiError::bad_request(format!("invalid profile format: {}", e)))?
-    } else {
-        LlmProfile {
-            provider: "openrouter".to_string(),
-            default_model: "openai/gpt-4o-mini".to_string(),
-            fallback_model: Some("liquid/lfm-2.5-1.2b-thinking:free".to_string()),
-            legacy_mapping: Some({
-                let mut m = HashMap::new();
-                m.insert("CDX".to_string(), "openai/gpt-4o-mini".to_string());
-                m.insert("AG".to_string(), "liquid/lfm-2.5-1.2b-thinking:free".to_string());
-                m.insert("OLL".to_string(), "arcee-ai/trinity-large-preview:free".to_string());
-                m
-            }),
-            max_tokens: Some(4096),
-            temperature: Some(0.7),
-        }
-    };
-    
+    let profile = storage::load_llm_profile(state.control_root.as_ref(), &project_id)?;
+
     Ok(Json(LlmProfileResponse {
         project_id,
         profile,
@@ -904,36 +1010,49 @@ async fn put_llm_profile(
     State(state): State<AppState>,
     Json(payload): Json<UpdateLlmProfileRequest>,
 ) -> Result<Json<LlmProfileResponse>, ApiError> {
-    use std::collections::HashMap;
-    
-    let cockpit_dir = storage::project_root(state.control_root.as_ref(), &project_id).join(".cockpit");
-    let profile_path = cockpit_dir.join("llm-profile.json");
-    
-    tokio::fs::create_dir_all(&cockpit_dir).await
-        .map_err(|e| ApiError::bad_request(format!("failed to create directory: {}", e)))?;
-    
-    let mut profile = if profile_path.exists() {
-        let content = tokio::fs::read_to_string(&profile_path)
-            .await
-            .map_err(|e| ApiError::bad_request(format!("failed to read profile: {}", e)))?;
-        serde_json::from_str(&content)
-            .map_err(|e| ApiError::bad_request(format!("invalid profile format: {}", e)))?
-    } else {
-        LlmProfile {
-            provider: "openrouter".to_string(),
-            default_model: "openai/gpt-4o-mini".to_string(),
-            fallback_model: Some("liquid/lfm-2.5-1.2b-thinking:free".to_string()),
-            legacy_mapping: Some(HashMap::new()),
-            max_tokens: Some(4096),
-            temperature: Some(0.7),
-        }
-    };
-    
+    let mut profile = storage::load_llm_profile(state.control_root.as_ref(), &project_id)?;
+
+    if let Some(model) = payload.voice_stt_model {
+        profile.voice_stt_model = model;
+    }
+    if let Some(model) = payload.clems_model {
+        profile.clems_model = model;
+    }
+    if let Some(catalog) = payload.clems_catalog {
+        profile.clems_catalog = catalog;
+    }
+    if let Some(l1_models) = payload.l1_models {
+        profile.l1_models = l1_models;
+    }
+    if let Some(catalog) = payload.l1_catalog {
+        profile.l1_catalog = catalog;
+    }
+    if let Some(model) = payload.l2_default_model {
+        profile.l2_default_model = model;
+    }
+    if let Some(pool) = payload.l2_pool {
+        profile.l2_pool = pool;
+    }
+    if let Some(mode) = payload.l2_selection_mode {
+        profile.l2_selection_mode = mode;
+    }
+    if let Some(enabled) = payload.stream_enabled {
+        profile.stream_enabled = enabled;
+    }
     if let Some(model) = payload.default_model {
-        profile.default_model = model;
+        profile.default_model = Some(model);
     }
     if let Some(fallback) = payload.fallback_model {
         profile.fallback_model = Some(fallback);
+    }
+    if let Some(model) = payload.l1_model {
+        profile.l1_model = Some(model);
+    }
+    if let Some(model) = payload.l2_scene_model {
+        profile.l2_scene_model = Some(model);
+    }
+    if let Some(spawn_max) = payload.lfm_spawn_max {
+        profile.lfm_spawn_max = Some(spawn_max);
     }
     if let Some(tokens) = payload.max_tokens {
         profile.max_tokens = Some(tokens);
@@ -941,14 +1060,9 @@ async fn put_llm_profile(
     if let Some(temp) = payload.temperature {
         profile.temperature = Some(temp);
     }
-    
-    profile.provider = "openrouter".to_string();
-    
-    let json = serde_json::to_string_pretty(&profile)
-        .map_err(|e| ApiError::bad_request(format!("serialization failed: {}", e)))?;
-    tokio::fs::write(&profile_path, json).await
-        .map_err(|e| ApiError::bad_request(format!("failed to write profile: {}", e)))?;
-    
+
+    let profile = storage::save_llm_profile(state.control_root.as_ref(), &project_id, &profile)?;
+
     Ok(Json(LlmProfileResponse {
         project_id,
         profile,
@@ -1019,37 +1133,35 @@ impl IntoResponse for ApiError {
 }
 
 async fn post_roadmap_clems_draft(
-    Path(project_id): Path<String>,
-    State(state): State<AppState>,
+    Path(_project_id): Path<String>,
+    State(_state): State<AppState>,
     Json(payload): Json<RoadmapDraftRequest>,
 ) -> Result<Json<RoadmapDraftResponse>, ApiError> {
     use chrono::Utc;
-    
+
     let run_id = format!("rmp_{}", Uuid::new_v4().simple());
-    
+
     let system_prompt = "You are @clems, L0 orchestrator. Generate a structured roadmap draft in JSON format with sections: summary, phases, milestones, risks, and next_actions. Respond with valid JSON only.";
     let user_prompt = format!("Context: {}\n\nPrompt: {}", payload.context, payload.prompt);
-    
-    let result = openrouter::chat_completion(
-        "openai/gpt-4o-mini",
-        system_prompt,
-        &user_prompt,
-    ).await;
-    
+
+    let result =
+        openrouter::chat_completion("openai/gpt-4o-mini", system_prompt, &user_prompt).await;
+
     if let Some(err) = &result.error {
         return Err(ApiError {
             status: StatusCode::INTERNAL_SERVER_ERROR,
             message: format!("openrouter failed: {}", err),
         });
     }
-    
-    let draft_value = serde_json::from_str(&result.text)
-        .unwrap_or_else(|_| json!({
+
+    let draft_value = serde_json::from_str(&result.text).unwrap_or_else(|_| {
+        json!({
             "raw_text": result.text,
             "generated_at": Utc::now().to_rfc3339(),
             "prompt": payload.prompt
-        }));
-    
+        })
+    });
+
     Ok(Json(RoadmapDraftResponse {
         run_id,
         draft: draft_value,

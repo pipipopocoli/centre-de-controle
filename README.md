@@ -1,8 +1,8 @@
-# Cockpit Next
+# Cockpit
 
 Date reference: 2026-03-03.
 
-Cockpit Next is now the default product runtime:
+Cockpit is the default product runtime:
 - Frontend: React + Vite
 - Desktop shell: Tauri
 - Core backend: Rust (Axum + Tokio)
@@ -21,12 +21,35 @@ Desktop Tauri mode:
 ./launch_cockpit.sh tauri
 ```
 
+Installed app:
+
+```bash
+open "/Applications/Cockpit.app"
+```
+
 Direct scripts:
 
 ```bash
 ./scripts/run_cockpit_next_dev.sh
 ./scripts/run_cockpit_next_tauri.sh
 ```
+
+## OpenRouter key for Finder-launched app
+
+If you launch `Cockpit.app` from Finder or `open`, put your key in one of these local-only files:
+
+- `~/Library/Application Support/Cockpit/.env`
+- `~/.cockpit/.env`
+- repo-local `.env` during development
+
+Recommended contents:
+
+```bash
+COCKPIT_OPENROUTER_API_KEY=your_key_here
+OPENROUTER_API_KEY=your_key_here
+```
+
+Without a local env file, the installed app can boot but agent chat will stay unavailable because macOS app launches do not inherit your shell exports.
 
 ## Donarg Tileset (local licensed import)
 
@@ -54,7 +77,7 @@ This imports:
 
 ## Runbook
 
-- [Cockpit Next Runbook](/Users/oliviercloutier/Desktop/Cockpit/docs/COCKPIT_NEXT_RUNBOOK.md)
+- [Cockpit Runbook](/Users/oliviercloutier/Desktop/Cockpit/docs/COCKPIT_NEXT_RUNBOOK.md)
 
 ## Legacy (manual fallback only)
 

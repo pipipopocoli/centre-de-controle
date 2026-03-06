@@ -121,8 +121,19 @@ def main() -> int:
             headers=headers,
             json={
                 "voice_stt_model": "google/gemini-2.5-flash",
-                "l1_model": "liquid/lfm-2.5-1.2b-thinking:free",
-                "l2_scene_model": "arcee-ai/trinity-large-preview:free",
+                "clems_model": "moonshotai/kimi-k2.5",
+                "l1_models": {
+                    "victor": "anthropic/claude-sonnet-4.6",
+                    "leo": "openai/gpt-5.4",
+                    "nova": "google/gemini-3.1-pro-preview",
+                    "vulgarisation": "moonshotai/kimi-k2.5",
+                },
+                "l2_default_model": "minimax/minimax-m2.5",
+                "l2_pool": [
+                    "minimax/minimax-m2.5",
+                    "moonshotai/kimi-k2.5",
+                    "deepseek/deepseek-chat-v3.1",
+                ],
                 "lfm_spawn_max": 6,
                 "stream_enabled": True,
             },

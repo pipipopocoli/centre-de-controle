@@ -7,15 +7,15 @@ INSTALL_DIR="${1:-/Applications}"
 CORE_BIN="$ROOT/crates/cockpit-core/target/release/cockpit-core"
 
 if [[ ! -d "$BUNDLE_ROOT" ]]; then
-  echo "[cockpit-next] bundle folder not found: $BUNDLE_ROOT" >&2
-  echo "[cockpit-next] build first: cd apps/cockpit-next-desktop && npm run tauri:build" >&2
+  echo "[cockpit] bundle folder not found: $BUNDLE_ROOT" >&2
+  echo "[cockpit] build first: cd apps/cockpit-next-desktop && npm run tauri:build" >&2
   exit 1
 fi
 
-APP_PATH="$(find "$BUNDLE_ROOT" -maxdepth 4 -type d -name '*.app' | head -n 1 || true)"
+APP_PATH="$(find "$BUNDLE_ROOT" -maxdepth 4 -type d -name 'Cockpit.app' | head -n 1 || true)"
 if [[ -z "$APP_PATH" ]]; then
-  echo "[cockpit-next] no .app bundle found under $BUNDLE_ROOT" >&2
-  echo "[cockpit-next] build first: cd apps/cockpit-next-desktop && npm run tauri:build" >&2
+  echo "[cockpit] Cockpit.app not found under $BUNDLE_ROOT" >&2
+  echo "[cockpit] build first: cd apps/cockpit-next-desktop && npm run tauri:build" >&2
   exit 1
 fi
 
@@ -29,14 +29,13 @@ fi
 
 cp -R "$APP_PATH" "$DEST_PATH"
 
-if [[ ! -x "$CORE_BIN" ]]; then
-  echo "[cockpit-next] building cockpit-core release binary"
-  (cd "$ROOT/crates/cockpit-core" && cargo build --release)
-fi
+echo "[cockpit] building cockpit-core release binary"
+(cd "$ROOT/crates/cockpit-core" && cargo build --release)
 
 cp "$CORE_BIN" "$DEST_PATH/Contents/MacOS/cockpit-core"
 chmod +x "$DEST_PATH/Contents/MacOS/cockpit-core"
 
-echo "[cockpit-next] installed: $DEST_PATH"
-echo "[cockpit-next] source:    $APP_PATH"
-echo "[cockpit-next] backend:   $DEST_PATH/Contents/MacOS/cockpit-core"
+echo "[cockpit] installed: $DEST_PATH"
+echo "[cockpit] source:    $APP_PATH"
+echo "[cockpit] backend:   $DEST_PATH/Contents/MacOS/cockpit-core"
+echo "[cockpit] launch:    open \"$DEST_PATH\""

@@ -6,31 +6,39 @@
 }
 
 :root {
-  font-family: 'FS Pixel Sans', 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Sans', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-display: 'FS Pixel Sans', 'Azeret Mono', 'JetBrains Mono', monospace;
+  --font-body: 'IBM Plex Sans', 'Avenir Next', 'Segoe UI', sans-serif;
   color-scheme: only light;
-  --bg-0: #eef1f4;
-  --bg-1: #e2e8ed;
-  --bg-2: #d8e0e7;
-  --fg-0: #1f272e;
-  --fg-1: #53616d;
-  --line: #adc0cf;
-  --accent: #2f8f6f;
-  --accent-2: #c6843f;
-  --danger: #d44d4d;
-  --ok: #2f9d6a;
-  --warn: #b68322;
-  --card-shadow: 0 10px 24px rgba(34, 53, 69, 0.12);
-  --surface-0: rgba(249, 251, 253, 0.92);
-  --surface-1: rgba(242, 247, 251, 0.95);
-  --surface-2: #dbe6ef;
-  --surface-input: #f4f8fb;
-  --button-bg: #dbe8f2;
-  --button-border: #9db2c4;
-  --button-hover: #cde0ef;
-  --chat-row-bg: rgba(241, 248, 253, 0.9);
-  --chat-row-border: rgba(162, 184, 200, 0.82);
-  --terminal-bg: #1f2a34;
-  --terminal-text: #d8f2df;
+  --bg-0: #eef3f6;
+  --bg-1: #dde7ee;
+  --bg-2: #d0dbe4;
+  --fg-0: #13212b;
+  --fg-1: #4a5b67;
+  --fg-2: #71808b;
+  --line: #b7c5d1;
+  --line-strong: #8ea2b2;
+  --accent: #215d9c;
+  --accent-2: #d48d3d;
+  --danger: #cf4c4c;
+  --ok: #267e57;
+  --warn: #b47b16;
+  --card-shadow: 0 14px 38px rgba(24, 43, 63, 0.12);
+  --surface-0: rgba(252, 254, 255, 0.96);
+  --surface-1: rgba(246, 250, 253, 0.98);
+  --surface-2: #d9e5ef;
+  --surface-3: rgba(235, 242, 247, 0.98);
+  --surface-input: #f5f9fc;
+  --button-bg: #dce9f4;
+  --button-border: #98afc2;
+  --button-hover: #cfe0ee;
+  --chat-row-bg: rgba(242, 248, 253, 0.98);
+  --chat-row-border: rgba(156, 181, 202, 0.92);
+  --terminal-bg: #1a2430;
+  --terminal-text: #d3f0db;
+  --radius-lg: 22px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
 }
 
 * {
@@ -44,14 +52,16 @@ body,
   min-height: 100%;
   width: 100%;
   background:
-    radial-gradient(circle at 14% 8%, rgba(84, 150, 207, 0.14), transparent 34%),
-    radial-gradient(circle at 90% 0%, rgba(216, 180, 132, 0.24), transparent 28%),
-    linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 42%, var(--bg-2) 100%);
+    radial-gradient(circle at 14% 8%, rgba(76, 139, 194, 0.22), transparent 36%),
+    radial-gradient(circle at 92% 0%, rgba(216, 180, 132, 0.3), transparent 29%),
+    linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 44%, var(--bg-2) 100%);
   color: var(--fg-0);
 }
 
 button,
-input {
+input,
+textarea,
+select {
   font: inherit;
 }
 
@@ -59,4 +69,8 @@ h1,
 h2,
 p {
   margin: 0;
+}
+
+body {
+  font-family: var(--font-body);
 }

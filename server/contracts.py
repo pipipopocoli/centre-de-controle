@@ -184,11 +184,51 @@ class DeviceDeleteResponse(BaseModel):
 
 
 class LlmProfile(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    provider: str = "openrouter"
     voice_stt_model: str = "google/gemini-2.5-flash"
-    l1_model: str = "liquid/lfm-2.5-1.2b-thinking:free"
-    l2_scene_model: str = "arcee-ai/trinity-large-preview:free"
+    clems_model: str = "moonshotai/kimi-k2.5"
+    clems_catalog: list[str] = Field(
+        default_factory=lambda: [
+            "moonshotai/kimi-k2.5",
+            "anthropic/claude-sonnet-4.6",
+            "anthropic/claude-opus-4.6",
+        ]
+    )
+    l1_models: dict[str, str] = Field(
+        default_factory=lambda: {
+            "victor": "moonshotai/kimi-k2.5",
+            "leo": "moonshotai/kimi-k2.5",
+            "nova": "moonshotai/kimi-k2.5",
+            "vulgarisation": "moonshotai/kimi-k2.5",
+        }
+    )
+    l1_catalog: list[str] = Field(
+        default_factory=lambda: [
+            "moonshotai/kimi-k2.5",
+            "anthropic/claude-sonnet-4.6",
+            "anthropic/claude-opus-4.6",
+            "openai/gpt-5.4",
+            "google/gemini-3.1-pro-preview",
+            "x-ai/grok-4",
+        ]
+    )
+    l2_default_model: str = "minimax/minimax-m2.5"
+    l2_pool: list[str] = Field(
+        default_factory=lambda: [
+            "minimax/minimax-m2.5",
+            "moonshotai/kimi-k2.5",
+            "deepseek/deepseek-chat-v3.1",
+        ]
+    )
+    l2_selection_mode: Literal["manual_primary"] = "manual_primary"
     lfm_spawn_max: int = Field(default=10, ge=1, le=10)
     stream_enabled: bool = True
+    default_model: str | None = None
+    fallback_model: str | None = None
+    l1_model: str | None = None
+    l2_scene_model: str | None = None
 
 
 class AgenticTurnRequest(BaseModel):

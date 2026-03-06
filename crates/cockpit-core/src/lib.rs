@@ -1,4 +1,5 @@
 pub mod app;
+pub mod build_info;
 pub mod chat;
 pub mod models;
 pub mod openrouter;

@@ -4,7 +4,7 @@ Date: 2026-03-03
 
 ## Wave21 bootstrap status
 
-- Bootstrap module added under `/Users/oliviercloutier/Desktop/Cockpit/android/`.
+- Bootstrap module added under `android/` from repo root.
 - Includes:
   - Compose `MainActivity`
   - Retrofit interface for auth/projects/chat/wizard/agentic endpoints

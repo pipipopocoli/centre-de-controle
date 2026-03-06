@@ -1,4 +1,4 @@
-Cockpit Next third-party notices
+Cockpit third-party notices
 
 1) Pixel Agents reference assets and engine snippets
 - Source: https://github.com/pablodelucca/pixel-agents
@@ -7,7 +7,7 @@ Cockpit Next third-party notices
 - Usage in this repository:
   - Character sprite strips: char_0.png .. char_5.png
   - Wall atlas: walls.png
-  - Theme/loading parity logic adapted for Cockpit Next local runtime
+  - Theme/loading parity logic adapted for Cockpit local runtime
 
 2) Office Tileset (Donarg)
 - Source: user-provided purchased asset pack

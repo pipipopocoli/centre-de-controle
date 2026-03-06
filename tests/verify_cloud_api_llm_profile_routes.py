@@ -49,15 +49,28 @@ def main() -> int:
         get_profile = client.get("/v1/projects/cockpit/llm-profile", headers=headers)
         assert get_profile.status_code == 200
         profile = get_profile.json()["profile"]
-        assert profile["l1_model"], profile
+        assert profile["clems_model"] == "moonshotai/kimi-k2.5", profile
+        assert profile["l1_models"]["victor"], profile
+        assert profile["l2_default_model"], profile
 
         updated = client.put(
             "/v1/projects/cockpit/llm-profile",
             headers=headers,
             json={
                 "voice_stt_model": "google/gemini-2.5-flash",
-                "l1_model": "liquid/lfm-2.5-1.2b-thinking:free",
-                "l2_scene_model": "arcee-ai/trinity-large-preview:free",
+                "clems_model": "anthropic/claude-sonnet-4.6",
+                "l1_models": {
+                    "victor": "openai/gpt-5.4",
+                    "leo": "anthropic/claude-opus-4.6",
+                    "nova": "google/gemini-3.1-pro-preview",
+                    "vulgarisation": "moonshotai/kimi-k2.5",
+                },
+                "l2_default_model": "moonshotai/kimi-k2.5",
+                "l2_pool": [
+                    "minimax/minimax-m2.5",
+                    "moonshotai/kimi-k2.5",
+                    "deepseek/deepseek-chat-v3.1",
+                ],
                 "lfm_spawn_max": 4,
                 "stream_enabled": False,
             },
@@ -65,6 +78,9 @@ def main() -> int:
         assert updated.status_code == 200, updated.text
         assert updated.json()["profile"]["lfm_spawn_max"] == 4
         assert updated.json()["profile"]["stream_enabled"] is False
+        assert updated.json()["profile"]["l1_models"]["leo"] == "anthropic/claude-opus-4.6"
+        assert updated.json()["profile"]["l1_model"] == "openai/gpt-5.4"
+        assert updated.json()["profile"]["l2_scene_model"] == "moonshotai/kimi-k2.5"
 
     print("OK: cloud api llm-profile routes verified")
     return 0
@@ -72,4 +88,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

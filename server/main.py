@@ -126,9 +126,35 @@ def _run_id(prefix: str) -> str:
 
 def _llm_profile_defaults(settings: APISettings) -> dict[str, Any]:
     return {
+        "provider": "openrouter",
         "voice_stt_model": settings.model_voice_stt,
-        "l1_model": settings.model_l1,
-        "l2_scene_model": settings.model_l2,
+        "clems_model": "moonshotai/kimi-k2.5",
+        "clems_catalog": [
+            "moonshotai/kimi-k2.5",
+            "anthropic/claude-sonnet-4.6",
+            "anthropic/claude-opus-4.6",
+        ],
+        "l1_models": {
+            "victor": settings.model_l1,
+            "leo": settings.model_l1,
+            "nova": settings.model_l1,
+            "vulgarisation": settings.model_l1,
+        },
+        "l1_catalog": [
+            "moonshotai/kimi-k2.5",
+            "anthropic/claude-sonnet-4.6",
+            "anthropic/claude-opus-4.6",
+            "openai/gpt-5.4",
+            "google/gemini-3.1-pro-preview",
+            "x-ai/grok-4",
+        ],
+        "l2_default_model": settings.model_l2,
+        "l2_pool": [
+            "minimax/minimax-m2.5",
+            "moonshotai/kimi-k2.5",
+            settings.model_l2,
+        ],
+        "l2_selection_mode": "manual_primary",
         "lfm_spawn_max": settings.model_lfm_spawn_max,
         "stream_enabled": settings.model_stream_enabled,
     }
@@ -521,8 +547,8 @@ async def post_agentic_turn(request: Request) -> JSONResponse:
         _openrouter_client(settings),
         mode=body.mode,
         user_text=body.text,
-        l1_model=profile.l1_model,
-        l2_scene_model=profile.l2_scene_model,
+        l1_model=profile.l1_models.get("victor") or profile.clems_model,
+        l2_scene_model=profile.l2_default_model,
         lfm_spawn_max=profile.lfm_spawn_max,
         stream_enabled=profile.stream_enabled,
     )

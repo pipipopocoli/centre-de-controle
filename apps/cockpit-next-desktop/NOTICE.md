@@ -1,6 +1,6 @@
 # NOTICE
 
-Cockpit Next reuses and adapts parts of the Pixel Agents project:
+Cockpit reuses and adapts parts of the Pixel Agents project:
 
 - Project: https://github.com/pablodelucca/pixel-agents
 - License: MIT

@@ -57,6 +57,7 @@ export interface PixelAgentStatus {
   level: number
   lead_id: string | null
   role: string
+  chat_targetable: boolean
   terminal_state: string
   terminal_session_id: string | null
 }
@@ -80,11 +81,29 @@ export interface WsEventEnvelope {
   payload: Record<string, unknown>
 }
 
+export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done'
+
+export interface TaskRecord {
+  task_id: string
+  title: string
+  owner: string
+  phase: string
+  status: TaskStatus
+  source: string
+  objective: string
+  done_definition: string
+  links: string[]
+  risks: string[]
+  path: string
+  updated_at: string
+}
+
 export interface LiveTurnRequest {
   text: string
   chat_mode: ChatMode
   execution_mode?: ExecutionMode
   thread_id?: string | null
+  target_agent_id?: string | null
   mentions?: string[]
   context_ref?: Record<string, unknown> | null
   section_tag?: string | null
@@ -100,6 +119,37 @@ export interface LiveTurnResponse {
   spawned_agents_count: number
   model_usage: Record<string, unknown>
   error: string | null
+}
+
+export interface HealthzResponse {
+  status: string
+  mode?: string
+  date_ref?: string
+  time?: string
+  build_sha?: string
+  build_time?: string
+  app_mode?: string
+}
+
+export interface LlmProfile {
+  provider: string
+  voice_stt_model: string
+  clems_model: string
+  clems_catalog: string[]
+  l1_models: Record<string, string>
+  l1_catalog: string[]
+  l2_default_model: string
+  l2_pool: string[]
+  l2_selection_mode: string
+  stream_enabled: boolean
+  legacy_mapping?: Record<string, string>
+  default_model?: string | null
+  fallback_model?: string | null
+  l1_model?: string | null
+  l2_scene_model?: string | null
+  lfm_spawn_max?: number | null
+  max_tokens?: number | null
+  temperature?: number | null
 }
 
 const API_URL = import.meta.env.VITE_COCKPIT_CORE_URL ?? 'http://127.0.0.1:8787'
@@ -133,6 +183,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getApiUrl(): string {
   return API_URL
+}
+
+export async function getHealth(): Promise<HealthzResponse> {
+  return request('/healthz')
 }
 
 export async function getAgents(projectId: string): Promise<AgentRecord[]> {
@@ -283,6 +337,59 @@ export async function resetChat(
 
 export async function getLayout(projectId: string): Promise<Record<string, unknown>> {
   return request(`/v1/projects/${projectId}/layout`)
+}
+
+export async function getLlmProfile(projectId: string): Promise<LlmProfile> {
+  const payload = await request<{ project_id: string; profile: LlmProfile }>(`/v1/projects/${projectId}/llm-profile`)
+  return payload.profile
+}
+
+export async function putLlmProfile(
+  projectId: string,
+  payload: Partial<LlmProfile>,
+): Promise<LlmProfile> {
+  const response = await request<{ project_id: string; profile: LlmProfile }>(`/v1/projects/${projectId}/llm-profile`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+  return response.profile
+}
+
+export async function getTasks(projectId: string): Promise<{ project_id: string; generated_at: string; tasks: TaskRecord[] }> {
+  return request(`/v1/projects/${projectId}/tasks`)
+}
+
+export async function createTask(
+  projectId: string,
+  payload: {
+    title: string
+    owner?: string | null
+    phase?: string | null
+    status?: TaskStatus | null
+    source?: string | null
+    objective?: string | null
+    done_definition?: string | null
+    links?: string[]
+    risks?: string[]
+  },
+): Promise<TaskRecord> {
+  const response = await request<{ ok: boolean; task: TaskRecord }>(`/v1/projects/${projectId}/tasks`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  return response.task
+}
+
+export async function updateTask(
+  projectId: string,
+  taskId: string,
+  payload: Partial<Omit<TaskRecord, 'task_id' | 'path' | 'updated_at'>>,
+): Promise<TaskRecord> {
+  const response = await request<{ ok: boolean; task: TaskRecord }>(`/v1/projects/${projectId}/tasks/${taskId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+  return response.task
 }
 
 export async function putLayout(projectId: string, layout: Record<string, unknown>): Promise<void> {

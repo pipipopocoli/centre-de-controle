@@ -11,17 +11,48 @@ use rusqlite::{Connection, params};
 use serde_json::{Value, json};
 
 use crate::models::{
-    AgentRecord, ApprovalRequest, ApprovalStatus, ChatMessage, MessageVisibility, WsEventEnvelope,
+    AgentRecord, ApprovalRequest, ApprovalStatus, ChatMessage, LlmProfile, MessageVisibility,
+    TaskRecord, TaskStatus, WsEventEnvelope,
 };
+
+const LEGACY_RUNTIME_PLATFORMS: &[&str] = &["codex", "antigravity", "ollama"];
+const LEGACY_SYSTEM_AGENT_IDS: &[&str] = &["codex", "antigravity", "ollama"];
 
 pub fn project_root(control_root: &Path, project_id: &str) -> PathBuf {
     control_root.join(project_id)
+}
+
+fn normalize_platform(platform: &str) -> String {
+    let trimmed = platform.trim();
+    if trimmed.is_empty() {
+        return "openrouter".to_string();
+    }
+
+    let lowered = trimmed.to_ascii_lowercase();
+    if lowered == "openrouter" || LEGACY_RUNTIME_PLATFORMS.contains(&lowered.as_str()) {
+        return "openrouter".to_string();
+    }
+
+    trimmed.to_string()
+}
+
+fn is_hidden_legacy_system_agent(agent_id: &str) -> bool {
+    LEGACY_SYSTEM_AGENT_IDS.contains(&agent_id)
+}
+
+fn normalize_agent_record(mut agent: AgentRecord) -> Option<AgentRecord> {
+    agent.platform = normalize_platform(&agent.platform);
+    if is_hidden_legacy_system_agent(&agent.agent_id) {
+        return None;
+    }
+    Some(agent)
 }
 
 pub fn ensure_project_scaffold(control_root: &Path, project_id: &str) -> Result<PathBuf> {
     let root = project_root(control_root, project_id);
     fs::create_dir_all(root.join("agents"))?;
     fs::create_dir_all(root.join("chat/threads"))?;
+    fs::create_dir_all(root.join("issues"))?;
     fs::create_dir_all(root.join("runs"))?;
     fs::create_dir_all(root.join("pixel"))?;
 
@@ -42,20 +73,23 @@ pub fn ensure_project_scaffold(control_root: &Path, project_id: &str) -> Result<
 
     let layout_path = root.join("pixel/layout.json");
     if !layout_path.exists() {
-        fs::write(layout_path, serde_json::to_string_pretty(&default_layout())?)?;
+        fs::write(
+            layout_path,
+            serde_json::to_string_pretty(&default_layout())?,
+        )?;
     }
 
     let state_path = root.join("STATE.md");
     if !state_path.exists() {
         fs::write(
             state_path,
-            "# State\n\n## Phase\n- Implement\n\n## Objective\n- Cockpit Next rewrite\n\n## Now\n- Bootstrap\n\n## Next\n- Pixel Home + chat live\n\n## In Progress\n- none\n\n## Blockers\n- none\n\n## Risks\n- rewrite scope\n\n## Links\n- none\n",
+            "# State\n\n## Phase\n- Implement\n\n## Objective\n- Cockpit rewrite\n\n## Now\n- Bootstrap\n\n## Next\n- Pixel Home + chat live\n\n## In Progress\n- none\n\n## Blockers\n- none\n\n## Risks\n- rewrite scope\n\n## Links\n- none\n",
         )?;
     }
 
     let roadmap_path = root.join("ROADMAP.md");
     if !roadmap_path.exists() {
-        fs::write(roadmap_path, "# Roadmap\n\n- Build Cockpit Next\n")?;
+        fs::write(roadmap_path, "# Roadmap\n\n- Build Cockpit\n")?;
     }
 
     let decisions_path = root.join("DECISIONS.md");
@@ -74,9 +108,14 @@ pub fn load_agents(control_root: &Path, project_id: &str) -> Result<HashMap<Stri
     if raw.trim().is_empty() {
         return Ok(HashMap::new());
     }
-    let parsed: HashMap<String, AgentRecord> =
-        serde_json::from_str(&raw).with_context(|| format!("invalid json in {}", path.display()))?;
-    Ok(parsed)
+    let parsed: HashMap<String, AgentRecord> = serde_json::from_str(&raw)
+        .with_context(|| format!("invalid json in {}", path.display()))?;
+    Ok(parsed
+        .into_iter()
+        .filter_map(|(agent_id, agent)| {
+            normalize_agent_record(agent).map(|agent| (agent_id, agent))
+        })
+        .collect())
 }
 
 pub fn save_agents(
@@ -86,7 +125,13 @@ pub fn save_agents(
 ) -> Result<()> {
     let root = ensure_project_scaffold(control_root, project_id)?;
     let path = root.join("agents/registry.json");
-    fs::write(path, serde_json::to_string_pretty(agents)?)?;
+    let normalized: HashMap<String, AgentRecord> = agents
+        .iter()
+        .filter_map(|(agent_id, agent)| {
+            normalize_agent_record(agent.clone()).map(|agent| (agent_id.clone(), agent))
+        })
+        .collect();
+    fs::write(path, serde_json::to_string_pretty(&normalized)?)?;
     Ok(())
 }
 
@@ -108,7 +153,10 @@ pub fn ensure_agent_files(control_root: &Path, project_id: &str, agent_id: &str)
 
     let memory_path = dir.join("memory.md");
     if !memory_path.exists() {
-        fs::write(memory_path, format!("# Memory - {agent_id}\n\n- Initialized\n"))?;
+        fs::write(
+            memory_path,
+            format!("# Memory - {agent_id}\n\n- Initialized\n"),
+        )?;
     }
 
     let journal_path = dir.join("journal.ndjson");
@@ -120,14 +168,20 @@ pub fn ensure_agent_files(control_root: &Path, project_id: &str, agent_id: &str)
 }
 
 pub fn remove_agent_files(control_root: &Path, project_id: &str, agent_id: &str) -> Result<()> {
-    let dir = project_root(control_root, project_id).join("agents").join(agent_id);
+    let dir = project_root(control_root, project_id)
+        .join("agents")
+        .join(agent_id);
     if dir.exists() {
         fs::remove_dir_all(dir)?;
     }
     Ok(())
 }
 
-pub fn append_chat_message(control_root: &Path, project_id: &str, message: &ChatMessage) -> Result<()> {
+pub fn append_chat_message(
+    control_root: &Path,
+    project_id: &str,
+    message: &ChatMessage,
+) -> Result<()> {
     let root = ensure_project_scaffold(control_root, project_id)?;
     let path = root.join("chat/global.ndjson");
     let mut file = OpenOptions::new().append(true).create(true).open(&path)?;
@@ -199,7 +253,11 @@ pub fn clear_chat_data(control_root: &Path, project_id: &str) -> Result<(usize, 
     let chat_deleted = conn.execute("DELETE FROM chat_messages", [])?;
     let approvals_deleted = conn.execute("DELETE FROM approval_requests", [])?;
 
-    Ok((existing_messages, existing_approvals, chat_deleted + approvals_deleted))
+    Ok((
+        existing_messages,
+        existing_approvals,
+        chat_deleted + approvals_deleted,
+    ))
 }
 
 pub fn load_layout(control_root: &Path, project_id: &str) -> Result<Value> {
@@ -217,7 +275,11 @@ pub fn save_layout(control_root: &Path, project_id: &str, layout: &Value) -> Res
     Ok(())
 }
 
-pub fn append_runtime_event(control_root: &Path, project_id: &str, event: &WsEventEnvelope) -> Result<()> {
+pub fn append_runtime_event(
+    control_root: &Path,
+    project_id: &str,
+    event: &WsEventEnvelope,
+) -> Result<()> {
     let db_path = ensure_runtime_db(control_root, project_id)?;
     let conn = Connection::open(db_path)?;
     conn.execute(
@@ -336,9 +398,8 @@ pub fn get_approval(
 ) -> Result<Option<ApprovalRequest>> {
     let db_path = ensure_runtime_db(control_root, project_id)?;
     let conn = Connection::open(db_path)?;
-    let mut stmt = conn.prepare(
-        "SELECT payload_json FROM approval_requests WHERE request_id = ?1 LIMIT 1",
-    )?;
+    let mut stmt =
+        conn.prepare("SELECT payload_json FROM approval_requests WHERE request_id = ?1 LIMIT 1")?;
 
     let mut rows = stmt.query(params![request_id])?;
     if let Some(row) = rows.next()? {
@@ -392,6 +453,212 @@ pub fn has_section_overlap_risk(
     )?;
     let count: i64 = stmt.query_row(params![section_tag, cutoff], |row| row.get(0))?;
     Ok(count > 0)
+}
+
+pub fn load_llm_profile(control_root: &Path, project_id: &str) -> Result<LlmProfile> {
+    let root = ensure_project_scaffold(control_root, project_id)?;
+    let cockpit_dir = root.join(".cockpit");
+    let profile_path = cockpit_dir.join("llm-profile.json");
+
+    let profile = if profile_path.exists() {
+        let content = fs::read_to_string(&profile_path)?;
+        serde_json::from_str::<LlmProfile>(&content)?
+    } else {
+        LlmProfile::default()
+    };
+
+    Ok(normalize_llm_profile(profile))
+}
+
+pub fn save_llm_profile(control_root: &Path, project_id: &str, profile: &LlmProfile) -> Result<LlmProfile> {
+    let root = ensure_project_scaffold(control_root, project_id)?;
+    let cockpit_dir = root.join(".cockpit");
+    fs::create_dir_all(&cockpit_dir)?;
+
+    let normalized = validate_llm_profile(normalize_llm_profile(profile.clone()))?;
+    let profile_path = cockpit_dir.join("llm-profile.json");
+    fs::write(profile_path, serde_json::to_string_pretty(&normalized)?)?;
+    Ok(normalized)
+}
+
+pub fn list_tasks(control_root: &Path, project_id: &str) -> Result<Vec<TaskRecord>> {
+    let root = ensure_project_scaffold(control_root, project_id)?;
+    let issues_dir = root.join("issues");
+    let mut tasks = Vec::new();
+
+    for entry in fs::read_dir(issues_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
+            continue;
+        };
+        if !name.starts_with("ISSUE-") || !name.ends_with(".md") {
+            continue;
+        }
+        if let Some(task) = parse_issue_task(&path)? {
+            tasks.push(task);
+        }
+    }
+
+    tasks.sort_by(|a, b| {
+        let status_rank = |status: TaskStatus| match status {
+            TaskStatus::Todo => 0_u8,
+            TaskStatus::InProgress => 1_u8,
+            TaskStatus::Blocked => 2_u8,
+            TaskStatus::Done => 3_u8,
+        };
+        status_rank(a.status)
+            .cmp(&status_rank(b.status))
+            .then_with(|| a.title.to_lowercase().cmp(&b.title.to_lowercase()))
+            .then_with(|| a.task_id.cmp(&b.task_id))
+    });
+    Ok(tasks)
+}
+
+pub fn create_task(
+    control_root: &Path,
+    project_id: &str,
+    title: &str,
+    owner: Option<&str>,
+    phase: Option<&str>,
+    status: TaskStatus,
+    source: Option<&str>,
+    objective: Option<&str>,
+    done_definition: Option<&str>,
+    links: &[String],
+    risks: &[String],
+) -> Result<TaskRecord> {
+    let root = ensure_project_scaffold(control_root, project_id)?;
+    let issues_dir = root.join("issues");
+    let task_id = next_issue_id(&issues_dir)?;
+    let slug = slugify(title);
+    let path = issues_dir.join(format!("{task_id}-{slug}.md"));
+
+    let task = TaskRecord {
+        task_id: task_id.clone(),
+        title: title.trim().to_string(),
+        owner: owner.unwrap_or("clems").trim().to_string(),
+        phase: phase.unwrap_or("Implement").trim().to_string(),
+        status,
+        source: source.unwrap_or("manual").trim().to_string(),
+        objective: normalize_multiline(objective.unwrap_or("TBD")),
+        done_definition: normalize_multiline(done_definition.unwrap_or("Define verifiable done criteria.")),
+        links: normalize_lines(links.to_vec()),
+        risks: normalize_lines(risks.to_vec()),
+        path: path.display().to_string(),
+        updated_at: Utc::now().to_rfc3339(),
+    };
+
+    fs::write(&path, render_task_markdown(&task))?;
+    Ok(task)
+}
+
+pub fn update_task(
+    control_root: &Path,
+    project_id: &str,
+    task_id: &str,
+    patch: &TaskRecordPatch,
+) -> Result<Option<TaskRecord>> {
+    let root = ensure_project_scaffold(control_root, project_id)?;
+    let Some(path) = find_issue_path(root.join("issues").as_path(), task_id)? else {
+        return Ok(None);
+    };
+
+    let raw = fs::read_to_string(&path)?;
+    let mut task = parse_issue_task(&path)?.ok_or_else(|| anyhow::anyhow!("invalid task file"))?;
+
+    if let Some(title) = &patch.title {
+        task.title = title.trim().to_string();
+    }
+    if let Some(owner) = &patch.owner {
+        task.owner = owner.trim().to_string();
+    }
+    if let Some(phase) = &patch.phase {
+        task.phase = phase.trim().to_string();
+    }
+    if let Some(status) = patch.status {
+        task.status = status;
+    }
+    if let Some(source) = &patch.source {
+        task.source = source.trim().to_string();
+    }
+    if let Some(objective) = &patch.objective {
+        task.objective = normalize_multiline(objective);
+    }
+    if let Some(done_definition) = &patch.done_definition {
+        task.done_definition = normalize_multiline(done_definition);
+    }
+    if let Some(links) = &patch.links {
+        task.links = normalize_lines(links.clone());
+    }
+    if let Some(risks) = &patch.risks {
+        task.risks = normalize_lines(risks.clone());
+    }
+
+    task.updated_at = Utc::now().to_rfc3339();
+    task.path = path.display().to_string();
+
+    let updated = rewrite_issue_markdown(&raw, &task);
+    fs::write(&path, updated)?;
+    Ok(Some(task))
+}
+
+pub fn create_tasks_from_ai_message(
+    control_root: &Path,
+    project_id: &str,
+    author: &str,
+    text: &str,
+) -> Result<Vec<TaskRecord>> {
+    if !matches!(author, "clems" | "victor" | "leo" | "nova" | "vulgarisation") {
+        return Ok(Vec::new());
+    }
+
+    let specs = extract_ai_task_specs(author, text);
+    let mut out = Vec::new();
+    for spec in specs {
+        out.push(create_task(
+            control_root,
+            project_id,
+            &spec.title,
+            Some(spec.owner.as_deref().unwrap_or(author)),
+            Some("Implement"),
+            TaskStatus::Todo,
+            Some("ai_auto"),
+            Some(spec.objective.as_deref().unwrap_or(&spec.title)),
+            Some(
+                spec.done_definition
+                    .as_deref()
+                    .unwrap_or("Task completed with verifiable output and tests or logs."),
+            ),
+            &Vec::new(),
+            &Vec::new(),
+        )?);
+    }
+    Ok(out)
+}
+
+#[derive(Debug, Default)]
+pub struct TaskRecordPatch {
+    pub title: Option<String>,
+    pub owner: Option<String>,
+    pub phase: Option<String>,
+    pub status: Option<TaskStatus>,
+    pub source: Option<String>,
+    pub objective: Option<String>,
+    pub done_definition: Option<String>,
+    pub links: Option<Vec<String>>,
+    pub risks: Option<Vec<String>>,
+}
+
+#[derive(Debug)]
+struct AiTaskSpec {
+    title: String,
+    owner: Option<String>,
+    objective: Option<String>,
+    done_definition: Option<String>,
 }
 
 fn ensure_runtime_db(control_root: &Path, project_id: &str) -> Result<PathBuf> {
@@ -451,6 +718,706 @@ fn count_lines(path: &Path) -> Result<usize> {
         }
     }
     Ok(count)
+}
+
+fn normalize_llm_profile(mut profile: LlmProfile) -> LlmProfile {
+    profile.provider = "openrouter".to_string();
+
+    if profile.voice_stt_model.trim().is_empty() {
+        profile.voice_stt_model = LlmProfile::default().voice_stt_model;
+    }
+
+    if profile.clems_catalog.is_empty() {
+        profile.clems_catalog = LlmProfile::default().clems_catalog;
+    }
+    if profile.l1_catalog.is_empty() {
+        profile.l1_catalog = LlmProfile::default().l1_catalog;
+    }
+    if profile.l2_pool.is_empty() {
+        profile.l2_pool = LlmProfile::default().l2_pool;
+    }
+    if profile.l2_selection_mode.trim().is_empty() {
+        profile.l2_selection_mode = LlmProfile::default().l2_selection_mode;
+    }
+
+    if profile.clems_model.trim().is_empty()
+        || (profile.default_model.is_some() && profile.clems_model == LlmProfile::default().clems_model)
+    {
+        profile.clems_model = profile
+            .default_model
+            .clone()
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| LlmProfile::default().clems_model);
+    }
+
+    let l1_seed = profile
+        .l1_model
+        .clone()
+        .filter(|value| !value.trim().is_empty())
+        .or_else(|| {
+            profile
+                .default_model
+                .clone()
+                .filter(|value| !value.trim().is_empty())
+        })
+        .unwrap_or_else(|| LlmProfile::default().clems_model);
+
+    for agent_id in ["victor", "leo", "nova", "vulgarisation"] {
+        profile
+            .l1_models
+            .entry(agent_id.to_string())
+            .or_insert_with(|| l1_seed.clone());
+    }
+    for agent_id in ["victor", "leo", "nova", "vulgarisation"] {
+        if let Some(current) = profile.l1_models.get_mut(agent_id) {
+            if current.trim().is_empty()
+                || (profile.l1_model.is_some() && *current == LlmProfile::default().clems_model)
+            {
+                *current = l1_seed.clone();
+            }
+        }
+    }
+    profile
+        .l1_models
+        .retain(|_, value| !value.trim().is_empty());
+
+    if profile.l2_default_model.trim().is_empty()
+        || (profile.l2_scene_model.is_some()
+            && profile.l2_default_model == LlmProfile::default().l2_default_model)
+    {
+        profile.l2_default_model = profile
+            .l2_scene_model
+            .clone()
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| LlmProfile::default().l2_default_model);
+    }
+
+    dedup_in_place(&mut profile.clems_catalog);
+    dedup_in_place(&mut profile.l1_catalog);
+    dedup_in_place(&mut profile.l2_pool);
+    if !profile.l2_pool.contains(&profile.l2_default_model) {
+        profile.l2_pool.insert(0, profile.l2_default_model.clone());
+        dedup_in_place(&mut profile.l2_pool);
+    }
+
+    if profile.lfm_spawn_max.is_none() {
+        profile.lfm_spawn_max = Some(10);
+    }
+
+    profile
+}
+
+fn validate_llm_profile(mut profile: LlmProfile) -> Result<LlmProfile> {
+    if !profile.clems_catalog.contains(&profile.clems_model) {
+        anyhow::bail!("clems_model must exist in clems_catalog");
+    }
+    for (agent_id, model_id) in &profile.l1_models {
+        if !profile.l1_catalog.contains(model_id) {
+            anyhow::bail!("l1 model for {agent_id} must exist in l1_catalog");
+        }
+    }
+    for model_id in &profile.l2_pool {
+        if !default_l2_models().contains(&model_id.as_str()) && !model_id.eq(&profile.l2_default_model) {
+            anyhow::bail!("l2_pool contains unsupported model: {model_id}");
+        }
+    }
+    if !profile.l2_pool.contains(&profile.l2_default_model) {
+        anyhow::bail!("l2_default_model must exist in l2_pool");
+    }
+    if profile.l2_selection_mode != "manual_primary" {
+        anyhow::bail!("unsupported l2_selection_mode: {}", profile.l2_selection_mode);
+    }
+
+    profile.default_model = Some(profile.clems_model.clone());
+    profile.l1_model = profile.l1_models.get("victor").cloned();
+    profile.l2_scene_model = Some(profile.l2_default_model.clone());
+    profile.lfm_spawn_max = Some(10);
+    Ok(profile)
+}
+
+fn default_l2_models() -> [&'static str; 3] {
+    [
+        "minimax/minimax-m2.5",
+        "moonshotai/kimi-k2.5",
+        "deepseek/deepseek-chat-v3.1",
+    ]
+}
+
+fn dedup_in_place(values: &mut Vec<String>) {
+    let mut seen = std::collections::BTreeSet::new();
+    values.retain(|value| seen.insert(value.clone()));
+}
+
+fn parse_issue_task(path: &Path) -> Result<Option<TaskRecord>> {
+    let raw = fs::read_to_string(path)?;
+    let lines: Vec<&str> = raw.lines().collect();
+    if lines.is_empty() {
+        return Ok(None);
+    }
+
+    let heading = lines
+        .iter()
+        .find_map(|line| line.trim().strip_prefix("# "))
+        .unwrap_or(path.file_stem().and_then(|value| value.to_str()).unwrap_or("ISSUE-UNKNOWN"));
+    let (task_id, title) = parse_heading(heading, path);
+
+    let owner = find_metadata_value(&lines, "Owner").unwrap_or_else(|| "unassigned".to_string());
+    let phase = find_metadata_value(&lines, "Phase").unwrap_or_else(|| "Implement".to_string());
+    let status = parse_task_status(find_metadata_value(&lines, "Status").as_deref());
+    let source = find_metadata_value(&lines, "Source").unwrap_or_else(|| "manual".to_string());
+    let objective = section_to_text(&lines, "Objective").unwrap_or_else(|| "TBD".to_string());
+    let done_definition = section_to_text(&lines, "Done (Definition)")
+        .or_else(|| section_to_text(&lines, "Done"))
+        .unwrap_or_else(|| "Define verifiable done criteria.".to_string());
+    let links = section_to_list(&lines, "Links");
+    let risks = section_to_list(&lines, "Risks");
+    let updated_at = fs::metadata(path)
+        .ok()
+        .and_then(|meta| meta.modified().ok())
+        .map(|stamp| chrono::DateTime::<Utc>::from(stamp).to_rfc3339())
+        .unwrap_or_else(|| Utc::now().to_rfc3339());
+
+    Ok(Some(TaskRecord {
+        task_id,
+        title,
+        owner,
+        phase,
+        status,
+        source,
+        objective,
+        done_definition,
+        links,
+        risks,
+        path: path.display().to_string(),
+        updated_at,
+    }))
+}
+
+fn parse_heading(heading: &str, path: &Path) -> (String, String) {
+    let normalized = heading.trim();
+    let fallback_id = path
+        .file_stem()
+        .and_then(|value| value.to_str())
+        .unwrap_or("ISSUE-UNKNOWN")
+        .split('-')
+        .take(3)
+        .collect::<Vec<_>>()
+        .join("-");
+
+    if let Some((id, rest)) = normalized.split_once(" - ") {
+        return (id.trim().to_string(), rest.trim().to_string());
+    }
+
+    let task_id = normalized
+        .split_whitespace()
+        .next()
+        .filter(|value| value.starts_with("ISSUE-"))
+        .map(ToString::to_string)
+        .unwrap_or(fallback_id);
+    let title = normalized
+        .strip_prefix(&task_id)
+        .map(|value| value.trim_start_matches('-').trim().to_string())
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| task_id.clone());
+    (task_id, title)
+}
+
+fn find_metadata_value(lines: &[&str], key: &str) -> Option<String> {
+    let prefix = format!("- {key}:");
+    lines.iter().find_map(|line| {
+        let trimmed = line.trim();
+        trimmed
+            .strip_prefix(&prefix)
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty())
+    })
+}
+
+fn parse_task_status(value: Option<&str>) -> TaskStatus {
+    match value.unwrap_or("todo").trim().to_ascii_lowercase().as_str() {
+        "done" => TaskStatus::Done,
+        "blocked" => TaskStatus::Blocked,
+        "in progress" | "in_progress" => TaskStatus::InProgress,
+        _ => TaskStatus::Todo,
+    }
+}
+
+fn section_to_list(lines: &[&str], section: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut in_section = false;
+    let target = format!("## {section}");
+    for line in lines {
+        let trimmed = line.trim();
+        if trimmed.starts_with("## ") {
+            in_section = trimmed == target;
+            continue;
+        }
+        if !in_section {
+            continue;
+        }
+        if let Some(value) = trimmed.strip_prefix("- [x] ") {
+            if !value.trim().is_empty() {
+                out.push(value.trim().to_string());
+            }
+            continue;
+        }
+        if let Some(value) = trimmed.strip_prefix("- [ ] ") {
+            if !value.trim().is_empty() {
+                out.push(value.trim().to_string());
+            }
+            continue;
+        }
+        if let Some(value) = trimmed.strip_prefix("- ") {
+            if !value.trim().is_empty() {
+                out.push(value.trim().to_string());
+            }
+        }
+    }
+    out
+}
+
+fn section_to_text(lines: &[&str], section: &str) -> Option<String> {
+    let items = section_to_list(lines, section);
+    if items.is_empty() {
+        None
+    } else {
+        Some(items.join("\n"))
+    }
+}
+
+fn normalize_multiline(value: &str) -> String {
+    value
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn normalize_lines(values: Vec<String>) -> Vec<String> {
+    values
+        .into_iter()
+        .map(|line| line.trim().to_string())
+        .filter(|line| !line.is_empty())
+        .collect()
+}
+
+fn slugify(title: &str) -> String {
+    let mut out = String::new();
+    let mut prev_dash = false;
+    for ch in title.trim().chars() {
+        let next = if ch.is_ascii_alphanumeric() {
+            ch.to_ascii_lowercase()
+        } else {
+            '-'
+        };
+        if next == '-' {
+            if prev_dash {
+                continue;
+            }
+            prev_dash = true;
+        } else {
+            prev_dash = false;
+        }
+        out.push(next);
+    }
+    out.trim_matches('-').to_string().chars().take(64).collect::<String>()
+}
+
+fn next_issue_id(issues_dir: &Path) -> Result<String> {
+    let mut max_n = 0_u32;
+    for entry in fs::read_dir(issues_dir)? {
+        let entry = entry?;
+        let Some(name) = entry.file_name().to_str().map(ToString::to_string) else {
+            continue;
+        };
+        let Some(rest) = name.strip_prefix("ISSUE-CP-") else {
+            continue;
+        };
+        let digits = rest
+            .chars()
+            .take_while(|ch| ch.is_ascii_digit())
+            .collect::<String>();
+        if let Ok(value) = digits.parse::<u32>() {
+            max_n = max_n.max(value);
+        }
+    }
+    Ok(format!("ISSUE-CP-{:04}", max_n + 1))
+}
+
+fn render_task_markdown(task: &TaskRecord) -> String {
+    let mut lines = vec![
+        format!("# {} - {}", task.task_id, task.title),
+        String::new(),
+        format!("- Owner: {}", task.owner),
+        format!("- Phase: {}", task.phase),
+        format!("- Status: {}", task.status.as_label()),
+        format!("- Source: {}", task.source),
+        String::new(),
+        "## Objective".to_string(),
+    ];
+    lines.extend(as_bullets(&task.objective));
+    lines.extend([
+        String::new(),
+        "## Done (Definition)".to_string(),
+    ]);
+    lines.extend(as_checkbox_bullets(&task.done_definition));
+    lines.extend([String::new(), "## Links".to_string()]);
+    lines.extend(as_bullets_from_list(&task.links));
+    lines.extend([String::new(), "## Risks".to_string()]);
+    lines.extend(as_bullets_from_list(&task.risks));
+    lines.push(String::new());
+    lines.join("\n")
+}
+
+fn as_bullets(value: &str) -> Vec<String> {
+    let rows = normalize_multiline(value);
+    if rows.is_empty() {
+        return vec!["- TBD".to_string()];
+    }
+    rows.lines().map(|line| format!("- {line}")).collect()
+}
+
+fn as_checkbox_bullets(value: &str) -> Vec<String> {
+    let rows = normalize_multiline(value);
+    if rows.is_empty() {
+        return vec!["- [ ] Define verifiable done criteria.".to_string()];
+    }
+    rows.lines().map(|line| format!("- [ ] {line}")).collect()
+}
+
+fn as_bullets_from_list(values: &[String]) -> Vec<String> {
+    if values.is_empty() {
+        return vec!["- none".to_string()];
+    }
+    values.iter().map(|line| format!("- {line}")).collect()
+}
+
+fn rewrite_issue_markdown(raw: &str, task: &TaskRecord) -> String {
+    let lines: Vec<String> = raw.lines().map(ToString::to_string).collect();
+    let lines = replace_heading(lines, task);
+    let lines = replace_metadata(lines, "Owner", &task.owner);
+    let lines = replace_metadata(lines, "Phase", &task.phase);
+    let lines = replace_metadata(lines, "Status", task.status.as_label());
+    let lines = replace_metadata(lines, "Source", &task.source);
+    let lines = replace_section(lines, "Objective", &as_bullets(&task.objective));
+    let lines = replace_section(lines, "Done (Definition)", &as_checkbox_bullets(&task.done_definition));
+    let lines = replace_section(lines, "Links", &as_bullets_from_list(&task.links));
+    let mut lines = replace_section(lines, "Risks", &as_bullets_from_list(&task.risks));
+    if !lines.last().is_some_and(|line| line.is_empty()) {
+        lines.push(String::new());
+    }
+    lines.join("\n")
+}
+
+fn replace_heading(mut lines: Vec<String>, task: &TaskRecord) -> Vec<String> {
+    for line in &mut lines {
+        if line.trim().starts_with("# ") {
+            *line = format!("# {} - {}", task.task_id, task.title);
+            return lines;
+        }
+    }
+    lines.insert(0, format!("# {} - {}", task.task_id, task.title));
+    lines.insert(1, String::new());
+    lines
+}
+
+fn replace_metadata(mut lines: Vec<String>, key: &str, value: &str) -> Vec<String> {
+    let prefix = format!("- {key}:");
+    for line in &mut lines {
+        if line.trim().starts_with(&prefix) {
+            *line = format!("{prefix} {value}");
+            return lines;
+        }
+    }
+
+    let insert_at = lines
+        .iter()
+        .position(|line| line.trim().starts_with("## "))
+        .unwrap_or(lines.len());
+    lines.insert(insert_at, format!("{prefix} {value}"));
+    lines
+}
+
+fn replace_section(mut lines: Vec<String>, section: &str, contents: &[String]) -> Vec<String> {
+    let header = format!("## {section}");
+    let mut start = None;
+    let mut end = None;
+    for (index, line) in lines.iter().enumerate() {
+        if line.trim() == header {
+            start = Some(index);
+            continue;
+        }
+        if start.is_some() && line.trim().starts_with("## ") {
+            end = Some(index);
+            break;
+        }
+    }
+
+    let mut block = vec![header];
+    block.extend(contents.iter().cloned());
+    block.push(String::new());
+
+    match (start, end) {
+        (Some(start), Some(end)) => {
+            lines.splice(start..end, block);
+        }
+        (Some(start), None) => {
+            lines.splice(start..lines.len(), block);
+        }
+        (None, _) => {
+            if !lines.last().is_some_and(|line| line.is_empty()) {
+                lines.push(String::new());
+            }
+            lines.extend(block);
+        }
+    }
+    lines
+}
+
+fn find_issue_path(issues_dir: &Path, task_id: &str) -> Result<Option<PathBuf>> {
+    for entry in fs::read_dir(issues_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
+            continue;
+        };
+        if name.starts_with(task_id) && name.ends_with(".md") {
+            return Ok(Some(path));
+        }
+    }
+    Ok(None)
+}
+
+fn extract_ai_task_specs(author: &str, text: &str) -> Vec<AiTaskSpec> {
+    let lines: Vec<&str> = text.lines().collect();
+    let mut in_block = false;
+    let mut out = Vec::new();
+
+    for raw in lines {
+        let trimmed = raw.trim();
+        let lowered = trimmed.to_ascii_lowercase();
+        if matches!(lowered.as_str(), "tasks:" | "task list:" | "todo:" | "to do:") {
+            in_block = true;
+            continue;
+        }
+        if !in_block {
+            continue;
+        }
+        if trimmed.is_empty() {
+            break;
+        }
+        if !trimmed.starts_with("- ") {
+            break;
+        }
+        let item = trimmed.trim_start_matches("- ").trim();
+        if let Some(spec) = parse_ai_task_line(author, item) {
+            out.push(spec);
+        }
+    }
+    out
+}
+
+fn parse_ai_task_line(author: &str, line: &str) -> Option<AiTaskSpec> {
+    let mut title = line.to_string();
+    let mut owner = Some(author.to_string());
+    let mut objective = None;
+    let mut done_definition = None;
+
+    let segments = line.split('|').map(str::trim).collect::<Vec<_>>();
+    if let Some(first) = segments.first() {
+        title = (*first).to_string();
+    }
+    for segment in segments.iter().skip(1) {
+        if let Some(value) = segment.strip_prefix("owner=") {
+            owner = Some(value.trim().trim_start_matches('@').to_string());
+        } else if let Some(value) = segment.strip_prefix("objective=") {
+            objective = Some(value.trim().to_string());
+        } else if let Some(value) = segment.strip_prefix("done=") {
+            done_definition = Some(value.trim().to_string());
+        }
+    }
+
+    let title = title.trim().trim_start_matches("[ ]").trim();
+    if title.is_empty() {
+        return None;
+    }
+
+    Some(AiTaskSpec {
+        title: title.to_string(),
+        owner,
+        objective,
+        done_definition,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        TaskRecordPatch, create_task, create_tasks_from_ai_message, load_agents, load_llm_profile,
+        list_tasks, save_agents, save_llm_profile, update_task,
+    };
+    use crate::models::{AgentRecord, LlmProfile, TaskStatus};
+    use std::{collections::HashMap, fs};
+    use uuid::Uuid;
+
+    fn temp_root() -> std::path::PathBuf {
+        let root =
+            std::env::temp_dir().join(format!("cockpit-core-storage-{}", Uuid::new_v4().simple()));
+        fs::create_dir_all(&root).expect("create temp root");
+        root
+    }
+
+    fn sample_agent(agent_id: &str, platform: &str) -> AgentRecord {
+        AgentRecord {
+            agent_id: agent_id.to_string(),
+            name: agent_id.to_string(),
+            engine: "CDX".to_string(),
+            platform: platform.to_string(),
+            level: 2,
+            lead_id: Some("victor".to_string()),
+            role: "specialist".to_string(),
+            skills: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn load_agents_normalizes_legacy_platforms_and_hides_legacy_system_agents() {
+        let root = temp_root();
+        let project_id = "demo";
+        let project_root = root.join(project_id).join("agents");
+        fs::create_dir_all(&project_root).expect("create agent dir");
+        fs::write(
+            project_root.join("registry.json"),
+            serde_json::to_string_pretty(&HashMap::from([
+                ("agent-1".to_string(), sample_agent("agent-1", "codex")),
+                (
+                    "antigravity".to_string(),
+                    sample_agent("antigravity", "antigravity"),
+                ),
+            ]))
+            .expect("serialize registry"),
+        )
+        .expect("write registry");
+
+        let agents = load_agents(&root, project_id).expect("load agents");
+        assert_eq!(agents.len(), 1);
+        assert_eq!(agents["agent-1"].platform, "openrouter");
+        assert!(!agents.contains_key("antigravity"));
+    }
+
+    #[test]
+    fn save_agents_rewrites_platforms_to_openrouter() {
+        let root = temp_root();
+        let project_id = "demo";
+        let mut agents = HashMap::new();
+        agents.insert("agent-1".to_string(), sample_agent("agent-1", "ollama"));
+        agents.insert("codex".to_string(), sample_agent("codex", "codex"));
+
+        save_agents(&root, project_id, &agents).expect("save agents");
+        let raw = fs::read_to_string(root.join(project_id).join("agents/registry.json"))
+            .expect("read registry");
+        assert!(raw.contains("\"openrouter\""));
+        assert!(!raw.contains("\"codex\""));
+        assert!(!raw.contains("\"ollama\""));
+    }
+
+    #[test]
+    fn llm_profile_migrates_legacy_fields_to_role_based_schema() {
+        let root = temp_root();
+        let project_id = "demo";
+        let project_root = root.join(project_id).join(".cockpit");
+        fs::create_dir_all(&project_root).expect("create profile dir");
+        fs::write(
+            project_root.join("llm-profile.json"),
+            serde_json::json!({
+                "provider": "openrouter",
+                "default_model": "moonshotai/kimi-k2.5",
+                "l1_model": "anthropic/claude-sonnet-4.6",
+                "l2_scene_model": "deepseek/deepseek-chat-v3.1"
+            })
+            .to_string(),
+        )
+        .expect("write profile");
+
+        let profile = load_llm_profile(&root, project_id).expect("load profile");
+        assert_eq!(profile.clems_model, "moonshotai/kimi-k2.5");
+        assert_eq!(
+            profile.l1_models.get("victor").map(String::as_str),
+            Some("anthropic/claude-sonnet-4.6")
+        );
+        assert_eq!(profile.l2_default_model, "deepseek/deepseek-chat-v3.1");
+    }
+
+    #[test]
+    fn save_llm_profile_rejects_invalid_l1_model() {
+        let root = temp_root();
+        let project_id = "demo";
+        let mut profile = LlmProfile::default();
+        profile
+            .l1_models
+            .insert("victor".to_string(), "invalid/model".to_string());
+
+        let result = save_llm_profile(&root, project_id, &profile);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn task_crud_round_trip_uses_markdown_issue_files() {
+        let root = temp_root();
+        let project_id = "demo";
+        let created = create_task(
+            &root,
+            project_id,
+            "Wire To Do board",
+            Some("leo"),
+            Some("Implement"),
+            TaskStatus::Todo,
+            Some("manual"),
+            Some("Ship the first To Do board UI."),
+            Some("Board renders and persists."),
+            &[],
+            &[],
+        )
+        .expect("create task");
+
+        let tasks = list_tasks(&root, project_id).expect("list tasks");
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].task_id, created.task_id);
+
+        let updated = update_task(
+            &root,
+            project_id,
+            &created.task_id,
+            &TaskRecordPatch {
+                status: Some(TaskStatus::InProgress),
+                owner: Some("victor".to_string()),
+                ..TaskRecordPatch::default()
+            },
+        )
+        .expect("update task")
+        .expect("task exists");
+        assert_eq!(updated.status, TaskStatus::InProgress);
+        assert_eq!(updated.owner, "victor");
+    }
+
+    #[test]
+    fn auto_task_creation_only_accepts_structured_task_blocks() {
+        let root = temp_root();
+        let project_id = "demo";
+        let created = create_tasks_from_ai_message(
+            &root,
+            project_id,
+            "clems",
+            "Tasks:\n- Ship the To Do board | owner=leo | done=Board renders and persists\n- Tighten chat copy | owner=victor\n",
+        )
+        .expect("auto create tasks");
+        assert_eq!(created.len(), 2);
+        assert_eq!(created[0].source, "ai_auto");
+    }
 }
 
 fn approval_status_to_str(status: &ApprovalStatus) -> &'static str {

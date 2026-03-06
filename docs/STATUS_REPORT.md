@@ -5,10 +5,10 @@ Ce document décrit le pipeline de rapport PDF d'état projet (repo + AppSupport
 ## Commande recommandée
 
 ```bash
-./.venv/bin/python /Users/oliviercloutier/Desktop/Cockpit/scripts/export_status_pdf.py \
+./.venv/bin/python scripts/export_status_pdf.py \
   --project-id cockpit \
   --scope dual-root \
-  --out "/Users/oliviercloutier/Desktop/COCKPIT_STATUS_2026-03-02.pdf" \
+  --out "./COCKPIT_STATUS_2026-03-02.pdf" \
   --language fr
 ```
 

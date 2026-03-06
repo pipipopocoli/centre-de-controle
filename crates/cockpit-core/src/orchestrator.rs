@@ -1,4 +1,4 @@
-use std::{env, path::Path};
+use std::path::Path;
 
 use anyhow::Result;
 use chrono::Utc;
@@ -9,15 +9,11 @@ use crate::{
     chat,
     models::{
         ApprovalRequest, ApprovalStatus, ChatMessage, ChatMode, ExecutionMode, LiveTurnRequest,
-        MessageVisibility,
+        LlmProfile, MessageVisibility,
     },
-    openrouter,
-    storage,
+    openrouter, storage,
 };
 
-const DEFAULT_MODEL_CLEMS: &str = "openai/gpt-4o-mini";
-const DEFAULT_MODEL_L1: &str = "liquid/lfm-2.5-1.2b-thinking:free";
-const DEFAULT_MODEL_L2: &str = "arcee-ai/trinity-large-preview:free";
 const OVERLAP_WINDOW_MINUTES: i64 = 30;
 
 // Hierarchical delegation metadata and policy guards
@@ -43,7 +39,7 @@ pub fn delegation_level(agent_id: &str) -> u8 {
 pub fn validate_delegation(from: &str, to: &str) -> Result<(), String> {
     let from_level = delegation_level(from);
     let to_level = delegation_level(to);
-    
+
     match (from_level, to_level) {
         (0, 1) => Ok(()), // L0 -> L1 OK
         (0, 2) => Ok(()), // L0 -> L2 OK
@@ -52,7 +48,10 @@ pub fn validate_delegation(from: &str, to: &str) -> Result<(), String> {
         (1, 0) => Err(format!("L1 cannot delegate to L0: {} -> {}", from, to)),
         (1, 1) => Err(format!("L1 cannot delegate to L1: {} -> {}", from, to)),
         (2, _) => Err(format!("L2 cannot delegate: {} -> {}", from, to)),
-        _ => Err(format!("Invalid delegation: {} (L{}) -> {} (L{})", from, from_level, to, to_level)),
+        _ => Err(format!(
+            "Invalid delegation: {} (L{}) -> {} (L{})",
+            from, from_level, to, to_level
+        )),
     }
 }
 
@@ -66,18 +65,18 @@ pub struct OrchestrationResult {
     pub error: Option<String>,
 }
 
-fn model_for_key(key: &str, fallback: &str) -> String {
-    env::var(key).unwrap_or_else(|_| fallback.to_string())
-}
-
-fn model_for_agent(agent_id: &str) -> String {
+fn model_for_agent(profile: &LlmProfile, agent_id: &str) -> String {
     if agent_id == "clems" {
-        model_for_key("COCKPIT_MODEL_CLEMS", DEFAULT_MODEL_CLEMS)
-    } else if agent_id.starts_with("agent-") {
-        model_for_key("COCKPIT_MODEL_L2", DEFAULT_MODEL_L2)
-    } else {
-        model_for_key("COCKPIT_MODEL_L1", DEFAULT_MODEL_L1)
+        return profile.clems_model.clone();
     }
+    if agent_id.starts_with("agent-") {
+        return profile.l2_default_model.clone();
+    }
+    profile
+        .l1_models
+        .get(agent_id)
+        .cloned()
+        .unwrap_or_else(|| profile.clems_model.clone())
 }
 
 fn actor_prompt(agent_id: &str, mode: &ChatMode) -> String {
@@ -87,22 +86,22 @@ fn actor_prompt(agent_id: &str, mode: &ChatMode) -> String {
     };
     match agent_id {
         "clems" => format!(
-            "You are @clems, Cockpit L0 orchestrator. mode={mode_hint}. Reply in concise french, ascii only, action oriented."
+            "You are @clems, Cockpit L0 orchestrator. mode={mode_hint}. Reply in concise french, ascii only, action oriented. If operator asks for a task list or roadmap, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
         ),
         "victor" => format!(
-            "You are @victor, backend lead L1. mode={mode_hint}. Reply in concise french with implementation actions."
+            "You are @victor, backend lead L1. mode={mode_hint}. Reply in concise french with implementation actions. If you are defining official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
         ),
         "leo" => format!(
-            "You are @leo, UI lead L1. mode={mode_hint}. Reply in concise french with UX and frontend actions."
+            "You are @leo, UI lead L1. mode={mode_hint}. Reply in concise french with UX and frontend actions. If you are defining official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
         ),
         "nova" => format!(
-            "You are @nova, creative science lead L1. mode={mode_hint}. Reply concise with evidence path and decision tag."
+            "You are @nova, creative science lead L1. mode={mode_hint}. Reply concise with evidence path and decision tag. If you define official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
         ),
         "vulgarisation" => format!(
-            "You are @vulgarisation, simplification lead L1. mode={mode_hint}. Reply in simple french for operator."
+            "You are @vulgarisation, simplification lead L1. mode={mode_hint}. Reply in simple french for operator. If you define official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
         ),
         _ => format!(
-            "You are @{agent_id}, specialist L2. mode={mode_hint}. Reply concise with execution next step."
+            "You are @{agent_id}, specialist L2. mode={mode_hint}. Reply concise with execution next step. Never create roadmap, strategy, or TASKS block."
         ),
     }
 }
@@ -164,13 +163,14 @@ fn should_request_l2(payload: &LiveTurnRequest, l1_outputs: &[String]) -> bool {
 }
 
 async fn llm_reply(
+    profile: &LlmProfile,
     author: &str,
     mode: ChatMode,
     user_text: &str,
     context_ref: Option<&Value>,
     usage_calls: &mut Vec<Value>,
 ) -> String {
-    let model = model_for_agent(author);
+    let model = model_for_agent(profile, author);
     let system = actor_prompt(author, &mode);
     let mut user_prompt = format!("Operator message:\n{}\n", user_text.trim());
     if let Some(context_ref) = context_ref {
@@ -192,11 +192,12 @@ async fn llm_reply(
 }
 
 async fn clems_summary(
+    profile: &LlmProfile,
     user_text: &str,
     context_snippets: &[String],
     usage_calls: &mut Vec<Value>,
 ) -> String {
-    let model = model_for_agent("clems");
+    let model = model_for_agent(profile, "clems");
     let system = "You are @clems. Create a short synthesis in french with next immediate action.";
     let joined = if context_snippets.is_empty() {
         user_text.to_string()
@@ -230,6 +231,7 @@ pub async fn run_turn(
     payload: &LiveTurnRequest,
     mentions: &[String],
 ) -> Result<OrchestrationResult> {
+    let profile = storage::load_llm_profile(control_root, project_id)?;
     let mut usage_calls = Vec::new();
     let mut messages = Vec::new();
     let mut approval_requests = Vec::new();
@@ -241,8 +243,9 @@ pub async fn run_turn(
 
     match chat_mode {
         ChatMode::Direct => {
-            let target = chat::resolve_direct_target(mentions);
+            let target = chat::resolve_direct_target(payload.target_agent_id.as_deref(), mentions);
             let target_reply = llm_reply(
+                &profile,
                 &target,
                 ChatMode::Direct,
                 &payload.text,
@@ -265,7 +268,13 @@ pub async fn run_turn(
             let summary = if target == "clems" {
                 target_reply
             } else {
-                let summary_text = clems_summary(&payload.text, std::slice::from_ref(&target_reply), &mut usage_calls).await;
+                let summary_text = clems_summary(
+                    &profile,
+                    &payload.text,
+                    std::slice::from_ref(&target_reply),
+                    &mut usage_calls,
+                )
+                .await;
                 let summary_msg = message_with_meta(
                     "clems",
                     summary_text.clone(),
@@ -294,6 +303,7 @@ pub async fn run_turn(
             let mut snippets = Vec::new();
             for target in &targets {
                 let text = llm_reply(
+                    &profile,
                     target,
                     ChatMode::ConcealRoom,
                     &payload.text,
@@ -314,7 +324,7 @@ pub async fn run_turn(
                 ));
             }
 
-            let summary = clems_summary(&payload.text, &snippets, &mut usage_calls).await;
+            let summary = clems_summary(&profile, &payload.text, &snippets, &mut usage_calls).await;
             messages.push(message_with_meta(
                 "clems",
                 summary.clone(),
@@ -348,13 +358,18 @@ pub async fn run_turn(
                     decision_note: None,
                 };
 
-                let overlap =
-                    storage::has_section_overlap_risk(control_root, project_id, &section_tag, OVERLAP_WINDOW_MINUTES)?;
+                let overlap = storage::has_section_overlap_risk(
+                    control_root,
+                    project_id,
+                    &section_tag,
+                    OVERLAP_WINDOW_MINUTES,
+                )?;
                 if !overlap {
                     approval.status = ApprovalStatus::Approved;
                     approval.decided_by = Some("clems".to_string());
                     approval.decided_at = Some(Utc::now().to_rfc3339());
-                    approval.decision_note = Some("auto-approved: free models and no overlap risk".to_string());
+                    approval.decision_note =
+                        Some("auto-approved: free models and no overlap risk".to_string());
                 }
 
                 storage::append_approval_request(control_root, project_id, &approval)?;
@@ -384,9 +399,13 @@ pub async fn run_turn(
                         let agent_id = format!("agent-{}", idx + 1);
                         spawned_agents.push(agent_id.clone());
                         let spawn_text = llm_reply(
+                            &profile,
                             &agent_id,
                             ChatMode::ConcealRoom,
-                            &format!("Spawned for section {}. Task: {}", section_tag, payload.text),
+                            &format!(
+                                "Spawned for section {}. Task: {}",
+                                section_tag, payload.text
+                            ),
                             payload.context_ref.as_ref(),
                             &mut usage_calls,
                         )
@@ -405,7 +424,10 @@ pub async fn run_turn(
                 }
             }
 
-            if usage_calls.iter().any(|call| call.get("status") != Some(&Value::String("ok".to_string()))) {
+            if usage_calls
+                .iter()
+                .any(|call| call.get("status") != Some(&Value::String("ok".to_string())))
+            {
                 error = Some("some_llm_calls_failed_using_fallback".to_string());
             }
 

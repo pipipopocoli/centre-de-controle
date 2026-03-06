@@ -66,13 +66,13 @@ tail -n 1 ~/Library/Application\\ Support/Cockpit/projects/demo/runs/inbox/agent
 ```
 
 ## Mapping (locked defaults)
-- `victor`, `agent-1`, `agent-3`, ... -> Codex
-- `leo`, `agent-2`, `agent-4`, ... -> Antigravity
+- `victor`, `agent-1`, `agent-3`, ... -> OpenRouter lane A
+- `leo`, `agent-2`, `agent-4`, ... -> OpenRouter lane B
 
 ## Troubleshooting
 - If notifications do not show: allow Terminal notifications in macOS settings.
-- If `open -a Codex` fails: find the app name in Finder and pass `--codex-app "<Exact Name>"`.
-- If you want dev data dir: pass `--data-dir /Users/oliviercloutier/Desktop/Cockpit/control/projects` (not recommended for packaged app).
+- If app open command fails: verify launcher app name/path and retry.
+- If you want dev data dir: pass `--data-dir ./control/projects` from repo root (not recommended for packaged app).
 - If clipboard looks empty: run with `--print-prompt` and copy the prompt directly from the terminal.
 
 ## QA checklist (8 agents)

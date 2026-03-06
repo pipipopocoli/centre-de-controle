@@ -62,9 +62,35 @@ DEFAULT_AGENTS = [
 ]
 
 DEFAULT_LLM_PROFILE = {
+    "provider": "openrouter",
     "voice_stt_model": "google/gemini-2.5-flash",
-    "l1_model": "liquid/lfm-2.5-1.2b-thinking:free",
-    "l2_scene_model": "arcee-ai/trinity-large-preview:free",
+    "clems_model": "moonshotai/kimi-k2.5",
+    "clems_catalog": [
+        "moonshotai/kimi-k2.5",
+        "anthropic/claude-sonnet-4.6",
+        "anthropic/claude-opus-4.6",
+    ],
+    "l1_models": {
+        "victor": "moonshotai/kimi-k2.5",
+        "leo": "moonshotai/kimi-k2.5",
+        "nova": "moonshotai/kimi-k2.5",
+        "vulgarisation": "moonshotai/kimi-k2.5",
+    },
+    "l1_catalog": [
+        "moonshotai/kimi-k2.5",
+        "anthropic/claude-sonnet-4.6",
+        "anthropic/claude-opus-4.6",
+        "openai/gpt-5.4",
+        "google/gemini-3.1-pro-preview",
+        "x-ai/grok-4",
+    ],
+    "l2_default_model": "minimax/minimax-m2.5",
+    "l2_pool": [
+        "minimax/minimax-m2.5",
+        "moonshotai/kimi-k2.5",
+        "deepseek/deepseek-chat-v3.1",
+    ],
+    "l2_selection_mode": "manual_primary",
     "lfm_spawn_max": 10,
     "stream_enabled": True,
 }
@@ -141,6 +167,87 @@ def _safe_int(value: Any, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _dedup_strings(values: list[Any]) -> list[str]:
+    seen: set[str] = set()
+    output: list[str] = []
+    for item in values:
+        token = str(item or "").strip()
+        if not token or token in seen:
+            continue
+        seen.add(token)
+        output.append(token)
+    return output
+
+
+def _normalize_llm_profile(payload: dict[str, Any], defaults: dict[str, Any] | None = None) -> dict[str, Any]:
+    merged = dict(DEFAULT_LLM_PROFILE)
+    if isinstance(defaults, dict):
+        merged.update({key: value for key, value in defaults.items() if value is not None})
+    merged.update({key: value for key, value in payload.items() if value is not None})
+
+    merged["provider"] = "openrouter"
+    merged["voice_stt_model"] = str(merged.get("voice_stt_model") or DEFAULT_LLM_PROFILE["voice_stt_model"]).strip()
+
+    merged["clems_catalog"] = _dedup_strings(list(merged.get("clems_catalog") or DEFAULT_LLM_PROFILE["clems_catalog"]))
+    if not merged["clems_catalog"]:
+        merged["clems_catalog"] = list(DEFAULT_LLM_PROFILE["clems_catalog"])
+
+    merged["l1_catalog"] = _dedup_strings(list(merged.get("l1_catalog") or DEFAULT_LLM_PROFILE["l1_catalog"]))
+    if not merged["l1_catalog"]:
+        merged["l1_catalog"] = list(DEFAULT_LLM_PROFILE["l1_catalog"])
+
+    merged["l2_pool"] = _dedup_strings(list(merged.get("l2_pool") or DEFAULT_LLM_PROFILE["l2_pool"]))
+    if not merged["l2_pool"]:
+        merged["l2_pool"] = list(DEFAULT_LLM_PROFILE["l2_pool"])
+
+    clems_model = str(
+        merged.get("clems_model")
+        or merged.get("default_model")
+        or DEFAULT_LLM_PROFILE["clems_model"]
+    ).strip()
+    if not clems_model:
+        clems_model = DEFAULT_LLM_PROFILE["clems_model"]
+    merged["clems_model"] = clems_model
+
+    raw_l1_models = merged.get("l1_models")
+    l1_models = dict(raw_l1_models) if isinstance(raw_l1_models, dict) else {}
+    l1_seed = str(merged.get("l1_model") or merged.get("default_model") or clems_model).strip() or clems_model
+    for agent_id in ["victor", "leo", "nova", "vulgarisation"]:
+        value = str(l1_models.get(agent_id) or "").strip() or l1_seed
+        l1_models[agent_id] = value
+    merged["l1_models"] = l1_models
+
+    l2_default = str(
+        merged.get("l2_default_model")
+        or merged.get("l2_scene_model")
+        or DEFAULT_LLM_PROFILE["l2_default_model"]
+    ).strip()
+    if not l2_default:
+        l2_default = DEFAULT_LLM_PROFILE["l2_default_model"]
+    if l2_default not in merged["l2_pool"]:
+        merged["l2_pool"] = _dedup_strings([l2_default, *merged["l2_pool"]])
+    merged["l2_default_model"] = l2_default
+    merged["l2_selection_mode"] = "manual_primary"
+    merged["stream_enabled"] = bool(merged.get("stream_enabled", True))
+    merged["lfm_spawn_max"] = max(1, min(_safe_int(merged.get("lfm_spawn_max"), 10), 10))
+
+    if clems_model not in merged["clems_catalog"]:
+        raise ValueError("clems_model must exist in clems_catalog")
+    for agent_id, model_id in merged["l1_models"].items():
+        if model_id not in merged["l1_catalog"]:
+            raise ValueError(f"l1 model for {agent_id} must exist in l1_catalog")
+    for model_id in merged["l2_pool"]:
+        if model_id not in DEFAULT_LLM_PROFILE["l2_pool"]:
+            raise ValueError(f"unsupported l2 model: {model_id}")
+    if merged["l2_default_model"] not in merged["l2_pool"]:
+        raise ValueError("l2_default_model must exist in l2_pool")
+
+    merged["default_model"] = merged["clems_model"]
+    merged["l1_model"] = merged["l1_models"].get("victor", merged["clems_model"])
+    merged["l2_scene_model"] = merged["l2_default_model"]
+    return merged
 
 
 class ProjectRepository:
@@ -299,20 +406,13 @@ class ProjectRepository:
         settings = self.get_settings(project_id)
         profile = settings.get("llm_profile")
         payload = profile if isinstance(profile, dict) else {}
-        merged = dict(DEFAULT_LLM_PROFILE)
-        if isinstance(defaults, dict):
-            merged.update({key: value for key, value in defaults.items() if value is not None})
-        merged.update({key: value for key, value in payload.items() if value is not None})
-        merged["lfm_spawn_max"] = max(1, min(_safe_int(merged.get("lfm_spawn_max"), 10), 10))
-        merged["stream_enabled"] = bool(merged.get("stream_enabled", True))
-        return merged
+        return _normalize_llm_profile(payload, defaults=defaults)
 
     def write_llm_profile(self, project_id: str, payload: dict[str, Any], defaults: dict[str, Any] | None = None) -> dict[str, Any]:
         settings = self.get_settings(project_id)
         merged = self.read_llm_profile(project_id, defaults=defaults)
         merged.update({key: value for key, value in payload.items() if value is not None})
-        merged["lfm_spawn_max"] = max(1, min(_safe_int(merged.get("lfm_spawn_max"), 10), 10))
-        merged["stream_enabled"] = bool(merged.get("stream_enabled", True))
+        merged = _normalize_llm_profile(merged, defaults=defaults)
         settings["llm_profile"] = merged
         self.write_settings(project_id, settings)
         return merged

@@ -1,9 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{
+    collections::HashMap,
     env,
+    fs,
+    io::{Read, Write},
     net::{SocketAddr, TcpStream},
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
     thread,
     time::Duration,
@@ -19,7 +22,28 @@ fn backend_addr() -> SocketAddr {
 }
 
 fn backend_is_running() -> bool {
-    TcpStream::connect_timeout(&backend_addr(), Duration::from_millis(140)).is_ok()
+    let mut stream = match TcpStream::connect_timeout(&backend_addr(), Duration::from_millis(300)) {
+        Ok(stream) => stream,
+        Err(_) => return false,
+    };
+    let _ = stream.set_read_timeout(Some(Duration::from_millis(500)));
+    let _ = stream.set_write_timeout(Some(Duration::from_millis(500)));
+
+    if stream
+        .write_all(b"GET /healthz HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n")
+        .is_err()
+    {
+        return false;
+    }
+
+    let mut buffer = [0_u8; 256];
+    let read = match stream.read(&mut buffer) {
+        Ok(read) if read > 0 => read,
+        _ => return false,
+    };
+
+    let response_head = String::from_utf8_lossy(&buffer[..read]);
+    response_head.starts_with("HTTP/1.1 200") || response_head.starts_with("HTTP/1.0 200")
 }
 
 fn control_root_candidates() -> Vec<PathBuf> {
@@ -47,6 +71,116 @@ fn resolve_control_root() -> Option<PathBuf> {
     control_root_candidates()
         .into_iter()
         .find(|path| path.exists())
+}
+
+fn dotenv_candidates(control_root: Option<&Path>) -> Vec<PathBuf> {
+    let mut candidates = Vec::new();
+
+    if let Ok(cwd) = env::current_dir() {
+        candidates.push(cwd.join(".env"));
+    }
+
+    if let Some(control_root) = control_root {
+        if let Some(repo_root) = control_root.parent().and_then(|value| value.parent()) {
+            candidates.push(repo_root.join(".env"));
+        }
+    }
+
+    if let Ok(home) = env::var("HOME") {
+        let home = PathBuf::from(home);
+        candidates.push(home.join("Desktop/Cockpit/.env"));
+        candidates.push(home.join("Library/Application Support/Cockpit/.env"));
+        candidates.push(home.join(".cockpit/.env"));
+    }
+
+    candidates
+}
+
+fn parse_dotenv(path: &Path) -> HashMap<String, String> {
+    let Ok(raw) = fs::read_to_string(path) else {
+        return HashMap::new();
+    };
+
+    let mut values = HashMap::new();
+    for line in raw.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with('#') {
+            continue;
+        }
+
+        let normalized = trimmed.strip_prefix("export ").unwrap_or(trimmed);
+        let Some((key, value)) = normalized.split_once('=') else {
+            continue;
+        };
+
+        let key = key.trim();
+        if key.is_empty() {
+            continue;
+        }
+
+        let mut value = value.trim().to_string();
+        if value.len() >= 2 {
+            let quoted = (value.starts_with('"') && value.ends_with('"'))
+                || (value.starts_with('\'') && value.ends_with('\''));
+            if quoted {
+                value = value[1..value.len() - 1].to_string();
+            }
+        }
+
+        values.insert(key.to_string(), value);
+    }
+
+    values
+}
+
+fn resolved_backend_env(control_root: Option<&Path>) -> HashMap<String, String> {
+    let mut resolved = HashMap::new();
+
+    for key in [
+        "COCKPIT_OPENROUTER_API_KEY",
+        "OPENROUTER_API_KEY",
+        "COCKPIT_OPENROUTER_BASE_URL",
+    ] {
+        if let Ok(value) = env::var(key) {
+            let trimmed = value.trim();
+            if !trimmed.is_empty() {
+                resolved.insert(key.to_string(), trimmed.to_string());
+            }
+        }
+    }
+
+    for path in dotenv_candidates(control_root) {
+        if !path.exists() {
+            continue;
+        }
+        let values = parse_dotenv(&path);
+        for key in [
+            "COCKPIT_OPENROUTER_API_KEY",
+            "OPENROUTER_API_KEY",
+            "COCKPIT_OPENROUTER_BASE_URL",
+        ] {
+            if resolved.contains_key(key) {
+                continue;
+            }
+            if let Some(value) = values.get(key).filter(|value| !value.trim().is_empty()) {
+                resolved.insert(key.to_string(), value.trim().to_string());
+            }
+        }
+    }
+
+    if !resolved.contains_key("COCKPIT_OPENROUTER_API_KEY") {
+        if let Some(value) = resolved.get("OPENROUTER_API_KEY").cloned() {
+            resolved.insert("COCKPIT_OPENROUTER_API_KEY".to_string(), value);
+        }
+    }
+
+    if !resolved.contains_key("OPENROUTER_API_KEY") {
+        if let Some(value) = resolved.get("COCKPIT_OPENROUTER_API_KEY").cloned() {
+            resolved.insert("OPENROUTER_API_KEY".to_string(), value);
+        }
+    }
+
+    resolved
 }
 
 fn backend_binary_candidates() -> Vec<PathBuf> {
@@ -83,8 +217,13 @@ fn ensure_backend_process() -> Result<(), String> {
         .stdout(Stdio::null())
         .stderr(Stdio::null());
 
-    if let Some(control_root) = resolve_control_root() {
+    let control_root = resolve_control_root();
+    if let Some(control_root) = control_root.as_ref() {
         command.env("COCKPIT_CONTROL_ROOT", control_root);
+    }
+
+    for (key, value) in resolved_backend_env(control_root.as_deref()) {
+        command.env(key, value);
     }
 
     command

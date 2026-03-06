@@ -3,14 +3,7 @@ use std::collections::BTreeSet;
 use crate::models::ChatMode;
 
 const L1_DEFAULTS: &[&str] = &["victor", "leo", "nova", "vulgarisation"];
-const DIRECTABLE: &[&str] = &[
-    "clems",
-    "victor",
-    "leo",
-    "nova",
-    "vulgarisation",
-    "antigravity",
-];
+const DIRECTABLE: &[&str] = &["clems", "victor", "leo", "nova", "vulgarisation"];
 
 pub fn extract_mentions(text: &str) -> Vec<String> {
     text.split_whitespace()
@@ -25,9 +18,19 @@ pub fn extract_mentions(text: &str) -> Vec<String> {
         .collect()
 }
 
-pub fn resolve_direct_target(mentions: &[String]) -> String {
+pub fn is_directable_agent(agent_id: &str) -> bool {
+    DIRECTABLE.contains(&agent_id) || agent_id.starts_with("agent-")
+}
+
+pub fn resolve_direct_target(target_agent_id: Option<&str>, mentions: &[String]) -> String {
+    if let Some(target) = target_agent_id {
+        if is_directable_agent(target) {
+            return target.to_string();
+        }
+    }
+
     for mention in mentions {
-        if DIRECTABLE.contains(&mention.as_str()) || mention.starts_with("agent-") {
+        if is_directable_agent(mention) {
             return mention.clone();
         }
     }
@@ -43,7 +46,7 @@ pub fn conceal_targets(mentions: &[String]) -> Vec<String> {
         if mention == "clems" {
             continue;
         }
-        if DIRECTABLE.contains(&mention.as_str()) || mention.starts_with("agent-") {
+        if is_directable_agent(mention) {
             out.insert(mention.clone());
         }
     }
@@ -81,13 +84,25 @@ mod tests {
     #[test]
     fn direct_defaults_to_clems() {
         let mentions = vec!["nobody".to_string()];
-        assert_eq!(resolve_direct_target(&mentions), "clems");
+        assert_eq!(resolve_direct_target(None, &mentions), "clems");
     }
 
     #[test]
     fn direct_respects_explicit_mention() {
         let mentions = vec!["leo".to_string(), "clems".to_string()];
-        assert_eq!(resolve_direct_target(&mentions), "leo");
+        assert_eq!(resolve_direct_target(None, &mentions), "leo");
+    }
+
+    #[test]
+    fn direct_prefers_explicit_target_agent() {
+        let mentions = vec!["leo".to_string()];
+        assert_eq!(resolve_direct_target(Some("agent-9"), &mentions), "agent-9");
+    }
+
+    #[test]
+    fn direct_ignores_invalid_target_agent() {
+        let mentions = vec!["leo".to_string()];
+        assert_eq!(resolve_direct_target(Some("antigravity"), &mentions), "leo");
     }
 
     #[test]
