@@ -125,6 +125,18 @@ function formatSkillChip(skillId: string): string {
   return skillId.replaceAll('-', ' ')
 }
 
+function agentInitials(name: string, agentId: string): string {
+  const source = name.trim() || agentId.trim()
+  const parts = source.split(/\s+/).filter(Boolean)
+  if (parts.length === 0) {
+    return 'AG'
+  }
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase()
+  }
+  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase()
+}
+
 function modelLabel(modelId: string): string {
   const found = [...CLEMS_MODEL_OPTIONS, ...L1_MODEL_OPTIONS, ...L2_MODEL_OPTIONS].find(
     (option) => option.id === modelId,
@@ -1347,22 +1359,46 @@ function App() {
             </button>
           </form>
           <p className="small-copy">
-            Clems is always available. L1 leads are one click away. Add skills now or assign them later from your workflow.
+            Clems is always live at startup. L1 leads are one click away. Add skills now or assign them later.
           </p>
         </div>
 
+        {selectedAgent ? (
+          <div className="selected-agent-banner">
+            <div className="selected-agent-avatar">{agentInitials(selectedAgent.name, selectedAgent.agent_id)}</div>
+            <div className="selected-agent-copy">
+              <p className="selected-agent-label">Selected now</p>
+              <strong>@{selectedAgent.agent_id}</strong>
+              <span>
+                {selectedAgent.chat_targetable ? 'chat ready' : 'chat unavailable'} - terminal {selectedAgent.terminal_state === 'running' ? 'live' : 'offline'}
+              </span>
+            </div>
+          </div>
+        ) : null}
+
         <div className="agent-cards">
           {rosterAgents.map((agent) => (
-            <article key={agent.agent_id} className={`agent-card ${selectedAgentId === agent.agent_id ? 'active' : ''}`}>
+            <article
+              key={agent.agent_id}
+              className={`agent-card level-${agent.level} ${selectedAgentId === agent.agent_id ? 'active' : ''}`}
+            >
               <button className="agent-card-main" onClick={() => handleSelectAgent(agent.agent_id)}>
                 <div className="agent-card-head">
-                  <div>
-                    <p className="agent-name">{agent.name}</p>
-                    <p className="agent-meta">@{agent.agent_id}</p>
+                  <div className="agent-identity">
+                    <div className="agent-avatar">{agentInitials(agent.name, agent.agent_id)}</div>
+                    <div>
+                      <p className="agent-name">{agent.name}</p>
+                      <p className="agent-meta">@{agent.agent_id}</p>
+                    </div>
                   </div>
                   <span className="agent-level-pill">L{agent.level}</span>
                 </div>
-                <p className="agent-role">{agent.role}</p>
+                <div className="agent-card-copy">
+                  <p className="agent-role">{agent.role}</p>
+                  <p className="agent-lead">
+                    {agent.lead_id ? `lead @${agent.lead_id}` : 'top-level operator lane'}
+                  </p>
+                </div>
                 {agent.skills.length > 0 ? (
                   <div className="agent-skill-row">
                     {agent.skills.slice(0, 3).map((skill) => (
@@ -1502,7 +1538,10 @@ function App() {
                   <p className="chat-empty">No room traffic yet. Send a first operator instruction to fan out across the active agents.</p>
                 ) : (
                   operatorChatMessages.map((message) => (
-                    <article key={message.message_id} className="chat-row">
+                    <article
+                      key={message.message_id}
+                      className={`chat-row ${message.author === 'operator' ? 'operator' : message.author === 'clems' ? 'clems' : 'agent'}`}
+                    >
                       <header>
                         <div className="chat-row-meta">
                           <strong className="chat-author">@{message.author}</strong>
@@ -2218,27 +2257,33 @@ function App() {
           </p>
         </div>
         <div className="header-status">
-          <label className="project-input">
-            Project
-            <input
-              value={projectId}
-              onChange={(event) => setProjectId(event.target.value.trim() || DEFAULT_PROJECT_ID)}
-            />
-          </label>
-          <div className={`status-pill ${backendHealth?.status === 'ok' ? 'ok' : 'warn'}`}>
-            Backend {backendHealth?.status ?? 'unknown'}
+          <div className="header-status-cluster header-status-project">
+            <label className="project-input">
+              Project
+              <input
+                value={projectId}
+                onChange={(event) => setProjectId(event.target.value.trim() || DEFAULT_PROJECT_ID)}
+              />
+            </label>
           </div>
-          <div className={`status-pill ${wsConnected ? 'ok' : 'warn'}`}>WS {composerLabel}</div>
-          <div className="status-pill neutral">Time {clockNow.toLocaleTimeString()}</div>
-          <div className="status-pill neutral">
-            Sync {lastSyncAt ? new Date(lastSyncAt).toLocaleTimeString() : 'none'}
+          <div className="header-status-cluster">
+            <div className={`status-pill ${backendHealth?.status === 'ok' ? 'ok' : 'warn'}`}>
+              Backend {backendHealth?.status ?? 'unknown'}
+            </div>
+            <div className={`status-pill ${wsConnected ? 'ok' : 'warn'}`}>WS {composerLabel}</div>
+            <div className="status-pill neutral">API {getApiUrl()}</div>
+            <div className="status-pill neutral">
+              Build {(backendHealth?.build_sha ?? 'unknown').slice(0, 12)}
+            </div>
           </div>
-          <div className="status-pill neutral">API {getApiUrl()}</div>
-          <div className="status-pill neutral">
-            Build {(backendHealth?.build_sha ?? 'unknown').slice(0, 12)}
-          </div>
-          <div className="status-pill neutral">
-            Event {lastEventAt ? new Date(lastEventAt).toLocaleTimeString() : 'none'}
+          <div className="header-status-cluster">
+            <div className="status-pill neutral">Time {clockNow.toLocaleTimeString()}</div>
+            <div className="status-pill neutral">
+              Sync {lastSyncAt ? new Date(lastSyncAt).toLocaleTimeString() : 'none'}
+            </div>
+            <div className="status-pill neutral">
+              Event {lastEventAt ? new Date(lastEventAt).toLocaleTimeString() : 'none'}
+            </div>
           </div>
         </div>
       </header>
@@ -2474,7 +2519,10 @@ function App() {
                             <p className="chat-empty">No chat yet. Send a first message to start live flow.</p>
                           ) : (
                             operatorChatMessages.map((message) => (
-                              <article key={message.message_id} className="chat-row">
+                              <article
+                                key={message.message_id}
+                                className={`chat-row ${message.author === 'operator' ? 'operator' : message.author === 'clems' ? 'clems' : 'agent'}`}
+                              >
                                 <header>
                                   <div className="chat-row-meta">
                                     <strong className="chat-author">@{message.author}</strong>
