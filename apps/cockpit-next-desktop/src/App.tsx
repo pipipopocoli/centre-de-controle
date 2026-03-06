@@ -52,6 +52,7 @@ type TopTab = 'pixel_home' | 'overview' | 'pilotage' | 'docs' | 'todo' | 'model_
 type WorkspaceTab = 'agent' | 'layout' | 'settings'
 type ComposerStatus = 'live' | 'reconnecting' | 'http_fallback'
 type DirectTargetMode = 'clems' | 'selected_agent'
+type WorkbenchPanel = 'chat' | 'terminal' | 'approvals' | 'events'
 
 type TaskEditorState = {
   title: string
@@ -178,6 +179,7 @@ function App() {
   const [uiNotice, setUiNotice] = useState<string | null>(null)
   const [zoom, setZoom] = useState(2)
   const [workbenchCollapsed, setWorkbenchCollapsed] = useState(false)
+  const [workbenchPanel, setWorkbenchPanel] = useState<WorkbenchPanel>('chat')
   const [backendHealth, setBackendHealth] = useState<HealthzResponse | null>(null)
   const [llmProfile, setLlmProfile] = useState<LlmProfile | null>(null)
   const [profileDraft, setProfileDraft] = useState<LlmProfile | null>(null)
@@ -1087,6 +1089,17 @@ function App() {
         ? 'HTTP fallback'
         : 'Reconnecting'
 
+  const workbenchTabs = [
+    { id: 'chat' as const, label: 'Chat' },
+    {
+      id: 'terminal' as const,
+      label: 'Terminal',
+      count: selectedAgent?.terminal_state === 'running' ? 'live' : selectedAgentId ? 'offline' : 'none',
+    },
+    { id: 'approvals' as const, label: 'Approvals', count: approvals.length > 0 ? String(approvals.length) : undefined },
+    { id: 'events' as const, label: 'Events', count: eventLog.length > 0 ? String(Math.min(eventLog.length, 99)) : undefined },
+  ] satisfies Array<{ id: WorkbenchPanel; label: string; count?: string }>
+
   const renderWorkspaceLeftPanel = () => {
     if (workspaceTab === 'layout') {
       return (
@@ -1144,70 +1157,78 @@ function App() {
     }
 
     return (
-      <section className="workspace-section">
-        <div className="section-title-row">
+      <section className="workspace-section workspace-section-agents">
+        <div className="section-title-row compact">
           <h2>Agents</h2>
-          <span className="hint">select for chat, open terminal on demand</span>
+          <span className="hint">chat + terminal</span>
         </div>
 
-        <form className="create-form" onSubmit={handleCreateAgent}>
-          <input
-            placeholder="agent id (optional)"
-            value={createAgentId}
-            onChange={(event) => setCreateAgentId(event.target.value)}
-          />
-          <input
-            placeholder="name (optional)"
-            value={createAgentName}
-            onChange={(event) => setCreateAgentName(event.target.value)}
-          />
-          <button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Creating...' : '+ Agent'}
-          </button>
-        </form>
+        <div className="agent-create-card">
+          <form className="create-form compact" onSubmit={handleCreateAgent}>
+            <input
+              placeholder="agent id (optional)"
+              value={createAgentId}
+              onChange={(event) => setCreateAgentId(event.target.value)}
+            />
+            <input
+              placeholder="name (optional)"
+              value={createAgentName}
+              onChange={(event) => setCreateAgentName(event.target.value)}
+            />
+            <button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Creating...' : '+ Agent'}
+            </button>
+          </form>
+        </div>
 
         <div className="agent-cards">
           {feed?.agents.map((agent) => (
-            <button
-              key={agent.agent_id}
-              className={`agent-card ${selectedAgentId === agent.agent_id ? 'active' : ''}`}
-              onClick={() => handleSelectAgent(agent.agent_id)}
-            >
-              <div>
-                <p className="agent-name">{agent.name}</p>
-                <p className="agent-meta">
-                  @{agent.agent_id} - L{agent.level} - {agent.role}
-                </p>
-              </div>
-              <div className="agent-card-right">
-                <span className={`dot ${agent.chat_targetable ? 'green' : 'gray'}`}>
-                  {agent.chat_targetable ? 'chat ready' : 'chat unavailable'}
-                </span>
-                <span className={`dot ${agent.terminal_state === 'running' ? 'green' : 'gray'}`}>
-                  terminal {agent.terminal_state === 'running' ? 'live' : 'offline'}
-                </span>
+            <article key={agent.agent_id} className={`agent-card ${selectedAgentId === agent.agent_id ? 'active' : ''}`}>
+              <button className="agent-card-main" onClick={() => handleSelectAgent(agent.agent_id)}>
+                <div className="agent-card-head">
+                  <div>
+                    <p className="agent-name">{agent.name}</p>
+                    <p className="agent-meta">
+                      @{agent.agent_id}
+                    </p>
+                  </div>
+                  <span className="agent-level-pill">L{agent.level}</span>
+                </div>
+                <p className="agent-role">{agent.role}</p>
+                <div className="agent-card-statuses">
+                  <span className={`dot ${agent.chat_targetable ? 'green' : 'gray'}`}>
+                    {agent.chat_targetable ? 'chat ready' : 'chat unavailable'}
+                  </span>
+                  <span className={`dot ${agent.terminal_state === 'running' ? 'green' : 'gray'}`}>
+                    terminal {agent.terminal_state === 'running' ? 'live' : 'offline'}
+                  </span>
+                </div>
+              </button>
+              <div className="agent-card-footer">
                 <button
                   className="agent-action"
-                  onClick={(event) => {
-                    event.stopPropagation()
+                  onClick={() => {
+                    setSelectedAgentId(agent.agent_id)
+                    setWorkbenchPanel('terminal')
                     void ensureAgentTerminal(agent.agent_id)
                   }}
                 >
-                  Open term
+                  Open terminal
                 </button>
                 {agent.agent_id !== 'clems' ? (
-                  <span
+                  <button
                     className="agent-delete"
-                    onClick={(event) => {
-                      event.stopPropagation()
+                    onClick={() => {
                       void handleDeleteAgent(agent.agent_id)
                     }}
                   >
-                    x
-                  </span>
-                ) : null}
+                    Remove
+                  </button>
+                ) : (
+                  <span className="agent-keeper">system</span>
+                )}
               </div>
-            </button>
+            </article>
           ))}
         </div>
       </section>
@@ -1928,248 +1949,312 @@ function App() {
                     <p className="hint">chat + terminal hidden</p>
                   </div>
                 ) : (
-                  <>
-                    <section className="chat-section">
-                      <div className="section-title-row">
-                        <h2>Live Chat</h2>
-                        <div className="chat-actions">
-                          <span className="chat-target">Target {chatMode === 'direct' ? directTargetLabel : 'conceal room'}</span>
-                          <button className="small-btn" onClick={() => void handleResetChat()}>
-                            Reset Chat
-                          </button>
-                          <span className={`chat-status ${composerStatus}`}>{composerLabel}</span>
-                        </div>
-                      </div>
-                      <div className="mode-row">
-                        <div className="mode-toggle">
+                  <div className="workbench-shell">
+                    <div className="workbench-topbar">
+                      <div className="workbench-tabs">
+                        {workbenchTabs.map((tab) => (
                           <button
-                            className={chatMode === 'direct' ? 'active' : ''}
-                            onClick={() => setChatMode('direct')}
+                            key={tab.id}
+                            className={`workbench-tab-btn ${workbenchPanel === tab.id ? 'active' : ''}`}
+                            onClick={() => setWorkbenchPanel(tab.id)}
                           >
-                            Direct
+                            <span>{tab.label}</span>
+                            {tab.count ? <span className="workbench-tab-count">{tab.count}</span> : null}
                           </button>
-                          <button
-                            className={chatMode === 'conceal_room' ? 'active' : ''}
-                            onClick={() => setChatMode('conceal_room')}
-                          >
-                            Conceal Room
-                          </button>
-                        </div>
-                        <div className="exec-toggle">
-                          <button
-                            className={executionMode === 'chat' ? 'active' : ''}
-                            onClick={() => setExecutionMode('chat')}
-                          >
-                            chat
-                          </button>
-                          <button
-                            className={executionMode === 'scene' ? 'active' : ''}
-                            onClick={() => setExecutionMode('scene')}
-                          >
-                            scene
-                          </button>
-                        </div>
-                      </div>
-
-                      {chatMode === 'direct' ? (
-                        <>
-                          <div className="chat-target-row">
-                            <button
-                              className={`target-btn ${directTarget === 'clems' ? 'active' : ''}`}
-                              onClick={() => setDirectTarget('clems')}
-                            >
-                              Talk to Clems
-                            </button>
-                            <button
-                              className={`target-btn ${directTarget === 'selected_agent' ? 'active' : ''}`}
-                              onClick={() => setDirectTarget('selected_agent')}
-                              disabled={!selectedAgentChatReady}
-                            >
-                              Talk to selected agent
-                            </button>
-                            <span className="hint">
-                              {selectedAgent
-                                ? selectedAgentChatReady
-                                  ? `selected: @${selectedAgent.agent_id}`
-                                  : `selected: @${selectedAgent.agent_id} not chat-ready`
-                                : 'select an agent to enable direct agent chat'}
-                            </span>
-                          </div>
-                          <p className="small-copy">Agent chat uses the model lane directly. Terminal state is separate.</p>
-                        </>
-                      ) : (
-                        <p className="small-copy">Conceal Room fans out to L1 and returns a Clems operator summary.</p>
-                      )}
-
-                      <div className="chat-log">
-                        {operatorChatMessages.length === 0 ? (
-                          <p className="chat-empty">No chat yet. Send a first message to start live flow.</p>
-                        ) : (
-                          operatorChatMessages.map((message) => (
-                            <article key={message.message_id} className="chat-row">
-                              <header>
-                                <div className="chat-row-meta">
-                                  <strong className="chat-author">@{message.author}</strong>
-                                  {messageKindLabel(message) ? <span className="chat-kind">{messageKindLabel(message)}</span> : null}
-                                </div>
-                                <time className="chat-time">{new Date(message.timestamp).toLocaleTimeString()}</time>
-                              </header>
-                              <p className="chat-body">{message.text}</p>
-                            </article>
-                          ))
-                        )}
-                      </div>
-
-                      <div className="composer-row">
-                        <div className="plus-wrap">
-                          <button className="plus-btn" onClick={() => setShowAddMenu((value) => !value)}>
-                            +
-                          </button>
-                          {showAddMenu ? (
-                            <div className="plus-menu">
-                              <button onClick={() => addMention('clems')}>mention @clems</button>
-                              <button onClick={() => addMention('victor')}>mention @victor</button>
-                              <button onClick={() => addMention('leo')}>mention @leo</button>
-                              <button onClick={() => addMention('nova')}>mention @nova</button>
-                            </div>
-                          ) : null}
-                        </div>
-
-                        <input
-                          value={chatInput}
-                          onChange={(event) => setChatInput(event.target.value)}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter') {
-                              event.preventDefault()
-                              void handleSendChat()
-                            }
-                          }}
-                          placeholder={
-                            chatMode === 'direct'
-                              ? directTarget === 'selected_agent'
-                                ? selectedAgentChatReady
-                                  ? `Send to @${selectedAgent?.agent_id}`
-                                  : 'Select a chat-ready agent or switch back to Clems.'
-                                : 'Talk to Clems directly.'
-                              : 'Conceal Room: L1 live fanout + Clems summary'
-                          }
-                        />
-                        {chatMode === 'direct' ? (
-                          <div className="composer-actions">
-                            <button
-                              className="send-btn"
-                              onClick={() => void handleSendChat('clems')}
-                              disabled={isSendingChat}
-                            >
-                              {isSendingChat && directTarget === 'clems' ? 'Sending...' : 'Talk to Clems'}
-                            </button>
-                            <button
-                              className="send-btn alt"
-                              onClick={() => void handleSendChat('selected_agent')}
-                              disabled={isSendingChat || !selectedAgentChatReady}
-                            >
-                              {isSendingChat && directTarget === 'selected_agent'
-                                ? 'Sending...'
-                                : 'Talk to selected agent'}
-                            </button>
-                          </div>
-                        ) : (
-                          <button className="send-btn" onClick={() => void handleSendChat()} disabled={isSendingChat}>
-                            {isSendingChat ? 'Sending...' : 'Send to room'}
-                          </button>
-                        )}
-                      </div>
-                    </section>
-
-                    <section className="terminal-section">
-                      <div className="section-title-row">
-                        <h2>Terminal</h2>
-                        <div className="chat-actions">
-                          <span className="hint">{selectedAgentId ? `@${selectedAgentId}` : 'no agent selected'}</span>
-                          {selectedAgentId && selectedAgent?.terminal_state !== 'running' ? (
-                            <button className="small-btn" onClick={() => void ensureAgentTerminal(selectedAgentId)}>
-                              Open terminal
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div className="terminal-log">
-                        {selectedLog.length === 0 ? (
-                          <p className="terminal-empty">No terminal output yet.</p>
-                        ) : (
-                          selectedLog.map((line, index) => (
-                            <pre key={`${index}-${line.slice(0, 12)}`}>{line}</pre>
-                          ))
-                        )}
-                      </div>
-                      <div className="terminal-controls">
-                        <input
-                          value={terminalInput}
-                          onChange={(event) => setTerminalInput(event.target.value)}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter') {
-                              event.preventDefault()
-                              void handleSendTerminal()
-                            }
-                          }}
-                          placeholder="terminal command"
-                        />
-                        <button onClick={() => void handleSendTerminal()}>Send</button>
-                        <button onClick={() => void handleRestartTerminal()}>Restart</button>
-                        <button onClick={() => void handleOpenExternalTerminal()}>Open OS</button>
-                      </div>
-                    </section>
-
-                    <section className="approvals-section">
-                      <div className="section-title-row">
-                        <h2>Approvals</h2>
-                        <span className="hint">pending: {approvals.length}</span>
-                      </div>
-                      <div className="approvals-log">
-                        {approvals.length === 0 ? (
-                          <p className="terminal-empty">No pending approvals.</p>
-                        ) : (
-                          approvals.map((approval) => (
-                            <article key={approval.request_id} className="approval-row">
-                              <p>
-                                <strong>{approval.requester}</strong> asks L2 on <strong>{approval.section_tag}</strong>
-                              </p>
-                              <p className="approval-reason">{approval.reason}</p>
-                              <div className="approval-actions">
-                                <button
-                                  disabled={approvalBusy[approval.request_id] === true}
-                                  onClick={() => {
-                                    void handleApproval(approval.request_id, 'approve')
-                                  }}
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  disabled={approvalBusy[approval.request_id] === true}
-                                  onClick={() => {
-                                    void handleApproval(approval.request_id, 'reject')
-                                  }}
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            </article>
-                          ))
-                        )}
-                      </div>
-                    </section>
-
-                    <section className="events-section">
-                      <h2>Recent Events</h2>
-                      <div className="events-log">
-                        {eventLog.map((event, index) => (
-                          <p key={`${event.timestamp}-${index}`}>
-                            <strong>{event.type}</strong> {new Date(event.timestamp).toLocaleTimeString()}
-                          </p>
                         ))}
                       </div>
-                    </section>
-                  </>
+                      <div className="workbench-summary">
+                        <span className="chat-target">Target {chatMode === 'direct' ? directTargetLabel : 'conceal room'}</span>
+                        <span className={`chat-status ${composerStatus}`}>{composerLabel}</span>
+                        <span className="workbench-mini-pill">
+                          terminal {selectedAgent?.terminal_state === 'running' ? 'live' : selectedAgentId ? 'offline' : 'none'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {workbenchPanel === 'chat' ? (
+                      <section className="chat-section">
+                        <div className="section-title-row">
+                          <h2>Live Chat</h2>
+                          <div className="chat-actions">
+                            <button className="small-btn" onClick={() => void handleResetChat()}>
+                              Reset chat
+                            </button>
+                          </div>
+                        </div>
+                        <div className="mode-row">
+                          <div className="mode-toggle">
+                            <button
+                              className={chatMode === 'direct' ? 'active' : ''}
+                              onClick={() => setChatMode('direct')}
+                            >
+                              Direct
+                            </button>
+                            <button
+                              className={chatMode === 'conceal_room' ? 'active' : ''}
+                              onClick={() => setChatMode('conceal_room')}
+                            >
+                              Conceal Room
+                            </button>
+                          </div>
+                          <div className="exec-toggle">
+                            <button
+                              className={executionMode === 'chat' ? 'active' : ''}
+                              onClick={() => setExecutionMode('chat')}
+                            >
+                              chat
+                            </button>
+                            <button
+                              className={executionMode === 'scene' ? 'active' : ''}
+                              onClick={() => setExecutionMode('scene')}
+                            >
+                              scene
+                            </button>
+                          </div>
+                        </div>
+
+                        {chatMode === 'direct' ? (
+                          <div className="chat-target-card">
+                            <div className="chat-target-actions">
+                              <button
+                                className={`target-btn ${directTarget === 'clems' ? 'active' : ''}`}
+                                onClick={() => setDirectTarget('clems')}
+                              >
+                                Talk to Clems
+                              </button>
+                              <button
+                                className={`target-btn ${directTarget === 'selected_agent' ? 'active' : ''}`}
+                                onClick={() => setDirectTarget('selected_agent')}
+                                disabled={!selectedAgentChatReady}
+                              >
+                                Talk to selected agent
+                              </button>
+                            </div>
+                            <div className="chat-target-details">
+                              <p className="small-copy">Agent chat uses the model lane directly. Terminal state stays separate.</p>
+                              <p className="chat-target-detail">
+                                {selectedAgent
+                                  ? selectedAgentChatReady
+                                    ? `Selected target: @${selectedAgent.agent_id}`
+                                    : `Selected target: @${selectedAgent.agent_id} is not chat-ready`
+                                  : 'No agent selected yet. Pick one from the roster to enable direct agent chat.'}
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="small-copy">Conceal Room fans out to L1 and returns a Clems operator summary.</p>
+                        )}
+
+                        <div className="chat-log">
+                          {operatorChatMessages.length === 0 ? (
+                            <p className="chat-empty">No chat yet. Send a first message to start live flow.</p>
+                          ) : (
+                            operatorChatMessages.map((message) => (
+                              <article key={message.message_id} className="chat-row">
+                                <header>
+                                  <div className="chat-row-meta">
+                                    <strong className="chat-author">@{message.author}</strong>
+                                    {messageKindLabel(message) ? <span className="chat-kind">{messageKindLabel(message)}</span> : null}
+                                  </div>
+                                  <time className="chat-time">{new Date(message.timestamp).toLocaleTimeString()}</time>
+                                </header>
+                                <p className="chat-body">{message.text}</p>
+                              </article>
+                            ))
+                          )}
+                        </div>
+
+                        <div className="composer-stack">
+                          <div className="composer-row">
+                            <div className="plus-wrap">
+                              <button className="plus-btn" onClick={() => setShowAddMenu((value) => !value)}>
+                                +
+                              </button>
+                              {showAddMenu ? (
+                                <div className="plus-menu">
+                                  <button onClick={() => addMention('clems')}>mention @clems</button>
+                                  <button onClick={() => addMention('victor')}>mention @victor</button>
+                                  <button onClick={() => addMention('leo')}>mention @leo</button>
+                                  <button onClick={() => addMention('nova')}>mention @nova</button>
+                                </div>
+                              ) : null}
+                            </div>
+
+                            <input
+                              value={chatInput}
+                              onChange={(event) => setChatInput(event.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                  event.preventDefault()
+                                  void handleSendChat()
+                                }
+                              }}
+                              placeholder={
+                                chatMode === 'direct'
+                                  ? directTarget === 'selected_agent'
+                                    ? selectedAgentChatReady
+                                      ? `Send to @${selectedAgent?.agent_id}`
+                                      : 'Select a chat-ready agent or switch back to Clems.'
+                                    : 'Talk to Clems directly.'
+                                  : 'Conceal Room: L1 live fanout + Clems summary'
+                              }
+                            />
+                          </div>
+                          <div className="composer-actions-row">
+                            {chatMode === 'direct' ? (
+                              <div className="composer-actions">
+                                <button
+                                  className="send-btn"
+                                  onClick={() => void handleSendChat('clems')}
+                                  disabled={isSendingChat}
+                                >
+                                  {isSendingChat && directTarget === 'clems' ? 'Sending...' : 'Talk to Clems'}
+                                </button>
+                                <button
+                                  className="send-btn alt"
+                                  onClick={() => void handleSendChat('selected_agent')}
+                                  disabled={isSendingChat || !selectedAgentChatReady}
+                                >
+                                  {isSendingChat && directTarget === 'selected_agent'
+                                    ? 'Sending...'
+                                    : 'Talk to selected agent'}
+                                </button>
+                              </div>
+                            ) : (
+                              <button className="send-btn" onClick={() => void handleSendChat()} disabled={isSendingChat}>
+                                {isSendingChat ? 'Sending...' : 'Send to room'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </section>
+                    ) : null}
+
+                    {workbenchPanel === 'terminal' ? (
+                      <section className="terminal-section">
+                        <div className="section-title-row">
+                          <h2>Terminal</h2>
+                          <div className="chat-actions">
+                            <span className="hint">{selectedAgentId ? `@${selectedAgentId}` : 'no agent selected'}</span>
+                            {selectedAgentId && selectedAgent?.terminal_state !== 'running' ? (
+                              <button className="small-btn" onClick={() => void ensureAgentTerminal(selectedAgentId)}>
+                                Open terminal
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                        {selectedAgentId ? (
+                          <>
+                            <div className="terminal-summary-card">
+                              <div>
+                                <strong>@{selectedAgentId}</strong>
+                                <p className="small-copy">Terminal state: {selectedAgent?.terminal_state === 'running' ? 'live' : 'offline'}</p>
+                              </div>
+                              <div className="terminal-summary-actions">
+                                <button onClick={() => void handleRestartTerminal()}>Restart</button>
+                                <button onClick={() => void handleOpenExternalTerminal()}>Open OS</button>
+                              </div>
+                            </div>
+                            <div className="terminal-log">
+                              {selectedLog.length === 0 ? (
+                                <p className="terminal-empty">No terminal output yet.</p>
+                              ) : (
+                                selectedLog.map((line, index) => (
+                                  <pre key={`${index}-${line.slice(0, 12)}`}>{line}</pre>
+                                ))
+                              )}
+                            </div>
+                            <div className="terminal-controls">
+                              <input
+                                value={terminalInput}
+                                onChange={(event) => setTerminalInput(event.target.value)}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter') {
+                                    event.preventDefault()
+                                    void handleSendTerminal()
+                                  }
+                                }}
+                                placeholder="terminal command"
+                              />
+                              <button onClick={() => void handleSendTerminal()}>Send</button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="empty-panel">
+                            <h3>No terminal target selected</h3>
+                            <p>Select an agent from the left roster, then open or restart its terminal from here.</p>
+                          </div>
+                        )}
+                      </section>
+                    ) : null}
+
+                    {workbenchPanel === 'approvals' ? (
+                      <section className="approvals-section">
+                        <div className="section-title-row">
+                          <h2>Approvals</h2>
+                          <span className="hint">pending: {approvals.length}</span>
+                        </div>
+                        <div className="approvals-log">
+                          {approvals.length === 0 ? (
+                            <div className="empty-panel compact">
+                              <h3>No pending approvals</h3>
+                              <p>Requests from L1 and L2 will land here when an operator decision is required.</p>
+                            </div>
+                          ) : (
+                            approvals.map((approval) => (
+                              <article key={approval.request_id} className="approval-row">
+                                <p>
+                                  <strong>{approval.requester}</strong> asks L2 on <strong>{approval.section_tag}</strong>
+                                </p>
+                                <p className="approval-reason">{approval.reason}</p>
+                                <div className="approval-actions">
+                                  <button
+                                    disabled={approvalBusy[approval.request_id] === true}
+                                    onClick={() => {
+                                      void handleApproval(approval.request_id, 'approve')
+                                    }}
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    disabled={approvalBusy[approval.request_id] === true}
+                                    onClick={() => {
+                                      void handleApproval(approval.request_id, 'reject')
+                                    }}
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              </article>
+                            ))
+                          )}
+                        </div>
+                      </section>
+                    ) : null}
+
+                    {workbenchPanel === 'events' ? (
+                      <section className="events-section">
+                        <div className="section-title-row">
+                          <h2>Recent Events</h2>
+                          <span className="hint">{eventLog.length} tracked</span>
+                        </div>
+                        <div className="events-log">
+                          {eventLog.length === 0 ? (
+                            <div className="empty-panel compact">
+                              <h3>No events yet</h3>
+                              <p>Runtime events will appear here once the workspace starts receiving traffic.</p>
+                            </div>
+                          ) : (
+                            eventLog.map((event, index) => (
+                              <p key={`${event.timestamp}-${index}`}>
+                                <strong>{event.type}</strong> {new Date(event.timestamp).toLocaleTimeString()}
+                              </p>
+                            ))
+                          )}
+                        </div>
+                      </section>
+                    ) : null}
+                  </div>
                 )}
               </aside>
             </div>

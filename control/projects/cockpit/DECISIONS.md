@@ -25,7 +25,7 @@
 - Rationale: Maximizes parallelism while preserving single owner accountability.
 - Consequences: Faster progress with strict gate discipline; requires regular heartbeat/control checks.
 - Owners: clems, victor, leo
-- References: PAPER_PLAN_WAVE04_PARALLELIZATION_MAX_2026-02-19.md, runs/WAVE04_GATE_CHECKLIST_2026-02-19.md
+- References: PAPER_PLAN_WAVE04_PARALLELIZATION_MAX_2026-02-19.md, control/projects/cockpit/issues/ISSUE_MAP_WAVE04_CP002X.md
 
 ## 2026-02-19 - ADR-CP-004 Tournament dormant guard during Wave04
 - Status: Accepted
@@ -34,7 +34,7 @@
 - Rationale: Preserve capability without introducing scope collision.
 - Consequences: Tournament remains available by manual operator activation only.
 - Owners: clems
-- References: docs/reports/BACKLOG_TOURNAMENT_PRESERVATION.md, ROADMAP.md
+- References: docs/releases/BACKLOG_TOURNAMENT_PRESERVATION.md, ROADMAP.md
 
 ## 2026-02-19 - ADR-CP-005 Wave05 enhanced runtime stack
 - Status: Accepted
@@ -43,7 +43,7 @@
 - Rationale: Removes hardcode friction, improves dispatch quality, and gives clear operation signals before ship decisions.
 - Consequences: New settings blocks and runtime artifacts added; fallback remains feature-flagged for Ollama.
 - Owners: clems, victor, leo
-- References: control/projects/cockpit/issues/ISSUE_MAP_WAVE05_CP003X.md, control/projects/cockpit/runs/V2_WAVE05_DISPATCH_2026-02-19.md
+- References: control/projects/cockpit/issues/ISSUE_MAP_WAVE05_CP003X.md
 
 ## 2026-02-19 - ADR-CP-006 Cleanup canonical lock (spec/env/docs)
 - Status: Accepted
@@ -52,7 +52,7 @@
 - Rationale: One canonical set reduces drift and prevents accidental destructive actions on reusable tournament assets.
 - Consequences: `cockpit.spec` and `cockpit_v5.spec` are legacy/non-canonical references; `venv/` is fallback-only; root `Cockpit_V2_*.pdf` files are archive references, not primary operational source-of-truth.
 - Owners: clems, agent-11
-- References: docs/reports/BACKLOG_CLEANUP_V2.md, docs/reports/BACKLOG_TOURNAMENT_PRESERVATION.md, control/projects/cockpit/issues/ISSUE-CP-0024-wave04-cleanup-canonicalization.md
+- References: docs/releases/BACKLOG_CLEANUP_V2.md, docs/releases/BACKLOG_TOURNAMENT_PRESERVATION.md, control/projects/cockpit/issues/ISSUE-CP-0024-wave04-cleanup-canonicalization.md
 
 ## 2026-02-19 - ADR-CP-007 Wave06 closeout gate
 - Status: Accepted
@@ -61,7 +61,7 @@
 - Rationale: Prevents partial handoff and keeps implementation quality traceable.
 - Consequences: Wave06 scope is frozen; follow-up work moves to Wave07 hardening lanes.
 - Owners: clems, victor, leo, nova
-- References: runs/WAVE06_CLOSEOUT_2026-02-19.md, runs/WAVE06_BACKEND_SHIP_READINESS_2026-02-19T1728Z.md
+- References: control/projects/cockpit/issues/ISSUE-CP-0033-wave06-nova-global-l1.md, control/projects/cockpit/issues/ISSUE-CP-0034-wave07-ui-polish.md
 
 ## 2026-02-19 - ADR-CP-008 Wave07 hardening launch
 - Status: Accepted
@@ -70,7 +70,7 @@
 - Rationale: Parallel lanes maximize throughput without losing control discipline.
 - Consequences: New dispatch packet is canonical for this cycle; tournament remains dormant.
 - Owners: clems, victor, leo, nova
-- References: runs/V2_WAVE07_DISPATCH_2026-02-19.md, STATE.md, ROADMAP.md
+- References: control/projects/cockpit/issues/ISSUE-CP-0034-wave07-ui-polish.md, STATE.md, ROADMAP.md
 
 ## 2026-02-20 - ADR-CP-009 Wave08 runtime parity + closeout lock
 - Status: Accepted
@@ -79,7 +79,7 @@
 - Rationale: Removes noisy degraded alerts, restores operator trust in health signals, and closes remaining ship blockers.
 - Consequences: Healthcheck now consumes reconciled runtime view and activity-aware stale detection; `CP-0034` is closed with finalized evidence.
 - Owners: clems, victor, leo, nova
-- References: scripts/auto_mode_healthcheck.py, app/services/auto_mode.py, issues/ISSUE-CP-0034-wave07-ui-polish.md, docs/reports/CP01_UI_WAVE07_EVIDENCE.md
+- References: scripts/auto_mode_healthcheck.py, app/services/auto_mode.py, issues/ISSUE-CP-0034-wave07-ui-polish.md, docs/releases/CP01_UI_WAVE07_EVIDENCE.md
 
 ## 2026-02-20 - ADR-CP-010 Wave09 dual-root cadence lock
 - Status: Accepted
@@ -88,7 +88,7 @@
 - Rationale: Keeps control gates trustworthy while continuing delivery without introducing tournament or architecture scope drift.
 - Consequences: New issue set CP-0035..CP-0038 opened, Wave09 dispatch packet becomes canonical, and dual-root health is now a mandatory continuation gate.
 - Owners: clems, victor, leo, nova
-- References: runs/WAVE09_PRECHECK_2026-02-20.md, runs/V2_WAVE09_DISPATCH_2026-02-20.md, ROADMAP.md, STATE.md
+- References: control/projects/cockpit/issues/ISSUE_MAP_WAVE09_CP0035_CP0038.md, ROADMAP.md, STATE.md
 
 ## 2026-02-20 - ADR-CP-011 Nova dual mandate (vulgarisation + scientific RnD)
 - Status: Accepted
@@ -106,7 +106,7 @@
 - Rationale: Keeps runtime control trustworthy first, then enables UI/advisory closeout on stable gates.
 - Consequences: UI lane starts after first backend green checkpoint; operational cadence checks remain mandatory every 30-45 minutes.
 - Owners: clems, victor, leo, nova
-- References: runs/WAVE09_DECISION_2026-02-20T2148Z.md, runs/V2_WAVE09_DISPATCH_2026-02-20.md, runs/WAVE09_PRECHECK_2026-02-20.md
+- References: control/projects/cockpit/issues/ISSUE_MAP_WAVE09_CP0035_CP0038.md, control/projects/cockpit/issues/ISSUE-CP-0035-wave09-dual-root-control-cadence.md
 
 ## 2026-02-20 - ADR-CP-013 Leo lane activation after message review
 - Status: Accepted
@@ -115,7 +115,7 @@
 - Rationale: Keeps momentum from Leo ack while preserving a verifiable finish gate.
 - Consequences: Leo lane is active now, but cannot move to Done without evidence artifacts.
 - Owners: clems, leo
-- References: runs/WAVE09_LEO_DECISION_2026-02-20T2150Z.md, issues/ISSUE-CP-0037-wave09-pilotage-control-badges.md, missions/MISSION-LEO-WAVE09.md
+- References: control/projects/cockpit/issues/ISSUE-CP-0037-wave09-pilotage-control-badges.md, control/projects/cockpit/missions/MISSION-LEO-WAVE09.md
 
 ## 2026-02-21 - ADR-CP-014 Desktop update channel lock (Dev Live vs Release)
 - Status: Accepted
@@ -153,7 +153,7 @@
 - Rationale: Keeps delivery momentum while resolving operator-facing pain points without architecture rewrite.
 - Consequences: New live activity feed service and updated Pilotage/Overview contracts; cadence trust includes explicit pulse signal; tournament remains dormant.
 - Owners: clems, victor, leo, nova
-- References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE12_PUSH_RECEIPT_2026-02-23.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0044-wave13-agent-hierarchy-l0-l1-l2.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0045-wave13-vulgarisation-simple-clean.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0046-wave13-live-view-task-code-hybrid.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0047-wave13-runtime-cadence-stability.md
+- References: /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE12_PUSH_RECEIPT_2026-02-23.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0044-wave13-agent-hierarchy-l0-l1-l2.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0045-wave13-vulgarisation-simple-clean.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0046-wave13-live-view-task-code-hybrid.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0047-wave13-runtime-cadence-stability.md
 
 ## 2026-02-23 - ADR-CP-018 Wave14 lock from cockpit_v2_final_plan.docx
 - Status: Accepted
@@ -162,7 +162,7 @@
 - Rationale: Removes ambiguity and aligns implementation lanes with explicit operator intent.
 - Consequences: Wave14 prioritizes startup onboarding, mission-critical gate, false-positive hardening, live readability, and retention policy before new feature expansion.
 - Owners: clems, victor, leo, nova
-- References: /Users/oliviercloutier/Desktop/Cockpit/cockpit_v2_final_plan.docx, /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE14_INPUT_FROM_COCKPIT_V2_FINAL_PLAN_2026-02-23.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE14_DISPATCH_2026-02-23.md
+- References: /Users/oliviercloutier/Desktop/Cockpit/cockpit_v2_final_plan.docx, /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE14_INPUT_FROM_COCKPIT_V2_FINAL_PLAN_2026-02-23.md, /Users/oliviercloutier/Desktop/Cockpit/docs/releases/V2_WAVE14_DISPATCH_2026-02-23.md
 
 ## 2026-02-24 - ADR-CP-019 Wave16 codex-only outage and credit guard
 - Status: Accepted
@@ -180,7 +180,7 @@
 - Rationale: Removes ambiguity for both public narrative and daily operations while keeping outage-safe delivery constraints.
 - Consequences: Main `/Applications/Centre de controle.app` now points to release binary (`CFBundleExecutable=Centre de controle`), Dev Live remains optional, and docs are updated to stop framing two-icon behavior as normal for the primary icon path.
 - Owners: clems, victor, nova
-- References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WEB_REPUBLISH_WAVE16_2026-02-24.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE16_DISPATCH_CREDIT_GUARD_2026-02-24.md, /Users/oliviercloutier/Desktop/Cockpit/scripts/packaging/install_release_app.sh, /Users/oliviercloutier/Desktop/Cockpit/docs/PACKAGING.md, /Users/oliviercloutier/Desktop/Cockpit/docs/RUNBOOK.md
+- References: /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WEB_REPUBLISH_WAVE16_2026-02-24.md, /Users/oliviercloutier/Desktop/Cockpit/docs/releases/V2_WAVE16_DISPATCH_CREDIT_GUARD_2026-02-24.md, /Users/oliviercloutier/Desktop/Cockpit/scripts/packaging/install_release_app.sh, /Users/oliviercloutier/Desktop/Cockpit/docs/PACKAGING.md, /Users/oliviercloutier/Desktop/Cockpit/docs/RUNBOOK.md
 
 ## 2026-02-27 - ADR-CP-021 Partial AG reopen under credit guard
 - Status: Accepted
@@ -189,7 +189,7 @@
 - Rationale: Reopens AG safely while limiting cost and preventing uncontrolled dispatch fanout.
 - Consequences: AG lane resumes in a controlled way; requires ongoing dual-root cadence and settings sync between repo + AppSupport.
 - Owners: clems, victor, leo
-- References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/settings.json, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE17_RUNTIME_CHECKPOINT_2026-02-27T0539Z.md
+- References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/settings.json, /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE17_RUNTIME_CHECKPOINT_2026-02-27T0539Z.md
 
 ## 2026-02-27 - ADR-CP-022 Takeover Wizard headless (codex exec read-only) + BMAD artifacts
 - Status: Accepted
@@ -244,3 +244,12 @@
 - Consequences: `execution_router`, `auto_mode`, wizard services, and runner shims now execute through OpenRouter; UI runtime copy now references OpenRouter as active engine.
 - Owners: @clems, @victor, @leo
 - References: app/services/execution_router.py, app/services/auto_mode.py, app/services/wizard_live.py, app/services/takeover_wizard.py, app/services/codex_runner.py, app/services/antigravity_runner.py, app/services/ollama_runner.py
+
+## 2026-03-06 - ADR-CP-028 Repo archive retention + Cockpit app canonical
+- Status: Accepted
+- Context: Historical swarm material, report packs, local archives, and runtime noise were inflating the repo and making the operator path harder to read than the product itself.
+- Decision: Keep active product code, active docs, and the current release proof subset in git. Move historical swarm/report/archive material to Google Drive archive storage, keep runtime noise untracked, and lock the operator app path to `/Applications/Cockpit.app`.
+- Rationale: Reduces repo noise, preserves evidence outside git, and keeps one canonical daily operator target.
+- Consequences: `docs/swarm_results/`, old `docs/reports/`, local archive trees, and historical run receipts leave the repo tree; release proof curation now lives in `docs/releases/`; runtime db and live registry stay local-only and ignored.
+- Owners: @clems, @leo
+- References: /Users/oliviercloutier/Desktop/Cockpit/docs/releases/README.md, /Users/oliviercloutier/Desktop/Cockpit/scripts/archive_cockpit_history_to_drive.sh, /Users/oliviercloutier/Desktop/Cockpit/docs/PACKAGING.md, /Users/oliviercloutier/Desktop/Cockpit/docs/COCKPIT_NEXT_RUNBOOK.md

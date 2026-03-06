@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -35,6 +36,34 @@ def _request(path: str, *, method: str = "GET", payload: dict | None = None) -> 
 def _assert(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
+
+
+def _delete_agent_if_present(agent_id: str) -> None:
+    status, _ = _request(f"/v1/projects/{PROJECT_ID}/agents/{agent_id}", method="DELETE")
+    if status not in {200, 404}:
+        raise AssertionError(f"failed to delete temporary agent {agent_id}: HTTP {status}")
+
+
+def _create_smoke_agent() -> str:
+    agent_id = f"agent-{int(time.time())}"
+    _delete_agent_if_present(agent_id)
+    status, response = _request(
+        f"/v1/projects/{PROJECT_ID}/agents",
+        method="POST",
+        payload={
+            "agent_id": agent_id,
+            "name": "Smoke Agent",
+            "platform": "openrouter",
+            "level": 2,
+            "lead_id": "victor",
+            "role": "specialist",
+            "skills": ["runtime_smoke"],
+        },
+    )
+    _assert(status == 200, f"create temporary agent returned {status}: {response}")
+    created_agent = response.get("agent") or {}
+    _assert(created_agent.get("agent_id") == agent_id, f"unexpected create agent response: {response}")
+    return agent_id
 
 
 def _verify_websocket_ready() -> None:
@@ -79,27 +108,49 @@ def main() -> int:
         if isinstance(item, dict)
     }
 
+    smoke_agent_id = _create_smoke_agent()
+
     try:
         status, response = _request(
             f"/v1/projects/{PROJECT_ID}/chat/live-turn",
             method="POST",
             payload={
-                "text": "@leo runtime smoke. Reply in one short sentence only. Do not create tasks.",
+                "text": "runtime smoke. Reply in one short sentence only. Do not create tasks.",
                 "chat_mode": "direct",
                 "execution_mode": "chat",
-                "target_agent_id": "leo",
+                "target_agent_id": smoke_agent_id,
             },
         )
         _assert(status == 200, f"live-turn returned {status}: {response}")
         messages = response.get("messages") or []
         authors = [str(item.get("author") or "") for item in messages if isinstance(item, dict)]
-        if "leo" not in authors and response.get("error"):
+        if smoke_agent_id not in authors and response.get("error"):
             raise AssertionError(
-                f"live-turn did not reach leo. backend reported: {response.get('error')}. "
+                f"live-turn did not reach {smoke_agent_id}. backend reported: {response.get('error')}. "
                 "If Cockpit.app was launched from Finder, verify ~/Library/Application Support/Cockpit/.env."
             )
-        _assert("leo" in authors, f"direct target response missing leo: {authors}")
+        _assert(smoke_agent_id in authors, f"direct target response missing {smoke_agent_id}: {authors}")
         _assert(response.get("status") in {"completed", "degraded"}, f"unexpected live-turn status: {response}")
+
+        status, feed = _request(f"/v1/projects/{PROJECT_ID}/pixel-feed")
+        _assert(status == 200, f"pixel-feed returned {status}: {feed}")
+        agents = feed.get("agents") or []
+        _assert(isinstance(agents, list), f"invalid pixel-feed agents: {feed}")
+        returned_ids = {str(item.get("agent_id") or "") for item in agents if isinstance(item, dict)}
+        _assert(
+            returned_ids.isdisjoint(LEGACY_AGENT_IDS),
+            f"legacy ghost agents still visible: {sorted(returned_ids & LEGACY_AGENT_IDS)}",
+        )
+        smoke_row = next(
+            (item for item in agents if isinstance(item, dict) and item.get("agent_id") == smoke_agent_id),
+            None,
+        )
+        _assert(isinstance(smoke_row, dict), f"{smoke_agent_id} missing from pixel-feed")
+        _assert(
+            isinstance(smoke_row.get("chat_targetable"), bool),
+            f"chat_targetable missing on smoke row: {smoke_row}",
+        )
+        _assert(bool(smoke_row.get("chat_targetable")) is True, f"{smoke_agent_id} should be chat_targetable: {smoke_row}")
     finally:
         status, task_state_after = _request(f"/v1/projects/{PROJECT_ID}/tasks")
         if status == 200:
@@ -110,17 +161,7 @@ def main() -> int:
                 task_path = str(item.get("path") or "")
                 if task_id and task_id not in before_ids and task_path:
                     Path(task_path).unlink(missing_ok=True)
-
-    status, feed = _request(f"/v1/projects/{PROJECT_ID}/pixel-feed")
-    _assert(status == 200, f"pixel-feed returned {status}: {feed}")
-    agents = feed.get("agents") or []
-    _assert(isinstance(agents, list), f"invalid pixel-feed agents: {feed}")
-    returned_ids = {str(item.get("agent_id") or "") for item in agents if isinstance(item, dict)}
-    _assert(returned_ids.isdisjoint(LEGACY_AGENT_IDS), f"legacy ghost agents still visible: {sorted(returned_ids & LEGACY_AGENT_IDS)}")
-    leo_row = next((item for item in agents if isinstance(item, dict) and item.get("agent_id") == "leo"), None)
-    _assert(isinstance(leo_row, dict), "leo missing from pixel-feed")
-    _assert(isinstance(leo_row.get("chat_targetable"), bool), f"chat_targetable missing on leo row: {leo_row}")
-    _assert(bool(leo_row.get("chat_targetable")) is True, f"leo should be chat_targetable: {leo_row}")
+        _delete_agent_if_present(smoke_agent_id)
 
     _verify_websocket_ready()
     print("OK: cockpit next chat runtime verified")

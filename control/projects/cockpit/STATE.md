@@ -26,7 +26,7 @@
 - Wave19 Wizard Live is available (`#wizard-live start|run|stop`) with session mode and one headless bundled run per operator turn.
 - Wizard Live auto-kickoff is enabled after `New Project` and after takeover success (no popup).
 - Auto-send toggle is opt-in in Auto-mode panel (paste+enter via AppleScript; permissions may be required).
-- Primary operator app icon switched to single-icon release target (`/Applications/Centre de controle.app`).
+- Primary operator app icon is locked to `/Applications/Cockpit.app`.
 - Cloud API-first foundation scaffolded (`server/`) for Desktop + Android parity, with RBAC/JWT, REST contracts, WS event envelope, and wizard-live endpoints.
 - Telegram/WhatsApp are explicitly excluded from the V1 execution scope.
 - Wave21 endpoints are live for model routing and agentic runtime (`/llm-profile`, `/chat/agentic-turn`, `/voice/transcribe`, `/pixel-feed`).
@@ -62,7 +62,7 @@
 - stale recency warnings drift back if pulse cadence is not respected.
 - dual-root settings drift (repo vs AppSupport) can create dispatch confusion.
 - credits can burn too quickly if specialist fanout is reopened too early.
-- release can regress if non-active docs/reports absolute paths are mistaken for runtime defects during final scan.
+- release can regress if archived Drive paths are mistaken for live runtime defects during final scan.
 
 ## Gates
 - pending_stale_gt24h == 0
@@ -75,22 +75,22 @@
 - tournament_auto_dispatch == false
 
 ## Links
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE17_RUNTIME_CHECKPOINT_2026-02-27T0539Z.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE17_RUNTIME_CHECKPOINT_2026-02-27T0539Z.md
 - /Users/oliviercloutier/Desktop/Cockpit/docs/TAKEOVER_WIZARD.md
 - /Users/oliviercloutier/Desktop/Cockpit/docs/WIZARD_LIVE.md
 - /Users/oliviercloutier/Desktop/Cockpit/docs/OPENROUTER_SETUP.md
 - /Users/oliviercloutier/Desktop/Cockpit/docs/PIXEL_VIEW.md
 - /Users/oliviercloutier/Desktop/Cockpit/docs/CLOUD_API_PROTOCOL.md
 - /Users/oliviercloutier/Desktop/Cockpit/android/README.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE13_CP0015_CP0042_CLOSEOUT_2026-02-23T0909Z.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE14_VICTOR_LANE_LOCK_2026-02-23T1026Z.md
-- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE14_CP0050_MEMORY_RETENTION_2026-02-23.md
-- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/cp01-ui-qa/WAVE14_UI_EVIDENCE_MAPPING.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE15_CLOSEOUT_RECEIPT_2026-02-23.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE15_OPERATOR_RECENCE_RUNBOOK_2026-02-23.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE13_CP0015_CP0042_CLOSEOUT_2026-02-23T0909Z.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE14_VICTOR_LANE_LOCK_2026-02-23T1026Z.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE14_CP0050_MEMORY_RETENTION_2026-02-23.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE14_UI_EVIDENCE_MAPPING_2026-02-23.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE15_CLOSEOUT_RECEIPT_2026-02-23.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE15_OPERATOR_RECENCE_RUNBOOK_2026-02-23.md
 - /Users/oliviercloutier/Desktop/Cockpit/cockpit_v2_final_plan.docx
-- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE14_INPUT_FROM_COCKPIT_V2_FINAL_PLAN_2026-02-23.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE14_DISPATCH_2026-02-23.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE14_INPUT_FROM_COCKPIT_V2_FINAL_PLAN_2026-02-23.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/V2_WAVE14_DISPATCH_2026-02-23.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0048-wave14-startup-pack-existing-repo-onboarding.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0049-wave14-mission-critical-commit-gate.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0050-wave14-memory-retention-policy.md
@@ -105,12 +105,12 @@
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0058-wave16-credit-guard-dispatch-policy.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0059-wave16-dual-root-recence-ops-cadence.md
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0060-wave16-nova-retention-operator-digest.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_BACKEND_ONBOARDING_RECENCY_2026-02-23T1318Z.md
-- /Users/oliviercloutier/Desktop/Cockpit/docs/reports/WAVE16_RETENTION_VISIBILITY_ADVISORY_2026-02-23.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_OPERATOR_RECENCY_RUNBOOK_2026-02-24.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WAVE16_PUSH_RECEIPT_2026-02-24.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/WEB_REPUBLISH_WAVE16_2026-02-24.md
-- /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/runs/V2_WAVE16_DISPATCH_CREDIT_GUARD_2026-02-24.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE16_BACKEND_ONBOARDING_RECENCY_2026-02-23T1318Z.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE16_RETENTION_VISIBILITY_ADVISORY_2026-02-23.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE16_OPERATOR_RECENCY_RUNBOOK_2026-02-24.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WAVE16_PUSH_RECEIPT_2026-02-24.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WEB_REPUBLISH_WAVE16_2026-02-24.md
+- /Users/oliviercloutier/Desktop/Cockpit/docs/releases/V2_WAVE16_DISPATCH_CREDIT_GUARD_2026-02-24.md
 - /Users/oliviercloutier/Desktop/Cockpit/scripts/packaging/install_release_app.sh
 - /Users/oliviercloutier/Desktop/Cockpit/docs/PACKAGING.md
 - /Users/oliviercloutier/Desktop/Cockpit/docs/RUNBOOK.md

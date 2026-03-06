@@ -24,7 +24,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$APP_PATH" || -z "$DRIVE_ROOT" ]]; then
-  echo "Usage: $0 --app \"/path/Centre de controle.app\" --drive-root \"/path/Google Drive/.../Cockpit/releases\"" >&2
+  echo "Usage: $0 --app \"/path/Cockpit.app\" --drive-root \"/path/Google Drive/.../Cockpit/releases\"" >&2
   exit 1
 fi
 
