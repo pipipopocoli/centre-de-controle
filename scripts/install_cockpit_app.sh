@@ -5,6 +5,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUNDLE_ROOT="$ROOT/apps/cockpit-desktop/src-tauri/target/release/bundle"
 INSTALL_DIR="${1:-/Applications}"
 CORE_BIN="$ROOT/crates/cockpit-core/target/release/cockpit-core"
+BUILD_SHA="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 if [[ ! -d "$BUNDLE_ROOT" ]]; then
   echo "[cockpit] bundle folder not found: $BUNDLE_ROOT" >&2
@@ -30,7 +32,13 @@ fi
 cp -R "$APP_PATH" "$DEST_PATH"
 
 echo "[cockpit] building cockpit-core release binary"
-(cd "$ROOT/crates/cockpit-core" && cargo build --release)
+(
+  cd "$ROOT/crates/cockpit-core"
+  COCKPIT_BUILD_SHA="$BUILD_SHA" \
+  COCKPIT_BUILD_TIME="$BUILD_TIME" \
+  COCKPIT_APP_MODE="cockpit_local" \
+  cargo build --release
+)
 
 cp "$CORE_BIN" "$DEST_PATH/Contents/MacOS/cockpit-core"
 chmod +x "$DEST_PATH/Contents/MacOS/cockpit-core"
@@ -38,4 +46,5 @@ chmod +x "$DEST_PATH/Contents/MacOS/cockpit-core"
 echo "[cockpit] installed: $DEST_PATH"
 echo "[cockpit] source:    $APP_PATH"
 echo "[cockpit] backend:   $DEST_PATH/Contents/MacOS/cockpit-core"
+echo "[cockpit] build sha: $BUILD_SHA"
 echo "[cockpit] launch:    open \"$DEST_PATH\""

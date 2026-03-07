@@ -236,7 +236,7 @@ function isUnavailableModel(modelId: string): boolean {
   return modelLabel(modelId).endsWith('(unavailable)')
 }
 
-function leadRoomAgentIdsFromRecords(agentRecords: AgentRecord[]): string[] {
+function roomLeadAgentIdsFromRecords(agentRecords: AgentRecord[]): string[] {
   return agentRecords
     .filter((agent) => agent.agent_id !== 'clems' && agent.level === 1)
     .map((agent) => agent.agent_id)
@@ -378,6 +378,7 @@ function App() {
   const [projectSettings, setProjectSettings] = useState<ProjectSettings | null>(null)
   const [projectCatalog, setProjectCatalog] = useState<ProjectCatalogEntry[]>([])
   const [projectCatalogLoading, setProjectCatalogLoading] = useState(false)
+  const [selectedProjectDocId, setSelectedProjectDocId] = useState(ACTIVE_PROJECT_ID)
   const [linkedRepoDraft, setLinkedRepoDraft] = useState('')
   const [projectRoadmap, setProjectRoadmap] = useState<RoadmapResponse | null>(null)
   const [takeoverResult, setTakeoverResult] = useState<TakeoverStartResponse | null>(null)
@@ -1176,8 +1177,8 @@ function App() {
     setApiError(null)
     setUiNotice(null)
     try {
-      setRoomParticipantMode('lead_only')
-      const kickoffParticipants = leadRoomAgentIdsFromRecords(agentRecords)
+      setRoomParticipantMode('all_active')
+      const kickoffParticipants = roomLeadAgentIdsFromRecords(agentRecords)
       const response = await startTakeover(projectId, {
         linked_repo_path: linkedRepoDraft.trim() || undefined,
       })
@@ -1192,7 +1193,7 @@ function App() {
       setActiveTab('concierge_room')
       roomStickToBottomRef.current = true
       const takeoverRoomContext = {
-        room_participant_mode: 'lead_only',
+        room_participant_mode: 'all_active',
         room_participants: kickoffParticipants,
         room_participant_count: kickoffParticipants.length,
         coordinator: 'clems',
@@ -1305,14 +1306,14 @@ function App() {
     ].join('\n')
 
     setActiveTab('concierge_room')
-    setRoomParticipantMode('lead_only')
+    setRoomParticipantMode('all_active')
     setApiError(null)
     setUiNotice(null)
     setIsSendingChat(true)
     try {
-      const kickoffParticipants = leadRoomAgentIdsFromRecords(agentRecords)
+      const kickoffParticipants = roomLeadAgentIdsFromRecords(agentRecords)
       const roomContext = {
-        room_participant_mode: 'lead_only',
+        room_participant_mode: 'all_active',
         room_participants: kickoffParticipants,
         room_participant_count: kickoffParticipants.length,
         coordinator: 'clems',
@@ -1549,6 +1550,22 @@ function App() {
     [internalConciergeMessages],
   )
 
+  const latestDirectReply = useMemo(
+    () =>
+      [...directChatMessages]
+        .reverse()
+        .find((message) => message.author !== 'operator') ?? null,
+    [directChatMessages],
+  )
+
+  const latestConciergeReply = useMemo(
+    () =>
+      [...conciergeChatMessages]
+        .reverse()
+        .find((message) => message.author !== 'operator') ?? null,
+    [conciergeChatMessages],
+  )
+
   const roomCandidateAgents = useMemo(
     () => rosterAgents.filter((agent) => agent.agent_id === 'clems' || (agent.level === 1 && agent.chat_targetable)),
     [rosterAgents],
@@ -1623,6 +1640,19 @@ function App() {
     }
     setProjectId(ACTIVE_PROJECT_ID)
   }, [projectId])
+
+  useEffect(() => {
+    if (projectCatalog.length === 0) {
+      if (selectedProjectDocId !== ACTIVE_PROJECT_ID) {
+        setSelectedProjectDocId(ACTIVE_PROJECT_ID)
+      }
+      return
+    }
+    if (projectCatalog.some((project) => project.project_id === selectedProjectDocId)) {
+      return
+    }
+    setSelectedProjectDocId(ACTIVE_PROJECT_ID)
+  }, [projectCatalog, selectedProjectDocId])
 
   useEffect(() => {
     const valid = new Set(roomCandidateAgents.map((agent) => agent.agent_id))
@@ -1951,6 +1981,10 @@ function App() {
         ? `@${selectedAgent.agent_id}`
         : '@clems'
       : '@clems'
+  const directTargetBadge =
+    directTarget === 'selected_agent' && selectedAgent && selectedAgentChatReady
+      ? `Selected agent ${directTargetLabel}`
+      : 'Clems default'
   const directTargetNotice =
     directTarget === 'selected_agent'
       ? selectedAgent && selectedAgentChatReady
@@ -1977,6 +2011,9 @@ function App() {
       projectSummary?.phase,
     ],
   )
+  const visibleProjectCards = projectCatalog.length > 0 ? projectCatalog : [activeProjectCard]
+  const selectedProjectCard =
+    visibleProjectCards.find((project) => project.project_id === selectedProjectDocId) ?? activeProjectCard
 
   const topTabs = useMemo(
     () => [
@@ -2327,7 +2364,7 @@ function App() {
                 <h3>Board room</h3>
                 <div className="chat-actions">
                   <span className={`chat-status ${composerStatus}`}>{composerLabel}</span>
-                  <span className="chat-target">room fanout via @clems</span>
+                  <span className="chat-target">visible answer via @clems</span>
                 </div>
               </div>
               {takeoverResult ? (
@@ -2389,6 +2426,13 @@ function App() {
                   Use Le Conseil to coordinate the active leads. Clems stays accountable for the visible room answer.
                 </p>
               </div>
+              {latestConciergeReply ? (
+                <div className="latest-reply-banner">
+                  <span className="latest-reply-label">Latest visible reply</span>
+                  <strong>@{latestConciergeReply.author}</strong>
+                  <p>{latestConciergeReply.text}</p>
+                </div>
+              ) : null}
               <div className="mode-row concierge-controls">
                 <div className="mode-pill-row">
                   <span className="mode-pill active">Le Conseil</span>
@@ -2459,8 +2503,8 @@ function App() {
                   ))
                 )}
               </div>
-              <div className="composer-stack">
-                <div className="composer-row">
+                <div className="composer-stack">
+                <div className="composer-row composer-row-room">
                   <div className="plus-wrap">
                     <button className="plus-btn" type="button" onClick={() => setShowRoomAddMenu((value) => !value)}>
                       +
@@ -2485,8 +2529,6 @@ function App() {
                     }}
                     placeholder="Ask @clems to coordinate the board room."
                   />
-                </div>
-                <div className="composer-actions-row">
                   <button
                     className={`small-btn voice-btn ${isRecordingVoice ? 'recording' : ''}`}
                     onClick={() => void handleToggleVoiceRecording()}
@@ -2509,7 +2551,7 @@ function App() {
                 </div>
               </div>
             </section>
-            <aside className="concierge-side-stack">
+            <div className="concierge-support-grid">
               <section className="secondary-card concierge-side-card participant-filter-card">
                 <div className="section-title-row compact">
                   <h3>Participants</h3>
@@ -2632,7 +2674,7 @@ function App() {
                   {visibleInternalConciergeMessages.length === 0 ? <p>No internal room traces yet.</p> : null}
                 </div>
               </section>
-            </aside>
+            </div>
           </div>
         </section>
       )
@@ -3275,19 +3317,22 @@ function App() {
             <div className="project-docs-layout">
               <section className="secondary-card">
                 <div className="section-title-row compact">
-                  <h3>Current project</h3>
-                  <span className="hint">{projectCatalogLoading ? 'loading...' : 'single active project'}</span>
+                  <h3>Projects</h3>
+                  <span className="hint">{projectCatalogLoading ? 'loading...' : 'click Cockpit to inspect the active project'}</span>
                 </div>
                 <div className="project-catalog-list">
-                  <button
-                    type="button"
-                    className="project-catalog-item active"
-                    onClick={() => setDocsPanel('project')}
-                  >
-                    <strong>{projectLabel(activeProjectCard.project_id, activeProjectCard.project_name)}</strong>
-                    <span>@{activeProjectCard.project_id}</span>
-                    <p>{activeProjectCard.phase} - {activeProjectCard.objective}</p>
-                  </button>
+                  {visibleProjectCards.map((project) => (
+                    <button
+                      key={project.project_id}
+                      type="button"
+                      className={`project-catalog-item ${selectedProjectCard.project_id === project.project_id ? 'active' : ''}`}
+                      onClick={() => setSelectedProjectDocId(project.project_id)}
+                    >
+                      <strong>{projectLabel(project.project_id, project.project_name)}</strong>
+                      <span>@{project.project_id}</span>
+                      <p>{project.phase} - {project.objective}</p>
+                    </button>
+                  ))}
                 </div>
               </section>
               <section className="secondary-card">
@@ -3295,19 +3340,19 @@ function App() {
                 <ul className="data-list">
                   <li>
                     <span>Project</span>
-                    <strong>{currentProjectLabel}</strong>
+                    <strong>{projectLabel(selectedProjectCard.project_id, selectedProjectCard.project_name)}</strong>
                   </li>
                   <li>
                     <span>Linked repo</span>
-                    <strong>{linkedRepoLabel}</strong>
+                    <strong>{selectedProjectCard.linked_repo_path || linkedRepoLabel}</strong>
                   </li>
                   <li>
                     <span>Phase</span>
-                    <strong>{projectPhase}</strong>
+                    <strong>{selectedProjectCard.phase || projectPhase}</strong>
                   </li>
                   <li>
                     <span>Objective</span>
-                    <strong>{projectObjective}</strong>
+                    <strong>{selectedProjectCard.objective || projectObjective}</strong>
                   </li>
                   <li>
                     <span>Monthly cost</span>
@@ -3824,9 +3869,12 @@ function App() {
                               </button>
                             </div>
                           </div>
-                          <div className="direct-chat-toolbar">
+                        <div className="chat-target-strip">
+                          <div className="direct-chat-toolbar-group">
+                            <span className="mode-pill active">Direct</span>
+                            <span className="mode-pill">{directTargetBadge}</span>
+                          </div>
                             <div className="direct-chat-toolbar-group">
-                              <span className="mode-pill active">Direct</span>
                               <button
                                 className={`target-btn ${directTarget === 'clems' ? 'active' : ''}`}
                                 onClick={() => setDirectTarget('clems')}
@@ -3842,8 +3890,7 @@ function App() {
                               </button>
                             </div>
                             <div className="direct-chat-toolbar-group">
-                              <span className="mode-pill">chat lane</span>
-                              <span className="mode-pill">{selectedAgent ? `selected @${selectedAgent.agent_id}` : 'selected none'}</span>
+                              <span className="hint">latest {Math.min(directVisibleCount, directChatMessages.length || directVisibleCount)}</span>
                               {directChatMessages.length > 8 ? (
                                 <>
                                   <button
@@ -3864,7 +3911,14 @@ function App() {
                               ) : null}
                             </div>
                           </div>
-                          {directTargetNotice ? <p className="chat-target-detail compact direct-chat-notice">{directTargetNotice}</p> : null}
+                          <div className="chat-target-summary">
+                            {selectedAgent ? (
+                              <p className="chat-target-detail compact">
+                                Selected @{selectedAgent.agent_id} - {selectedAgent.scene_present ? 'on scene' : 'off scene'} - {selectedAgent.current_task || 'no active task'}
+                              </p>
+                            ) : null}
+                            {directTargetNotice ? <p className="chat-target-detail compact direct-chat-notice">{directTargetNotice}</p> : null}
+                          </div>
                         </div>
 
                         <div
@@ -3895,9 +3949,16 @@ function App() {
                             ))
                           )}
                         </div>
+                        {latestDirectReply ? (
+                          <div className="latest-reply-banner compact">
+                            <span className="latest-reply-label">Latest reply</span>
+                            <strong>@{latestDirectReply.author}</strong>
+                            <p>{latestDirectReply.text}</p>
+                          </div>
+                        ) : null}
 
-                        <div className="composer-stack">
-                          <div className="composer-row">
+                        <div className="composer-stack direct-composer-stack">
+                          <div className="composer-row composer-row-inline">
                             <input
                               value={directChatInput}
                               onChange={(event) => setDirectChatInput(event.target.value)}
@@ -3915,8 +3976,6 @@ function App() {
                                   : 'Talk to @clems directly.'
                               }
                             />
-                          </div>
-                          <div className="composer-actions-row">
                             <button
                               className={`small-btn voice-btn ${isRecordingVoice ? 'recording' : ''}`}
                               onClick={() => void handleToggleVoiceRecording()}

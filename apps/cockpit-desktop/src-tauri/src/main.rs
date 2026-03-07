@@ -322,6 +322,7 @@ fn pick_project_folder() -> Option<String> {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|_app| {
             if let Err(error) = ensure_backend_process() {
                 eprintln!("[cockpit] backend startup warning: {error}");

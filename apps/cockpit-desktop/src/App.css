@@ -851,27 +851,15 @@
 .events-section {
   min-height: 0;
   height: 100%;
-  display: grid;
-  gap: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   border: 1px solid var(--line);
   background: rgba(250, 253, 255, 0.95);
-  padding: 5px;
+  padding: 8px;
   border-radius: var(--radius-md);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
   overflow: hidden;
-}
-
-.chat-section {
-  grid-template-rows: auto minmax(0, 1fr) auto;
-}
-
-.terminal-section {
-  grid-template-rows: auto minmax(0, 1fr) auto;
-}
-
-.approvals-section,
-.events-section {
-  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .chat-status {
@@ -982,7 +970,8 @@
 
 .chat-head-block {
   display: grid;
-  gap: 4px;
+  gap: 6px;
+  flex: 0 0 auto;
   min-height: 0;
 }
 
@@ -994,11 +983,24 @@
   align-items: center;
 }
 
+.chat-target-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
 .direct-chat-toolbar-group {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
+}
+
+.chat-target-summary {
+  display: grid;
+  gap: 2px;
 }
 
 .chat-target-actions {
@@ -1039,24 +1041,24 @@
 .concierge-layout {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   align-items: start;
 }
 
-.concierge-side-stack {
+.concierge-support-grid {
   min-height: 0;
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   align-content: start;
 }
 
 .concierge-chat-card {
   min-height: 0;
-  height: 100%;
-  display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   overflow: hidden;
 }
 
@@ -1174,6 +1176,7 @@
 
 .concierge-log {
   min-height: 0;
+  flex: 1 1 auto;
 }
 
 .target-btn {
@@ -1197,7 +1200,7 @@
 
 .chat-log {
   min-height: 0;
-  max-height: 100%;
+  flex: 1 1 auto;
   overflow: auto;
   border: 1px solid var(--line);
   background: rgba(244, 249, 254, 0.98);
@@ -1301,6 +1304,7 @@
   display: grid;
   gap: 5px;
   align-content: start;
+  flex: 0 0 auto;
 }
 
 .composer-row {
@@ -1308,6 +1312,49 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   align-items: center;
+}
+
+.composer-row-inline {
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+}
+
+.composer-row-room {
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+}
+
+.latest-reply-banner {
+  border: 1px solid rgba(89, 157, 122, 0.4);
+  background: linear-gradient(180deg, rgba(243, 251, 246, 0.99), rgba(235, 247, 240, 0.99));
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  display: grid;
+  gap: 3px;
+  flex: 0 0 auto;
+}
+
+.latest-reply-banner.compact {
+  margin-top: 2px;
+}
+
+.latest-reply-banner strong,
+.latest-reply-banner p {
+  margin: 0;
+}
+
+.latest-reply-banner p {
+  font-size: 12px;
+  line-height: 1.35;
+  color: #36556d;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.latest-reply-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #3f6b57;
 }
 
 .inline-picker-row {
@@ -2164,6 +2211,10 @@
     grid-template-columns: 1fr;
   }
 
+  .concierge-support-grid {
+    grid-template-columns: 1fr;
+  }
+
   .todo-board {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2251,6 +2302,11 @@
   }
 
   .composer-row {
+    grid-template-columns: 1fr;
+  }
+
+  .composer-row-inline,
+  .composer-row-room {
     grid-template-columns: 1fr;
   }
 
