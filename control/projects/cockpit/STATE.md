@@ -1,30 +1,31 @@
 # State
 
 ## Phase
-- Review
+- Implement
 
 ## Objective
 - Stabilize the current Cockpit shell around the live `cockpit` project only.
 
 ## Now
-- CP-0061 is closed: Pixel Home direct chat is isolated, compact, and visible.
-- CP-0062 is closed: Le Conseil renders room traffic cleanly and keeps `@clems` visible.
+- CP-0061 is back in flight: remove the extra latest reply surface and finish direct chat visibility in Pixel Home.
+- CP-0062 is back in flight: remove the room reply banner and keep fallback diagnostics out of Le Conseil.
 - `demo` is out of the active runtime and project catalog. `cockpit` is the only live project flow.
 
 ## Next
-- Run operator QA in the installed app on real takeover flow.
-- Validate native folder picker from `Overview` on a real repo path.
-- Confirm `Pixel Home`, `Le Conseil`, and `Docs > Project` with fresh screenshots before the next feature wave.
+- Rebuild and reinstall Cockpit with the CP-0061 / CP-0062 UI-state fixes.
+- Run direct and room chat QA in the installed app.
+- Re-close the issues only after manual UI verification.
 
 ## In Progress
-- none
+- ISSUE-CP-0061 - Pixel Home direct chat + shell ownership
+- ISSUE-CP-0062 - Le Conseil room visibility + message window
 
 ## Blockers
 - none
 
 ## Risks
+- fallback warnings can still look broken if they surface in the main chat when a visible reply exists.
 - operator QA is still needed on the installed app after the latest rebuild.
-- room visibility can regress if direct and room message pools get mixed again.
 
 ## Links
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0061-fix-z-index-overlay-chat-pixel-home.md

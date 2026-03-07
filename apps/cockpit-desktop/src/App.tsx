@@ -73,6 +73,12 @@ type DirectTargetMode = 'clems' | 'selected_agent'
 type WorkbenchPanel = 'chat' | 'terminal' | 'approvals' | 'events'
 type DocsPanel = 'runbook' | 'skills_library' | 'project'
 type RoomParticipantMode = 'all_active' | 'lead_only' | 'custom'
+type FallbackDiagnostic = {
+  id: string
+  timestamp: string
+  chatMode: ChatMode
+  error: string
+}
 
 type RosterAgentView = {
   agent_id: string
@@ -357,6 +363,7 @@ function App() {
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([])
   const [approvalBusy, setApprovalBusy] = useState<Record<string, boolean>>({})
   const [uiNotice, setUiNotice] = useState<string | null>(null)
+  const [fallbackDiagnostics, setFallbackDiagnostics] = useState<FallbackDiagnostic[]>([])
   const [zoom, setZoom] = useState(2)
   const [workbenchCollapsed, setWorkbenchCollapsed] = useState(false)
   const [workbenchPanel, setWorkbenchPanel] = useState<WorkbenchPanel>('chat')
@@ -1550,22 +1557,6 @@ function App() {
     [internalConciergeMessages],
   )
 
-  const latestDirectReply = useMemo(
-    () =>
-      [...directChatMessages]
-        .reverse()
-        .find((message) => message.author !== 'operator') ?? null,
-    [directChatMessages],
-  )
-
-  const latestConciergeReply = useMemo(
-    () =>
-      [...conciergeChatMessages]
-        .reverse()
-        .find((message) => message.author !== 'operator') ?? null,
-    [conciergeChatMessages],
-  )
-
   const roomCandidateAgents = useMemo(
     () => rosterAgents.filter((agent) => agent.agent_id === 'clems' || (agent.level === 1 && agent.chat_targetable)),
     [rosterAgents],
@@ -1741,7 +1732,26 @@ function App() {
       }
 
       if (response.error) {
-        setUiNotice(`degraded mode: ${response.error}`)
+        const hasVisibleReply = response.messages.some(
+          (message) =>
+            message.visibility !== 'internal' &&
+            message.author !== 'operator' &&
+            messageChatMode(message) === chatMode,
+        )
+
+        if (response.error === 'some_llm_calls_failed_using_fallback' && hasVisibleReply) {
+          setFallbackDiagnostics((previous) => [
+            {
+              id: `${Date.now()}-${chatMode}`,
+              timestamp: new Date().toISOString(),
+              chatMode,
+              error: response.error ?? 'some_llm_calls_failed_using_fallback',
+            },
+            ...previous,
+          ].slice(0, 12))
+        } else {
+          setUiNotice(`degraded mode: ${response.error}`)
+        }
       }
 
       if (!wsConnectedRef.current || response.delivery_mode !== 'ws') {
@@ -2426,13 +2436,6 @@ function App() {
                   Use Le Conseil to coordinate the active leads. Clems stays accountable for the visible room answer.
                 </p>
               </div>
-              {latestConciergeReply ? (
-                <div className="latest-reply-banner">
-                  <span className="latest-reply-label">Latest visible reply</span>
-                  <strong>@{latestConciergeReply.author}</strong>
-                  <p>{latestConciergeReply.text}</p>
-                </div>
-              ) : null}
               <div className="mode-row concierge-controls">
                 <div className="mode-pill-row">
                   <span className="mode-pill active">Le Conseil</span>
@@ -2723,6 +2726,11 @@ function App() {
             <section className="secondary-card">
               <h3>Latest internal + events</h3>
               <div className="events-log">
+                {fallbackDiagnostics.slice(0, 6).map((diagnostic) => (
+                  <p key={diagnostic.id}>
+                    <strong>fallback</strong> [{diagnostic.chatMode}] {diagnostic.error} - {new Date(diagnostic.timestamp).toLocaleTimeString()}
+                  </p>
+                ))}
                 {latestInternal.slice(0, 6).map((message) => (
                   <p key={message.message_id}>
                     <strong>@{message.author}</strong> [{message.visibility}] {message.text}
@@ -2733,7 +2741,7 @@ function App() {
                     <strong>{event.type}</strong> {new Date(event.timestamp).toLocaleTimeString()}
                   </p>
                 ))}
-                {latestInternal.length === 0 && latestEvents.length === 0 ? <p>No diagnostics yet.</p> : null}
+                {fallbackDiagnostics.length === 0 && latestInternal.length === 0 && latestEvents.length === 0 ? <p>No diagnostics yet.</p> : null}
               </div>
             </section>
           </div>
@@ -3949,14 +3957,6 @@ function App() {
                             ))
                           )}
                         </div>
-                        {latestDirectReply ? (
-                          <div className="latest-reply-banner compact">
-                            <span className="latest-reply-label">Latest reply</span>
-                            <strong>@{latestDirectReply.author}</strong>
-                            <p>{latestDirectReply.text}</p>
-                          </div>
-                        ) : null}
-
                         <div className="composer-stack direct-composer-stack">
                           <div className="composer-row composer-row-inline">
                             <input

@@ -2,25 +2,18 @@
 
 - Owner: leo
 - Phase: Implement
-- Status: Done
+- Status: In Progress
 - Source: ai_auto
 
 ## Objective
 - Restore a usable Pixel Home shell where the agent roster scrolls, the scene stays bounded, and direct chat with @clems is always visible and operable.
 
 ## Done (Definition)
-- [x] Pixel Home has one scroll owner for the roster and one scroll owner for the active right-side panel.
-- [x] Direct chat renders only direct messages, never room messages.
-- [x] The direct composer stays visible at all times.
-- [x] Sending a direct message to @clems yields a visible reply in Pixel Home.
-- [x] Agent cards show runtime status, current task, skills, and scene presence without clipping.
-
-## Verification
-- `npm --prefix /Users/oliviercloutier/Desktop/Cockpit/apps/cockpit-desktop run lint`
-- `npm --prefix /Users/oliviercloutier/Desktop/Cockpit/apps/cockpit-desktop run build`
-- `npm --prefix /Users/oliviercloutier/Desktop/Cockpit/apps/cockpit-desktop run tauri:build`
-- `curl http://127.0.0.1:8787/healthz`
-- `POST /v1/projects/cockpit/chat/live-turn` in `direct` returns a visible `@clems` reply
+- [ ] Pixel Home has one scroll owner for the roster and one scroll owner for the active right-side panel.
+- [ ] Direct chat renders only direct messages, never room messages.
+- [ ] The direct composer stays visible at all times.
+- [ ] Sending a direct message to @clems yields a visible reply in Pixel Home.
+- [ ] Agent cards show runtime status, current task, skills, and scene presence without clipping.
 
 ## Links
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0063-correction-overlay-bloquant-pixel-home.md (superseded)
