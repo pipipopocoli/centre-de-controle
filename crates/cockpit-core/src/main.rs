@@ -17,8 +17,11 @@ async fn main() -> anyhow::Result<()> {
         .map(PathBuf::from)
         .unwrap_or_else(|_| default_control_root());
 
-    let host = env::var("COCKPIT_NEXT_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let port: u16 = env::var("COCKPIT_NEXT_PORT")
+    let host = env::var("COCKPIT_HOST")
+        .or_else(|_| env::var("COCKPIT_NEXT_HOST"))
+        .unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port: u16 = env::var("COCKPIT_PORT")
+        .or_else(|_| env::var("COCKPIT_NEXT_PORT"))
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or(8787);

@@ -12,7 +12,7 @@ from app.data.paths import PROJECTS_DIR, project_dir
 
 
 DEFAULT_ROADMAP = {
-    "now": ["Bootstrap Centre de controle UI"],
+    "now": ["Bootstrap Cockpit UI"],
     "next": ["Wire local data store"],
     "risks": ["Runtime protocol changes"],
 }
@@ -204,11 +204,11 @@ def ensure_project_structure(project_id: str, project_name: str | None = None) -
 
     _write_text_if_missing(
         roadmap_yml,
-        """now:\n  - Bootstrap Centre de controle UI\nnext:\n  - Wire local data store\nrisks:\n  - Runtime protocol changes\n""",
+        """now:\n  - Bootstrap Cockpit UI\nnext:\n  - Wire local data store\nrisks:\n  - Runtime protocol changes\n""",
     )
     _write_text_if_missing(
         roadmap_md,
-        "# Roadmap\n\n## Now\n- Bootstrap Centre de controle UI\n\n## Next\n- Wire local data store\n\n## Risks\n- Runtime protocol changes\n",
+        "# Roadmap\n\n## Now\n- Bootstrap Cockpit UI\n\n## Next\n- Wire local data store\n\n## Risks\n- Runtime protocol changes\n",
     )
     _write_text_if_missing(
         state_md,

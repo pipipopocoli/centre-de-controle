@@ -3,9 +3,9 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TARGET_DIR="${1:-$HOME/Applications}"
-APP_NAME="Centre de controle - Dev Live.app"
+APP_NAME="Cockpit - Dev Live.app"
 APP_PATH="$TARGET_DIR/$APP_NAME"
-CMD_PATH="$TARGET_DIR/Centre de controle - Dev Live.command"
+CMD_PATH="$TARGET_DIR/Cockpit - Dev Live.command"
 LOG_PATH="/tmp/cockpit_dev_live.log"
 
 mkdir -p "$TARGET_DIR"
@@ -27,7 +27,7 @@ OSA
   rm -f "$TMP_SCRIPT"
 
   echo "OK: created app launcher: $APP_PATH"
-  echo "Tip: drag this app to Dock and remove old Centre de controle icon."
+  echo "Tip: drag this app to Dock and remove old legacy icons."
 else
   cat >"$CMD_PATH" <<EOF
 #!/usr/bin/env bash

@@ -164,7 +164,7 @@ def main() -> int:
         _delete_agent_if_present(smoke_agent_id)
 
     _verify_websocket_ready()
-    print("OK: cockpit next chat runtime verified")
+    print("OK: cockpit chat runtime verified")
     return 0
 
 

@@ -2,20 +2,20 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUNDLE_ROOT="$ROOT/apps/cockpit-next-desktop/src-tauri/target/release/bundle"
+BUNDLE_ROOT="$ROOT/apps/cockpit-desktop/src-tauri/target/release/bundle"
 INSTALL_DIR="${1:-/Applications}"
 CORE_BIN="$ROOT/crates/cockpit-core/target/release/cockpit-core"
 
 if [[ ! -d "$BUNDLE_ROOT" ]]; then
   echo "[cockpit] bundle folder not found: $BUNDLE_ROOT" >&2
-  echo "[cockpit] build first: cd apps/cockpit-next-desktop && npm run tauri:build" >&2
+  echo "[cockpit] build first: cd apps/cockpit-desktop && npm run tauri:build" >&2
   exit 1
 fi
 
 APP_PATH="$(find "$BUNDLE_ROOT" -maxdepth 4 -type d -name 'Cockpit.app' | head -n 1 || true)"
 if [[ -z "$APP_PATH" ]]; then
   echo "[cockpit] Cockpit.app not found under $BUNDLE_ROOT" >&2
-  echo "[cockpit] build first: cd apps/cockpit-next-desktop && npm run tauri:build" >&2
+  echo "[cockpit] build first: cd apps/cockpit-desktop && npm run tauri:build" >&2
   exit 1
 fi
 

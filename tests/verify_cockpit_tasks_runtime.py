@@ -78,7 +78,7 @@ def main() -> int:
         if task_path and task_path.exists():
             task_path.unlink()
 
-    print('OK: cockpit next task runtime verified')
+    print('OK: cockpit task runtime verified')
     return 0
 
 

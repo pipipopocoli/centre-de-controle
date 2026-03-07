@@ -1,17 +1,17 @@
-# Legacy Runbook - Centre de controle (archived)
+# Legacy Runbook - archived legacy shell
 
 ## Status
 
 - Archived reference only (legacy Python app path).
 - Official daily operator workflow is now Cockpit:
-  - Runbook: `docs/COCKPIT_NEXT_RUNBOOK.md`
+  - Runbook: `docs/COCKPIT_RUNBOOK.md`
   - App path: `/Applications/Cockpit.app`
   - Launch command: `open "/Applications/Cockpit.app"`
 
 ## Legacy scope note
 
 This file is kept for historical troubleshooting only.
-Do not use legacy Python packaging or `Centre de controle.app` for daily operations.
+Do not use legacy Python packaging for daily operations.
 
 ## Legacy launch (manual debug only)
 
@@ -36,4 +36,4 @@ control/projects/<project_id>/
 
 ## Legacy image reference
 
-![Centre de controle UI](images/centre-de-controle.png)
+![Legacy shell UI](images/centre-de-controle.png)

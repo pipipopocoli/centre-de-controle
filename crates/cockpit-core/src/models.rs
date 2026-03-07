@@ -504,6 +504,27 @@ pub struct LlmProfileResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectSettings {
+    pub project_id: String,
+    pub project_name: String,
+    pub linked_repo_path: Option<String>,
+    pub updated_at: String,
+    pub raw: Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectSettingsResponse {
+    pub project_id: String,
+    pub settings: ProjectSettings,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateProjectSettingsRequest {
+    pub project_name: Option<String>,
+    pub linked_repo_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateLlmProfileRequest {
     pub voice_stt_model: Option<String>,
     pub clems_model: Option<String>,
@@ -524,6 +545,33 @@ pub struct UpdateLlmProfileRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RoadmapSections {
+    #[serde(default)]
+    pub now: Vec<String>,
+    #[serde(default)]
+    pub next: Vec<String>,
+    #[serde(default)]
+    pub risks: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RoadmapResponse {
+    pub project_id: String,
+    pub sections: RoadmapSections,
+    pub raw_md: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateRoadmapRequest {
+    #[serde(default)]
+    pub now: Vec<String>,
+    #[serde(default)]
+    pub next: Vec<String>,
+    #[serde(default)]
+    pub risks: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoadmapDraftRequest {
     pub prompt: String,
     #[serde(default)]
@@ -535,4 +583,58 @@ pub struct RoadmapDraftResponse {
     pub run_id: String,
     pub draft: Value,
     pub model_usage: Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TakeoverStartRequest {
+    pub linked_repo_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TakeoverSuggestedTask {
+    pub title: String,
+    pub owner: String,
+    pub objective: String,
+    pub done_definition: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TakeoverSuggestedSkill {
+    pub skill_id: String,
+    pub owner: String,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TakeoverStartResponse {
+    pub run_id: String,
+    pub project_id: String,
+    pub linked_repo_path: Option<String>,
+    pub summary_human: String,
+    #[serde(default)]
+    pub summary_tech: Vec<String>,
+    pub roadmap_sections: RoadmapSections,
+    #[serde(default)]
+    pub suggested_tasks: Vec<TakeoverSuggestedTask>,
+    #[serde(default)]
+    pub suggested_skills: Vec<TakeoverSuggestedSkill>,
+    pub repo_findings: Value,
+    pub model_usage: Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VoiceTranscribeRequest {
+    pub audio_base64: String,
+    pub format: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VoiceTranscribeResponse {
+    pub project_id: String,
+    pub text: String,
+    pub model: String,
+    pub duration_ms: i64,
+    pub status: String,
+    pub usage: Value,
+    pub error: Option<String>,
 }

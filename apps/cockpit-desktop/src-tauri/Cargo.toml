@@ -1,5 +1,5 @@
 [package]
-name = "cockpit-next-desktop"
+name = "cockpit-desktop"
 version = "0.1.0"
 edition = "2021"
 description = "Cockpit desktop shell"

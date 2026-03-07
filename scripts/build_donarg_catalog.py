@@ -134,7 +134,7 @@ def extract_components(atlas_name: str, image_path: Path):
 
 def main():
     root = Path(__file__).resolve().parents[1]
-    donarg_dir = root / "apps" / "cockpit-next-desktop" / "public" / "local-assets" / "donarg"
+    donarg_dir = root / "apps" / "cockpit-desktop" / "public" / "local-assets" / "donarg"
     out_path = donarg_dir / "furniture-catalog.json"
 
     office1 = donarg_dir / "B-C-D-E Office 1 No Shadows.png"

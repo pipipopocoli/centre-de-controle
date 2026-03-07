@@ -2,6 +2,7 @@ use std::{
     collections::{HashMap, HashSet},
     env, fs,
     path::{Path as FsPath, PathBuf},
+    process::Command,
 };
 
 use axum::{
@@ -26,10 +27,13 @@ use crate::{
         AgentRecord, ApprovalDecisionRequest, ApprovalStatus, ChatApprovalsResponse,
         ChatHistoryResponse, ChatMessage, CreateAgentRequest, CreateAgentResponse,
         CreateTaskRequest, DeliveryMode, LiveTurnRequest, LiveTurnResponse, LlmProfileResponse,
-        MessageVisibility, PixelAgentStatus, PixelFeedResponse, RoadmapDraftRequest,
-        RoadmapDraftResponse, SkillLibraryEntry, SkillsLibraryResponse, TasksResponse,
+        MessageVisibility, PixelAgentStatus, PixelFeedResponse, ProjectSettings,
+        ProjectSettingsResponse, RoadmapDraftRequest, RoadmapDraftResponse, RoadmapResponse,
+        RoadmapSections, SkillLibraryEntry, SkillsLibraryResponse, TakeoverStartRequest,
+        TakeoverStartResponse, TakeoverSuggestedSkill, TakeoverSuggestedTask, TasksResponse,
         TerminalOpenRequest, TerminalSendRequest, TerminalSession, UpdateLlmProfileRequest,
-        UpdateTaskRequest, WsEventEnvelope,
+        UpdateProjectSettingsRequest, UpdateRoadmapRequest, UpdateTaskRequest,
+        VoiceTranscribeRequest, VoiceTranscribeResponse, WsEventEnvelope,
     },
     openrouter, orchestrator,
     state::AppState,
@@ -72,7 +76,9 @@ pub fn build_router(state: AppState) -> Router {
         .route("/v1/projects/{id}/skills/library", get(get_skills_library))
         .route("/v1/projects/{id}/tasks", get(get_tasks).post(post_task))
         .route("/v1/projects/{id}/tasks/{task_id}", axum::routing::patch(patch_task))
+        .route("/v1/projects/{id}/settings", get(get_project_settings).put(put_project_settings))
         .route("/v1/projects/{id}/layout", get(get_layout).put(put_layout))
+        .route("/v1/projects/{id}/roadmap", get(get_roadmap).put(put_roadmap))
         .route("/v1/projects/{id}/events", get(ws_events))
         .route(
             "/v1/projects/{id}/llm-profile",
@@ -82,6 +88,8 @@ pub fn build_router(state: AppState) -> Router {
             "/v1/projects/{id}/roadmap/clems-draft",
             post(post_roadmap_clems_draft),
         )
+        .route("/v1/projects/{id}/takeover/start", post(post_takeover_start))
+        .route("/v1/projects/{id}/voice/transcribe", post(post_voice_transcribe))
         .layer(CorsLayer::permissive())
         .with_state(state)
 }
@@ -808,6 +816,99 @@ async fn put_layout(
     Ok(Json(json!({ "ok": true })))
 }
 
+async fn get_project_settings(
+    Path(project_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<ProjectSettingsResponse>, ApiError> {
+    let settings = storage::load_settings(state.control_root.as_ref(), &project_id)?;
+    Ok(Json(ProjectSettingsResponse {
+        project_id: project_id.clone(),
+        settings: normalize_project_settings(&project_id, settings),
+    }))
+}
+
+async fn put_project_settings(
+    Path(project_id): Path<String>,
+    State(state): State<AppState>,
+    Json(payload): Json<UpdateProjectSettingsRequest>,
+) -> Result<Json<ProjectSettingsResponse>, ApiError> {
+    let mut settings = storage::load_settings(state.control_root.as_ref(), &project_id)?;
+    let object = settings
+        .as_object_mut()
+        .ok_or_else(|| ApiError::bad_request("settings payload is not an object"))?;
+
+    if let Some(project_name) = payload.project_name {
+        object.insert("project_name".to_string(), json!(project_name.trim()));
+    }
+    if let Some(linked_repo_path) = payload.linked_repo_path {
+        object.insert(
+            "linked_repo_path".to_string(),
+            json!(linked_repo_path.trim()),
+        );
+    }
+
+    let saved = storage::save_settings(state.control_root.as_ref(), &project_id, &settings)?;
+    let normalized = normalize_project_settings(&project_id, saved);
+    state.emit_event(
+        &project_id,
+        "project.settings.updated",
+        json!({ "settings": normalized.clone() }),
+    );
+
+    Ok(Json(ProjectSettingsResponse {
+        project_id,
+        settings: normalized,
+    }))
+}
+
+async fn get_roadmap(
+    Path(project_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<RoadmapResponse>, ApiError> {
+    let sections = roadmap_sections_from_value(storage::load_roadmap_sections(
+        state.control_root.as_ref(),
+        &project_id,
+    )?);
+    let raw_md = storage::read_project_text(state.control_root.as_ref(), &project_id, "ROADMAP.md")?;
+
+    Ok(Json(RoadmapResponse {
+        project_id,
+        sections,
+        raw_md,
+    }))
+}
+
+async fn put_roadmap(
+    Path(project_id): Path<String>,
+    State(state): State<AppState>,
+    Json(payload): Json<UpdateRoadmapRequest>,
+) -> Result<Json<RoadmapResponse>, ApiError> {
+    let raw_md = storage::save_roadmap_sections(
+        state.control_root.as_ref(),
+        &project_id,
+        &payload.now,
+        &payload.next,
+        &payload.risks,
+    )?;
+    let sections = RoadmapSections {
+        now: payload.now,
+        next: payload.next,
+        risks: payload.risks,
+    };
+
+    state.emit_event(
+        &project_id,
+        "roadmap.updated",
+        json!({ "sections": sections.clone() }),
+    );
+
+    Ok(Json(RoadmapResponse {
+        project_id,
+        sections,
+        raw_md,
+    }))
+}
+
 async fn ws_events(
     Path(project_id): Path<String>,
     State(state): State<AppState>,
@@ -971,38 +1072,38 @@ fn default_agent_profile(
     agent_id: &str,
 ) -> (String, &'static str, u8, Option<String>, &'static str) {
     match agent_id {
-        "clems" => ("Clems".to_string(), "CDX", 0, None, "orchestrator"),
+        "clems" => ("Clems".to_string(), "OR", 0, None, "orchestrator"),
         "victor" => (
             "Victor".to_string(),
-            "CDX",
+            "OR",
             1,
             Some("clems".to_string()),
             "backend_lead",
         ),
         "leo" => (
             "Leo".to_string(),
-            "AG",
+            "OR",
             1,
             Some("clems".to_string()),
             "ui_lead",
         ),
         "nova" => (
             "Nova".to_string(),
-            "CDX",
+            "OR",
             1,
             Some("clems".to_string()),
             "creative_science_lead",
         ),
         "vulgarisation" => (
             "Vulgarisation".to_string(),
-            "AG",
+            "OR",
             1,
             Some("clems".to_string()),
             "vulgarisation_lead",
         ),
         _ => (
             agent_id.to_string(),
-            "CDX",
+            "OR",
             2,
             Some("victor".to_string()),
             "specialist",
@@ -1348,19 +1449,19 @@ impl IntoResponse for ApiError {
 }
 
 async fn post_roadmap_clems_draft(
-    Path(_project_id): Path<String>,
-    State(_state): State<AppState>,
+    Path(project_id): Path<String>,
+    State(state): State<AppState>,
     Json(payload): Json<RoadmapDraftRequest>,
 ) -> Result<Json<RoadmapDraftResponse>, ApiError> {
     use chrono::Utc;
 
     let run_id = format!("rmp_{}", Uuid::new_v4().simple());
+    let profile = storage::load_llm_profile(state.control_root.as_ref(), &project_id)?;
 
     let system_prompt = "You are @clems, L0 orchestrator. Generate a structured roadmap draft in JSON format with sections: summary, phases, milestones, risks, and next_actions. Respond with valid JSON only.";
     let user_prompt = format!("Context: {}\n\nPrompt: {}", payload.context, payload.prompt);
 
-    let result =
-        openrouter::chat_completion("openai/gpt-4o-mini", system_prompt, &user_prompt).await;
+    let result = openrouter::chat_completion(&profile.clems_model, system_prompt, &user_prompt).await;
 
     if let Some(err) = &result.error {
         return Err(ApiError {
@@ -1381,6 +1482,349 @@ async fn post_roadmap_clems_draft(
         run_id,
         draft: draft_value,
         model_usage: result.usage,
+    }))
+}
+
+async fn post_takeover_start(
+    Path(project_id): Path<String>,
+    State(state): State<AppState>,
+    Json(payload): Json<TakeoverStartRequest>,
+) -> Result<Json<TakeoverStartResponse>, ApiError> {
+    let profile = storage::load_llm_profile(state.control_root.as_ref(), &project_id)?;
+    let settings = storage::load_settings(state.control_root.as_ref(), &project_id)?;
+    let linked_repo_path = payload
+        .linked_repo_path
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string)
+        .or(storage::linked_repo_path(state.control_root.as_ref(), &project_id)?);
+
+    let repo_findings = inspect_linked_repo(linked_repo_path.as_deref())?;
+    let state_md = storage::read_project_text(state.control_root.as_ref(), &project_id, "STATE.md")?;
+    let roadmap_md = storage::read_project_text(state.control_root.as_ref(), &project_id, "ROADMAP.md")?;
+    let decisions_md = storage::read_project_text(state.control_root.as_ref(), &project_id, "DECISIONS.md")?;
+    let tasks = storage::list_tasks(state.control_root.as_ref(), &project_id)?;
+    let recent_chat = storage::read_chat(state.control_root.as_ref(), &project_id, 24, None)?;
+
+    let tasks_excerpt = tasks
+        .iter()
+        .take(10)
+        .map(|task| {
+            format!(
+                "- {} | owner={} | status={:?} | done={}",
+                task.title, task.owner, task.status, task.done_definition
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    let chat_excerpt = recent_chat
+        .iter()
+        .rev()
+        .take(12)
+        .map(|message| format!("- @{}: {}", message.author, message.text))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    let prompt = format!(
+        "Project: {project_id}\n\nSTATE.md:\n{state_md}\n\nROADMAP.md:\n{roadmap_md}\n\nDECISIONS.md:\n{decisions_md}\n\nSettings:\n{settings}\n\nTasks:\n{tasks_excerpt}\n\nRecent chat:\n{chat_excerpt}\n\nLinked repo findings:\n{repo_findings}\n"
+    );
+
+    let system_prompt = "You are @clems. Return strict JSON with keys: summary_human (string), summary_tech (array of strings), roadmap_sections ({now,next,risks}), suggested_tasks (array of {title, owner, objective, done_definition}), suggested_skills (array of {skill_id, owner, reason}). Stay concise, ascii only, action oriented.";
+    let result = openrouter::chat_completion(&profile.clems_model, system_prompt, &prompt).await;
+    let parsed = serde_json::from_str::<Value>(&result.text).unwrap_or_else(|_| {
+        json!({
+            "summary_human": "Takeover draft generated with fallback parser.",
+            "summary_tech": [
+                "Review linked repo findings.",
+                "Validate roadmap before applying changes.",
+            ],
+            "roadmap_sections": {
+                "now": ["Review current project state and linked repo."],
+                "next": ["Confirm next implementation wave."],
+                "risks": ["Fallback parser used because model output was not strict JSON."]
+            },
+            "suggested_tasks": [],
+            "suggested_skills": [],
+        })
+    });
+
+    let response = TakeoverStartResponse {
+        run_id: format!("takeover_{}", Uuid::new_v4().simple()),
+        project_id: project_id.clone(),
+        linked_repo_path,
+        summary_human: parsed
+            .get("summary_human")
+            .and_then(Value::as_str)
+            .unwrap_or("No takeover summary generated.")
+            .trim()
+            .to_string(),
+        summary_tech: value_to_string_vec(parsed.get("summary_tech")),
+        roadmap_sections: roadmap_sections_from_value(
+            parsed
+                .get("roadmap_sections")
+                .cloned()
+                .unwrap_or_else(|| json!({})),
+        ),
+        suggested_tasks: parse_takeover_tasks(parsed.get("suggested_tasks")),
+        suggested_skills: parse_takeover_skills(parsed.get("suggested_skills")),
+        repo_findings,
+        model_usage: json!({
+            "model": result.model,
+            "status": result.status,
+            "usage": result.usage,
+            "error": result.error,
+        }),
+    };
+
+    state.emit_event(
+        &project_id,
+        "takeover.generated",
+        json!({
+            "run_id": response.run_id,
+            "linked_repo_path": response.linked_repo_path,
+        }),
+    );
+
+    Ok(Json(response))
+}
+
+async fn post_voice_transcribe(
+    Path(project_id): Path<String>,
+    State(state): State<AppState>,
+    Json(payload): Json<VoiceTranscribeRequest>,
+) -> Result<Json<VoiceTranscribeResponse>, ApiError> {
+    let profile = storage::load_llm_profile(state.control_root.as_ref(), &project_id)?;
+    let audio_base64 = payload.audio_base64.trim();
+    if audio_base64.is_empty() {
+        return Err(ApiError::bad_request("audio_base64_required"));
+    }
+
+    let started = std::time::Instant::now();
+    let result = openrouter::transcribe_audio(
+        &profile.voice_stt_model,
+        audio_base64,
+        normalize_audio_format(&payload.format),
+    )
+    .await;
+    let duration_ms = started.elapsed().as_millis() as i64;
+    let status = if result.status == "ok" { "ok" } else { "failed" }.to_string();
+
+    state.emit_event(
+        &project_id,
+        "voice.transcribed",
+        json!({
+            "status": status,
+            "model": profile.voice_stt_model,
+            "duration_ms": duration_ms,
+        }),
+    );
+
+    Ok(Json(VoiceTranscribeResponse {
+        project_id,
+        text: result.text,
+        model: profile.voice_stt_model,
+        duration_ms,
+        status,
+        usage: result.usage,
+        error: result.error,
+    }))
+}
+
+fn normalize_project_settings(project_id: &str, settings: Value) -> ProjectSettings {
+    let project_name = settings
+        .get("project_name")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or(project_id)
+        .to_string();
+    let linked_repo_path = settings
+        .get("linked_repo_path")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string);
+    let updated_at = settings
+        .get("updated_at")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    ProjectSettings {
+        project_id: project_id.to_string(),
+        project_name,
+        linked_repo_path,
+        updated_at,
+        raw: settings,
+    }
+}
+
+fn roadmap_sections_from_value(value: Value) -> RoadmapSections {
+    RoadmapSections {
+        now: value_to_string_vec(value.get("now")),
+        next: value_to_string_vec(value.get("next")),
+        risks: value_to_string_vec(value.get("risks")),
+    }
+}
+
+fn value_to_string_vec(value: Option<&Value>) -> Vec<String> {
+    value
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string)
+        .collect()
+}
+
+fn parse_takeover_tasks(value: Option<&Value>) -> Vec<TakeoverSuggestedTask> {
+    value
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|item| {
+            let title = item.get("title")?.as_str()?.trim().to_string();
+            if title.is_empty() {
+                return None;
+            }
+            let owner = item
+                .get("owner")
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .unwrap_or("clems")
+                .to_string();
+            let objective = item
+                .get("objective")
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .unwrap_or(title.as_str())
+                .to_string();
+            let done_definition = item
+                .get("done_definition")
+                .or_else(|| item.get("done"))
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .unwrap_or("Deliver verifiable output with tests or logs.")
+                .to_string();
+            Some(TakeoverSuggestedTask {
+                title,
+                owner,
+                objective,
+                done_definition,
+            })
+        })
+        .collect()
+}
+
+fn parse_takeover_skills(value: Option<&Value>) -> Vec<TakeoverSuggestedSkill> {
+    value
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|item| {
+            let skill_id = item
+                .get("skill_id")
+                .or_else(|| item.get("name"))
+                .and_then(Value::as_str)?
+                .trim()
+                .to_string();
+            if skill_id.is_empty() {
+                return None;
+            }
+            let owner = item
+                .get("owner")
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .unwrap_or("clems")
+                .to_string();
+            let reason = item
+                .get("reason")
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .unwrap_or("Suggested during takeover review.")
+                .to_string();
+            Some(TakeoverSuggestedSkill {
+                skill_id,
+                owner,
+                reason,
+            })
+        })
+        .collect()
+}
+
+fn normalize_audio_format(raw: &str) -> &str {
+    match raw.trim().to_ascii_lowercase().as_str() {
+        "wav" | "mp3" | "m4a" | "ogg" | "webm" => raw.trim(),
+        "mp4" => "m4a",
+        _ => "ogg",
+    }
+}
+
+fn inspect_linked_repo(raw_path: Option<&str>) -> Result<Value, ApiError> {
+    let Some(raw_path) = raw_path.map(str::trim).filter(|value| !value.is_empty()) else {
+        return Ok(json!({
+            "linked": false,
+            "reason": "linked_repo_path_missing",
+        }));
+    };
+
+    let repo_path = PathBuf::from(raw_path);
+    if !repo_path.exists() {
+        return Ok(json!({
+            "linked": false,
+            "reason": "linked_repo_path_missing_on_disk",
+            "path": raw_path,
+        }));
+    }
+
+    let branch = Command::new("git")
+        .arg("-C")
+        .arg(&repo_path)
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+
+    let dirty = Command::new("git")
+        .arg("-C")
+        .arg(&repo_path)
+        .args(["status", "--short"])
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false);
+
+    let mut top_entries = Vec::new();
+    if let Ok(entries) = fs::read_dir(&repo_path) {
+        for entry in entries.flatten().take(24) {
+            if let Some(name) = entry.file_name().to_str() {
+                top_entries.push(name.to_string());
+            }
+        }
+    }
+    top_entries.sort();
+
+    Ok(json!({
+        "linked": true,
+        "path": repo_path.display().to_string(),
+        "branch": branch,
+        "dirty": dirty,
+        "top_entries": top_entries,
+        "has_state_md": repo_path.join("STATE.md").exists(),
+        "has_roadmap_md": repo_path.join("ROADMAP.md").exists(),
+        "has_decisions_md": repo_path.join("DECISIONS.md").exists(),
     }))
 }
 

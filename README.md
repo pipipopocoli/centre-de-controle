@@ -30,8 +30,8 @@ open "/Applications/Cockpit.app"
 Direct scripts:
 
 ```bash
-./scripts/run_cockpit_next_dev.sh
-./scripts/run_cockpit_next_tauri.sh
+./scripts/run_cockpit.sh
+./scripts/run_cockpit_tauri.sh
 ```
 
 ## OpenRouter key for Finder-launched app
@@ -61,7 +61,7 @@ Import your purchased pack locally (not tracked in git):
 
 Imported files are stored in:
 
-`apps/cockpit-next-desktop/public/local-assets/donarg`
+`apps/cockpit-desktop/public/local-assets/donarg`
 
 ## Pixel reference assets (MIT style parity)
 
@@ -77,7 +77,7 @@ This imports:
 
 ## Runbook
 
-- [Cockpit Runbook](/Users/oliviercloutier/Desktop/Cockpit/docs/COCKPIT_NEXT_RUNBOOK.md)
+- [Cockpit Runbook](/Users/oliviercloutier/Desktop/Cockpit/docs/COCKPIT_RUNBOOK.md)
 
 ## Legacy (manual fallback only)
 

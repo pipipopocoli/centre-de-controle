@@ -61,6 +61,19 @@ pub fn ensure_project_scaffold(control_root: &Path, project_id: &str) -> Result<
         fs::write(&registry_path, "{}\n")?;
     }
 
+    let settings_path = root.join("settings.json");
+    if !settings_path.exists() {
+        fs::write(
+            &settings_path,
+            serde_json::to_string_pretty(&json!({
+                "project_id": project_id,
+                "project_name": project_id,
+                "linked_repo_path": "",
+                "updated_at": Utc::now().to_rfc3339(),
+            }))?,
+        )?;
+    }
+
     let chat_path = root.join("chat/global.ndjson");
     if !chat_path.exists() {
         File::create(&chat_path)?;
@@ -99,6 +112,74 @@ pub fn ensure_project_scaffold(control_root: &Path, project_id: &str) -> Result<
 
     ensure_runtime_db(control_root, project_id)?;
     Ok(root)
+}
+
+pub fn load_settings(control_root: &Path, project_id: &str) -> Result<Value> {
+    let root = ensure_project_scaffold(control_root, project_id)?;
+    let path = root.join("settings.json");
+    let raw = fs::read_to_string(path)?;
+    let value = serde_json::from_str::<Value>(&raw)?;
+    Ok(value)
+}
+
+pub fn save_settings(control_root: &Path, project_id: &str, settings: &Value) -> Result<Value> {
+    let root = ensure_project_scaffold(control_root, project_id)?;
+    let path = root.join("settings.json");
+    let mut payload = settings.clone();
+    if let Some(object) = payload.as_object_mut() {
+        object.insert("project_id".to_string(), json!(project_id));
+        if object
+            .get("project_name")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .unwrap_or("")
+            .is_empty()
+        {
+            object.insert("project_name".to_string(), json!(project_id));
+        }
+        object.insert("updated_at".to_string(), json!(Utc::now().to_rfc3339()));
+    }
+    fs::write(path, serde_json::to_string_pretty(&payload)?)?;
+    Ok(payload)
+}
+
+pub fn linked_repo_path(control_root: &Path, project_id: &str) -> Result<Option<String>> {
+    let settings = load_settings(control_root, project_id)?;
+    let value = settings
+        .get("linked_repo_path")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string);
+    Ok(value)
+}
+
+pub fn read_project_text(control_root: &Path, project_id: &str, file_name: &str) -> Result<String> {
+    let root = ensure_project_scaffold(control_root, project_id)?;
+    Ok(fs::read_to_string(root.join(file_name)).unwrap_or_default())
+}
+
+pub fn load_roadmap_sections(control_root: &Path, project_id: &str) -> Result<Value> {
+    let raw = read_project_text(control_root, project_id, "ROADMAP.md")?;
+    Ok(json!({
+        "now": extract_markdown_section_bullets(&raw, "Now"),
+        "next": extract_markdown_section_bullets(&raw, "Next"),
+        "risks": extract_markdown_section_bullets(&raw, "Risks"),
+    }))
+}
+
+pub fn save_roadmap_sections(
+    control_root: &Path,
+    project_id: &str,
+    now: &[String],
+    next: &[String],
+    risks: &[String],
+) -> Result<String> {
+    let root = ensure_project_scaffold(control_root, project_id)?;
+    let path = root.join("ROADMAP.md");
+    let content = render_roadmap_markdown(now, next, risks);
+    fs::write(&path, &content)?;
+    Ok(content)
 }
 
 pub fn load_agents(control_root: &Path, project_id: &str) -> Result<HashMap<String, AgentRecord>> {
@@ -833,6 +914,45 @@ fn validate_llm_profile(mut profile: LlmProfile) -> Result<LlmProfile> {
     profile.l2_scene_model = Some(profile.l2_default_model.clone());
     profile.lfm_spawn_max = Some(10);
     Ok(profile)
+}
+
+fn extract_markdown_section_bullets(markdown: &str, section: &str) -> Vec<String> {
+    let target = format!("## {section}");
+    let mut out = Vec::new();
+    let mut in_section = false;
+    for raw_line in markdown.lines() {
+        let line = raw_line.trim();
+        if line.starts_with("## ") {
+            in_section = line == target;
+            continue;
+        }
+        if !in_section {
+            continue;
+        }
+        if let Some(value) = line.strip_prefix("- ").map(str::trim).filter(|value| !value.is_empty()) {
+            out.push(value.to_string());
+        }
+    }
+    out
+}
+
+fn render_roadmap_markdown(now: &[String], next: &[String], risks: &[String]) -> String {
+    let mut lines = vec!["# Roadmap".to_string(), String::new()];
+    for (title, values) in [("Now", now), ("Next", next), ("Risks", risks)] {
+        lines.push(format!("## {title}"));
+        if values.is_empty() {
+            lines.push("- none".to_string());
+        } else {
+            for value in values {
+                let normalized = value.trim();
+                if !normalized.is_empty() {
+                    lines.push(format!("- {normalized}"));
+                }
+            }
+        }
+        lines.push(String::new());
+    }
+    lines.join("\n")
 }
 
 fn default_l2_models() -> [&'static str; 3] {

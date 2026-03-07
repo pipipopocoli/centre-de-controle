@@ -15,7 +15,7 @@ if [[ ! -f "$ZIP_PATH" ]]; then
 fi
 
 TMP_DIR="$(mktemp -d)"
-DEST_DIR="$ROOT/apps/cockpit-next-desktop/public/local-assets/donarg"
+DEST_DIR="$ROOT/apps/cockpit-desktop/public/local-assets/donarg"
 
 cleanup() {
   rm -rf "$TMP_DIR"

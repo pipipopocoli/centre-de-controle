@@ -6,10 +6,10 @@ MODE="${1:-dev}"
 
 case "$MODE" in
   dev)
-    exec "$ROOT/scripts/run_cockpit_next_dev.sh"
+    exec "$ROOT/scripts/run_cockpit.sh"
     ;;
   tauri)
-    exec "$ROOT/scripts/run_cockpit_next_tauri.sh"
+    exec "$ROOT/scripts/run_cockpit_tauri.sh"
     ;;
   *)
     echo "Usage: ./launch_cockpit.sh [dev|tauri]" >&2

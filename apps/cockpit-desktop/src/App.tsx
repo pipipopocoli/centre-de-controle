@@ -21,17 +21,23 @@ import {
   getLayout,
   getLlmProfile,
   getPixelFeed,
+  getProjectSettings,
+  getRoadmap,
   getSkillsLibrary,
   getTasks,
   liveTurn,
   openTerminal,
   putLlmProfile,
   putLayout,
+  putProjectSettings,
+  putRoadmap,
   resetChat,
   restartTerminal,
   sendTerminalInput,
+  startTakeover,
   connectEvents,
   rejectApproval,
+  transcribeVoice,
   updateTask,
 } from './lib/cockpitClient'
 import type {
@@ -43,9 +49,13 @@ import type {
   HealthzResponse,
   LlmProfile,
   PixelFeedResponse,
+  ProjectSettings,
+  RoadmapResponse,
   SkillLibraryEntry,
   TaskRecord,
   TaskStatus,
+  TakeoverStartResponse,
+  VoiceTranscribeResponse,
   WsEventEnvelope,
 } from './lib/cockpitClient'
 import { openOsTerminal } from './lib/tauriOps'
@@ -117,6 +127,11 @@ const QUICK_AGENT_PRESETS = [
   { agent_id: 'vulgarisation', label: 'Vulgarisation' },
 ] as const
 
+const VOICE_STT_OPTIONS = [
+  'google/gemini-2.5-flash',
+  'openai/gpt-4o-mini-transcribe',
+] as const
+
 function parseSkillsInput(raw: string): string[] {
   return [...new Set(raw.split(',').map((item) => item.trim()).filter(Boolean))]
 }
@@ -146,6 +161,36 @@ function modelLabel(modelId: string): string {
 
 function isUnavailableModel(modelId: string): boolean {
   return modelLabel(modelId).endsWith('(unavailable)')
+}
+
+function preferredVoiceRecorder(): { mimeType: string; format: string } | null {
+  if (typeof window === 'undefined' || typeof MediaRecorder === 'undefined') {
+    return null
+  }
+
+  const candidates = [
+    { mimeType: 'audio/mp4', format: 'm4a' },
+    { mimeType: 'audio/ogg;codecs=opus', format: 'ogg' },
+    { mimeType: 'audio/webm;codecs=opus', format: 'webm' },
+  ] as const
+
+  for (const candidate of candidates) {
+    if (MediaRecorder.isTypeSupported(candidate.mimeType)) {
+      return { mimeType: candidate.mimeType, format: candidate.format }
+    }
+  }
+
+  return null
+}
+
+async function blobToBase64(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer()
+  let binary = ''
+  const bytes = new Uint8Array(buffer)
+  for (const value of bytes) {
+    binary += String.fromCharCode(value)
+  }
+  return window.btoa(binary)
 }
 
 function emptyTaskEditor(): TaskEditorState {
@@ -240,6 +285,14 @@ function App() {
   const [docsPanel, setDocsPanel] = useState<DocsPanel>('runbook')
   const [skillsLibrary, setSkillsLibrary] = useState<SkillLibraryEntry[]>([])
   const [skillsLibraryLoading, setSkillsLibraryLoading] = useState(false)
+  const [projectSettings, setProjectSettings] = useState<ProjectSettings | null>(null)
+  const [linkedRepoDraft, setLinkedRepoDraft] = useState('')
+  const [projectRoadmap, setProjectRoadmap] = useState<RoadmapResponse | null>(null)
+  const [takeoverResult, setTakeoverResult] = useState<TakeoverStartResponse | null>(null)
+  const [isRunningTakeover, setIsRunningTakeover] = useState(false)
+  const [isApplyingTakeover, setIsApplyingTakeover] = useState(false)
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false)
+  const [isTranscribingVoice, setIsTranscribingVoice] = useState(false)
   const [assetsStatus, setAssetsStatus] = useState<{ donarg: boolean; pixelRef: boolean }>({
     donarg: false,
     pixelRef: false,
@@ -258,6 +311,10 @@ function App() {
   const idToNumericRef = useRef(new Map<string, number>())
   const numericToIdRef = useRef(new Map<number, string>())
   const nextNumericRef = useRef(1)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const mediaStreamRef = useRef<MediaStream | null>(null)
+  const voiceChunksRef = useRef<Blob[]>([])
+  const voiceFormatRef = useRef('ogg')
 
   const toNumericId = useCallback((agentId: string) => {
     const existing = idToNumericRef.current.get(agentId)
@@ -496,6 +553,21 @@ function App() {
     }
   }, [markSynced, projectId])
 
+  const refreshProjectSettings = useCallback(async () => {
+    const settings = await getProjectSettings(projectId)
+    setProjectSettings(settings)
+    setLinkedRepoDraft(settings.linked_repo_path ?? '')
+    markSynced()
+    return settings
+  }, [markSynced, projectId])
+
+  const refreshRoadmap = useCallback(async () => {
+    const roadmap = await getRoadmap(projectId)
+    setProjectRoadmap(roadmap)
+    markSynced()
+    return roadmap
+  }, [markSynced, projectId])
+
   const ensureClemsAgent = useCallback(async () => {
     let nextAgents = await getAgents(projectId)
     if (!nextAgents.some((agent) => agent.agent_id === 'clems')) {
@@ -522,7 +594,7 @@ function App() {
 
       await ensureClemsAgent()
 
-      const [layout, pixel, chat, pendingApprovals, health, profile, taskPayload] = await Promise.all([
+      const [layout, pixel, chat, pendingApprovals, health, profile, taskPayload, settings, roadmap] = await Promise.all([
         getLayout(projectId),
         getPixelFeed(projectId),
         getChat(projectId, 300, 'all'),
@@ -530,6 +602,8 @@ function App() {
         getHealth(),
         getLlmProfile(projectId),
         getTasks(projectId),
+        getProjectSettings(projectId),
+        getRoadmap(projectId),
       ])
 
       const presetKey = `cockpit.video_preset_applied.${projectId}`
@@ -557,6 +631,9 @@ function App() {
       setLlmProfile(profile)
       setProfileDraft(profile)
       setTasks(taskPayload.tasks)
+      setProjectSettings(settings)
+      setLinkedRepoDraft(settings.linked_repo_path ?? '')
+      setProjectRoadmap(roadmap)
       setSelectedTaskId((previous) => previous ?? taskPayload.tasks[0]?.task_id ?? null)
       setAssetsStatus({
         donarg: themeLoaded,
@@ -600,6 +677,17 @@ function App() {
   useEffect(() => {
     const timer = window.setInterval(() => setClockNow(new Date()), 1000)
     return () => window.clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      mediaRecorderRef.current?.stop()
+      if (mediaStreamRef.current) {
+        for (const track of mediaStreamRef.current.getTracks()) {
+          track.stop()
+        }
+      }
+    }
   }, [])
 
   useEffect(() => {
@@ -910,6 +998,174 @@ function App() {
       setIsSavingProfile(false)
     }
   }, [isSavingProfile, profileDraft, projectId])
+
+  const handleSaveProjectLink = useCallback(async () => {
+    setApiError(null)
+    try {
+      await putProjectSettings(projectId, {
+        linked_repo_path: linkedRepoDraft.trim() || '',
+      })
+      await refreshProjectSettings()
+      setUiNotice('linked repo path saved')
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : String(error))
+    }
+  }, [linkedRepoDraft, projectId, refreshProjectSettings])
+
+  const handleRunTakeover = useCallback(async () => {
+    setIsRunningTakeover(true)
+    setApiError(null)
+    setUiNotice(null)
+    try {
+      const response = await startTakeover(projectId, {
+        linked_repo_path: linkedRepoDraft.trim() || undefined,
+      })
+      setTakeoverResult(response)
+      if (response.linked_repo_path && response.linked_repo_path !== (projectSettings?.linked_repo_path ?? '')) {
+        await putProjectSettings(projectId, {
+          linked_repo_path: response.linked_repo_path,
+        })
+        await refreshProjectSettings()
+      }
+      setUiNotice('takeover draft ready')
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setIsRunningTakeover(false)
+    }
+  }, [linkedRepoDraft, projectId, projectSettings?.linked_repo_path, refreshProjectSettings])
+
+  const handleApplyTakeoverTasks = useCallback(async () => {
+    if (!takeoverResult || takeoverResult.suggested_tasks.length === 0 || isApplyingTakeover) {
+      return
+    }
+    setIsApplyingTakeover(true)
+    setApiError(null)
+    try {
+      for (const task of takeoverResult.suggested_tasks) {
+        await createTask(projectId, {
+          title: task.title,
+          owner: task.owner,
+          phase: 'Implement',
+          status: 'todo',
+          source: 'takeover',
+          objective: task.objective,
+          done_definition: task.done_definition,
+        })
+      }
+      await refreshTasks()
+      setUiNotice('takeover tasks added to To Do')
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setIsApplyingTakeover(false)
+    }
+  }, [isApplyingTakeover, projectId, refreshTasks, takeoverResult])
+
+  const handleApplyTakeoverRoadmap = useCallback(async () => {
+    if (!takeoverResult || isApplyingTakeover) {
+      return
+    }
+    setIsApplyingTakeover(true)
+    setApiError(null)
+    try {
+      const roadmap = await putRoadmap(projectId, takeoverResult.roadmap_sections)
+      setProjectRoadmap(roadmap)
+      await refreshRoadmap()
+      setUiNotice('takeover roadmap applied')
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setIsApplyingTakeover(false)
+    }
+  }, [isApplyingTakeover, projectId, refreshRoadmap, takeoverResult])
+
+  const handleToggleVoiceRecording = useCallback(async () => {
+    if (isTranscribingVoice) {
+      return
+    }
+
+    if (isRecordingVoice) {
+      mediaRecorderRef.current?.stop()
+      setIsRecordingVoice(false)
+      return
+    }
+
+    const preferred = preferredVoiceRecorder()
+    if (!preferred) {
+      setApiError('voice capture unsupported in this webview')
+      return
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaStreamRef.current = stream
+      voiceChunksRef.current = []
+      voiceFormatRef.current = preferred.format
+
+      const recorder = new MediaRecorder(stream, { mimeType: preferred.mimeType })
+      mediaRecorderRef.current = recorder
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          voiceChunksRef.current.push(event.data)
+        }
+      }
+      recorder.onstop = () => {
+        const chunks = [...voiceChunksRef.current]
+        voiceChunksRef.current = []
+        mediaRecorderRef.current = null
+        if (mediaStreamRef.current) {
+          for (const track of mediaStreamRef.current.getTracks()) {
+            track.stop()
+          }
+          mediaStreamRef.current = null
+        }
+
+        if (chunks.length === 0) {
+          return
+        }
+
+        void (async () => {
+          setIsTranscribingVoice(true)
+          setApiError(null)
+          try {
+            const blob = new Blob(chunks, { type: preferred.mimeType })
+            const audioBase64 = await blobToBase64(blob)
+            const response: VoiceTranscribeResponse = await transcribeVoice(projectId, {
+              audio_base64: audioBase64,
+              format: voiceFormatRef.current,
+            })
+            if (response.status !== 'ok') {
+              throw new Error(response.error || 'voice transcription failed')
+            }
+            setChatInput((previous) => {
+              const prefix = previous.trim()
+              if (!prefix) {
+                return response.text
+              }
+              return `${prefix}\n${response.text}`
+            })
+            setUiNotice(`voice transcribed via ${response.model}`)
+          } catch (error) {
+            setApiError(error instanceof Error ? error.message : String(error))
+          } finally {
+            setIsTranscribingVoice(false)
+          }
+        })()
+      }
+      recorder.start()
+      setIsRecordingVoice(true)
+      setUiNotice('recording voice message')
+    } catch (error) {
+      if (mediaStreamRef.current) {
+        for (const track of mediaStreamRef.current.getTracks()) {
+          track.stop()
+        }
+        mediaStreamRef.current = null
+      }
+      setApiError(error instanceof Error ? error.message : String(error))
+    }
+  }, [isRecordingVoice, isTranscribingVoice, projectId])
 
   const handleOfficeClick = useCallback(
     async (numericId: number) => {
@@ -1611,6 +1867,13 @@ function App() {
                 </div>
                 <div className="composer-actions-row">
                   <button
+                    className={`small-btn voice-btn ${isRecordingVoice ? 'recording' : ''}`}
+                    onClick={() => void handleToggleVoiceRecording()}
+                    disabled={isTranscribingVoice}
+                  >
+                    {isTranscribingVoice ? 'Transcribing...' : isRecordingVoice ? 'Stop voice' : 'Voice'}
+                  </button>
+                  <button
                     className="send-btn"
                     onClick={() => void handleSendChat({ chatMode: 'conceal_room' })}
                     disabled={isSendingChat}
@@ -1876,6 +2139,99 @@ function App() {
                 )}
               </div>
             </section>
+            <section className="secondary-card">
+              <h3>Take over project</h3>
+              <div className="form-grid">
+                <label className="wide">
+                  <span>Linked repo path</span>
+                  <input
+                    value={linkedRepoDraft}
+                    onChange={(event) => setLinkedRepoDraft(event.target.value)}
+                    placeholder="/absolute/path/to/repo"
+                  />
+                </label>
+              </div>
+              <div className="todo-editor-actions">
+                <button className="send-btn alt" onClick={() => void handleSaveProjectLink()}>
+                  Save linked repo
+                </button>
+                <button className="send-btn" onClick={() => void handleRunTakeover()} disabled={isRunningTakeover}>
+                  {isRunningTakeover ? 'Running takeover...' : 'Take over project'}
+                </button>
+              </div>
+              <ul className="data-list">
+                <li>
+                  <span>Current link</span>
+                  <strong>{projectSettings?.linked_repo_path || 'not linked'}</strong>
+                </li>
+                <li>
+                  <span>Roadmap now</span>
+                  <strong>{projectRoadmap?.sections.now.length ?? 0}</strong>
+                </li>
+              </ul>
+            </section>
+            <section className="secondary-card">
+              <h3>Takeover draft</h3>
+              {takeoverResult ? (
+                <div className="takeover-result">
+                  <p className="takeover-summary">{takeoverResult.summary_human}</p>
+                  <div className="command-box">
+                    <code>{String(takeoverResult.repo_findings?.path || 'repo not linked')}</code>
+                  </div>
+                  <ul className="data-list">
+                    <li>
+                      <span>Suggested tasks</span>
+                      <strong>{takeoverResult.suggested_tasks.length}</strong>
+                    </li>
+                    <li>
+                      <span>Suggested skills</span>
+                      <strong>{takeoverResult.suggested_skills.length}</strong>
+                    </li>
+                  </ul>
+                  <div className="takeover-columns">
+                    <div>
+                      <h4>Tech summary</h4>
+                      <ul className="simple-list">
+                        {takeoverResult.summary_tech.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h4>Suggested tasks</h4>
+                      <ul className="simple-list">
+                        {takeoverResult.suggested_tasks.map((task) => (
+                          <li key={`${task.owner}-${task.title}`}>
+                            {task.title} - @{task.owner}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="todo-editor-actions">
+                    <button
+                      className="send-btn alt"
+                      onClick={() => void handleApplyTakeoverRoadmap()}
+                      disabled={isApplyingTakeover}
+                    >
+                      {isApplyingTakeover ? 'Applying...' : 'Apply roadmap draft'}
+                    </button>
+                    <button
+                      className="send-btn"
+                      onClick={() => void handleApplyTakeoverTasks()}
+                      disabled={isApplyingTakeover || takeoverResult.suggested_tasks.length === 0}
+                    >
+                      {isApplyingTakeover ? 'Applying...' : 'Add tasks to To Do'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="empty-panel compact">
+                  <h3>No takeover draft yet</h3>
+                  <p>Save a linked repo path, then run takeover to generate a summary, roadmap draft, tasks, and suggested skills.</p>
+                </div>
+              )}
+            </section>
           </div>
         </section>
       )
@@ -2092,7 +2448,7 @@ function App() {
                 <section className="secondary-card">
                   <h3>Reference docs</h3>
                   <div className="events-log">
-                    <p><strong>Runbook:</strong> docs/COCKPIT_NEXT_RUNBOOK.md</p>
+                    <p><strong>Runbook:</strong> docs/COCKPIT_RUNBOOK.md</p>
                     <p><strong>Protocol:</strong> docs/CLOUD_API_PROTOCOL.md</p>
                     <p><strong>Packaging:</strong> docs/PACKAGING.md</p>
                     <p><strong>Status:</strong> docs/STATUS_REPORT.md</p>
@@ -2280,6 +2636,31 @@ function App() {
               </ul>
             </section>
             <section className="secondary-card">
+              <h3>Voice STT</h3>
+              <label className="routing-primary">
+                <span>Voice transcription model</span>
+                <select
+                  value={profileDraft.voice_stt_model}
+                  onChange={(event) =>
+                    setProfileDraft((previous) =>
+                      previous ? { ...previous, voice_stt_model: event.target.value } : previous,
+                    )
+                  }
+                >
+                  {[...VOICE_STT_OPTIONS, profileDraft.voice_stt_model]
+                    .filter((value, index, values) => values.indexOf(value) === index)
+                    .map((modelId) => (
+                      <option key={modelId} value={modelId}>
+                        {modelId}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <p className="small-copy">
+                Voice is OpenRouter-only. The desktop recorder sends audio to the local Rust backend, which transcribes with this model and injects text into the composer.
+              </p>
+            </section>
+            <section className="secondary-card">
               <h3>Current profile</h3>
               <ul className="data-list">
                 <li>
@@ -2349,7 +2730,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${activeTab === 'pixel_home' ? 'pixel-mode' : 'secondary-mode'}`}>
       <header className="app-header panel">
         <div>
           <p className="eyebrow">Cockpit official</p>
@@ -2402,8 +2783,10 @@ function App() {
         ))}
       </nav>
 
-      {apiError ? <div className="error-banner">{apiError}</div> : null}
-      {uiNotice ? <div className="notice-banner">{uiNotice}</div> : null}
+      <div className="notice-stack">
+        {apiError ? <div className="error-banner">{apiError}</div> : null}
+        {uiNotice ? <div className="notice-banner">{uiNotice}</div> : null}
+      </div>
 
       {activeTab !== 'pixel_home' ? (
         <div className="secondary-shell">
@@ -2676,6 +3059,13 @@ function App() {
                           </div>
                           <div className="composer-actions-row">
                             <div className="composer-actions">
+                              <button
+                                className={`small-btn voice-btn ${isRecordingVoice ? 'recording' : ''}`}
+                                onClick={() => void handleToggleVoiceRecording()}
+                                disabled={isTranscribingVoice}
+                              >
+                                {isTranscribingVoice ? 'Transcribing...' : isRecordingVoice ? 'Stop voice' : 'Voice'}
+                              </button>
                               <button
                                 className="send-btn"
                                 onClick={() => void handleSendChat({ targetMode: 'clems', chatMode: 'direct' })}

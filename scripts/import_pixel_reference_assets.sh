@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DEST_DIR="$ROOT/apps/cockpit-next-desktop/public/local-assets/pixel-reference"
+DEST_DIR="$ROOT/apps/cockpit-desktop/public/local-assets/pixel-reference"
 DEST_CHAR_DIR="$DEST_DIR/characters"
 
 TMP_DIR="$(mktemp -d)"

@@ -4,8 +4,8 @@ Date reference: 2026-03-06
 
 ## Canonical stack
 
-- Desktop shell: Tauri (`apps/cockpit-next-desktop/src-tauri`)
-- Frontend: React + Vite (`apps/cockpit-next-desktop`)
+- Desktop shell: Tauri (`apps/cockpit-desktop/src-tauri`)
+- Frontend: React + Vite (`apps/cockpit-desktop`)
 - Backend: Rust Axum (`crates/cockpit-core`)
 - Data compatibility root: `control/projects/<project_id>`
 
@@ -24,8 +24,8 @@ Development entrypoints:
 
 ```bash
 ./launch_cockpit.sh
-./scripts/run_cockpit_next_dev.sh
-./scripts/run_cockpit_next_tauri.sh
+./scripts/run_cockpit.sh
+./scripts/run_cockpit_tauri.sh
 ```
 
 Legacy fallback (manual debug only):
@@ -34,7 +34,7 @@ Legacy fallback (manual debug only):
 ./launch_cockpit_legacy.sh
 ```
 
-Do not use `Centre de controle.app` in normal Cockpit operations.
+Do not use archived legacy app bundles in normal Cockpit operations.
 
 ## Local env for installed app
 
@@ -90,13 +90,8 @@ fi
 ```
 
 Compatibility policy:
-- Keep one release cycle note for previous `Cockpit Next` naming.
 - Daily operations must use `Cockpit.app` only.
-- If old bundle still exists, remove it to avoid wrong app launches:
-
-```bash
-rm -rf "/Applications/Cockpit Next.app"
-```
+- If an older app bundle still exists on the machine, remove it to avoid wrong launches.
 
 ## Local premium assets (Donarg)
 
@@ -106,7 +101,7 @@ rm -rf "/Applications/Cockpit Next.app"
 ```
 
 Imported files are local-only and git-ignored under:
-- `apps/cockpit-next-desktop/public/local-assets/donarg`
+- `apps/cockpit-desktop/public/local-assets/donarg`
 
 ## Pixel reference assets (MIT)
 
@@ -115,8 +110,8 @@ Imported files are local-only and git-ignored under:
 ```
 
 Imported files:
-- `apps/cockpit-next-desktop/public/local-assets/pixel-reference/characters/char_0..5.png`
-- `apps/cockpit-next-desktop/public/local-assets/pixel-reference/walls.png`
+- `apps/cockpit-desktop/public/local-assets/pixel-reference/characters/char_0..5.png`
+- `apps/cockpit-desktop/public/local-assets/pixel-reference/walls.png`
 
 ## Locked API contracts
 
@@ -156,7 +151,7 @@ cd crates/cockpit-core
 cargo check
 cargo test
 
-cd ../../apps/cockpit-next-desktop
+cd ../../apps/cockpit-desktop
 npm run build
 npm run lint
 
@@ -170,13 +165,13 @@ npm run tauri:build
 ## Artifacts
 
 - Tauri binary:
-  - `apps/cockpit-next-desktop/src-tauri/target/release/cockpit-next-desktop`
+  - `apps/cockpit-desktop/src-tauri/target/release/cockpit`
 - Tauri macOS app bundle:
-  - `apps/cockpit-next-desktop/src-tauri/target/release/bundle/macos/Cockpit.app`
+  - `apps/cockpit-desktop/src-tauri/target/release/bundle/macos/Cockpit.app`
 
 ## Install local app bundle
 
 ```bash
-./scripts/install_cockpit_next_app.sh
-./scripts/install_cockpit_next_app.sh "$HOME/Applications"
+./scripts/install_cockpit_app.sh
+./scripts/install_cockpit_app.sh "$HOME/Applications"
 ```

@@ -23,10 +23,32 @@
   min-height: 100vh;
   height: 100dvh;
   display: grid;
-  grid-template-rows: auto auto auto auto 1fr;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   gap: 10px;
   padding: 12px;
   overflow: hidden;
+}
+
+.app-header {
+  grid-row: 1;
+}
+
+.top-tabs {
+  grid-row: 2;
+}
+
+.notice-stack {
+  grid-row: 3;
+  min-height: 0;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.pixel-shell,
+.secondary-shell {
+  grid-row: 4;
+  min-height: 0;
 }
 
 .app-header {
@@ -257,8 +279,7 @@
   background: var(--surface-1);
   padding: 12px;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  display: grid;
 }
 
 .workspace-section {
@@ -1050,7 +1071,7 @@
 }
 
 .concierge-log {
-  min-height: 320px;
+  min-height: 0;
 }
 
 .target-btn {
@@ -1201,6 +1222,15 @@
 .composer-actions-row {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.voice-btn.recording {
+  border-color: rgba(200, 76, 76, 0.82);
+  background: rgba(255, 238, 238, 0.98);
+  color: #8a2d2d;
 }
 
 .send-btn.alt {
@@ -1411,6 +1441,7 @@
 
 .secondary-shell {
   min-height: 0;
+  height: 100%;
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -1646,6 +1677,42 @@
   font-size: 12px;
   color: #214a70;
   word-break: break-word;
+}
+
+.takeover-result {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.takeover-summary {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #2f4f67;
+}
+
+.takeover-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.takeover-columns h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--fg-1);
+}
+
+.simple-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: #37556d;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .todo-layout,
@@ -1928,6 +1995,10 @@
 
   .todo-board {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .takeover-columns {
+    grid-template-columns: 1fr;
   }
 
   .skills-library-grid {

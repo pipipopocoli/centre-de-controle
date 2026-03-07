@@ -37,7 +37,7 @@ def main() -> int:
             _assert(field in skill, f"missing field {field}: {skill}")
         _assert(isinstance(skill["assigned_agents"], list), f"assigned_agents must be a list: {skill}")
 
-    print("OK: cockpit next skills library runtime verified")
+    print("OK: cockpit skills library runtime verified")
     return 0
 
 

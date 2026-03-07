@@ -101,7 +101,7 @@ class MainWindow(QMainWindow):
         runtime_source: str = "",
     ) -> None:
         super().__init__()
-        title = "Centre de controle"
+        title = "Cockpit"
         if version_text:
             title = f"{title} - {version_text}"
         self.setWindowTitle(title)

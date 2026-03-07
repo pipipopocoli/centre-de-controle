@@ -7,8 +7,8 @@ Date reference: 2026-03-03.
 Use these commands for the actual app runtime:
 
 ```bash
-./scripts/run_cockpit_next_dev.sh
-./scripts/run_cockpit_next_tauri.sh
+./scripts/run_cockpit.sh
+./scripts/run_cockpit_tauri.sh
 open "/Applications/Cockpit.app"
 ```
 

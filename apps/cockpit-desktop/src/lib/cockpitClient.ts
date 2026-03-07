@@ -114,6 +114,62 @@ export interface SkillsLibraryResponse {
   skills: SkillLibraryEntry[]
 }
 
+export interface ProjectSettings {
+  project_id: string
+  project_name: string
+  linked_repo_path: string | null
+  updated_at: string
+  raw: Record<string, unknown>
+}
+
+export interface RoadmapSections {
+  now: string[]
+  next: string[]
+  risks: string[]
+}
+
+export interface RoadmapResponse {
+  project_id: string
+  sections: RoadmapSections
+  raw_md: string
+}
+
+export interface TakeoverSuggestedTask {
+  title: string
+  owner: string
+  objective: string
+  done_definition: string
+}
+
+export interface TakeoverSuggestedSkill {
+  skill_id: string
+  owner: string
+  reason: string
+}
+
+export interface TakeoverStartResponse {
+  run_id: string
+  project_id: string
+  linked_repo_path: string | null
+  summary_human: string
+  summary_tech: string[]
+  roadmap_sections: RoadmapSections
+  suggested_tasks: TakeoverSuggestedTask[]
+  suggested_skills: TakeoverSuggestedSkill[]
+  repo_findings: Record<string, unknown>
+  model_usage: Record<string, unknown>
+}
+
+export interface VoiceTranscribeResponse {
+  project_id: string
+  text: string
+  model: string
+  duration_ms: number
+  status: string
+  usage: Record<string, unknown>
+  error: string | null
+}
+
 export interface LiveTurnRequest {
   text: string
   chat_mode: ChatMode
@@ -355,6 +411,36 @@ export async function getLayout(projectId: string): Promise<Record<string, unkno
   return request(`/v1/projects/${projectId}/layout`)
 }
 
+export async function getProjectSettings(projectId: string): Promise<ProjectSettings> {
+  const payload = await request<{ project_id: string; settings: ProjectSettings }>(`/v1/projects/${projectId}/settings`)
+  return payload.settings
+}
+
+export async function putProjectSettings(
+  projectId: string,
+  payload: { project_name?: string | null; linked_repo_path?: string | null },
+): Promise<ProjectSettings> {
+  const response = await request<{ project_id: string; settings: ProjectSettings }>(`/v1/projects/${projectId}/settings`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+  return response.settings
+}
+
+export async function getRoadmap(projectId: string): Promise<RoadmapResponse> {
+  return request(`/v1/projects/${projectId}/roadmap`)
+}
+
+export async function putRoadmap(
+  projectId: string,
+  payload: RoadmapSections,
+): Promise<RoadmapResponse> {
+  return request(`/v1/projects/${projectId}/roadmap`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function getLlmProfile(projectId: string): Promise<LlmProfile> {
   const payload = await request<{ project_id: string; profile: LlmProfile }>(`/v1/projects/${projectId}/llm-profile`)
   return payload.profile
@@ -377,6 +463,26 @@ export async function getTasks(projectId: string): Promise<{ project_id: string;
 
 export async function getSkillsLibrary(projectId: string): Promise<SkillsLibraryResponse> {
   return request(`/v1/projects/${projectId}/skills/library`)
+}
+
+export async function startTakeover(
+  projectId: string,
+  payload: { linked_repo_path?: string | null } = {},
+): Promise<TakeoverStartResponse> {
+  return request(`/v1/projects/${projectId}/takeover/start`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function transcribeVoice(
+  projectId: string,
+  payload: { audio_base64: string; format: string },
+): Promise<VoiceTranscribeResponse> {
+  return request(`/v1/projects/${projectId}/voice/transcribe`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
 }
 
 export async function createTask(

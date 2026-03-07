@@ -14,7 +14,7 @@ Defaults:
 
 Notes:
   - Canonical product app is Cockpit.app.
-  - This wrapper delegates to scripts/install_cockpit_next_app.sh.
+  - This wrapper delegates to scripts/install_cockpit_app.sh.
 USAGE
 }
 
@@ -36,4 +36,4 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-"$ROOT_DIR/scripts/install_cockpit_next_app.sh" "$TARGET_DIR"
+"$ROOT_DIR/scripts/install_cockpit_app.sh" "$TARGET_DIR"

@@ -23,7 +23,7 @@ def _check_import(name: str) -> tuple[bool, str]:
 
 
 def main() -> int:
-    print("Centre de controle - Setup Doctor")
+    print("Cockpit - Setup Doctor")
     print(f"Python: {sys.version.split()[0]}")
     print(f"Executable: {sys.executable}")
     print(f"Platform: {platform.platform()}")

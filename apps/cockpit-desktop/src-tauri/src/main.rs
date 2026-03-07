@@ -211,6 +211,8 @@ fn ensure_backend_process() -> Result<(), String> {
 
     let mut command = Command::new(&backend_bin);
     command
+        .env("COCKPIT_HOST", BACKEND_HOST)
+        .env("COCKPIT_PORT", BACKEND_PORT.to_string())
         .env("COCKPIT_NEXT_HOST", BACKEND_HOST)
         .env("COCKPIT_NEXT_PORT", BACKEND_PORT.to_string())
         .stdin(Stdio::null())
@@ -295,7 +297,7 @@ fn main() {
     tauri::Builder::default()
         .setup(|_app| {
             if let Err(error) = ensure_backend_process() {
-                eprintln!("[cockpit-next] backend startup warning: {error}");
+                eprintln!("[cockpit] backend startup warning: {error}");
             }
             Ok(())
         })

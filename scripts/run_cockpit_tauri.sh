@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# Canonical ops reference: docs/COCKPIT_NEXT_RUNBOOK.md
+# Canonical ops reference: docs/COCKPIT_RUNBOOK.md
 
 if ! command -v cargo >/dev/null 2>&1; then
   if [[ -f "$HOME/.cargo/env" ]]; then
@@ -25,9 +25,10 @@ cleanup() {
 trap cleanup EXIT INT
 
 export COCKPIT_CONTROL_ROOT="${COCKPIT_CONTROL_ROOT:-$ROOT/control/projects}"
+export COCKPIT_HOST="${COCKPIT_HOST:-127.0.0.1}"
 export COCKPIT_PORT="${COCKPIT_PORT:-${COCKPIT_NEXT_PORT:-8787}}"
 export COCKPIT_NEXT_PORT="${COCKPIT_NEXT_PORT:-$COCKPIT_PORT}"
-export VITE_COCKPIT_CORE_URL="${VITE_COCKPIT_CORE_URL:-http://127.0.0.1:${COCKPIT_PORT}}"
+export VITE_COCKPIT_CORE_URL="${VITE_COCKPIT_CORE_URL:-http://${COCKPIT_HOST}:${COCKPIT_PORT}}"
 PROJECT_ID="${COCKPIT_DEFAULT_PROJECT_ID:-cockpit}"
 
 load_local_env() {
@@ -117,5 +118,5 @@ echo "[cockpit] preflight checks: approvals + llm-profile"
 preflight_api_contracts "$VITE_COCKPIT_CORE_URL" "$PROJECT_ID"
 
 echo "[cockpit] starting tauri desktop"
-cd "$ROOT/apps/cockpit-next-desktop"
+cd "$ROOT/apps/cockpit-desktop"
 npm run tauri:dev
