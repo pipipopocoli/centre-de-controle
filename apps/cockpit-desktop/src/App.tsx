@@ -79,6 +79,7 @@ type FallbackDiagnostic = {
   chatMode: ChatMode
   error: string
 }
+type DirectSendPhase = 'thinking' | 'retrying'
 
 type RosterAgentView = {
   agent_id: string
@@ -308,6 +309,7 @@ function messageKindLabel(message: ChatMessage): string | null {
   const labels: Record<string, string> = {
     direct_reply: 'direct reply',
     direct_summary: 'internal summary',
+    direct_fallback: 'fallback',
     conceal_reply: 'room reply',
     conceal_summary: 'room summary',
     approval_pending: 'approval pending',
@@ -326,6 +328,23 @@ function messageChatMode(message: ChatMessage): ChatMode {
       : null
 
   return rawMode === 'conceal_room' ? 'conceal_room' : 'direct'
+}
+
+function messageReplySource(message: ChatMessage): string | null {
+  return typeof message.metadata?.reply_source === 'string' ? message.metadata.reply_source : null
+}
+
+function isSyntheticDirectReply(message: ChatMessage): boolean {
+  if (message.author === 'operator' || messageChatMode(message) !== 'direct') {
+    return false
+  }
+  if (messageReplySource(message) === 'fallback') {
+    return true
+  }
+  if (typeof message.metadata?.kind === 'string' && message.metadata.kind === 'direct_fallback') {
+    return true
+  }
+  return message.text.includes('recu en direct. Action immediate sur:')
 }
 
 function App() {
@@ -364,6 +383,7 @@ function App() {
   const [approvalBusy, setApprovalBusy] = useState<Record<string, boolean>>({})
   const [uiNotice, setUiNotice] = useState<string | null>(null)
   const [fallbackDiagnostics, setFallbackDiagnostics] = useState<FallbackDiagnostic[]>([])
+  const [directSendPhase, setDirectSendPhase] = useState<DirectSendPhase | null>(null)
   const [zoom, setZoom] = useState(2)
   const [workbenchCollapsed, setWorkbenchCollapsed] = useState(false)
   const [workbenchPanel, setWorkbenchPanel] = useState<WorkbenchPanel>('chat')
@@ -412,6 +432,7 @@ function App() {
   const fallbackPollingRef = useRef(false)
   const fallbackPollTimerRef = useRef<number | null>(null)
   const fallbackStopTimerRef = useRef<number | null>(null)
+  const directRetryTimerRef = useRef<number | null>(null)
 
   const idToNumericRef = useRef(new Map<string, number>())
   const numericToIdRef = useRef(new Map<number, string>())
@@ -499,7 +520,10 @@ function App() {
   )
 
   const directChatMessages = useMemo(
-    () => operatorChatMessages.filter((message) => messageChatMode(message) === 'direct'),
+    () =>
+      operatorChatMessages.filter(
+        (message) => messageChatMode(message) === 'direct' && !isSyntheticDirectReply(message),
+      ),
     [operatorChatMessages],
   )
 
@@ -1657,11 +1681,19 @@ function App() {
   }, [roomCandidateAgents])
 
   useEffect(() => {
+    return () => {
+      if (directRetryTimerRef.current !== null) {
+        window.clearTimeout(directRetryTimerRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     if (!directChatLogRef.current || !directStickToBottomRef.current) {
       return
     }
     directChatLogRef.current.scrollTop = directChatLogRef.current.scrollHeight
-  }, [visibleDirectMessages.length, workbenchPanel, activeTab])
+  }, [visibleDirectMessages.length, workbenchPanel, activeTab, directSendPhase])
 
   useEffect(() => {
     if (!roomChatLogRef.current || !roomStickToBottomRef.current) {
@@ -1708,6 +1740,13 @@ function App() {
       setRoomChatInput('')
     } else {
       setDirectChatInput('')
+      setDirectSendPhase('thinking')
+      if (directRetryTimerRef.current !== null) {
+        window.clearTimeout(directRetryTimerRef.current)
+      }
+      directRetryTimerRef.current = window.setTimeout(() => {
+        setDirectSendPhase((previous) => (previous === 'thinking' ? 'retrying' : previous))
+      }, 20000)
     }
     setApiError(null)
     setUiNotice(null)
@@ -1736,19 +1775,25 @@ function App() {
           (message) =>
             message.visibility !== 'internal' &&
             message.author !== 'operator' &&
-            messageChatMode(message) === chatMode,
+            messageChatMode(message) === chatMode &&
+            (chatMode !== 'direct' || !isSyntheticDirectReply(message)),
         )
 
+        setFallbackDiagnostics((previous) => [
+          {
+            id: `${Date.now()}-${chatMode}`,
+            timestamp: new Date().toISOString(),
+            chatMode,
+            error: response.error ?? 'unknown_chat_error',
+          },
+          ...previous,
+        ].slice(0, 12))
+
         if (response.error === 'some_llm_calls_failed_using_fallback' && hasVisibleReply) {
-          setFallbackDiagnostics((previous) => [
-            {
-              id: `${Date.now()}-${chatMode}`,
-              timestamp: new Date().toISOString(),
-              chatMode,
-              error: response.error ?? 'some_llm_calls_failed_using_fallback',
-            },
-            ...previous,
-          ].slice(0, 12))
+          // Keep the main chat surface quiet when a visible reply already exists.
+        } else if (chatMode === 'direct' && !hasVisibleReply) {
+          setDirectChatInput(text)
+          setUiNotice('direct reply unavailable. draft restored.')
         } else {
           setUiNotice(`degraded mode: ${response.error}`)
         }
@@ -1768,6 +1813,13 @@ function App() {
       setApiError(error instanceof Error ? error.message : String(error))
       setUiNotice('send failed. draft restored.')
     } finally {
+      if (directRetryTimerRef.current !== null) {
+        window.clearTimeout(directRetryTimerRef.current)
+        directRetryTimerRef.current = null
+      }
+      if (chatMode === 'direct') {
+        setDirectSendPhase(null)
+      }
       setIsSendingChat(false)
     }
   }, [
@@ -3956,6 +4008,22 @@ function App() {
                               </article>
                             ))
                           )}
+                          {directSendPhase ? (
+                            <article className="chat-row pending">
+                              <header>
+                                <div className="chat-row-meta">
+                                  <strong className="chat-author">{directTargetLabel}</strong>
+                                  <span className="chat-kind">{directSendPhase === 'retrying' ? 'retrying' : 'thinking'}</span>
+                                </div>
+                                <time className="chat-time">live</time>
+                              </header>
+                              <p className="chat-body">
+                                {directSendPhase === 'retrying'
+                                  ? `${directTargetLabel} is retrying OpenRouter...`
+                                  : `${directTargetLabel} is thinking...`}
+                              </p>
+                            </article>
+                          ) : null}
                         </div>
                         <div className="composer-stack direct-composer-stack">
                           <div className="composer-row composer-row-inline">

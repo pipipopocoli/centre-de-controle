@@ -26,8 +26,8 @@ use crate::{
     models::{
         AgentRecord, ApprovalDecisionRequest, ApprovalStatus, ChatApprovalsResponse,
         ChatHistoryResponse, ChatMessage, CreateAgentRequest, CreateAgentResponse,
-        CreateTaskRequest, DeliveryMode, LiveTurnRequest, LiveTurnResponse, LlmProfileResponse,
-        MessageVisibility, PixelAgentStatus, PixelFeedResponse, ProjectCatalogEntry,
+        ChatMode, CreateTaskRequest, DeliveryMode, LiveTurnRequest, LiveTurnResponse,
+        LlmProfileResponse, MessageVisibility, PixelAgentStatus, PixelFeedResponse, ProjectCatalogEntry,
         ProjectCatalogResponse, ProjectSettings, ProjectSettingsResponse, ProjectSummaryResponse,
         ProjectTaskCounts, RoadmapDraftRequest, RoadmapDraftResponse, RoadmapResponse,
         RoadmapSections, SkillLibraryEntry, SkillsLibraryResponse, TakeoverStartRequest,
@@ -508,22 +508,24 @@ async fn live_turn(
             }),
         );
 
-        let auto_tasks = storage::create_tasks_from_ai_message(
-            state.control_root.as_ref(),
-            &project_id,
-            &message.author,
-            &message.text,
-        )?;
-        for task in auto_tasks {
-            state.emit_event(
+        if matches!(payload.chat_mode, ChatMode::ConcealRoom) {
+            let auto_tasks = storage::create_tasks_from_ai_message(
+                state.control_root.as_ref(),
                 &project_id,
-                "task.created",
-                json!({
-                    "task": task,
-                    "run_id": run_id,
-                    "author": message.author,
-                }),
-            );
+                &message.author,
+                &message.text,
+            )?;
+            for task in auto_tasks {
+                state.emit_event(
+                    &project_id,
+                    "task.created",
+                    json!({
+                        "task": task,
+                        "run_id": run_id,
+                        "author": message.author,
+                    }),
+                );
+            }
         }
     }
 

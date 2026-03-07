@@ -4,7 +4,7 @@ use anyhow::Result;
 use chrono::Utc;
 use serde_json::{Value, json};
 use tokio::task::JoinSet;
-use tokio::time::{Duration, timeout};
+use tokio::time::{Duration, sleep, timeout};
 use uuid::Uuid;
 
 use crate::{
@@ -17,7 +17,9 @@ use crate::{
 };
 
 const OVERLAP_WINDOW_MINUTES: i64 = 30;
-const LLM_CALL_TIMEOUT_SECONDS: u64 = 5;
+const ROOM_LLM_TIMEOUT_SECONDS: u64 = 5;
+const DIRECT_LLM_TIMEOUT_SECONDS: u64 = 20;
+const DIRECT_LLM_RETRY_DELAY_SECONDS: u64 = 2;
 
 // Hierarchical delegation metadata and policy guards
 // ISSUE-W20R-A9-004: L0->L1/L1->L2 enforcement
@@ -68,6 +70,12 @@ pub struct OrchestrationResult {
     pub error: Option<String>,
 }
 
+#[derive(Debug, Clone)]
+struct AgentReply {
+    text: String,
+    reply_source: &'static str,
+}
+
 fn model_for_agent(profile: &LlmProfile, agent_id: &str) -> String {
     if agent_id == "clems" {
         return profile.clems_model.clone();
@@ -83,29 +91,40 @@ fn model_for_agent(profile: &LlmProfile, agent_id: &str) -> String {
 }
 
 fn actor_prompt(agent_id: &str, mode: &ChatMode) -> String {
-    let mode_hint = match mode {
-        ChatMode::Direct => "direct",
-        ChatMode::ConcealRoom => "conceal_room",
-    };
-    match agent_id {
-        "clems" => format!(
-            "You are @clems, Cockpit L0 orchestrator. mode={mode_hint}. Reply in concise french, ascii only, action oriented. If operator asks for a task list or roadmap, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
-        ),
-        "victor" => format!(
-            "You are @victor, backend lead L1. mode={mode_hint}. Reply in concise french with implementation actions. If you are defining official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
-        ),
-        "leo" => format!(
-            "You are @leo, UI lead L1. mode={mode_hint}. Reply in concise french with UX and frontend actions. If you are defining official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
-        ),
-        "nova" => format!(
-            "You are @nova, creative science lead L1. mode={mode_hint}. Reply concise with evidence path and decision tag. If you define official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
-        ),
-        "vulgarisation" => format!(
-            "You are @vulgarisation, simplification lead L1. mode={mode_hint}. Reply in simple french for operator. If you define official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
-        ),
-        _ => format!(
-            "You are @{agent_id}, specialist L2. mode={mode_hint}. Reply concise with execution next step. Never create roadmap, strategy, or TASKS block."
-        ),
+    match mode {
+        ChatMode::Direct => match agent_id {
+            "clems" => "You are @clems, Cockpit L0 orchestrator in a direct operator chat. Reply in natural french, ascii only, concise, human, and genuinely conversational. Answer the operator directly. Suggest next actions only when helpful. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
+            "victor" => "You are @victor, backend lead L1 in a direct operator chat. Reply in natural french, ascii only, concise, and concrete. Stay conversational, but keep your backend lead perspective. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
+            "leo" => "You are @leo, UI lead L1 in a direct operator chat. Reply in natural french, ascii only, concise, and concrete. Stay conversational, but keep your frontend and UX perspective. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
+            "nova" => "You are @nova, creative science lead L1 in a direct operator chat. Reply in natural french, ascii only, concise, and evidence aware. Stay conversational. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
+            "vulgarisation" => "You are @vulgarisation, simplification lead L1 in a direct operator chat. Reply in simple french, ascii only, concise, and very clear. Stay conversational. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
+            _ => format!(
+                "You are @{agent_id}, specialist L2 in a direct operator chat. Reply in natural french, ascii only, concise, and execution focused. Stay conversational, but do not create roadmap, strategy, or TASKS blocks unless explicitly asked."
+            ),
+        },
+        ChatMode::ConcealRoom => {
+            let mode_hint = "conceal_room";
+            match agent_id {
+                "clems" => format!(
+                    "You are @clems, Cockpit L0 orchestrator. mode={mode_hint}. Reply in concise french, ascii only, action oriented. If operator asks for a task list or roadmap, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
+                ),
+                "victor" => format!(
+                    "You are @victor, backend lead L1. mode={mode_hint}. Reply in concise french with implementation actions. If you are defining official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
+                ),
+                "leo" => format!(
+                    "You are @leo, UI lead L1. mode={mode_hint}. Reply in concise french with UX and frontend actions. If you are defining official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
+                ),
+                "nova" => format!(
+                    "You are @nova, creative science lead L1. mode={mode_hint}. Reply concise with evidence path and decision tag. If you define official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
+                ),
+                "vulgarisation" => format!(
+                    "You are @vulgarisation, simplification lead L1. mode={mode_hint}. Reply in simple french for operator. If you define official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
+                ),
+                _ => format!(
+                    "You are @{agent_id}, specialist L2. mode={mode_hint}. Reply concise with execution next step. Never create roadmap, strategy, or TASKS block."
+                ),
+            }
+        }
     }
 }
 
@@ -132,15 +151,25 @@ fn message_with_meta(
     execution_mode: ExecutionMode,
     kind: &str,
     visibility: MessageVisibility,
+    reply_source: Option<&str>,
 ) -> ChatMessage {
     let mut message = ChatMessage::new(author, text, thread_id).with_visibility(visibility);
-    message.metadata = json!({
+    let mut metadata = json!({
         "run_id": run_id,
         "mode": mode_to_str(&chat_mode),
         "execution_mode": execution_mode_to_str(&execution_mode),
         "kind": kind,
     });
+    if let Some(reply_source) = reply_source {
+        metadata["reply_source"] = Value::String(reply_source.to_string());
+    }
+    message.metadata = metadata;
     message
+}
+
+fn is_retryable_error(error: &str) -> bool {
+    error.starts_with("openrouter_unreachable:")
+        || error.starts_with("openrouter_timeout_after_")
 }
 
 fn should_request_l2(payload: &LiveTurnRequest, l1_outputs: &[String]) -> bool {
@@ -172,7 +201,7 @@ async fn llm_reply(
     user_text: &str,
     context_ref: Option<&Value>,
     usage_calls: &mut Vec<Value>,
-) -> String {
+) -> AgentReply {
     let context_owned = context_ref.cloned();
     let model = model_for_agent(profile, author);
     let system = actor_prompt(author, &mode);
@@ -180,38 +209,70 @@ async fn llm_reply(
     if let Some(context_ref) = context_ref {
         user_prompt.push_str(&format!("Context ref:\n{}\n", context_ref));
     }
-    let result = match timeout(
-        Duration::from_secs(LLM_CALL_TIMEOUT_SECONDS),
-        openrouter::chat_completion(&model, &system, &user_prompt),
-    )
-    .await
-    {
-        Ok(result) => result,
-        Err(_) => {
-            let fallback = chat::generate_agent_reply(author, user_text, mode.clone());
-            usage_calls.push(json!({
-                "agent_id": author,
-                "model": model,
-                "status": "failed",
-                "usage": json!({}),
-                "error": format!("openrouter_timeout_after_{}s", LLM_CALL_TIMEOUT_SECONDS),
-                "context_ref": context_owned,
-            }));
-            return fallback;
-        }
+    let timeout_seconds = match mode {
+        ChatMode::Direct => DIRECT_LLM_TIMEOUT_SECONDS,
+        ChatMode::ConcealRoom => ROOM_LLM_TIMEOUT_SECONDS,
     };
-    usage_calls.push(json!({
-        "agent_id": author,
-        "model": result.model,
-        "status": result.status,
-        "usage": result.usage,
-        "error": result.error,
-    }));
+    let max_attempts = match mode {
+        ChatMode::Direct => 2usize,
+        ChatMode::ConcealRoom => 1usize,
+    };
 
-    if result.status == "ok" && !result.text.trim().is_empty() {
-        return result.text.trim().to_string();
+    for attempt in 1..=max_attempts {
+        let result = match timeout(
+            Duration::from_secs(timeout_seconds),
+            openrouter::chat_completion(&model, &system, &user_prompt),
+        )
+        .await
+        {
+            Ok(result) => result,
+            Err(_) => openrouter::LlmCallResult {
+                status: "failed".to_string(),
+                text: String::new(),
+                model: model.clone(),
+                usage: json!({}),
+                error: Some(format!("openrouter_timeout_after_{}s", timeout_seconds)),
+            },
+        };
+
+        usage_calls.push(json!({
+            "agent_id": author,
+            "model": result.model,
+            "status": result.status,
+            "usage": result.usage,
+            "error": result.error,
+            "attempt": attempt,
+            "context_ref": context_owned,
+            "reply_mode": mode_to_str(&mode),
+        }));
+
+        if result.status == "ok" && !result.text.trim().is_empty() {
+            return AgentReply {
+                text: result.text.trim().to_string(),
+                reply_source: "llm",
+            };
+        }
+
+        let error = result
+            .error
+            .clone()
+            .unwrap_or_else(|| "openrouter_empty_response".to_string());
+
+        if matches!(mode, ChatMode::Direct)
+            && attempt < max_attempts
+            && is_retryable_error(&error)
+        {
+            sleep(Duration::from_secs(DIRECT_LLM_RETRY_DELAY_SECONDS)).await;
+            continue;
+        }
+
+        break;
     }
-    chat::generate_agent_reply(author, user_text, mode)
+
+    AgentReply {
+        text: chat::generate_agent_reply(author, user_text, mode),
+        reply_source: "fallback",
+    }
 }
 
 async fn clems_summary(
@@ -219,7 +280,7 @@ async fn clems_summary(
     user_text: &str,
     context_snippets: &[String],
     usage_calls: &mut Vec<Value>,
-) -> String {
+) -> AgentReply {
     let model = model_for_agent(profile, "clems");
     let system = "You are @clems. Create a short synthesis in french with next immediate action.";
     let joined = if context_snippets.is_empty() {
@@ -232,7 +293,7 @@ async fn clems_summary(
         )
     };
     let result = match timeout(
-        Duration::from_secs(LLM_CALL_TIMEOUT_SECONDS),
+        Duration::from_secs(ROOM_LLM_TIMEOUT_SECONDS),
         openrouter::chat_completion(&model, system, &joined),
     )
     .await
@@ -244,10 +305,13 @@ async fn clems_summary(
                 "model": model,
                 "status": "failed",
                 "usage": json!({}),
-                "error": format!("openrouter_timeout_after_{}s", LLM_CALL_TIMEOUT_SECONDS),
+                "error": format!("openrouter_timeout_after_{}s", ROOM_LLM_TIMEOUT_SECONDS),
                 "purpose": "summary",
             }));
-            return chat::clems_summary(user_text, context_snippets.len().max(1));
+            return AgentReply {
+                text: chat::clems_summary(user_text, context_snippets.len().max(1)),
+                reply_source: "fallback",
+            };
         }
     };
     usage_calls.push(json!({
@@ -260,9 +324,15 @@ async fn clems_summary(
     }));
 
     if result.status == "ok" && !result.text.trim().is_empty() {
-        return result.text.trim().to_string();
+        return AgentReply {
+            text: result.text.trim().to_string(),
+            reply_source: "llm",
+        };
     }
-    chat::clems_summary(user_text, context_snippets.len().max(1))
+    AgentReply {
+        text: chat::clems_summary(user_text, context_snippets.len().max(1)),
+        reply_source: "fallback",
+    }
 }
 
 pub async fn run_turn(
@@ -294,40 +364,64 @@ pub async fn run_turn(
                 &mut usage_calls,
             )
             .await;
-            let target_msg = message_with_meta(
-                &target,
-                target_reply.clone(),
-                thread_id.clone(),
-                run_id,
-                ChatMode::Direct,
-                execution_mode.clone(),
-                "direct_reply",
-                MessageVisibility::Operator,
-            );
-            messages.push(target_msg);
-
-            let summary = if target == "clems" {
-                target_reply
-            } else {
-                let summary_text = clems_summary(
-                    &profile,
-                    &payload.text,
-                    std::slice::from_ref(&target_reply),
-                    &mut usage_calls,
-                )
-                .await;
-                let summary_msg = message_with_meta(
-                    "clems",
-                    summary_text.clone(),
+            let summary = if target_reply.reply_source == "llm" {
+                let target_msg = message_with_meta(
+                    &target,
+                    target_reply.text.clone(),
                     thread_id.clone(),
                     run_id,
                     ChatMode::Direct,
-                    execution_mode,
-                    "direct_summary",
-                    MessageVisibility::Internal,
+                    execution_mode.clone(),
+                    "direct_reply",
+                    MessageVisibility::Operator,
+                    Some(target_reply.reply_source),
                 );
-                messages.push(summary_msg);
-                summary_text
+                messages.push(target_msg);
+
+                if target == "clems" {
+                    target_reply.text.clone()
+                } else {
+                    let summary_reply = clems_summary(
+                        &profile,
+                        &payload.text,
+                        std::slice::from_ref(&target_reply.text),
+                        &mut usage_calls,
+                    )
+                    .await;
+                    let summary_text = summary_reply.text.clone();
+                    let summary_msg = message_with_meta(
+                        "clems",
+                        summary_reply.text,
+                        thread_id.clone(),
+                        run_id,
+                        ChatMode::Direct,
+                        execution_mode,
+                        "direct_summary",
+                        MessageVisibility::Internal,
+                        Some(summary_reply.reply_source),
+                    );
+                    messages.push(summary_msg);
+                    if summary_reply.reply_source == "fallback" {
+                        error = Some("some_llm_calls_failed_using_fallback".to_string());
+                    }
+                    summary_text
+                }
+            } else {
+                error = Some("some_llm_calls_failed_using_fallback".to_string());
+                messages.push(message_with_meta(
+                    &target,
+                    format!(
+                        "direct reply unavailable for @{target} after retry. keep the draft and retry.",
+                    ),
+                    thread_id.clone(),
+                    run_id,
+                    ChatMode::Direct,
+                    execution_mode.clone(),
+                    "direct_fallback",
+                    MessageVisibility::Internal,
+                    Some(target_reply.reply_source),
+                ));
+                String::new()
             };
 
             return Ok(OrchestrationResult {
@@ -357,7 +451,7 @@ pub async fn run_turn(
                             user_prompt.push_str(&format!("Context ref:\n{}\n", context_ref));
                         }
                         let result = match timeout(
-                            Duration::from_secs(LLM_CALL_TIMEOUT_SECONDS),
+                            Duration::from_secs(ROOM_LLM_TIMEOUT_SECONDS),
                             openrouter::chat_completion(&model, &system, &user_prompt),
                         )
                         .await
@@ -376,7 +470,7 @@ pub async fn run_turn(
                                         "model": model,
                                         "status": "failed",
                                         "usage": json!({}),
-                                        "error": format!("openrouter_timeout_after_{}s", LLM_CALL_TIMEOUT_SECONDS),
+                                        "error": format!("openrouter_timeout_after_{}s", ROOM_LLM_TIMEOUT_SECONDS),
                                     }),
                                 );
                             }
@@ -418,6 +512,11 @@ pub async fn run_turn(
                 });
 
                 for (target, text, usage) in target_outputs {
+                    let reply_source = usage
+                        .get("status")
+                        .and_then(Value::as_str)
+                        .map(|status| if status == "ok" { "llm" } else { "fallback" })
+                        .unwrap_or("fallback");
                     usage_calls.push(usage);
                     snippets.push(format!("@{} {}", target, text));
                     messages.push(message_with_meta(
@@ -429,20 +528,22 @@ pub async fn run_turn(
                         execution_mode.clone(),
                         "conceal_reply",
                         MessageVisibility::Internal,
+                        Some(reply_source),
                     ));
                 }
             }
 
-            let summary = clems_summary(&profile, &payload.text, &snippets, &mut usage_calls).await;
+            let summary_reply = clems_summary(&profile, &payload.text, &snippets, &mut usage_calls).await;
             messages.push(message_with_meta(
                 "clems",
-                summary.clone(),
+                summary_reply.text.clone(),
                 thread_id.clone(),
                 run_id,
                 ChatMode::ConcealRoom,
                 execution_mode.clone(),
                 "conceal_summary",
                 MessageVisibility::Operator,
+                Some(summary_reply.reply_source),
             ));
 
             if should_request_l2(payload, &snippets) {
@@ -485,19 +586,20 @@ pub async fn run_turn(
                 approval_requests.push(approval.clone());
 
                 if matches!(approval.status, ApprovalStatus::Pending) {
-                    messages.push(message_with_meta(
-                        "clems",
-                        format!(
+                        messages.push(message_with_meta(
+                            "clems",
+                            format!(
                             "L2 request pending on section '{}'. @olivier approve or reject this request.",
                             section_tag
                         ),
                         thread_id.clone(),
                         run_id,
-                        ChatMode::ConcealRoom,
-                        execution_mode.clone(),
-                        "approval_pending",
-                        MessageVisibility::Internal,
-                    ));
+                            ChatMode::ConcealRoom,
+                            execution_mode.clone(),
+                            "approval_pending",
+                            MessageVisibility::Internal,
+                            None,
+                        ));
                 } else {
                     let spawn_count = if matches!(payload.execution_mode, ExecutionMode::Scene) {
                         3usize
@@ -521,13 +623,14 @@ pub async fn run_turn(
                         .await;
                         messages.push(message_with_meta(
                             &agent_id,
-                            spawn_text,
+                            spawn_text.text,
                             thread_id.clone(),
                             run_id,
                             ChatMode::ConcealRoom,
                             execution_mode.clone(),
                             "l2_spawn_output",
                             MessageVisibility::Internal,
+                            Some(spawn_text.reply_source),
                         ));
                     }
                 }
@@ -542,7 +645,7 @@ pub async fn run_turn(
 
             return Ok(OrchestrationResult {
                 messages,
-                clems_summary: summary,
+                clems_summary: summary_reply.text,
                 approval_requests,
                 spawned_agents,
                 model_usage: json!({ "calls": usage_calls }),

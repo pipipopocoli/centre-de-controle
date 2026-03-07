@@ -1246,6 +1246,11 @@
   background: linear-gradient(180deg, rgba(255, 252, 245, 0.99), rgba(251, 246, 235, 0.99));
 }
 
+.chat-row.pending {
+  border-left-color: rgba(104, 138, 167, 0.72);
+  background: linear-gradient(180deg, rgba(246, 249, 252, 0.99), rgba(239, 245, 250, 0.99));
+}
+
 .chat-row header {
   display: flex;
   justify-content: space-between;
