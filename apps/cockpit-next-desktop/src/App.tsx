@@ -949,6 +949,31 @@ function App() {
 
   const selectedAgentChatReady = selectedAgent?.chat_targetable ?? false
 
+  useEffect(() => {
+    if (rosterAgents.length === 0) {
+      return
+    }
+
+    const selectedStillExists = selectedAgentId ? rosterAgents.some((agent) => agent.agent_id === selectedAgentId) : false
+    if (selectedStillExists) {
+      return
+    }
+
+    const fallbackAgent = rosterAgents.find((agent) => agent.agent_id === 'clems') ?? rosterAgents[0]
+    if (!fallbackAgent) {
+      return
+    }
+
+    setSelectedAgentId(fallbackAgent.agent_id)
+    setDirectTarget(fallbackAgent.agent_id === 'clems' || !fallbackAgent.chat_targetable ? 'clems' : 'selected_agent')
+  }, [rosterAgents, selectedAgentId])
+
+  useEffect(() => {
+    if (directTarget === 'selected_agent' && !selectedAgentChatReady) {
+      setDirectTarget('clems')
+    }
+  }, [directTarget, selectedAgentChatReady])
+
   const handleSendChat = useCallback(async ({
     targetMode = directTarget,
     chatMode = activeChatMode,
@@ -2381,7 +2406,9 @@ function App() {
       {uiNotice ? <div className="notice-banner">{uiNotice}</div> : null}
 
       {activeTab !== 'pixel_home' ? (
-        renderSecondaryTab()
+        <div className="secondary-shell">
+          {renderSecondaryTab()}
+        </div>
       ) : (
         <main className="pixel-shell panel">
           <aside className="left-rail">
