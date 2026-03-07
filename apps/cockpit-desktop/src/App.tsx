@@ -21,6 +21,7 @@ import {
   getLayout,
   getLlmProfile,
   getPixelFeed,
+  getProjectSummary,
   getProjectSettings,
   getRoadmap,
   getSkillsLibrary,
@@ -33,7 +34,6 @@ import {
   putRoadmap,
   resetChat,
   restartTerminal,
-  sendTerminalInput,
   startTakeover,
   connectEvents,
   rejectApproval,
@@ -49,6 +49,7 @@ import type {
   HealthzResponse,
   LlmProfile,
   PixelFeedResponse,
+  ProjectSummaryResponse,
   ProjectSettings,
   RoadmapResponse,
   SkillLibraryEntry,
@@ -58,7 +59,7 @@ import type {
   VoiceTranscribeResponse,
   WsEventEnvelope,
 } from './lib/cockpitClient'
-import { openOsTerminal } from './lib/tauriOps'
+import { openOsTerminal, pickProjectFolder } from './lib/tauriOps'
 
 const DEFAULT_PROJECT_ID = import.meta.env.VITE_DEFAULT_PROJECT_ID ?? 'cockpit'
 
@@ -67,11 +68,14 @@ type WorkspaceTab = 'agent' | 'layout' | 'settings'
 type ComposerStatus = 'live' | 'reconnecting' | 'http_fallback'
 type DirectTargetMode = 'clems' | 'selected_agent'
 type WorkbenchPanel = 'chat' | 'terminal' | 'approvals' | 'events'
-type DocsPanel = 'runbook' | 'skills_library'
+type DocsPanel = 'runbook' | 'skills_library' | 'project'
+type RoomParticipantMode = 'all_active' | 'lead_only' | 'custom'
 
 type RosterAgentView = {
   agent_id: string
   name: string
+  engine: string
+  platform: string
   level: number
   lead_id: string | null
   role: string
@@ -79,6 +83,11 @@ type RosterAgentView = {
   terminal_state: string
   terminal_session_id: string | null
   skills: string[]
+  phase: string | null
+  status: string | null
+  current_task: string | null
+  heartbeat: string | null
+  scene_present: boolean
 }
 
 type TaskEditorState = {
@@ -150,6 +159,50 @@ function agentInitials(name: string, agentId: string): string {
     return parts[0].slice(0, 2).toUpperCase()
   }
   return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase()
+}
+
+function formatHeartbeat(ts: string | null | undefined): string {
+  if (!ts) {
+    return 'heartbeat n/a'
+  }
+  const parsed = Date.parse(ts)
+  if (Number.isNaN(parsed)) {
+    return 'heartbeat unknown'
+  }
+  const deltaSeconds = Math.max(0, Math.floor((Date.now() - parsed) / 1000))
+  if (deltaSeconds < 60) {
+    return 'heartbeat now'
+  }
+  const deltaMinutes = Math.floor(deltaSeconds / 60)
+  if (deltaMinutes < 60) {
+    return `heartbeat ${deltaMinutes}m ago`
+  }
+  const deltaHours = Math.floor(deltaMinutes / 60)
+  if (deltaHours < 24) {
+    return `heartbeat ${deltaHours}h ago`
+  }
+  const deltaDays = Math.floor(deltaHours / 24)
+  return `heartbeat ${deltaDays}d ago`
+}
+
+function formatAgentState(phase: string | null | undefined, status: string | null | undefined): string {
+  const cleanPhase = phase?.trim()
+  const cleanStatus = status?.trim()
+  if (cleanPhase && cleanStatus) {
+    return `${cleanPhase} - ${cleanStatus}`
+  }
+  return cleanPhase || cleanStatus || 'state unknown'
+}
+
+function formatCurrencyCad(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) {
+    return 'n/a'
+  }
+  return new Intl.NumberFormat('en-CA', {
+    style: 'currency',
+    currency: 'CAD',
+    maximumFractionDigits: value >= 100 ? 0 : 2,
+  }).format(value)
 }
 
 function modelLabel(modelId: string): string {
@@ -232,6 +285,16 @@ function messageKindLabel(message: ChatMessage): string | null {
   return labels[rawKind] ?? rawKind.replaceAll('_', ' ')
 }
 
+function messageChatMode(message: ChatMessage): ChatMode {
+  const rawMode = typeof message.metadata?.chat_mode === 'string'
+    ? message.metadata.chat_mode
+    : typeof message.metadata?.mode === 'string'
+      ? message.metadata.mode
+      : null
+
+  return rawMode === 'conceal_room' ? 'conceal_room' : 'direct'
+}
+
 function App() {
   const [projectId, setProjectId] = useState(DEFAULT_PROJECT_ID)
   const [apiError, setApiError] = useState<string | null>(null)
@@ -245,8 +308,6 @@ function App() {
   const [composerStatus, setComposerStatus] = useState<ComposerStatus>('reconnecting')
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [directTarget, setDirectTarget] = useState<DirectTargetMode>('clems')
-  const [terminalInput, setTerminalInput] = useState('')
-  const [terminalLogs, setTerminalLogs] = useState<Record<string, string[]>>({})
   const [eventLog, setEventLog] = useState<WsEventEnvelope[]>([])
   const [createAgentId, setCreateAgentId] = useState('')
   const [createAgentName, setCreateAgentName] = useState('')
@@ -285,14 +346,20 @@ function App() {
   const [docsPanel, setDocsPanel] = useState<DocsPanel>('runbook')
   const [skillsLibrary, setSkillsLibrary] = useState<SkillLibraryEntry[]>([])
   const [skillsLibraryLoading, setSkillsLibraryLoading] = useState(false)
+  const [projectSummary, setProjectSummary] = useState<ProjectSummaryResponse | null>(null)
   const [projectSettings, setProjectSettings] = useState<ProjectSettings | null>(null)
   const [linkedRepoDraft, setLinkedRepoDraft] = useState('')
   const [projectRoadmap, setProjectRoadmap] = useState<RoadmapResponse | null>(null)
   const [takeoverResult, setTakeoverResult] = useState<TakeoverStartResponse | null>(null)
   const [isRunningTakeover, setIsRunningTakeover] = useState(false)
   const [isApplyingTakeover, setIsApplyingTakeover] = useState(false)
+  const [isChoosingFolder, setIsChoosingFolder] = useState(false)
   const [isRecordingVoice, setIsRecordingVoice] = useState(false)
   const [isTranscribingVoice, setIsTranscribingVoice] = useState(false)
+  const [directVisibleCount, setDirectVisibleCount] = useState(12)
+  const [roomVisibleCount, setRoomVisibleCount] = useState(8)
+  const [roomParticipantMode, setRoomParticipantMode] = useState<RoomParticipantMode>('all_active')
+  const [roomCustomParticipants, setRoomCustomParticipants] = useState<string[]>([])
   const [assetsStatus, setAssetsStatus] = useState<{ donarg: boolean; pixelRef: boolean }>({
     donarg: false,
     pixelRef: false,
@@ -315,6 +382,11 @@ function App() {
   const mediaStreamRef = useRef<MediaStream | null>(null)
   const voiceChunksRef = useRef<Blob[]>([])
   const voiceFormatRef = useRef('ogg')
+  const roomParticipantIdsRef = useRef<string[]>(['clems'])
+  const directChatLogRef = useRef<HTMLDivElement>(null)
+  const roomChatLogRef = useRef<HTMLDivElement>(null)
+  const directStickToBottomRef = useRef(true)
+  const roomStickToBottomRef = useRef(true)
 
   const toNumericId = useCallback((agentId: string) => {
     const existing = idToNumericRef.current.get(agentId)
@@ -389,8 +461,21 @@ function App() {
     [chatMessages],
   )
 
-  const internalChatMessages = useMemo(
-    () => chatMessages.filter((message) => message.visibility === 'internal'),
+  const directChatMessages = useMemo(
+    () => operatorChatMessages.filter((message) => messageChatMode(message) === 'direct'),
+    [operatorChatMessages],
+  )
+
+  const conciergeChatMessages = useMemo(
+    () => operatorChatMessages.filter((message) => messageChatMode(message) === 'conceal_room'),
+    [operatorChatMessages],
+  )
+
+  const internalConciergeMessages = useMemo(
+    () =>
+      chatMessages.filter(
+        (message) => message.visibility === 'internal' && messageChatMode(message) === 'conceal_room',
+      ),
     [chatMessages],
   )
 
@@ -561,6 +646,13 @@ function App() {
     return settings
   }, [markSynced, projectId])
 
+  const refreshProjectSummary = useCallback(async () => {
+    const summary = await getProjectSummary(projectId)
+    setProjectSummary(summary)
+    markSynced()
+    return summary
+  }, [markSynced, projectId])
+
   const refreshRoadmap = useCallback(async () => {
     const roadmap = await getRoadmap(projectId)
     setProjectRoadmap(roadmap)
@@ -594,7 +686,7 @@ function App() {
 
       await ensureClemsAgent()
 
-      const [layout, pixel, chat, pendingApprovals, health, profile, taskPayload, settings, roadmap] = await Promise.all([
+      const [layout, pixel, chat, pendingApprovals, health, profile, taskPayload, settings, roadmap, summary] = await Promise.all([
         getLayout(projectId),
         getPixelFeed(projectId),
         getChat(projectId, 300, 'all'),
@@ -604,6 +696,7 @@ function App() {
         getTasks(projectId),
         getProjectSettings(projectId),
         getRoadmap(projectId),
+        getProjectSummary(projectId),
       ])
 
       const presetKey = `cockpit.video_preset_applied.${projectId}`
@@ -634,6 +727,7 @@ function App() {
       setProjectSettings(settings)
       setLinkedRepoDraft(settings.linked_repo_path ?? '')
       setProjectRoadmap(roadmap)
+      setProjectSummary(summary)
       setSelectedTaskId((previous) => previous ?? taskPayload.tasks[0]?.task_id ?? null)
       setAssetsStatus({
         donarg: themeLoaded,
@@ -738,22 +832,11 @@ function App() {
 
         if (event.type === 'task.created' || event.type === 'task.updated') {
           void refreshTasks()
+          void refreshProjectSummary()
           return
         }
 
         if (event.type === 'agent.terminal.status') {
-          const agentId = String(event.payload.agent_id ?? '')
-          const chunk = event.payload.chunk
-          if (agentId && typeof chunk === 'string' && chunk.length > 0) {
-            setTerminalLogs((previous) => {
-              const history = [...(previous[agentId] ?? []), chunk].slice(-260)
-              return {
-                ...previous,
-                [agentId]: history,
-              }
-            })
-          }
-
           const state = String(event.payload.state ?? '')
           if (state !== 'output') {
             void refreshPixelFeed()
@@ -776,6 +859,10 @@ function App() {
         ) {
           void refreshPixelFeed()
         }
+
+        if (event.type === 'project.settings.updated' || event.type === 'roadmap.updated') {
+          void refreshProjectSummary()
+        }
       },
       (connected) => {
         wsConnectedRef.current = connected
@@ -794,13 +881,28 @@ function App() {
       disconnect()
       stopFallbackPolling()
     }
-  }, [projectId, mergeChatMessages, refreshAgentWorkspace, refreshApprovals, refreshPixelFeed, refreshTasks, stopFallbackPolling])
+  }, [
+    projectId,
+    mergeChatMessages,
+    refreshAgentWorkspace,
+    refreshApprovals,
+    refreshPixelFeed,
+    refreshProjectSummary,
+    refreshTasks,
+    stopFallbackPolling,
+  ])
 
   useEffect(() => {
     if (activeTab === 'docs' && docsPanel === 'skills_library') {
       void refreshSkillsLibrary()
     }
   }, [activeTab, docsPanel, refreshSkillsLibrary])
+
+  useEffect(() => {
+    if (activeTab === 'overview' || (activeTab === 'docs' && docsPanel === 'project')) {
+      void refreshProjectSummary()
+    }
+  }, [activeTab, docsPanel, refreshProjectSummary])
 
   useEffect(() => {
     const listener = (rawEvent: Event) => {
@@ -939,13 +1041,14 @@ function App() {
       setTasks((previous) => [created, ...previous])
       setSelectedTaskId(created.task_id)
       setTaskEditor(emptyTaskEditor())
+      await refreshProjectSummary()
       setUiNotice(`task created: ${created.task_id}`)
     } catch (error) {
       setApiError(error instanceof Error ? error.message : String(error))
     } finally {
       setIsSavingTask(false)
     }
-  }, [isSavingTask, projectId, taskEditor])
+  }, [isSavingTask, projectId, refreshProjectSummary, taskEditor])
 
   const handleSaveTask = useCallback(async () => {
     if (!selectedTaskId || isSavingTask) {
@@ -958,13 +1061,14 @@ function App() {
       setTasks((previous) =>
         previous.map((task) => (task.task_id === updated.task_id ? updated : task)),
       )
+      await refreshProjectSummary()
       setUiNotice(`task updated: ${updated.task_id}`)
     } catch (error) {
       setApiError(error instanceof Error ? error.message : String(error))
     } finally {
       setIsSavingTask(false)
     }
-  }, [isSavingTask, projectId, selectedTaskId, taskEditor])
+  }, [isSavingTask, projectId, refreshProjectSummary, selectedTaskId, taskEditor])
 
   const handleTaskStatusMove = useCallback(
     async (taskId: string, status: TaskStatus) => {
@@ -974,11 +1078,12 @@ function App() {
         setTasks((previous) =>
           previous.map((task) => (task.task_id === updated.task_id ? updated : task)),
         )
+        await refreshProjectSummary()
       } catch (error) {
         setApiError(error instanceof Error ? error.message : String(error))
       }
     },
-    [projectId],
+    [projectId, refreshProjectSummary],
   )
 
   const handleSaveLlmProfile = useCallback(async () => {
@@ -1006,11 +1111,12 @@ function App() {
         linked_repo_path: linkedRepoDraft.trim() || '',
       })
       await refreshProjectSettings()
+      await refreshProjectSummary()
       setUiNotice('linked repo path saved')
     } catch (error) {
       setApiError(error instanceof Error ? error.message : String(error))
     }
-  }, [linkedRepoDraft, projectId, refreshProjectSettings])
+  }, [linkedRepoDraft, projectId, refreshProjectSettings, refreshProjectSummary])
 
   const handleRunTakeover = useCallback(async () => {
     setIsRunningTakeover(true)
@@ -1027,13 +1133,48 @@ function App() {
         })
         await refreshProjectSettings()
       }
-      setUiNotice('takeover draft ready')
+      await refreshProjectSummary()
+      setActiveTab('concierge_room')
+      const kickoffPrompt = [
+        `Takeover package ready for project ${projectId}.`,
+        `Linked repo: ${response.linked_repo_path || 'not linked'}`,
+        '',
+        `Human summary: ${response.summary_human}`,
+        '',
+        'Top tech findings:',
+        ...response.summary_tech.map((item) => `- ${item}`),
+        '',
+        'Suggested next actions:',
+        ...response.suggested_tasks.map((task) => `- ${task.title} -> @${task.owner}`),
+        '',
+        'Clems, run the board from this takeover package. Clarify key unknowns, then propose execution order.',
+      ].join('\n')
+
+      const kickoff = await liveTurn(projectId, {
+        text: kickoffPrompt,
+        chat_mode: 'conceal_room',
+        execution_mode: 'chat',
+        mentions: roomParticipantIdsRef.current,
+      })
+      mergeChatMessages(kickoff.messages)
+      if (kickoff.approval_requests.length > 0) {
+        void refreshApprovals()
+      }
+      setUiNotice('takeover draft ready in Le Conseil')
     } catch (error) {
       setApiError(error instanceof Error ? error.message : String(error))
     } finally {
       setIsRunningTakeover(false)
     }
-  }, [linkedRepoDraft, projectId, projectSettings?.linked_repo_path, refreshProjectSettings])
+  }, [
+    linkedRepoDraft,
+    mergeChatMessages,
+    projectId,
+    projectSettings?.linked_repo_path,
+    refreshApprovals,
+    refreshProjectSettings,
+    refreshProjectSummary,
+  ])
 
   const handleApplyTakeoverTasks = useCallback(async () => {
     if (!takeoverResult || takeoverResult.suggested_tasks.length === 0 || isApplyingTakeover) {
@@ -1054,13 +1195,14 @@ function App() {
         })
       }
       await refreshTasks()
+      await refreshProjectSummary()
       setUiNotice('takeover tasks added to To Do')
     } catch (error) {
       setApiError(error instanceof Error ? error.message : String(error))
     } finally {
       setIsApplyingTakeover(false)
     }
-  }, [isApplyingTakeover, projectId, refreshTasks, takeoverResult])
+  }, [isApplyingTakeover, projectId, refreshProjectSummary, refreshTasks, takeoverResult])
 
   const handleApplyTakeoverRoadmap = useCallback(async () => {
     if (!takeoverResult || isApplyingTakeover) {
@@ -1072,13 +1214,59 @@ function App() {
       const roadmap = await putRoadmap(projectId, takeoverResult.roadmap_sections)
       setProjectRoadmap(roadmap)
       await refreshRoadmap()
+      await refreshProjectSummary()
       setUiNotice('takeover roadmap applied')
     } catch (error) {
       setApiError(error instanceof Error ? error.message : String(error))
     } finally {
       setIsApplyingTakeover(false)
     }
-  }, [isApplyingTakeover, projectId, refreshRoadmap, takeoverResult])
+  }, [isApplyingTakeover, projectId, refreshProjectSummary, refreshRoadmap, takeoverResult])
+
+  const handleLaunchTakeoverPlan = useCallback(async () => {
+    if (!takeoverResult || isSendingChat) {
+      return
+    }
+
+    const kickoff = [
+      'Lets go.',
+      `Run the takeover plan for project ${projectId}.`,
+      `Linked repo: ${takeoverResult.linked_repo_path || 'not linked'}`,
+      '',
+      'Start from these tasks:',
+      ...takeoverResult.suggested_tasks.slice(0, 10).map((task) => `- ${task.title} -> @${task.owner}`),
+      '',
+      'Clems, coordinate the room, choose the execution order, and report Now / Next / Blockers.',
+    ].join('\n')
+
+    setActiveTab('concierge_room')
+    setApiError(null)
+    setUiNotice(null)
+    setIsSendingChat(true)
+    try {
+      const response = await liveTurn(projectId, {
+        text: kickoff,
+        chat_mode: 'conceal_room',
+        execution_mode: 'chat',
+        mentions: roomParticipantIdsRef.current,
+      })
+      mergeChatMessages(response.messages)
+      if (response.approval_requests.length > 0) {
+        void refreshApprovals()
+      }
+      setUiNotice('takeover execution started in Le Conseil')
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setIsSendingChat(false)
+    }
+  }, [
+    isSendingChat,
+    mergeChatMessages,
+    projectId,
+    refreshApprovals,
+    takeoverResult,
+  ])
 
   const handleToggleVoiceRecording = useCallback(async () => {
     if (isTranscribingVoice) {
@@ -1174,9 +1362,13 @@ function App() {
         return
       }
 
-      await ensureAgentTerminal(agentId)
+      setSelectedAgentId(agentId)
+      setActiveTab('pixel_home')
+      setWorkspaceTab('agent')
+      setWorkbenchPanel('chat')
+      setDirectTarget(agentId === 'clems' ? 'clems' : 'selected_agent')
     },
-    [ensureAgentTerminal],
+    [],
   )
 
   const handleOfficeClose = useCallback(
@@ -1190,12 +1382,60 @@ function App() {
     [handleDeleteAgent],
   )
 
+  const activeTasksByOwner = useMemo(() => {
+    const next = new Map<string, TaskRecord>()
+    for (const task of [...tasks].sort(compareTasksByFreshness)) {
+      if (task.status === 'done') {
+        continue
+      }
+      if (!next.has(task.owner)) {
+        next.set(task.owner, task)
+      }
+    }
+    return next
+  }, [tasks])
+
   const rosterAgents = useMemo<RosterAgentView[]>(() => {
-    const skillsByAgentId = new Map(agentRecords.map((agent) => [agent.agent_id, agent.skills]))
-    return (feed?.agents ?? []).map((agent) => ({
-      ...agent,
-      skills: skillsByAgentId.get(agent.agent_id) ?? [],
-    }))
+    const recordsByAgentId = new Map(agentRecords.map((agent) => [agent.agent_id, agent]))
+    const feedByAgentId = new Map((feed?.agents ?? []).map((agent) => [agent.agent_id, agent]))
+    const preferredOrder = ['clems', 'victor', 'leo', 'nova', 'vulgarisation']
+    const mergedIds = [...new Set([...preferredOrder, ...Array.from(recordsByAgentId.keys()), ...Array.from(feedByAgentId.keys())])]
+
+    return mergedIds
+      .map((agentId) => {
+        const record = recordsByAgentId.get(agentId)
+        const feedAgent = feedByAgentId.get(agentId)
+        if (!record && !feedAgent) {
+          return null
+        }
+        return {
+          agent_id: agentId,
+          name: feedAgent?.name ?? record?.name ?? agentId,
+          engine: record?.engine ?? 'openrouter',
+          platform: record?.platform ?? 'openrouter',
+          level: feedAgent?.level ?? record?.level ?? 2,
+          lead_id: feedAgent?.lead_id ?? record?.lead_id ?? null,
+          role: feedAgent?.role ?? record?.role ?? 'specialist',
+          chat_targetable: feedAgent?.chat_targetable ?? agentId === 'clems',
+          terminal_state: feedAgent?.terminal_state ?? 'offline',
+          terminal_session_id: feedAgent?.terminal_session_id ?? null,
+          skills: record?.skills ?? [],
+          phase: record?.phase ?? null,
+          status: record?.status ?? null,
+          current_task: record?.current_task ?? null,
+          heartbeat: record?.heartbeat ?? null,
+          scene_present: Boolean(feedAgent),
+        }
+      })
+      .filter((agent): agent is RosterAgentView => agent !== null)
+      .sort((left, right) => {
+        const leftOrder = preferredOrder.indexOf(left.agent_id)
+        const rightOrder = preferredOrder.indexOf(right.agent_id)
+        if (leftOrder !== -1 || rightOrder !== -1) {
+          return (leftOrder === -1 ? Number.MAX_SAFE_INTEGER : leftOrder) - (rightOrder === -1 ? Number.MAX_SAFE_INTEGER : rightOrder)
+        }
+        return left.agent_id.localeCompare(right.agent_id)
+      })
   }, [agentRecords, feed])
 
   const selectedAgent = useMemo(
@@ -1204,6 +1444,66 @@ function App() {
   )
 
   const selectedAgentChatReady = selectedAgent?.chat_targetable ?? false
+
+  const resolvedModelForAgent = useCallback((agent: RosterAgentView): string => {
+    if (!profileDraft) {
+      return 'route loading'
+    }
+    if (agent.level === 0) {
+      return modelLabel(profileDraft.clems_model)
+    }
+    if (agent.level === 1) {
+      return modelLabel(profileDraft.l1_models[agent.agent_id] ?? 'moonshotai/kimi-k2.5')
+    }
+    return modelLabel(profileDraft.l2_default_model)
+  }, [profileDraft])
+
+  const visibleDirectMessages = useMemo(
+    () => directChatMessages.slice(-directVisibleCount),
+    [directChatMessages, directVisibleCount],
+  )
+
+  const visibleConciergeMessages = useMemo(
+    () => conciergeChatMessages.slice(-roomVisibleCount),
+    [conciergeChatMessages, roomVisibleCount],
+  )
+
+  const visibleInternalConciergeMessages = useMemo(
+    () => internalConciergeMessages.slice(-10),
+    [internalConciergeMessages],
+  )
+
+  const roomCandidateAgents = useMemo(
+    () => rosterAgents.filter((agent) => agent.agent_id === 'clems' || (agent.level === 1 && agent.chat_targetable)),
+    [rosterAgents],
+  )
+
+  const effectiveRoomParticipantIds = useMemo(() => {
+    const allIds = roomCandidateAgents.map((agent) => agent.agent_id)
+    const leadIds = roomCandidateAgents
+      .filter((agent) => agent.agent_id === 'clems' || agent.level === 1)
+      .map((agent) => agent.agent_id)
+
+    if (roomParticipantMode === 'custom') {
+      const custom = roomCustomParticipants.filter((agentId) => allIds.includes(agentId))
+      return custom.length > 0 ? custom : ['clems']
+    }
+    if (roomParticipantMode === 'lead_only') {
+      return leadIds
+    }
+    return allIds
+  }, [roomCandidateAgents, roomCustomParticipants, roomParticipantMode])
+
+  const roomParticipantLabel = useMemo(() => {
+    if (effectiveRoomParticipantIds.length === 0) {
+      return '@clems'
+    }
+    return effectiveRoomParticipantIds.map((agentId) => `@${agentId}`).join(', ')
+  }, [effectiveRoomParticipantIds])
+
+  useEffect(() => {
+    roomParticipantIdsRef.current = effectiveRoomParticipantIds
+  }, [effectiveRoomParticipantIds])
 
   useEffect(() => {
     if (rosterAgents.length === 0) {
@@ -1229,6 +1529,25 @@ function App() {
       setDirectTarget('clems')
     }
   }, [directTarget, selectedAgentChatReady])
+
+  useEffect(() => {
+    const valid = new Set(roomCandidateAgents.map((agent) => agent.agent_id))
+    setRoomCustomParticipants((previous) => previous.filter((agentId) => valid.has(agentId)))
+  }, [roomCandidateAgents])
+
+  useEffect(() => {
+    if (!directChatLogRef.current || !directStickToBottomRef.current) {
+      return
+    }
+    directChatLogRef.current.scrollTop = directChatLogRef.current.scrollHeight
+  }, [visibleDirectMessages.length, workbenchPanel, activeTab])
+
+  useEffect(() => {
+    if (!roomChatLogRef.current || !roomStickToBottomRef.current) {
+      return
+    }
+    roomChatLogRef.current.scrollTop = roomChatLogRef.current.scrollHeight
+  }, [visibleConciergeMessages.length, activeTab, takeoverResult?.run_id])
 
   const handleSendChat = useCallback(async ({
     targetMode = directTarget,
@@ -1263,6 +1582,7 @@ function App() {
         chat_mode: chatMode,
         execution_mode: executionMode,
         target_agent_id: targetAgentId,
+        mentions: chatMode === 'conceal_room' ? effectiveRoomParticipantIds : undefined,
       })
 
       mergeChatMessages(response.messages)
@@ -1295,27 +1615,10 @@ function App() {
     mergeChatMessages,
     projectId,
     refreshApprovals,
+    effectiveRoomParticipantIds,
     selectedAgent,
     startFallbackPolling,
   ])
-
-  const handleSendTerminal = useCallback(async () => {
-    if (!selectedAgentId) {
-      return
-    }
-    const text = terminalInput.trim()
-    if (!text) {
-      return
-    }
-
-    setTerminalInput('')
-    setApiError(null)
-    try {
-      await sendTerminalInput(projectId, selectedAgentId, text)
-    } catch (error) {
-      setApiError(error instanceof Error ? error.message : String(error))
-    }
-  }, [projectId, selectedAgentId, terminalInput])
 
   const handleRestartTerminal = useCallback(async () => {
     if (!selectedAgentId) {
@@ -1344,6 +1647,38 @@ function App() {
       setApiError(error instanceof Error ? error.message : String(error))
     }
   }, [projectId, selectedAgentId])
+
+  const handleOpenExternalTerminalForAgent = useCallback(
+    async (agentId: string) => {
+      setSelectedAgentId(agentId)
+      setApiError(null)
+      try {
+        const session = await openTerminal(projectId, agentId)
+        await openOsTerminal(agentId, session.cwd)
+      } catch (error) {
+        setApiError(error instanceof Error ? error.message : String(error))
+      }
+    },
+    [projectId],
+  )
+
+  const handleChooseRepoFolder = useCallback(async () => {
+    setIsChoosingFolder(true)
+    setApiError(null)
+    try {
+      const chosen = await pickProjectFolder()
+      if (chosen) {
+        setLinkedRepoDraft(chosen)
+      } else {
+        setUiNotice('folder picker cancelled')
+      }
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : String(error))
+      setUiNotice('native folder picker unavailable. manual path still works.')
+    } finally {
+      setIsChoosingFolder(false)
+    }
+  }, [])
 
   const handleQuickAgent = useCallback(
     async (agentId: string) => {
@@ -1458,12 +1793,6 @@ function App() {
     return rosterAgents.map((agent) => toNumericId(agent.agent_id))
   }, [rosterAgents, toNumericId])
 
-  const selectedLog = useMemo(() => {
-    if (!selectedAgentId) {
-      return []
-    }
-    return terminalLogs[selectedAgentId] ?? []
-  }, [selectedAgentId, terminalLogs])
   const profileDirty = useMemo(() => {
     if (!llmProfile || !profileDraft) {
       return false
@@ -1477,17 +1806,15 @@ function App() {
   }, [profileDraft, rosterAgents])
   const directTargetLabel =
     directTarget === 'selected_agent'
-      ? selectedAgent
-        ? selectedAgentChatReady
-          ? `@${selectedAgent.agent_id}`
-          : `@${selectedAgent.agent_id} unavailable`
-        : 'selected agent unavailable'
+      ? selectedAgent && selectedAgentChatReady
+        ? `@${selectedAgent.agent_id}`
+        : '@clems'
       : '@clems'
 
   const topTabs = useMemo(
     () => [
       { id: 'pixel_home' as const, label: 'Pixel Home' },
-      { id: 'concierge_room' as const, label: 'Concierge Room' },
+      { id: 'concierge_room' as const, label: 'Le Conseil' },
       { id: 'overview' as const, label: 'Overview' },
       { id: 'pilotage' as const, label: 'Pilotage' },
       { id: 'docs' as const, label: 'Docs' },
@@ -1650,8 +1977,20 @@ function App() {
             <div className="selected-agent-copy">
               <p className="selected-agent-label">Selected now</p>
               <strong>@{selectedAgent.agent_id}</strong>
+              <span>{formatAgentState(selectedAgent.phase, selectedAgent.status)}</span>
               <span>
-                {selectedAgent.chat_targetable ? 'chat ready' : 'chat unavailable'} - terminal {selectedAgent.terminal_state === 'running' ? 'live' : 'offline'}
+                {selectedAgent.current_task
+                  ? `task ${selectedAgent.current_task}`
+                  : activeTasksByOwner.get(selectedAgent.agent_id)
+                    ? `task ${activeTasksByOwner.get(selectedAgent.agent_id)?.title}`
+                    : 'no active task'}
+              </span>
+              <span>
+                {selectedAgent.chat_targetable ? 'chat ready' : 'chat unavailable'} - terminal{' '}
+                {selectedAgent.terminal_state === 'running' ? 'live' : 'offline'} - {formatHeartbeat(selectedAgent.heartbeat)}
+              </span>
+              <span>
+                model {resolvedModelForAgent(selectedAgent)} - {selectedAgent.scene_present ? 'on scene' : 'off scene'}
               </span>
             </div>
           </div>
@@ -1679,6 +2018,18 @@ function App() {
                   <p className="agent-lead">
                     {agent.lead_id ? `lead @${agent.lead_id}` : 'top-level operator lane'}
                   </p>
+                  <p className="agent-runtime-line">
+                    model {resolvedModelForAgent(agent)} - {agent.platform}
+                  </p>
+                  <p className="agent-runtime-line">
+                    {agent.current_task
+                      ? `task ${agent.current_task}`
+                      : activeTasksByOwner.get(agent.agent_id)
+                        ? `task ${activeTasksByOwner.get(agent.agent_id)?.title}`
+                        : 'no open task assigned'}
+                  </p>
+                  <p className="agent-runtime-line">{formatAgentState(agent.phase, agent.status)}</p>
+                  <p className="agent-runtime-line">{formatHeartbeat(agent.heartbeat)}</p>
                 </div>
                 {agent.skills.length > 0 ? (
                   <div className="agent-skill-row">
@@ -1699,16 +2050,16 @@ function App() {
                   <span className={`dot ${agent.terminal_state === 'running' ? 'green' : 'gray'}`}>
                     terminal {agent.terminal_state === 'running' ? 'live' : 'offline'}
                   </span>
+                  <span className={`dot ${agent.scene_present ? 'green' : 'gray'}`}>
+                    {agent.scene_present ? 'on scene' : 'off scene'}
+                  </span>
                 </div>
               </button>
               <div className="agent-card-footer">
                 <button
                   className="agent-action"
                   onClick={() => {
-                    setSelectedAgentId(agent.agent_id)
-                    setActiveTab('pixel_home')
-                    setWorkbenchPanel('terminal')
-                    void ensureAgentTerminal(agent.agent_id)
+                    void handleOpenExternalTerminalForAgent(agent.agent_id)
                   }}
                 >
                   Open terminal
@@ -1750,10 +2101,22 @@ function App() {
     const queueDepth = feed?.queue_depth ?? 0
     const chatReadyCount = rosterAgents.filter((agent) => agent.chat_targetable).length
     const leadsCount = rosterAgents.filter((agent) => agent.level === 1).length
-    const latestOperator = operatorChatMessages.slice(-8).reverse()
-    const latestInternal = internalChatMessages.slice(-8).reverse()
+    const latestDirect = directChatMessages.slice(-8).reverse()
+    const latestRoom = conciergeChatMessages.slice(-8).reverse()
+    const latestInternal = internalConciergeMessages.slice(-8).reverse()
     const latestEvents = eventLog.slice(0, 20)
     const recentTasks = [...tasks].sort(compareTasksByFreshness).slice(0, 5)
+    const linkedRepoLabel = projectSummary?.linked_repo_path ?? projectSettings?.linked_repo_path ?? 'not linked'
+    const projectPhase = projectSummary?.phase ?? 'unknown'
+    const projectObjective = projectSummary?.objective ?? 'No objective set yet.'
+    const roadmapNow = projectSummary?.roadmap_now ?? projectRoadmap?.sections.now ?? []
+    const roadmapNext = projectSummary?.roadmap_next ?? projectRoadmap?.sections.next ?? []
+    const roadmapRisks = projectSummary?.roadmap_risks ?? projectRoadmap?.sections.risks ?? []
+    const projectDecisions = projectSummary?.latest_decisions ?? []
+    const projectTaskCounts = projectSummary?.open_task_counts
+    const monthlyCostLabel = formatCurrencyCad(projectSummary?.monthly_cost_estimate_cad)
+    const costEventsLabel = String(projectSummary?.cost_events_this_month ?? 0)
+    const modelUsageSummary = projectSummary?.model_usage_summary ?? []
     const taskCounts = STATUS_ORDER.reduce<Record<TaskStatus, number>>(
       (accumulator, status) => ({
         ...accumulator,
@@ -1773,33 +2136,95 @@ function App() {
       { label: 'Agents', value: String(agentsTotal) },
       { label: 'Terminals live', value: String(runningTerminals) },
       { label: 'Queue', value: String(queueDepth) },
-      { label: 'Tasks open', value: String(taskCounts.todo + taskCounts.in_progress + taskCounts.blocked) },
+      {
+        label: 'Tasks open',
+        value: String(
+          projectTaskCounts
+            ? projectTaskCounts.todo + projectTaskCounts.in_progress + projectTaskCounts.blocked
+            : taskCounts.todo + taskCounts.in_progress + taskCounts.blocked,
+        ),
+      },
     ]
 
     if (activeTab === 'concierge_room') {
       return (
         <section className="secondary-tab panel concierge-tab">
           <div className="secondary-header">
-            <h2>Concierge Room</h2>
-            <span className="hint">multi-agent room with Clems summary on top</span>
+            <h2>Le Conseil</h2>
+            <span className="hint">multi-agent board room with Clems on coordination duty</span>
           </div>
           <div className="concierge-layout">
             <section className="secondary-card concierge-chat-card">
               <div className="section-title-row">
-                <h3>Room chat</h3>
+                <h3>Board room</h3>
                 <div className="chat-actions">
                   <span className={`chat-status ${composerStatus}`}>{composerLabel}</span>
                   <span className="chat-target">room fanout via @clems</span>
                 </div>
               </div>
+              {takeoverResult ? (
+                <div className="takeover-wizard-card">
+                  <div className="section-title-row compact">
+                    <h3>Takeover wizard</h3>
+                    <span className="hint">{takeoverResult.linked_repo_path || 'repo not linked'}</span>
+                  </div>
+                  <p className="takeover-summary">{takeoverResult.summary_human}</p>
+                  <div className="takeover-columns">
+                    <div>
+                      <h4>Tech summary</h4>
+                      <ul className="simple-list">
+                        {takeoverResult.summary_tech.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h4>Suggested tasks</h4>
+                      <ul className="simple-list">
+                        {takeoverResult.suggested_tasks.map((task) => (
+                          <li key={`${task.owner}-${task.title}`}>
+                            {task.title} - @{task.owner}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="todo-editor-actions">
+                    <button
+                      className="send-btn alt"
+                      onClick={() => void handleApplyTakeoverRoadmap()}
+                      disabled={isApplyingTakeover}
+                    >
+                      {isApplyingTakeover ? 'Applying...' : 'Apply roadmap draft'}
+                    </button>
+                    <button
+                      className="send-btn"
+                      onClick={() => void handleApplyTakeoverTasks()}
+                      disabled={isApplyingTakeover || takeoverResult.suggested_tasks.length === 0}
+                    >
+                      {isApplyingTakeover ? 'Applying...' : 'Add suggested tasks to To Do'}
+                    </button>
+                    <button className="small-btn" onClick={() => void handleRunTakeover()} disabled={isRunningTakeover}>
+                      {isRunningTakeover ? 'Running...' : 'Rerun takeover'}
+                    </button>
+                    <button className="small-btn" onClick={() => void handleLaunchTakeoverPlan()} disabled={isSendingChat}>
+                      Lets go
+                    </button>
+                    <button className="small-btn" onClick={() => setActiveTab('overview')}>
+                      Back to Overview
+                    </button>
+                  </div>
+                </div>
+              ) : null}
               <div className="concierge-banner">
                 <p>
-                  Use this tab when you want one operator prompt to fan out across your active agents and come back as a single Clems-facing room summary.
+                  Use Le Conseil when one operator prompt should fan out across the active leads and come back as one coordinated room summary.
                 </p>
               </div>
               <div className="mode-row concierge-controls">
                 <div className="mode-pill-row">
-                  <span className="mode-pill active">Concierge Room</span>
+                  <span className="mode-pill active">Le Conseil</span>
+                  <span className="mode-pill">participants {effectiveRoomParticipantIds.length}</span>
                   <span className="mode-pill">active agents {agentsTotal}</span>
                 </div>
                 <div className="exec-toggle">
@@ -1812,16 +2237,90 @@ function App() {
                   <button
                     className={executionMode === 'scene' ? 'active' : ''}
                     onClick={() => setExecutionMode('scene')}
-                  >
-                    scene
+                    >
+                      scene
                   </button>
                 </div>
               </div>
-              <div className="chat-log concierge-log">
-                {operatorChatMessages.length === 0 ? (
+              <div className="participant-filter-card">
+                <div className="section-title-row compact">
+                  <h3>Participants</h3>
+                  <span className="hint">{roomParticipantLabel}</span>
+                </div>
+                <div className="participant-mode-row">
+                  <button
+                    className={`small-btn ${roomParticipantMode === 'all_active' ? 'active' : ''}`}
+                    onClick={() => setRoomParticipantMode('all_active')}
+                  >
+                    All active
+                  </button>
+                  <button
+                    className={`small-btn ${roomParticipantMode === 'lead_only' ? 'active' : ''}`}
+                    onClick={() => setRoomParticipantMode('lead_only')}
+                  >
+                    Leads only
+                  </button>
+                  <button
+                    className={`small-btn ${roomParticipantMode === 'custom' ? 'active' : ''}`}
+                    onClick={() => setRoomParticipantMode('custom')}
+                  >
+                    Custom
+                  </button>
+                </div>
+                {roomParticipantMode === 'custom' ? (
+                  <div className="participant-chip-row">
+                    {roomCandidateAgents.map((agent) => {
+                      const active = roomCustomParticipants.includes(agent.agent_id)
+                      return (
+                        <button
+                          key={agent.agent_id}
+                          className={`participant-chip ${active ? 'active' : ''}`}
+                          onClick={() =>
+                            setRoomCustomParticipants((previous) =>
+                              previous.includes(agent.agent_id)
+                                ? previous.filter((agentId) => agentId !== agent.agent_id)
+                                : [...previous, agent.agent_id],
+                            )
+                          }
+                        >
+                          @{agent.agent_id}
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : null}
+              </div>
+              <div className="chat-history-controls">
+                <span className="hint">showing latest {Math.min(roomVisibleCount, conciergeChatMessages.length)} room messages</span>
+                <div className="chat-actions">
+                  <button
+                    className="small-btn"
+                    onClick={() => setRoomVisibleCount((value) => Math.min(conciergeChatMessages.length, value + 12))}
+                    disabled={roomVisibleCount >= conciergeChatMessages.length}
+                  >
+                    Show older
+                  </button>
+                  <button
+                    className="small-btn"
+                    onClick={() => setRoomVisibleCount(8)}
+                    disabled={roomVisibleCount <= 8}
+                  >
+                    Show latest
+                  </button>
+                </div>
+              </div>
+              <div
+                ref={roomChatLogRef}
+                className="chat-log concierge-log"
+                onScroll={(event) => {
+                  const node = event.currentTarget
+                  roomStickToBottomRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 40
+                }}
+              >
+                {visibleConciergeMessages.length === 0 ? (
                   <p className="chat-empty">No room traffic yet. Send a first operator instruction to fan out across the active agents.</p>
                 ) : (
-                  operatorChatMessages.map((message) => (
+                  visibleConciergeMessages.map((message) => (
                     <article
                       key={message.message_id}
                       className={`chat-row ${message.author === 'operator' ? 'operator' : message.author === 'clems' ? 'clems' : 'agent'}`}
@@ -1862,7 +2361,7 @@ function App() {
                         void handleSendChat({ chatMode: 'conceal_room' })
                       }
                     }}
-                    placeholder="Concierge Room prompt for all active agents"
+                    placeholder="Board room prompt for active participants"
                   />
                 </div>
                 <div className="composer-actions-row">
@@ -1878,8 +2377,13 @@ function App() {
                     onClick={() => void handleSendChat({ chatMode: 'conceal_room' })}
                     disabled={isSendingChat}
                   >
-                    {isSendingChat ? 'Sending...' : 'Send to Concierge Room'}
+                    {isSendingChat ? 'Sending...' : 'Send to Le Conseil'}
                   </button>
+                  {takeoverResult ? (
+                    <button className="send-btn alt" onClick={() => void handleLaunchTakeoverPlan()} disabled={isSendingChat}>
+                      Lets go
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </section>
@@ -1906,6 +2410,14 @@ function App() {
                 </div>
                 <ul className="data-list">
                   <li>
+                    <span>Room mode</span>
+                    <strong>{roomParticipantMode === 'all_active' ? 'all active' : roomParticipantMode === 'lead_only' ? 'leads only' : 'custom'}</strong>
+                  </li>
+                  <li>
+                    <span>Participants</span>
+                    <strong>{roomParticipantLabel}</strong>
+                  </li>
+                  <li>
                     <span>Selected agent</span>
                     <strong>{selectedAgent ? `@${selectedAgent.agent_id}` : 'none'}</strong>
                   </li>
@@ -1926,11 +2438,11 @@ function App() {
               <section className="secondary-card concierge-side-card">
                 <h3>Active roster</h3>
                 <div className="concierge-roster-list">
-                  {rosterAgents.slice(0, 8).map((agent) => (
+                  {roomCandidateAgents.map((agent) => (
                     <div key={agent.agent_id} className="concierge-roster-row">
                       <div>
                         <strong>@{agent.agent_id}</strong>
-                        <p>{agent.role}</p>
+                        <p>{agent.role} - {resolvedModelForAgent(agent)}</p>
                       </div>
                       <span className={`dot ${agent.chat_targetable ? 'green' : 'gray'}`}>
                         {agent.chat_targetable ? 'chat ready' : 'chat unavailable'}
@@ -1942,12 +2454,12 @@ function App() {
               <section className="secondary-card concierge-side-card">
                 <h3>Internal trace</h3>
                 <div className="events-log">
-                  {latestInternal.slice(0, 6).map((message) => (
+                  {visibleInternalConciergeMessages.map((message) => (
                     <p key={message.message_id}>
                       <strong>@{message.author}</strong> {message.text}
                     </p>
                   ))}
-                  {latestInternal.length === 0 ? <p>No internal room traces yet.</p> : null}
+                  {visibleInternalConciergeMessages.length === 0 ? <p>No internal room traces yet.</p> : null}
                 </div>
               </section>
             </aside>
@@ -1966,11 +2478,11 @@ function App() {
           <div className="secondary-grid">
             <article>
               <h3>Operator messages</h3>
-              <p>{operatorChatMessages.length}</p>
+              <p>{directChatMessages.length}</p>
             </article>
             <article>
-              <h3>Internal messages</h3>
-              <p>{internalChatMessages.length}</p>
+              <h3>Room messages</h3>
+              <p>{conciergeChatMessages.length}</p>
             </article>
             <article>
               <h3>Approvals pending</h3>
@@ -1985,10 +2497,10 @@ function App() {
             <section className="secondary-card">
               <h3>Latest operator chat</h3>
               <div className="events-log">
-                {latestOperator.length === 0 ? (
-                  <p>No operator messages yet.</p>
+                {latestDirect.length === 0 ? (
+                  <p>No direct messages yet.</p>
                 ) : (
-                  latestOperator.map((message) => (
+                  latestDirect.map((message) => (
                     <p key={message.message_id}>
                       <strong>@{message.author}</strong> {message.text}
                     </p>
@@ -2041,6 +2553,11 @@ function App() {
               <strong>{taskCounts.todo + taskCounts.in_progress + taskCounts.blocked}</strong>
               <p>{approvals.length} approvals - queue {queueDepth}</p>
             </article>
+            <article className="overview-hero-card">
+              <span className="overview-hero-label">Credits this month</span>
+              <strong>{monthlyCostLabel}</strong>
+              <p>{costEventsLabel} cost events tracked</p>
+            </article>
           </div>
           <div className="secondary-columns">
             <section className="secondary-card">
@@ -2080,12 +2597,37 @@ function App() {
               </ul>
             </section>
             <section className="secondary-card">
+              <h3>Project summary</h3>
+              <ul className="data-list">
+                <li>
+                  <span>Phase</span>
+                  <strong>{projectPhase}</strong>
+                </li>
+                <li>
+                  <span>Objective</span>
+                  <strong>{projectObjective}</strong>
+                </li>
+                <li>
+                  <span>Linked repo</span>
+                  <strong>{linkedRepoLabel}</strong>
+                </li>
+                <li>
+                  <span>Open tasks</span>
+                  <strong>
+                    {projectTaskCounts
+                      ? projectTaskCounts.todo + projectTaskCounts.in_progress + projectTaskCounts.blocked
+                      : taskCounts.todo + taskCounts.in_progress + taskCounts.blocked}
+                  </strong>
+                </li>
+              </ul>
+            </section>
+            <section className="secondary-card">
               <h3>Task board snapshot</h3>
               <ul className="data-list">
                 {STATUS_ORDER.map((status) => (
                   <li key={status}>
                     <span>{STATUS_LABELS[status]}</span>
-                    <strong>{taskCounts[status]}</strong>
+                    <strong>{projectTaskCounts ? projectTaskCounts[status] : taskCounts[status]}</strong>
                   </li>
                 ))}
               </ul>
@@ -2112,6 +2654,27 @@ function App() {
               </ul>
             </section>
             <section className="secondary-card">
+              <h3>Roadmap snapshot</h3>
+              <div className="project-snapshot-grid">
+                <div>
+                  <h4>Now</h4>
+                  <ul className="simple-list">
+                    {(roadmapNow.length > 0 ? roadmapNow : ['No current roadmap items']).map((item) => (
+                      <li key={`now-${item}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h4>Next</h4>
+                  <ul className="simple-list">
+                    {(roadmapNext.length > 0 ? roadmapNext : ['No next roadmap items']).map((item) => (
+                      <li key={`next-${item}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </section>
+            <section className="secondary-card">
               <h3>Recent task movement</h3>
               <div className="events-log">
                 {recentTasks.length === 0 ? (
@@ -2128,12 +2691,26 @@ function App() {
             <section className="secondary-card">
               <h3>Latest operator touch</h3>
               <div className="events-log">
-                {latestOperator.length === 0 ? (
-                  <p>No operator messages yet.</p>
+                {latestRoom.length === 0 ? (
+                  <p>No board messages yet.</p>
                 ) : (
-                  latestOperator.slice(0, 6).map((message) => (
+                  latestRoom.slice(0, 6).map((message) => (
                     <p key={message.message_id}>
                       <strong>@{message.author}</strong> {message.text}
+                    </p>
+                  ))
+                )}
+              </div>
+            </section>
+            <section className="secondary-card">
+              <h3>Model spend</h3>
+              <div className="events-log">
+                {modelUsageSummary.length === 0 ? (
+                  <p>No model usage tracked yet.</p>
+                ) : (
+                  modelUsageSummary.map((entry) => (
+                    <p key={entry.model}>
+                      <strong>{entry.model}</strong> - {formatCurrencyCad(entry.cost_cad)} - {entry.events} events
                     </p>
                   ))
                 )}
@@ -2144,11 +2721,16 @@ function App() {
               <div className="form-grid">
                 <label className="wide">
                   <span>Linked repo path</span>
-                  <input
-                    value={linkedRepoDraft}
-                    onChange={(event) => setLinkedRepoDraft(event.target.value)}
-                    placeholder="/absolute/path/to/repo"
-                  />
+                  <div className="inline-picker-row">
+                    <input
+                      value={linkedRepoDraft}
+                      onChange={(event) => setLinkedRepoDraft(event.target.value)}
+                      placeholder="/absolute/path/to/repo"
+                    />
+                    <button className="small-btn" onClick={() => void handleChooseRepoFolder()} disabled={isChoosingFolder}>
+                      {isChoosingFolder ? 'Choosing...' : 'Choose folder'}
+                    </button>
+                  </div>
                 </label>
               </div>
               <div className="todo-editor-actions">
@@ -2222,6 +2804,12 @@ function App() {
                       disabled={isApplyingTakeover || takeoverResult.suggested_tasks.length === 0}
                     >
                       {isApplyingTakeover ? 'Applying...' : 'Add tasks to To Do'}
+                    </button>
+                    <button className="small-btn" onClick={() => setActiveTab('concierge_room')}>
+                      Open Le Conseil
+                    </button>
+                    <button className="small-btn" onClick={() => void handleLaunchTakeoverPlan()} disabled={isSendingChat}>
+                      Lets go
                     </button>
                   </div>
                 </div>
@@ -2414,6 +3002,12 @@ function App() {
             >
               Skills Library
             </button>
+            <button
+              className={`docs-subnav-btn ${docsPanel === 'project' ? 'active' : ''}`}
+              onClick={() => setDocsPanel('project')}
+            >
+              Project
+            </button>
           </div>
           {docsPanel === 'runbook' ? (
             <>
@@ -2442,7 +3036,7 @@ function App() {
                     <p>1. Launch Cockpit.app</p>
                     <p>2. Check backend and WS badges</p>
                     <p>3. Verify approvals and llm-profile routes</p>
-                    <p>4. Work from Pixel Home, To Do, Concierge Room, and Model Routing</p>
+                    <p>4. Work from Pixel Home, To Do, Le Conseil, and Model Routing</p>
                   </div>
                 </section>
                 <section className="secondary-card">
@@ -2456,7 +3050,7 @@ function App() {
                 </section>
               </div>
             </>
-          ) : (
+          ) : docsPanel === 'skills_library' ? (
             <div className="skills-library-layout">
               <section className="secondary-card">
                 <h3>Installed local skills</h3>
@@ -2498,6 +3092,82 @@ function App() {
                     </article>
                   ))
                 )}
+              </div>
+            </div>
+          ) : (
+            <div className="project-docs-layout">
+              <section className="secondary-card">
+                <h3>Project summary</h3>
+                <ul className="data-list">
+                  <li>
+                    <span>Linked repo</span>
+                    <strong>{linkedRepoLabel}</strong>
+                  </li>
+                  <li>
+                    <span>Phase</span>
+                    <strong>{projectPhase}</strong>
+                  </li>
+                  <li>
+                    <span>Objective</span>
+                    <strong>{projectObjective}</strong>
+                  </li>
+                  <li>
+                    <span>Monthly cost</span>
+                    <strong>{monthlyCostLabel}</strong>
+                  </li>
+                  <li>
+                    <span>Cost events</span>
+                    <strong>{costEventsLabel}</strong>
+                  </li>
+                </ul>
+              </section>
+              <div className="secondary-columns">
+                <section className="secondary-card">
+                  <h3>Roadmap now</h3>
+                  <ul className="simple-list">
+                    {(roadmapNow.length > 0 ? roadmapNow : ['No current roadmap items']).map((item) => (
+                      <li key={`project-now-${item}`}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+                <section className="secondary-card">
+                  <h3>Roadmap next</h3>
+                  <ul className="simple-list">
+                    {(roadmapNext.length > 0 ? roadmapNext : ['No next roadmap items']).map((item) => (
+                      <li key={`project-next-${item}`}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+                <section className="secondary-card">
+                  <h3>Latest decisions</h3>
+                  <ul className="simple-list">
+                    {(projectDecisions.length > 0 ? projectDecisions : ['No decision titles found']).map((item) => (
+                      <li key={`decision-${item}`}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+                <section className="secondary-card">
+                  <h3>Roadmap risks</h3>
+                  <ul className="simple-list">
+                    {(roadmapRisks.length > 0 ? roadmapRisks : ['No roadmap risks noted']).map((item) => (
+                      <li key={`risk-${item}`}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+                <section className="secondary-card">
+                  <h3>Model usage</h3>
+                  <div className="events-log">
+                    {modelUsageSummary.length === 0 ? (
+                      <p>No model usage tracked yet.</p>
+                    ) : (
+                      modelUsageSummary.map((entry) => (
+                        <p key={`project-usage-${entry.model}`}>
+                          <strong>{entry.model}</strong> - {formatCurrencyCad(entry.cost_cad)} - {entry.events} events
+                        </p>
+                      ))
+                    )}
+                  </div>
+                </section>
               </div>
             </div>
           )}
@@ -2946,7 +3616,7 @@ function App() {
                         <div className="section-title-row">
                           <h2>Live Chat</h2>
                           <div className="chat-actions">
-                            <span className="chat-target">Direct</span>
+                            <span className="chat-target">{directTarget === 'selected_agent' && selectedAgentChatReady ? `target @${selectedAgent?.agent_id}` : 'target @clems'}</span>
                             <button className="small-btn" onClick={() => void handleResetChat()}>
                               Reset chat
                             </button>
@@ -2955,7 +3625,7 @@ function App() {
                         <div className="mode-row direct-chat-row">
                           <div className="mode-pill-row">
                             <span className="mode-pill active">Direct</span>
-                            <span className="mode-pill">Concierge Room lives in the top tab</span>
+                            <span className="mode-pill">Le Conseil lives in the top tab</span>
                           </div>
                           <div className="exec-toggle">
                             <button
@@ -2979,33 +3649,59 @@ function App() {
                               className={`target-btn ${directTarget === 'clems' ? 'active' : ''}`}
                               onClick={() => setDirectTarget('clems')}
                             >
-                              Talk to Clems
+                              Clems
                             </button>
                             <button
                               className={`target-btn ${directTarget === 'selected_agent' ? 'active' : ''}`}
                               onClick={() => setDirectTarget('selected_agent')}
                               disabled={!selectedAgentChatReady}
                             >
-                              Talk to selected agent
+                              Selected agent
                             </button>
                           </div>
                           <div className="chat-target-details">
-                            <p className="small-copy">Direct chat uses the model lane. Terminal state stays separate from LLM availability.</p>
                             <p className="chat-target-detail">
                               {selectedAgent
                                 ? selectedAgentChatReady
-                                  ? `Selected target: @${selectedAgent.agent_id}`
-                                  : `Selected target: @${selectedAgent.agent_id} is not chat-ready`
-                                : 'No agent selected yet. Pick one from the roster to enable direct agent chat.'}
+                                  ? `Selected target ready: @${selectedAgent.agent_id}`
+                                  : `@${selectedAgent.agent_id} is not chat-ready. Falling back to @clems.`
+                                : 'No agent selected yet. Direct chat stays on @clems.'}
                             </p>
                           </div>
                         </div>
 
-                        <div className="chat-log">
-                          {operatorChatMessages.length === 0 ? (
+                        <div className="chat-history-controls">
+                          <span className="hint">showing latest {Math.min(directVisibleCount, directChatMessages.length)} direct messages</span>
+                          <div className="chat-actions">
+                            <button
+                              className="small-btn"
+                              onClick={() => setDirectVisibleCount((value) => Math.min(directChatMessages.length, value + 12))}
+                              disabled={directVisibleCount >= directChatMessages.length}
+                            >
+                              Show older
+                            </button>
+                            <button
+                              className="small-btn"
+                              onClick={() => setDirectVisibleCount(12)}
+                              disabled={directVisibleCount <= 12}
+                            >
+                              Show latest
+                            </button>
+                          </div>
+                        </div>
+
+                        <div
+                          ref={directChatLogRef}
+                          className="chat-log"
+                          onScroll={(event) => {
+                            const node = event.currentTarget
+                            directStickToBottomRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 40
+                          }}
+                        >
+                          {visibleDirectMessages.length === 0 ? (
                             <p className="chat-empty">No chat yet. Send a first message to start live flow.</p>
                           ) : (
-                            operatorChatMessages.map((message) => (
+                            visibleDirectMessages.map((message) => (
                               <article
                                 key={message.message_id}
                                 className={`chat-row ${message.author === 'operator' ? 'operator' : message.author === 'clems' ? 'clems' : 'agent'}`}
@@ -3053,7 +3749,7 @@ function App() {
                                   ? selectedAgentChatReady
                                     ? `Send to @${selectedAgent?.agent_id}`
                                     : 'Select a chat-ready agent or switch back to Clems.'
-                                  : 'Talk to Clems directly.'
+                                    : 'Talk to @clems directly.'
                               }
                             />
                           </div>
@@ -3068,19 +3764,14 @@ function App() {
                               </button>
                               <button
                                 className="send-btn"
-                                onClick={() => void handleSendChat({ targetMode: 'clems', chatMode: 'direct' })}
+                                onClick={() => void handleSendChat({ targetMode: directTarget, chatMode: 'direct' })}
                                 disabled={isSendingChat}
                               >
-                                {isSendingChat && directTarget === 'clems' ? 'Sending...' : 'Talk to Clems'}
-                              </button>
-                              <button
-                                className="send-btn alt"
-                                onClick={() => void handleSendChat({ targetMode: 'selected_agent', chatMode: 'direct' })}
-                                disabled={isSendingChat || !selectedAgentChatReady}
-                              >
-                                {isSendingChat && directTarget === 'selected_agent'
+                                {isSendingChat
                                   ? 'Sending...'
-                                  : 'Talk to selected agent'}
+                                  : directTarget === 'selected_agent' && selectedAgentChatReady
+                                    ? `Send to @${selectedAgent?.agent_id}`
+                                    : 'Send to @clems'}
                               </button>
                             </div>
                           </div>
@@ -3102,41 +3793,32 @@ function App() {
                           </div>
                         </div>
                         {selectedAgentId ? (
-                          <>
+                          <div className="terminal-external-layout">
                             <div className="terminal-summary-card">
                               <div>
                                 <strong>@{selectedAgentId}</strong>
-                                <p className="small-copy">Terminal state: {selectedAgent?.terminal_state === 'running' ? 'live' : 'offline'}</p>
+                                <p className="small-copy">
+                                  Terminal state: {selectedAgent?.terminal_state === 'running' ? 'live' : 'offline'}
+                                </p>
+                                <p className="small-copy">
+                                  Use the OS terminal when you need manual command entry. Pixel Home stays focused on visibility and chat.
+                                </p>
                               </div>
                               <div className="terminal-summary-actions">
+                                {selectedAgent?.terminal_state !== 'running' ? (
+                                  <button onClick={() => void ensureAgentTerminal(selectedAgentId)}>Start terminal</button>
+                                ) : null}
                                 <button onClick={() => void handleRestartTerminal()}>Restart</button>
-                                <button onClick={() => void handleOpenExternalTerminal()}>Open OS</button>
+                                <button onClick={() => void handleOpenExternalTerminal()}>Open OS terminal</button>
                               </div>
                             </div>
-                            <div className="terminal-log">
-                              {selectedLog.length === 0 ? (
-                                <p className="terminal-empty">No terminal output yet.</p>
-                              ) : (
-                                selectedLog.map((line, index) => (
-                                  <pre key={`${index}-${line.slice(0, 12)}`}>{line}</pre>
-                                ))
-                              )}
+                            <div className="empty-panel">
+                              <h3>External terminal only</h3>
+                              <p>
+                                Commands are no longer typed inside Cockpit. Select an agent, then open its OS terminal to inspect or drive the session directly.
+                              </p>
                             </div>
-                            <div className="terminal-controls">
-                              <input
-                                value={terminalInput}
-                                onChange={(event) => setTerminalInput(event.target.value)}
-                                onKeyDown={(event) => {
-                                  if (event.key === 'Enter') {
-                                    event.preventDefault()
-                                    void handleSendTerminal()
-                                  }
-                                }}
-                                placeholder="terminal command"
-                              />
-                              <button onClick={() => void handleSendTerminal()}>Send</button>
-                            </div>
-                          </>
+                          </div>
                         ) : (
                           <div className="empty-panel">
                             <h3>No terminal target selected</h3>

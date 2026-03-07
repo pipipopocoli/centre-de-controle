@@ -1401,6 +1401,10 @@ mod tests {
             lead_id: Some("victor".to_string()),
             role: "specialist".to_string(),
             skills: Vec::new(),
+            phase: None,
+            status: None,
+            current_task: None,
+            heartbeat: None,
         }
     }
 

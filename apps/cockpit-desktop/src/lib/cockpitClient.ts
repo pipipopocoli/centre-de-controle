@@ -13,6 +13,10 @@ export interface AgentRecord {
   lead_id: string | null
   role: string
   skills: string[]
+  phase?: string | null
+  status?: string | null
+  current_task?: string | null
+  heartbeat?: string | null
 }
 
 export interface TerminalSession {
@@ -120,6 +124,34 @@ export interface ProjectSettings {
   linked_repo_path: string | null
   updated_at: string
   raw: Record<string, unknown>
+}
+
+export interface ProjectTaskCounts {
+  todo: number
+  in_progress: number
+  blocked: number
+  done: number
+}
+
+export interface ProjectModelUsageEntry {
+  model: string
+  cost_cad: number
+  events: number
+}
+
+export interface ProjectSummaryResponse {
+  project_id: string
+  linked_repo_path: string | null
+  phase: string
+  objective: string
+  roadmap_now: string[]
+  roadmap_next: string[]
+  roadmap_risks: string[]
+  latest_decisions: string[]
+  open_task_counts: ProjectTaskCounts
+  monthly_cost_estimate_cad: number | null
+  cost_events_this_month: number
+  model_usage_summary: ProjectModelUsageEntry[]
 }
 
 export interface RoadmapSections {
@@ -463,6 +495,10 @@ export async function getTasks(projectId: string): Promise<{ project_id: string;
 
 export async function getSkillsLibrary(projectId: string): Promise<SkillsLibraryResponse> {
   return request(`/v1/projects/${projectId}/skills/library`)
+}
+
+export async function getProjectSummary(projectId: string): Promise<ProjectSummaryResponse> {
+  return request(`/v1/projects/${projectId}/project-summary`)
 }
 
 export async function startTakeover(

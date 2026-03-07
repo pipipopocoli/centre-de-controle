@@ -15,6 +15,14 @@ pub struct AgentRecord {
     pub role: String,
     #[serde(default)]
     pub skills: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub phase: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub current_task: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub heartbeat: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -516,6 +524,42 @@ pub struct ProjectSettings {
 pub struct ProjectSettingsResponse {
     pub project_id: String,
     pub settings: ProjectSettings,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectTaskCounts {
+    pub todo: usize,
+    pub in_progress: usize,
+    pub blocked: usize,
+    pub done: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectModelUsageEntry {
+    pub model: String,
+    pub cost_cad: f64,
+    pub events: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectSummaryResponse {
+    pub project_id: String,
+    pub linked_repo_path: Option<String>,
+    pub phase: String,
+    pub objective: String,
+    #[serde(default)]
+    pub roadmap_now: Vec<String>,
+    #[serde(default)]
+    pub roadmap_next: Vec<String>,
+    #[serde(default)]
+    pub roadmap_risks: Vec<String>,
+    #[serde(default)]
+    pub latest_decisions: Vec<String>,
+    pub open_task_counts: ProjectTaskCounts,
+    pub monthly_cost_estimate_cad: Option<f64>,
+    pub cost_events_this_month: usize,
+    #[serde(default)]
+    pub model_usage_summary: Vec<ProjectModelUsageEntry>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

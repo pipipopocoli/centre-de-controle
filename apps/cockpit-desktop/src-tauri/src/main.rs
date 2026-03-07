@@ -293,6 +293,13 @@ fn open_os_terminal(agent_id: String, cwd: Option<String>) -> Result<(), String>
     Err("unsupported platform".to_string())
 }
 
+#[tauri::command]
+fn pick_project_folder() -> Option<String> {
+    rfd::FileDialog::new()
+        .pick_folder()
+        .map(|path| path.display().to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .setup(|_app| {
@@ -301,7 +308,7 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![open_os_terminal])
+        .invoke_handler(tauri::generate_handler![open_os_terminal, pick_project_folder])
         .run(tauri::generate_context!())
         .expect("error while running tauri application")
 }

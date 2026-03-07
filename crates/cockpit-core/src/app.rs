@@ -28,9 +28,10 @@ use crate::{
         ChatHistoryResponse, ChatMessage, CreateAgentRequest, CreateAgentResponse,
         CreateTaskRequest, DeliveryMode, LiveTurnRequest, LiveTurnResponse, LlmProfileResponse,
         MessageVisibility, PixelAgentStatus, PixelFeedResponse, ProjectSettings,
-        ProjectSettingsResponse, RoadmapDraftRequest, RoadmapDraftResponse, RoadmapResponse,
-        RoadmapSections, SkillLibraryEntry, SkillsLibraryResponse, TakeoverStartRequest,
-        TakeoverStartResponse, TakeoverSuggestedSkill, TakeoverSuggestedTask, TasksResponse,
+        ProjectSettingsResponse, ProjectSummaryResponse, ProjectTaskCounts, RoadmapDraftRequest,
+        RoadmapDraftResponse, RoadmapResponse, RoadmapSections, SkillLibraryEntry,
+        SkillsLibraryResponse, TakeoverStartRequest, TakeoverStartResponse,
+        TakeoverSuggestedSkill, TakeoverSuggestedTask, TaskStatus, TasksResponse,
         TerminalOpenRequest, TerminalSendRequest, TerminalSession, UpdateLlmProfileRequest,
         UpdateProjectSettingsRequest, UpdateRoadmapRequest, UpdateTaskRequest,
         VoiceTranscribeRequest, VoiceTranscribeResponse, WsEventEnvelope,
@@ -74,6 +75,7 @@ pub fn build_router(state: AppState) -> Router {
         )
         .route("/v1/projects/{id}/pixel-feed", get(pixel_feed))
         .route("/v1/projects/{id}/skills/library", get(get_skills_library))
+        .route("/v1/projects/{id}/project-summary", get(get_project_summary))
         .route("/v1/projects/{id}/tasks", get(get_tasks).post(post_task))
         .route("/v1/projects/{id}/tasks/{task_id}", axum::routing::patch(patch_task))
         .route("/v1/projects/{id}/settings", get(get_project_settings).put(put_project_settings))
@@ -121,12 +123,73 @@ async fn get_skills_library(
     }))
 }
 
+async fn get_project_summary(
+    Path(project_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<ProjectSummaryResponse>, ApiError> {
+    let settings = normalize_project_settings(
+        &project_id,
+        storage::load_settings(state.control_root.as_ref(), &project_id)?,
+    );
+    let state_md =
+        storage::read_project_text(state.control_root.as_ref(), &project_id, "STATE.md")?;
+    let decisions_md =
+        storage::read_project_text(state.control_root.as_ref(), &project_id, "DECISIONS.md")?;
+    let roadmap_sections = roadmap_sections_from_value(storage::load_roadmap_sections(
+        state.control_root.as_ref(),
+        &project_id,
+    )?);
+    let tasks = storage::list_tasks(state.control_root.as_ref(), &project_id)?;
+    let root = storage::project_root(state.control_root.as_ref(), &project_id);
+    let (monthly_cost_estimate_cad, cost_events_this_month, model_usage_summary) =
+        load_project_cost_summary(&root);
+
+    let mut counts = ProjectTaskCounts {
+        todo: 0,
+        in_progress: 0,
+        blocked: 0,
+        done: 0,
+    };
+    for task in tasks {
+        match task.status {
+            TaskStatus::Todo => counts.todo += 1,
+            TaskStatus::InProgress => counts.in_progress += 1,
+            TaskStatus::Blocked => counts.blocked += 1,
+            TaskStatus::Done => counts.done += 1,
+        }
+    }
+
+    Ok(Json(ProjectSummaryResponse {
+        project_id,
+        linked_repo_path: settings.linked_repo_path,
+        phase: markdown_section_bullets(&state_md, "Phase")
+            .into_iter()
+            .next()
+            .unwrap_or_else(|| "Implement".to_string()),
+        objective: markdown_section_bullets(&state_md, "Objective")
+            .into_iter()
+            .next()
+            .unwrap_or_else(|| "No objective set yet.".to_string()),
+        roadmap_now: roadmap_sections.now,
+        roadmap_next: roadmap_sections.next,
+        roadmap_risks: roadmap_sections.risks,
+        latest_decisions: extract_decision_titles(&decisions_md),
+        open_task_counts: counts,
+        monthly_cost_estimate_cad,
+        cost_events_this_month,
+        model_usage_summary,
+    }))
+}
+
 async fn list_agents(
     Path(project_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
     let agents_map = storage::load_agents(state.control_root.as_ref(), &project_id)?;
     let mut agents: Vec<AgentRecord> = agents_map.into_values().collect();
+    for agent in &mut agents {
+        hydrate_agent_runtime_state(state.control_root.as_ref(), &project_id, agent);
+    }
     agents.sort_by(|a, b| a.agent_id.cmp(&b.agent_id));
 
     Ok(Json(json!({
@@ -158,6 +221,10 @@ async fn create_agent(
         lead_id: payload.lead_id.or(defaults.3),
         role: payload.role.unwrap_or_else(|| defaults.4.to_string()),
         skills: payload.skills.unwrap_or_default(),
+        phase: None,
+        status: None,
+        current_task: None,
+        heartbeat: None,
     };
 
     agents.insert(agent_id.clone(), agent.clone());
@@ -1767,6 +1834,227 @@ fn normalize_audio_format(raw: &str) -> &str {
     }
 }
 
+fn hydrate_agent_runtime_state(control_root: &FsPath, project_id: &str, agent: &mut AgentRecord) {
+    let state_path = storage::project_root(control_root, project_id)
+        .join("agents")
+        .join(&agent.agent_id)
+        .join("state.json");
+    let Ok(raw) = fs::read_to_string(state_path) else {
+        return;
+    };
+    let Ok(payload) = serde_json::from_str::<Value>(&raw) else {
+        return;
+    };
+
+    agent.phase = payload
+        .get("phase")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string);
+    agent.status = payload
+        .get("status")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string);
+    agent.current_task = payload
+        .get("current_task")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string);
+    agent.heartbeat = payload
+        .get("updated_at")
+        .and_then(Value::as_str)
+        .or_else(|| payload.get("heartbeat").and_then(Value::as_str))
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string);
+}
+
+fn markdown_section_bullets(markdown: &str, section: &str) -> Vec<String> {
+    let target = format!("## {}", section.trim());
+    let mut in_section = false;
+    let mut rows = Vec::new();
+
+    for raw_line in markdown.lines() {
+        let line = raw_line.trim();
+        if line.starts_with("## ") {
+            if in_section {
+                break;
+            }
+            in_section = line.eq_ignore_ascii_case(&target);
+            continue;
+        }
+
+        if !in_section {
+            continue;
+        }
+
+        if let Some(value) = line.strip_prefix("- ") {
+            let value = value.trim();
+            if !value.is_empty() {
+                rows.push(value.to_string());
+            }
+        }
+    }
+
+    rows
+}
+
+fn extract_decision_titles(markdown: &str) -> Vec<String> {
+    markdown
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("## "))
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .take(6)
+        .map(ToString::to_string)
+        .collect()
+}
+
+fn load_project_cost_summary(
+    project_root: &FsPath,
+) -> (Option<f64>, usize, Vec<crate::models::ProjectModelUsageEntry>) {
+    let cost_events_path = project_root.join("runs").join("cost_events.ndjson");
+    if cost_events_path.exists() {
+        let current_month = Utc::now().format("%Y-%m").to_string();
+        let mut total_cost = 0.0_f64;
+        let mut total_events = 0_usize;
+        let mut models: HashMap<String, (f64, usize)> = HashMap::new();
+
+        if let Ok(raw) = fs::read_to_string(&cost_events_path) {
+            for line in raw.lines() {
+                let line = line.trim();
+                if line.is_empty() {
+                    continue;
+                }
+                let Ok(payload) = serde_json::from_str::<Value>(line) else {
+                    continue;
+                };
+                let timestamp = payload
+                    .get("timestamp")
+                    .and_then(Value::as_str)
+                    .or_else(|| payload.get("created_at").and_then(Value::as_str))
+                    .or_else(|| payload.get("at").and_then(Value::as_str))
+                    .unwrap_or("");
+                if !timestamp.starts_with(&current_month) {
+                    continue;
+                }
+
+                total_events += 1;
+                let cost = extract_cost_cad(&payload).unwrap_or(0.0);
+                total_cost += cost;
+                let model = extract_model_name(&payload).unwrap_or_else(|| "unknown".to_string());
+                let entry = models.entry(model).or_insert((0.0, 0));
+                entry.0 += cost;
+                entry.1 += 1;
+            }
+        }
+
+        let mut summary = models
+            .into_iter()
+            .map(|(model, (cost_cad, events))| crate::models::ProjectModelUsageEntry {
+                model,
+                cost_cad,
+                events,
+            })
+            .collect::<Vec<_>>();
+        summary.sort_by(|left, right| {
+            right
+                .cost_cad
+                .partial_cmp(&left.cost_cad)
+                .unwrap_or(std::cmp::Ordering::Equal)
+                .then_with(|| left.model.cmp(&right.model))
+        });
+
+        return (
+            if total_events > 0 { Some(total_cost) } else { None },
+            total_events,
+            summary,
+        );
+    }
+
+    let legacy_costs_path = project_root.join("vulgarisation").join("costs.json");
+    if let Ok(raw) = fs::read_to_string(legacy_costs_path) {
+        if let Ok(payload) = serde_json::from_str::<Value>(&raw) {
+            let monthly_cost = payload
+                .get("monthly_cost_cad")
+                .or_else(|| payload.get("monthly_total_cad"))
+                .or_else(|| payload.get("monthly_cad"))
+                .or_else(|| payload.get("cost_monthly_cad"))
+                .and_then(value_as_f64);
+            let cost_events_this_month = payload
+                .get("cost_events_this_month")
+                .or_else(|| payload.get("cost_events_month"))
+                .and_then(Value::as_u64)
+                .unwrap_or(0) as usize;
+            let model_usage_summary = payload
+                .get("model_usage")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .filter_map(|item| {
+                    let model = item
+                        .get("model")
+                        .or_else(|| item.get("model_id"))
+                        .and_then(Value::as_str)?
+                        .trim()
+                        .to_string();
+                    if model.is_empty() {
+                        return None;
+                    }
+                    Some(crate::models::ProjectModelUsageEntry {
+                        model,
+                        cost_cad: item.get("cost_cad").and_then(value_as_f64).unwrap_or(0.0),
+                        events: item
+                            .get("events")
+                            .or_else(|| item.get("count"))
+                            .and_then(Value::as_u64)
+                            .unwrap_or(0) as usize,
+                    })
+                })
+                .collect::<Vec<_>>();
+
+            return (monthly_cost, cost_events_this_month, model_usage_summary);
+        }
+    }
+
+    (None, 0, Vec::new())
+}
+
+fn extract_cost_cad(payload: &Value) -> Option<f64> {
+    payload
+        .get("cost_cad")
+        .or_else(|| payload.get("cad"))
+        .or_else(|| payload.get("amount_cad"))
+        .or_else(|| payload.get("cost"))
+        .or_else(|| payload.get("usage").and_then(|value| value.get("cost_cad")))
+        .or_else(|| payload.get("cost").and_then(|value| value.get("cad")))
+        .and_then(value_as_f64)
+}
+
+fn extract_model_name(payload: &Value) -> Option<String> {
+    payload
+        .get("model")
+        .or_else(|| payload.get("model_id"))
+        .or_else(|| payload.get("provider_model"))
+        .or_else(|| payload.get("usage").and_then(|value| value.get("model")))
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string)
+}
+
+fn value_as_f64(value: &Value) -> Option<f64> {
+    value
+        .as_f64()
+        .or_else(|| value.as_i64().map(|number| number as f64))
+        .or_else(|| value.as_u64().map(|number| number as f64))
+        .or_else(|| value.as_str().and_then(|raw| raw.trim().parse::<f64>().ok()))
+}
+
 fn inspect_linked_repo(raw_path: Option<&str>) -> Result<Value, ApiError> {
     let Some(raw_path) = raw_path.map(str::trim).filter(|value| !value.is_empty()) else {
         return Ok(json!({
@@ -1848,6 +2136,10 @@ mod tests {
                 lead_id: None,
                 role: "specialist".to_string(),
                 skills: Vec::new(),
+                phase: None,
+                status: None,
+                current_task: None,
+                heartbeat: None,
             },
         );
         assert_eq!(next_agent_id(&map), "agent-5");
