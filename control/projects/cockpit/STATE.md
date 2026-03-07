@@ -1,31 +1,30 @@
 # State
 
 ## Phase
-- Implement
+- Review
 
 ## Objective
 - Stabilize the current Cockpit shell around the live `cockpit` project only.
 
 ## Now
-- CP-0061: Pixel Home direct chat and shell ownership are being hardened.
-- CP-0062: Le Conseil room scroll, message window, and reply visibility are being stabilized.
-- `demo` is being removed from active runtime, repo flow, and operator docs.
+- CP-0061 is closed: Pixel Home direct chat is isolated, compact, and visible.
+- CP-0062 is closed: Le Conseil renders room traffic cleanly and keeps `@clems` visible.
+- `demo` is out of the active runtime and project catalog. `cockpit` is the only live project flow.
 
 ## Next
-- Rebuild and reinstall `Cockpit.app` on the latest head.
-- Validate direct chat with `@clems`, room chat in Le Conseil, folder picker, and takeover wizard handoff.
-- Push the current shell fix and governance cleanup together.
+- Run operator QA in the installed app on real takeover flow.
+- Validate native folder picker from `Overview` on a real repo path.
+- Confirm `Pixel Home`, `Le Conseil`, and `Docs > Project` with fresh screenshots before the next feature wave.
 
 ## In Progress
-- ISSUE-CP-0061-fix-z-index-overlay-chat-pixel-home.md
-- ISSUE-CP-0062-impl-menter-pagination-messages-concierge-room.md
+- none
 
 ## Blockers
 - none
 
 ## Risks
-- old room messages can still hide room replies if message mode filtering regresses.
-- stale local artifacts can confuse operator truth if `demo` is not fully removed.
+- operator QA is still needed on the installed app after the latest rebuild.
+- room visibility can regress if direct and room message pools get mixed again.
 
 ## Links
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0061-fix-z-index-overlay-chat-pixel-home.md

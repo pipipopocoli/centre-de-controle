@@ -2,18 +2,25 @@
 
 - Owner: leo
 - Phase: Implement
-- Status: In Progress
+- Status: Done
 - Source: ai_auto
 
 ## Objective
 - Make Le Conseil a real room surface with visible @clems coordination, bounded message volume, and stable scroll behavior.
 
 ## Done (Definition)
-- [ ] Le Conseil renders only room messages in the main log.
-- [ ] Internal traces stay separate and capped.
-- [ ] Latest 8 room messages show by default with Show older / Show latest controls.
-- [ ] The room composer stays pinned and reachable.
-- [ ] A user room message yields a visible coordinating reply from @clems.
+- [x] Le Conseil renders only room messages in the main log.
+- [x] Internal traces stay separate and capped.
+- [x] Latest 8 room messages show by default with Show older / Show latest controls.
+- [x] The room composer stays pinned and reachable.
+- [x] A user room message yields a visible coordinating reply from @clems.
+
+## Verification
+- `npm --prefix /Users/oliviercloutier/Desktop/Cockpit/apps/cockpit-desktop run lint`
+- `npm --prefix /Users/oliviercloutier/Desktop/Cockpit/apps/cockpit-desktop run build`
+- `npm --prefix /Users/oliviercloutier/Desktop/Cockpit/apps/cockpit-desktop run tauri:build`
+- `curl http://127.0.0.1:8787/healthz`
+- `POST /v1/projects/cockpit/chat/live-turn` in `conceal_room` returns a visible `@clems` room summary
 
 ## Links
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0064-fix-d-filement-infini-concierge-room.md (superseded)
