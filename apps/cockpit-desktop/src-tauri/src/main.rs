@@ -295,6 +295,26 @@ fn open_os_terminal(agent_id: String, cwd: Option<String>) -> Result<(), String>
 
 #[tauri::command]
 fn pick_project_folder() -> Option<String> {
+    #[cfg(target_os = "macos")]
+    {
+        let output = Command::new("osascript")
+            .args([
+                "-e",
+                "set chosenFolder to choose folder with prompt \"Select a project folder for Cockpit\"",
+                "-e",
+                "POSIX path of chosenFolder",
+            ])
+            .output()
+            .ok()?;
+
+        if output.status.success() {
+            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !path.is_empty() {
+                return Some(path);
+            }
+        }
+    }
+
     rfd::FileDialog::new()
         .pick_folder()
         .map(|path| path.display().to_string())

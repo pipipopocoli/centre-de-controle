@@ -143,6 +143,50 @@ pub fn save_settings(control_root: &Path, project_id: &str, settings: &Value) ->
     Ok(payload)
 }
 
+pub fn list_projects(control_root: &Path) -> Result<Vec<(String, Value)>> {
+    if !control_root.exists() {
+        return Ok(Vec::new());
+    }
+
+    let mut projects = Vec::new();
+    for entry in fs::read_dir(control_root)? {
+        let entry = entry?;
+        if !entry.file_type()?.is_dir() {
+            continue;
+        }
+
+        let project_id = entry.file_name().to_string_lossy().to_string();
+        if project_id.starts_with('.') || project_id.starts_with('_') || project_id == "demo" {
+            continue;
+        }
+
+        let settings_path = entry.path().join("settings.json");
+        let settings = if settings_path.exists() {
+            let raw = fs::read_to_string(&settings_path)?;
+            serde_json::from_str::<Value>(&raw).unwrap_or_else(|_| {
+                json!({
+                    "project_id": project_id,
+                    "project_name": project_id,
+                    "linked_repo_path": "",
+                    "updated_at": Utc::now().to_rfc3339(),
+                })
+            })
+        } else {
+            json!({
+                "project_id": project_id,
+                "project_name": project_id,
+                "linked_repo_path": "",
+                "updated_at": Utc::now().to_rfc3339(),
+            })
+        };
+
+        projects.push((project_id, settings));
+    }
+
+    projects.sort_by(|left, right| left.0.cmp(&right.0));
+    Ok(projects)
+}
+
 pub fn linked_repo_path(control_root: &Path, project_id: &str) -> Result<Option<String>> {
     let settings = load_settings(control_root, project_id)?;
     let value = settings
@@ -551,7 +595,11 @@ pub fn load_llm_profile(control_root: &Path, project_id: &str) -> Result<LlmProf
     Ok(normalize_llm_profile(profile))
 }
 
-pub fn save_llm_profile(control_root: &Path, project_id: &str, profile: &LlmProfile) -> Result<LlmProfile> {
+pub fn save_llm_profile(
+    control_root: &Path,
+    project_id: &str,
+    profile: &LlmProfile,
+) -> Result<LlmProfile> {
     let root = ensure_project_scaffold(control_root, project_id)?;
     let cockpit_dir = root.join(".cockpit");
     fs::create_dir_all(&cockpit_dir)?;
@@ -626,7 +674,9 @@ pub fn create_task(
         status,
         source: source.unwrap_or("manual").trim().to_string(),
         objective: normalize_multiline(objective.unwrap_or("TBD")),
-        done_definition: normalize_multiline(done_definition.unwrap_or("Define verifiable done criteria.")),
+        done_definition: normalize_multiline(
+            done_definition.unwrap_or("Define verifiable done criteria."),
+        ),
         links: normalize_lines(links.to_vec()),
         risks: normalize_lines(risks.to_vec()),
         path: path.display().to_string(),
@@ -693,7 +743,10 @@ pub fn create_tasks_from_ai_message(
     author: &str,
     text: &str,
 ) -> Result<Vec<TaskRecord>> {
-    if !matches!(author, "clems" | "victor" | "leo" | "nova" | "vulgarisation") {
+    if !matches!(
+        author,
+        "clems" | "victor" | "leo" | "nova" | "vulgarisation"
+    ) {
         return Ok(Vec::new());
     }
 
@@ -822,7 +875,8 @@ fn normalize_llm_profile(mut profile: LlmProfile) -> LlmProfile {
     }
 
     if profile.clems_model.trim().is_empty()
-        || (profile.default_model.is_some() && profile.clems_model == LlmProfile::default().clems_model)
+        || (profile.default_model.is_some()
+            && profile.clems_model == LlmProfile::default().clems_model)
     {
         profile.clems_model = profile
             .default_model
@@ -898,7 +952,9 @@ fn validate_llm_profile(mut profile: LlmProfile) -> Result<LlmProfile> {
         }
     }
     for model_id in &profile.l2_pool {
-        if !default_l2_models().contains(&model_id.as_str()) && !model_id.eq(&profile.l2_default_model) {
+        if !default_l2_models().contains(&model_id.as_str())
+            && !model_id.eq(&profile.l2_default_model)
+        {
             anyhow::bail!("l2_pool contains unsupported model: {model_id}");
         }
     }
@@ -906,7 +962,10 @@ fn validate_llm_profile(mut profile: LlmProfile) -> Result<LlmProfile> {
         anyhow::bail!("l2_default_model must exist in l2_pool");
     }
     if profile.l2_selection_mode != "manual_primary" {
-        anyhow::bail!("unsupported l2_selection_mode: {}", profile.l2_selection_mode);
+        anyhow::bail!(
+            "unsupported l2_selection_mode: {}",
+            profile.l2_selection_mode
+        );
     }
 
     profile.default_model = Some(profile.clems_model.clone());
@@ -929,7 +988,11 @@ fn extract_markdown_section_bullets(markdown: &str, section: &str) -> Vec<String
         if !in_section {
             continue;
         }
-        if let Some(value) = line.strip_prefix("- ").map(str::trim).filter(|value| !value.is_empty()) {
+        if let Some(value) = line
+            .strip_prefix("- ")
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+        {
             out.push(value.to_string());
         }
     }
@@ -978,7 +1041,11 @@ fn parse_issue_task(path: &Path) -> Result<Option<TaskRecord>> {
     let heading = lines
         .iter()
         .find_map(|line| line.trim().strip_prefix("# "))
-        .unwrap_or(path.file_stem().and_then(|value| value.to_str()).unwrap_or("ISSUE-UNKNOWN"));
+        .unwrap_or(
+            path.file_stem()
+                .and_then(|value| value.to_str())
+                .unwrap_or("ISSUE-UNKNOWN"),
+        );
     let (task_id, title) = parse_heading(heading, path);
 
     let owner = find_metadata_value(&lines, "Owner").unwrap_or_else(|| "unassigned".to_string());
@@ -1141,7 +1208,11 @@ fn slugify(title: &str) -> String {
         }
         out.push(next);
     }
-    out.trim_matches('-').to_string().chars().take(64).collect::<String>()
+    out.trim_matches('-')
+        .to_string()
+        .chars()
+        .take(64)
+        .collect::<String>()
 }
 
 fn next_issue_id(issues_dir: &Path) -> Result<String> {
@@ -1177,10 +1248,7 @@ fn render_task_markdown(task: &TaskRecord) -> String {
         "## Objective".to_string(),
     ];
     lines.extend(as_bullets(&task.objective));
-    lines.extend([
-        String::new(),
-        "## Done (Definition)".to_string(),
-    ]);
+    lines.extend([String::new(), "## Done (Definition)".to_string()]);
     lines.extend(as_checkbox_bullets(&task.done_definition));
     lines.extend([String::new(), "## Links".to_string()]);
     lines.extend(as_bullets_from_list(&task.links));
@@ -1221,7 +1289,11 @@ fn rewrite_issue_markdown(raw: &str, task: &TaskRecord) -> String {
     let lines = replace_metadata(lines, "Status", task.status.as_label());
     let lines = replace_metadata(lines, "Source", &task.source);
     let lines = replace_section(lines, "Objective", &as_bullets(&task.objective));
-    let lines = replace_section(lines, "Done (Definition)", &as_checkbox_bullets(&task.done_definition));
+    let lines = replace_section(
+        lines,
+        "Done (Definition)",
+        &as_checkbox_bullets(&task.done_definition),
+    );
     let lines = replace_section(lines, "Links", &as_bullets_from_list(&task.links));
     let mut lines = replace_section(lines, "Risks", &as_bullets_from_list(&task.risks));
     if !lines.last().is_some_and(|line| line.is_empty()) {
@@ -1320,7 +1392,10 @@ fn extract_ai_task_specs(author: &str, text: &str) -> Vec<AiTaskSpec> {
     for raw in lines {
         let trimmed = raw.trim();
         let lowered = trimmed.to_ascii_lowercase();
-        if matches!(lowered.as_str(), "tasks:" | "task list:" | "todo:" | "to do:") {
+        if matches!(
+            lowered.as_str(),
+            "tasks:" | "task list:" | "todo:" | "to do:"
+        ) {
             in_block = true;
             continue;
         }
@@ -1377,8 +1452,8 @@ fn parse_ai_task_line(author: &str, line: &str) -> Option<AiTaskSpec> {
 #[cfg(test)]
 mod tests {
     use super::{
-        TaskRecordPatch, create_task, create_tasks_from_ai_message, load_agents, load_llm_profile,
-        list_tasks, save_agents, save_llm_profile, update_task,
+        TaskRecordPatch, create_task, create_tasks_from_ai_message, list_projects, list_tasks,
+        load_agents, load_llm_profile, save_agents, save_llm_profile, update_task,
     };
     use crate::models::{AgentRecord, LlmProfile, TaskStatus};
     use std::{collections::HashMap, fs};
@@ -1406,6 +1481,18 @@ mod tests {
             current_task: None,
             heartbeat: None,
         }
+    }
+
+    #[test]
+    fn list_projects_hides_demo_root() {
+        let root = temp_root();
+        fs::create_dir_all(root.join("cockpit")).expect("create cockpit project");
+        fs::create_dir_all(root.join("demo")).expect("create demo project");
+
+        let projects = list_projects(&root).expect("list projects");
+        let ids = projects.into_iter().map(|(project_id, _)| project_id).collect::<Vec<_>>();
+
+        assert_eq!(ids, vec!["cockpit".to_string()]);
     }
 
     #[test]

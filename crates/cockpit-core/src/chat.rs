@@ -1,5 +1,7 @@
 use std::collections::BTreeSet;
 
+use serde_json::Value;
+
 use crate::models::ChatMode;
 
 const L1_DEFAULTS: &[&str] = &["victor", "leo", "nova", "vulgarisation"];
@@ -38,6 +40,21 @@ pub fn resolve_direct_target(target_agent_id: Option<&str>, mentions: &[String])
 }
 
 pub fn conceal_targets(mentions: &[String]) -> Vec<String> {
+    let explicit: BTreeSet<String> = mentions
+        .iter()
+        .filter(|mention| mention.as_str() != "clems")
+        .filter(|mention| is_directable_agent(mention))
+        .cloned()
+        .collect();
+
+    if !mentions.is_empty() && explicit.is_empty() {
+        return Vec::new();
+    }
+
+    if !explicit.is_empty() {
+        return explicit.into_iter().collect();
+    }
+
     let mut out = BTreeSet::new();
     for &agent in L1_DEFAULTS {
         out.insert(agent.to_string());
@@ -51,6 +68,26 @@ pub fn conceal_targets(mentions: &[String]) -> Vec<String> {
         }
     }
     out.into_iter().collect()
+}
+
+pub fn conceal_targets_from_context(context_ref: Option<&Value>, mentions: &[String]) -> Vec<String> {
+    if let Some(context_ref) = context_ref {
+        if let Some(room_participants) = context_ref.get("room_participants").and_then(Value::as_array) {
+            let explicit: BTreeSet<String> = room_participants
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty() && *value != "clems")
+                .filter(|value| is_directable_agent(value))
+                .map(ToString::to_string)
+                .collect();
+            if !explicit.is_empty() {
+                return explicit.into_iter().collect();
+            }
+        }
+    }
+
+    conceal_targets(mentions)
 }
 
 pub fn generate_agent_reply(agent_id: &str, text: &str, mode: ChatMode) -> String {
@@ -106,15 +143,37 @@ mod tests {
     }
 
     #[test]
-    fn conceal_includes_l1_plus_mentions() {
-        let mentions = vec!["agent-9".to_string(), "clems".to_string()];
-        let targets = conceal_targets(&mentions);
+    fn conceal_defaults_to_l1_when_no_mentions() {
+        let targets = conceal_targets(&[]);
         assert!(targets.contains(&"victor".to_string()));
         assert!(targets.contains(&"leo".to_string()));
         assert!(targets.contains(&"nova".to_string()));
         assert!(targets.contains(&"vulgarisation".to_string()));
+    }
+
+    #[test]
+    fn conceal_respects_explicit_mentions_only() {
+        let mentions = vec!["agent-9".to_string(), "clems".to_string()];
+        let targets = conceal_targets(&mentions);
         assert!(targets.contains(&"agent-9".to_string()));
-        assert!(!targets.contains(&"clems".to_string()));
+        assert_eq!(targets.len(), 1);
+    }
+
+    #[test]
+    fn conceal_with_clems_only_keeps_summary_only() {
+        let mentions = vec!["clems".to_string()];
+        let targets = conceal_targets(&mentions);
+        assert!(targets.is_empty());
+    }
+
+    #[test]
+    fn conceal_context_participants_override_mentions() {
+        let context = serde_json::json!({
+            "room_participants": ["clems", "leo", "victor"],
+        });
+        let mentions = vec!["clems".to_string()];
+        let targets = conceal_targets_from_context(Some(&context), &mentions);
+        assert_eq!(targets, vec!["leo".to_string(), "victor".to_string()]);
     }
 
     #[test]

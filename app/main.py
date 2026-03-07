@@ -17,7 +17,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
 from app.data.paths import PROJECTS_DIR  # noqa: E402
-from app.data.store import ensure_demo_project, list_projects, load_project, resolve_startup_project_id, runtime_backend_mode  # noqa: E402
+from app.data.store import ensure_default_project, list_projects, load_project, resolve_startup_project_id, runtime_backend_mode  # noqa: E402
 from app.ui.main_window import MainWindow  # noqa: E402
 
 
@@ -280,7 +280,7 @@ def main() -> int:
             return 2
     else:
         os.environ.pop(STRICT_WRITES_ENV, None)
-        project = ensure_demo_project()
+        project = ensure_default_project()
         projects = list_projects()
 
     app_stamp = _get_version_stamp()

@@ -30,18 +30,18 @@ Does not:
 
 ## Run once
 ```
-./.venv/bin/python scripts/auto_mode.py --project demo --once
+./.venv/bin/python scripts/auto_mode.py --project cockpit --once
 ```
 
 ## Run continuously
 ```
-./.venv/bin/python scripts/auto_mode.py --project demo --interval 5
+./.venv/bin/python scripts/auto_mode.py --project cockpit --interval 5
 ```
 
 ## Recommended (scale-friendly)
 Only perform clipboard/open once per cycle and print the prompt in the terminal:
 ```
-./.venv/bin/python scripts/auto_mode.py --project demo --interval 5 --max-actions 1 --print-prompt
+./.venv/bin/python scripts/auto_mode.py --project cockpit --interval 5 --max-actions 1 --print-prompt
 ```
 Notes:
 - All requests are still written to inbox files.
@@ -62,7 +62,7 @@ If you pass the Cockpit base dir, `/projects` is appended automatically.
 
 ## Verify
 ```
-tail -n 1 ~/Library/Application\\ Support/Cockpit/projects/demo/runs/inbox/agent-1.ndjson
+tail -n 1 ~/Library/Application\\ Support/Cockpit/projects/cockpit/runs/inbox/agent-1.ndjson
 ```
 
 ## Mapping (locked defaults)

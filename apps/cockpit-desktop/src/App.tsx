@@ -21,6 +21,7 @@ import {
   getLayout,
   getLlmProfile,
   getPixelFeed,
+  getProjects,
   getProjectSummary,
   getProjectSettings,
   getRoadmap,
@@ -50,6 +51,7 @@ import type {
   LlmProfile,
   PixelFeedResponse,
   ProjectSummaryResponse,
+  ProjectCatalogEntry,
   ProjectSettings,
   RoadmapResponse,
   SkillLibraryEntry,
@@ -62,6 +64,7 @@ import type {
 import { openOsTerminal, pickProjectFolder } from './lib/tauriOps'
 
 const DEFAULT_PROJECT_ID = import.meta.env.VITE_DEFAULT_PROJECT_ID ?? 'cockpit'
+const ACTIVE_PROJECT_ID = DEFAULT_PROJECT_ID
 
 type TopTab = 'pixel_home' | 'concierge_room' | 'overview' | 'pilotage' | 'docs' | 'todo' | 'model_routing'
 type WorkspaceTab = 'agent' | 'layout' | 'settings'
@@ -205,6 +208,23 @@ function formatCurrencyCad(value: number | null | undefined): string {
   }).format(value)
 }
 
+function projectLabel(projectId: string, projectName?: string | null): string {
+  const cleanName = projectName?.trim()
+  if (cleanName && cleanName.toLowerCase() !== projectId.trim().toLowerCase()) {
+    return cleanName
+  }
+
+  if (projectId.trim().length === 0) {
+    return 'Project'
+  }
+
+  return projectId
+    .split(/[-_]/g)
+    .filter(Boolean)
+    .map((chunk) => `${chunk.slice(0, 1).toUpperCase()}${chunk.slice(1)}`)
+    .join(' ')
+}
+
 function modelLabel(modelId: string): string {
   const found = [...CLEMS_MODEL_OPTIONS, ...L1_MODEL_OPTIONS, ...L2_MODEL_OPTIONS].find(
     (option) => option.id === modelId,
@@ -214,6 +234,13 @@ function modelLabel(modelId: string): string {
 
 function isUnavailableModel(modelId: string): boolean {
   return modelLabel(modelId).endsWith('(unavailable)')
+}
+
+function leadRoomAgentIdsFromRecords(agentRecords: AgentRecord[]): string[] {
+  return agentRecords
+    .filter((agent) => agent.agent_id !== 'clems' && agent.level === 1)
+    .map((agent) => agent.agent_id)
+    .sort()
 }
 
 function preferredVoiceRecorder(): { mimeType: string; format: string } | null {
@@ -302,7 +329,8 @@ function App() {
   const [feed, setFeed] = useState<PixelFeedResponse | null>(null)
   const [agentRecords, setAgentRecords] = useState<AgentRecord[]>([])
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
-  const [chatInput, setChatInput] = useState('')
+  const [directChatInput, setDirectChatInput] = useState('')
+  const [roomChatInput, setRoomChatInput] = useState('')
   const [executionMode, setExecutionMode] = useState<ExecutionMode>('chat')
   const [wsConnected, setWsConnected] = useState(false)
   const [composerStatus, setComposerStatus] = useState<ComposerStatus>('reconnecting')
@@ -314,7 +342,7 @@ function App() {
   const [createAgentSkills, setCreateAgentSkills] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSendingChat, setIsSendingChat] = useState(false)
-  const [showAddMenu, setShowAddMenu] = useState(false)
+  const [showRoomAddMenu, setShowRoomAddMenu] = useState(false)
   const [refreshTick, setRefreshTick] = useState(0)
   const [agentTools, setAgentTools] = useState<Record<number, ToolActivity[]>>({})
   const [overlayViewport, setOverlayViewport] = useState({
@@ -348,6 +376,8 @@ function App() {
   const [skillsLibraryLoading, setSkillsLibraryLoading] = useState(false)
   const [projectSummary, setProjectSummary] = useState<ProjectSummaryResponse | null>(null)
   const [projectSettings, setProjectSettings] = useState<ProjectSettings | null>(null)
+  const [projectCatalog, setProjectCatalog] = useState<ProjectCatalogEntry[]>([])
+  const [projectCatalogLoading, setProjectCatalogLoading] = useState(false)
   const [linkedRepoDraft, setLinkedRepoDraft] = useState('')
   const [projectRoadmap, setProjectRoadmap] = useState<RoadmapResponse | null>(null)
   const [takeoverResult, setTakeoverResult] = useState<TakeoverStartResponse | null>(null)
@@ -356,10 +386,10 @@ function App() {
   const [isChoosingFolder, setIsChoosingFolder] = useState(false)
   const [isRecordingVoice, setIsRecordingVoice] = useState(false)
   const [isTranscribingVoice, setIsTranscribingVoice] = useState(false)
-  const [directVisibleCount, setDirectVisibleCount] = useState(12)
+  const [directVisibleCount, setDirectVisibleCount] = useState(8)
   const [roomVisibleCount, setRoomVisibleCount] = useState(8)
   const [roomParticipantMode, setRoomParticipantMode] = useState<RoomParticipantMode>('all_active')
-  const [roomCustomParticipants, setRoomCustomParticipants] = useState<string[]>([])
+  const [roomCustomParticipants, setRoomCustomParticipants] = useState<string[]>(['clems'])
   const [assetsStatus, setAssetsStatus] = useState<{ donarg: boolean; pixelRef: boolean }>({
     donarg: false,
     pixelRef: false,
@@ -382,7 +412,6 @@ function App() {
   const mediaStreamRef = useRef<MediaStream | null>(null)
   const voiceChunksRef = useRef<Blob[]>([])
   const voiceFormatRef = useRef('ogg')
-  const roomParticipantIdsRef = useRef<string[]>(['clems'])
   const directChatLogRef = useRef<HTMLDivElement>(null)
   const roomChatLogRef = useRef<HTMLDivElement>(null)
   const directStickToBottomRef = useRef(true)
@@ -653,6 +682,22 @@ function App() {
     return summary
   }, [markSynced, projectId])
 
+  const refreshProjectCatalog = useCallback(async () => {
+    setProjectCatalogLoading(true)
+    try {
+      const projects = await getProjects()
+      const activeProjects = projects.filter((project) => project.project_id === ACTIVE_PROJECT_ID)
+      setProjectCatalog(activeProjects)
+      markSynced()
+      return activeProjects
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : String(error))
+      return []
+    } finally {
+      setProjectCatalogLoading(false)
+    }
+  }, [markSynced])
+
   const refreshRoadmap = useCallback(async () => {
     const roadmap = await getRoadmap(projectId)
     setProjectRoadmap(roadmap)
@@ -686,7 +731,7 @@ function App() {
 
       await ensureClemsAgent()
 
-      const [layout, pixel, chat, pendingApprovals, health, profile, taskPayload, settings, roadmap, summary] = await Promise.all([
+      const [layout, pixel, chat, pendingApprovals, health, profile, taskPayload, settings, roadmap, summary, projects] = await Promise.all([
         getLayout(projectId),
         getPixelFeed(projectId),
         getChat(projectId, 300, 'all'),
@@ -697,6 +742,7 @@ function App() {
         getProjectSettings(projectId),
         getRoadmap(projectId),
         getProjectSummary(projectId),
+        getProjects(),
       ])
 
       const presetKey = `cockpit.video_preset_applied.${projectId}`
@@ -725,6 +771,7 @@ function App() {
       setProfileDraft(profile)
       setTasks(taskPayload.tasks)
       setProjectSettings(settings)
+      setProjectCatalog(projects.filter((project) => project.project_id === ACTIVE_PROJECT_ID))
       setLinkedRepoDraft(settings.linked_repo_path ?? '')
       setProjectRoadmap(roadmap)
       setProjectSummary(summary)
@@ -903,6 +950,12 @@ function App() {
       void refreshProjectSummary()
     }
   }, [activeTab, docsPanel, refreshProjectSummary])
+
+  useEffect(() => {
+    if (activeTab === 'overview' || (activeTab === 'docs' && docsPanel === 'project')) {
+      void refreshProjectCatalog()
+    }
+  }, [activeTab, docsPanel, refreshProjectCatalog])
 
   useEffect(() => {
     const listener = (rawEvent: Event) => {
@@ -1123,6 +1176,8 @@ function App() {
     setApiError(null)
     setUiNotice(null)
     try {
+      setRoomParticipantMode('lead_only')
+      const kickoffParticipants = leadRoomAgentIdsFromRecords(agentRecords)
       const response = await startTakeover(projectId, {
         linked_repo_path: linkedRepoDraft.trim() || undefined,
       })
@@ -1135,6 +1190,14 @@ function App() {
       }
       await refreshProjectSummary()
       setActiveTab('concierge_room')
+      roomStickToBottomRef.current = true
+      const takeoverRoomContext = {
+        room_participant_mode: 'lead_only',
+        room_participants: kickoffParticipants,
+        room_participant_count: kickoffParticipants.length,
+        coordinator: 'clems',
+        takeover_run_id: response.run_id,
+      }
       const kickoffPrompt = [
         `Takeover package ready for project ${projectId}.`,
         `Linked repo: ${response.linked_repo_path || 'not linked'}`,
@@ -1154,7 +1217,8 @@ function App() {
         text: kickoffPrompt,
         chat_mode: 'conceal_room',
         execution_mode: 'chat',
-        mentions: roomParticipantIdsRef.current,
+        mentions: ['clems'],
+        context_ref: takeoverRoomContext,
       })
       mergeChatMessages(kickoff.messages)
       if (kickoff.approval_requests.length > 0) {
@@ -1174,6 +1238,7 @@ function App() {
     refreshApprovals,
     refreshProjectSettings,
     refreshProjectSummary,
+    agentRecords,
   ])
 
   const handleApplyTakeoverTasks = useCallback(async () => {
@@ -1240,15 +1305,24 @@ function App() {
     ].join('\n')
 
     setActiveTab('concierge_room')
+    setRoomParticipantMode('lead_only')
     setApiError(null)
     setUiNotice(null)
     setIsSendingChat(true)
     try {
+      const kickoffParticipants = leadRoomAgentIdsFromRecords(agentRecords)
+      const roomContext = {
+        room_participant_mode: 'lead_only',
+        room_participants: kickoffParticipants,
+        room_participant_count: kickoffParticipants.length,
+        coordinator: 'clems',
+      }
       const response = await liveTurn(projectId, {
         text: kickoff,
         chat_mode: 'conceal_room',
         execution_mode: 'chat',
-        mentions: roomParticipantIdsRef.current,
+        mentions: ['clems'],
+        context_ref: roomContext,
       })
       mergeChatMessages(response.messages)
       if (response.approval_requests.length > 0) {
@@ -1266,6 +1340,7 @@ function App() {
     projectId,
     refreshApprovals,
     takeoverResult,
+    agentRecords,
   ])
 
   const handleToggleVoiceRecording = useCallback(async () => {
@@ -1326,7 +1401,8 @@ function App() {
             if (response.status !== 'ok') {
               throw new Error(response.error || 'voice transcription failed')
             }
-            setChatInput((previous) => {
+            const appendTranscript = activeTab === 'concierge_room' ? setRoomChatInput : setDirectChatInput
+            appendTranscript((previous) => {
               const prefix = previous.trim()
               if (!prefix) {
                 return response.text
@@ -1353,7 +1429,7 @@ function App() {
       }
       setApiError(error instanceof Error ? error.message : String(error))
     }
-  }, [isRecordingVoice, isTranscribingVoice, projectId])
+  }, [activeTab, isRecordingVoice, isTranscribingVoice, projectId])
 
   const handleOfficeClick = useCallback(
     async (numericId: number) => {
@@ -1501,9 +1577,20 @@ function App() {
     return effectiveRoomParticipantIds.map((agentId) => `@${agentId}`).join(', ')
   }, [effectiveRoomParticipantIds])
 
-  useEffect(() => {
-    roomParticipantIdsRef.current = effectiveRoomParticipantIds
-  }, [effectiveRoomParticipantIds])
+  const roomDispatchParticipantIds = useMemo(
+    () => effectiveRoomParticipantIds.filter((agentId) => agentId !== 'clems'),
+    [effectiveRoomParticipantIds],
+  )
+
+  const roomDispatchContext = useMemo(
+    () => ({
+      room_participant_mode: roomParticipantMode,
+      room_participants: roomDispatchParticipantIds,
+      room_participant_count: roomDispatchParticipantIds.length,
+      coordinator: 'clems',
+    }),
+    [roomDispatchParticipantIds, roomParticipantMode],
+  )
 
   useEffect(() => {
     if (rosterAgents.length === 0) {
@@ -1531,8 +1618,21 @@ function App() {
   }, [directTarget, selectedAgentChatReady])
 
   useEffect(() => {
+    if (projectId === ACTIVE_PROJECT_ID) {
+      return
+    }
+    setProjectId(ACTIVE_PROJECT_ID)
+  }, [projectId])
+
+  useEffect(() => {
     const valid = new Set(roomCandidateAgents.map((agent) => agent.agent_id))
-    setRoomCustomParticipants((previous) => previous.filter((agentId) => valid.has(agentId)))
+    setRoomCustomParticipants((previous) => {
+      const filtered = previous.filter((agentId) => valid.has(agentId))
+      if (filtered.length > 0) {
+        return filtered
+      }
+      return valid.has('clems') ? ['clems'] : filtered
+    })
   }, [roomCandidateAgents])
 
   useEffect(() => {
@@ -1552,28 +1652,47 @@ function App() {
   const handleSendChat = useCallback(async ({
     targetMode = directTarget,
     chatMode = activeChatMode,
+    contextRef = null,
   }: {
     targetMode?: DirectTargetMode
     chatMode?: ChatMode
+    contextRef?: Record<string, unknown> | null
   } = {}) => {
-    const text = chatInput.trim()
+    const activeInput = chatMode === 'conceal_room' ? roomChatInput : directChatInput
+    const text = activeInput.trim()
     if (!text || isSendingChat) {
       return
     }
 
-    const targetAgentId =
-      chatMode === 'direct' && targetMode === 'selected_agent' ? (selectedAgent?.chat_targetable ? selectedAgent.agent_id : null) : null
-    if (chatMode === 'direct' && targetMode === 'selected_agent' && !targetAgentId) {
-      setUiNotice('select a chat-ready agent first')
-      return
+    if (chatMode === 'conceal_room') {
+      roomStickToBottomRef.current = true
+    } else {
+      directStickToBottomRef.current = true
     }
 
-    setChatInput('')
+    let resolvedTargetMode = targetMode
+    let targetAgentId =
+      chatMode === 'direct' && resolvedTargetMode === 'selected_agent'
+        ? (selectedAgent?.chat_targetable ? selectedAgent.agent_id : null)
+        : null
+
+    if (chatMode === 'direct' && resolvedTargetMode === 'selected_agent' && !targetAgentId) {
+      resolvedTargetMode = 'clems'
+      targetAgentId = null
+      setDirectTarget('clems')
+      setUiNotice('selected agent not chat-ready. direct chat stays on @clems.')
+    }
+
+    if (chatMode === 'conceal_room') {
+      setRoomChatInput('')
+    } else {
+      setDirectChatInput('')
+    }
     setApiError(null)
     setUiNotice(null)
     setIsSendingChat(true)
     if (chatMode === 'direct') {
-      setDirectTarget(targetMode)
+      setDirectTarget(resolvedTargetMode)
     }
 
     try {
@@ -1582,7 +1701,8 @@ function App() {
         chat_mode: chatMode,
         execution_mode: executionMode,
         target_agent_id: targetAgentId,
-        mentions: chatMode === 'conceal_room' ? effectiveRoomParticipantIds : undefined,
+        mentions: chatMode === 'conceal_room' ? ['clems'] : undefined,
+        context_ref: chatMode === 'conceal_room' ? (contextRef ?? roomDispatchContext) : contextRef,
       })
 
       mergeChatMessages(response.messages)
@@ -1600,7 +1720,11 @@ function App() {
         setComposerStatus('live')
       }
     } catch (error) {
-      setChatInput(text)
+      if (chatMode === 'conceal_room') {
+        setRoomChatInput(text)
+      } else {
+        setDirectChatInput(text)
+      }
       setApiError(error instanceof Error ? error.message : String(error))
       setUiNotice('send failed. draft restored.')
     } finally {
@@ -1608,14 +1732,15 @@ function App() {
     }
   }, [
     activeChatMode,
-    chatInput,
+    directChatInput,
     directTarget,
     executionMode,
     isSendingChat,
     mergeChatMessages,
     projectId,
     refreshApprovals,
-    effectiveRoomParticipantIds,
+    roomChatInput,
+    roomDispatchContext,
     selectedAgent,
     startFallbackPolling,
   ])
@@ -1669,16 +1794,29 @@ function App() {
       const chosen = await pickProjectFolder()
       if (chosen) {
         setLinkedRepoDraft(chosen)
+        setUiNotice(`folder selected: ${chosen}`)
       } else {
-        setUiNotice('folder picker cancelled')
+        const fallback = window.prompt('Paste an absolute repo path for takeover.', linkedRepoDraft)
+        if (fallback && fallback.trim()) {
+          setLinkedRepoDraft(fallback.trim())
+          setUiNotice(`folder path pasted: ${fallback.trim()}`)
+        } else {
+          setUiNotice('folder picker cancelled')
+        }
       }
     } catch (error) {
       setApiError(error instanceof Error ? error.message : String(error))
-      setUiNotice('native folder picker unavailable. manual path still works.')
+      const fallback = window.prompt('Native folder picker unavailable. Paste an absolute repo path.', linkedRepoDraft)
+      if (fallback && fallback.trim()) {
+        setLinkedRepoDraft(fallback.trim())
+        setUiNotice(`folder path pasted: ${fallback.trim()}`)
+      } else {
+        setUiNotice('native folder picker unavailable. manual path still works.')
+      }
     } finally {
       setIsChoosingFolder(false)
     }
-  }, [])
+  }, [linkedRepoDraft])
 
   const handleQuickAgent = useCallback(
     async (agentId: string) => {
@@ -1776,14 +1914,17 @@ function App() {
     }
   }, [officeState, projectId, refreshPixelFeed])
 
-  const addMention = useCallback((mention: string) => {
-    setChatInput((previous) => {
+  const addMention = useCallback((mention: string, surface: 'direct' | 'room') => {
+    const applyInput = surface === 'room' ? setRoomChatInput : setDirectChatInput
+    applyInput((previous) => {
       if (previous.trim().length === 0) {
         return `@${mention} `
       }
       return `${previous} @${mention} `
     })
-    setShowAddMenu(false)
+    if (surface === 'room') {
+      setShowRoomAddMenu(false)
+    }
   }, [])
 
   const agentNumericIds = useMemo(() => {
@@ -1810,6 +1951,32 @@ function App() {
         ? `@${selectedAgent.agent_id}`
         : '@clems'
       : '@clems'
+  const directTargetNotice =
+    directTarget === 'selected_agent'
+      ? selectedAgent && selectedAgentChatReady
+        ? `target @${selectedAgent.agent_id}`
+        : selectedAgent
+          ? `@${selectedAgent.agent_id} not chat-ready. fallback @clems.`
+          : 'No agent selected. fallback @clems.'
+      : ''
+
+  const activeProjectCard = useMemo<ProjectCatalogEntry>(
+    () =>
+      projectCatalog.find((project) => project.project_id === ACTIVE_PROJECT_ID) ?? {
+        project_id: ACTIVE_PROJECT_ID,
+        project_name: projectSettings?.project_name ?? ACTIVE_PROJECT_ID,
+        linked_repo_path: projectSettings?.linked_repo_path ?? null,
+        phase: projectSummary?.phase ?? 'Implement',
+        objective: projectSummary?.objective ?? 'No objective set yet.',
+      },
+    [
+      projectCatalog,
+      projectSettings?.linked_repo_path,
+      projectSettings?.project_name,
+      projectSummary?.objective,
+      projectSummary?.phase,
+    ],
+  )
 
   const topTabs = useMemo(
     () => [
@@ -2107,6 +2274,7 @@ function App() {
     const latestEvents = eventLog.slice(0, 20)
     const recentTasks = [...tasks].sort(compareTasksByFreshness).slice(0, 5)
     const linkedRepoLabel = projectSummary?.linked_repo_path ?? projectSettings?.linked_repo_path ?? 'not linked'
+    const currentProjectLabel = projectLabel(projectId, projectSettings?.project_name ?? projectId)
     const projectPhase = projectSummary?.phase ?? 'unknown'
     const projectObjective = projectSummary?.objective ?? 'No objective set yet.'
     const roadmapNow = projectSummary?.roadmap_now ?? projectRoadmap?.sections.now ?? []
@@ -2218,7 +2386,7 @@ function App() {
               ) : null}
               <div className="concierge-banner">
                 <p>
-                  Use Le Conseil when one operator prompt should fan out across the active leads and come back as one coordinated room summary.
+                  Use Le Conseil to coordinate the active leads. Clems stays accountable for the visible room answer.
                 </p>
               </div>
               <div className="mode-row concierge-controls">
@@ -2242,10 +2410,110 @@ function App() {
                   </button>
                 </div>
               </div>
-              <div className="participant-filter-card">
+              {conciergeChatMessages.length > 8 ? (
+                <div className="chat-history-controls">
+                  <span className="hint">showing latest {Math.min(roomVisibleCount, conciergeChatMessages.length)} room messages</span>
+                  <div className="chat-actions">
+                    <button
+                      className="small-btn"
+                      onClick={() => setRoomVisibleCount((value) => Math.min(conciergeChatMessages.length, value + 12))}
+                      disabled={roomVisibleCount >= conciergeChatMessages.length}
+                    >
+                      Show older
+                    </button>
+                    <button
+                      className="small-btn"
+                      onClick={() => setRoomVisibleCount(8)}
+                      disabled={roomVisibleCount <= 8}
+                    >
+                      Show latest
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              <div
+                ref={roomChatLogRef}
+                className="chat-log concierge-log"
+                onScroll={(event) => {
+                  const node = event.currentTarget
+                  roomStickToBottomRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 40
+                }}
+              >
+                {visibleConciergeMessages.length === 0 ? (
+                  <p className="chat-empty">No room traffic yet. Send a first operator instruction to @clems or widen the participant set.</p>
+                ) : (
+                  visibleConciergeMessages.map((message) => (
+                    <article
+                      key={message.message_id}
+                      className={`chat-row ${message.author === 'operator' ? 'operator' : message.author === 'clems' ? 'clems' : 'agent'}`}
+                    >
+                      <header>
+                        <div className="chat-row-meta">
+                          <strong className="chat-author">@{message.author}</strong>
+                          {messageKindLabel(message) ? <span className="chat-kind">{messageKindLabel(message)}</span> : null}
+                        </div>
+                        <time className="chat-time">{new Date(message.timestamp).toLocaleTimeString()}</time>
+                      </header>
+                      <p className="chat-body">{message.text}</p>
+                    </article>
+                  ))
+                )}
+              </div>
+              <div className="composer-stack">
+                <div className="composer-row">
+                  <div className="plus-wrap">
+                    <button className="plus-btn" type="button" onClick={() => setShowRoomAddMenu((value) => !value)}>
+                      +
+                    </button>
+                    {showRoomAddMenu ? (
+                      <div className="plus-menu">
+                        <button type="button" onClick={() => addMention('clems', 'room')}>mention @clems</button>
+                        <button type="button" onClick={() => addMention('victor', 'room')}>mention @victor</button>
+                        <button type="button" onClick={() => addMention('leo', 'room')}>mention @leo</button>
+                        <button type="button" onClick={() => addMention('nova', 'room')}>mention @nova</button>
+                      </div>
+                    ) : null}
+                  </div>
+                  <input
+                    value={roomChatInput}
+                    onChange={(event) => setRoomChatInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        void handleSendChat({ chatMode: 'conceal_room', contextRef: roomDispatchContext })
+                      }
+                    }}
+                    placeholder="Ask @clems to coordinate the board room."
+                  />
+                </div>
+                <div className="composer-actions-row">
+                  <button
+                    className={`small-btn voice-btn ${isRecordingVoice ? 'recording' : ''}`}
+                    onClick={() => void handleToggleVoiceRecording()}
+                    disabled={isTranscribingVoice}
+                  >
+                    {isTranscribingVoice ? 'Transcribing...' : isRecordingVoice ? 'Stop voice' : 'Voice'}
+                  </button>
+                  <button
+                    className="send-btn"
+                    onClick={() => void handleSendChat({ chatMode: 'conceal_room', contextRef: roomDispatchContext })}
+                    disabled={isSendingChat}
+                  >
+                    {isSendingChat ? 'Sending...' : 'Send to Le Conseil'}
+                  </button>
+                  {takeoverResult ? (
+                    <button className="send-btn alt" onClick={() => void handleLaunchTakeoverPlan()} disabled={isSendingChat}>
+                      Lets go
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </section>
+            <aside className="concierge-side-stack">
+              <section className="secondary-card concierge-side-card participant-filter-card">
                 <div className="section-title-row compact">
                   <h3>Participants</h3>
-                  <span className="hint">{roomParticipantLabel}</span>
+                  <span className="hint">Clems coordinates: {roomParticipantLabel}</span>
                 </div>
                 <div className="participant-mode-row">
                   <button
@@ -2289,105 +2557,7 @@ function App() {
                     })}
                   </div>
                 ) : null}
-              </div>
-              <div className="chat-history-controls">
-                <span className="hint">showing latest {Math.min(roomVisibleCount, conciergeChatMessages.length)} room messages</span>
-                <div className="chat-actions">
-                  <button
-                    className="small-btn"
-                    onClick={() => setRoomVisibleCount((value) => Math.min(conciergeChatMessages.length, value + 12))}
-                    disabled={roomVisibleCount >= conciergeChatMessages.length}
-                  >
-                    Show older
-                  </button>
-                  <button
-                    className="small-btn"
-                    onClick={() => setRoomVisibleCount(8)}
-                    disabled={roomVisibleCount <= 8}
-                  >
-                    Show latest
-                  </button>
-                </div>
-              </div>
-              <div
-                ref={roomChatLogRef}
-                className="chat-log concierge-log"
-                onScroll={(event) => {
-                  const node = event.currentTarget
-                  roomStickToBottomRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 40
-                }}
-              >
-                {visibleConciergeMessages.length === 0 ? (
-                  <p className="chat-empty">No room traffic yet. Send a first operator instruction to fan out across the active agents.</p>
-                ) : (
-                  visibleConciergeMessages.map((message) => (
-                    <article
-                      key={message.message_id}
-                      className={`chat-row ${message.author === 'operator' ? 'operator' : message.author === 'clems' ? 'clems' : 'agent'}`}
-                    >
-                      <header>
-                        <div className="chat-row-meta">
-                          <strong className="chat-author">@{message.author}</strong>
-                          {messageKindLabel(message) ? <span className="chat-kind">{messageKindLabel(message)}</span> : null}
-                        </div>
-                        <time className="chat-time">{new Date(message.timestamp).toLocaleTimeString()}</time>
-                      </header>
-                      <p className="chat-body">{message.text}</p>
-                    </article>
-                  ))
-                )}
-              </div>
-              <div className="composer-stack">
-                <div className="composer-row">
-                  <div className="plus-wrap">
-                    <button className="plus-btn" onClick={() => setShowAddMenu((value) => !value)}>
-                      +
-                    </button>
-                    {showAddMenu ? (
-                      <div className="plus-menu">
-                        <button onClick={() => addMention('clems')}>mention @clems</button>
-                        <button onClick={() => addMention('victor')}>mention @victor</button>
-                        <button onClick={() => addMention('leo')}>mention @leo</button>
-                        <button onClick={() => addMention('nova')}>mention @nova</button>
-                      </div>
-                    ) : null}
-                  </div>
-                  <input
-                    value={chatInput}
-                    onChange={(event) => setChatInput(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault()
-                        void handleSendChat({ chatMode: 'conceal_room' })
-                      }
-                    }}
-                    placeholder="Board room prompt for active participants"
-                  />
-                </div>
-                <div className="composer-actions-row">
-                  <button
-                    className={`small-btn voice-btn ${isRecordingVoice ? 'recording' : ''}`}
-                    onClick={() => void handleToggleVoiceRecording()}
-                    disabled={isTranscribingVoice}
-                  >
-                    {isTranscribingVoice ? 'Transcribing...' : isRecordingVoice ? 'Stop voice' : 'Voice'}
-                  </button>
-                  <button
-                    className="send-btn"
-                    onClick={() => void handleSendChat({ chatMode: 'conceal_room' })}
-                    disabled={isSendingChat}
-                  >
-                    {isSendingChat ? 'Sending...' : 'Send to Le Conseil'}
-                  </button>
-                  {takeoverResult ? (
-                    <button className="send-btn alt" onClick={() => void handleLaunchTakeoverPlan()} disabled={isSendingChat}>
-                      Lets go
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            </section>
-            <aside className="concierge-side-stack">
+              </section>
               <section className="secondary-card concierge-side-card">
                 <h3>Room snapshot</h3>
                 <div className="concierge-score-grid">
@@ -2600,6 +2770,10 @@ function App() {
               <h3>Project summary</h3>
               <ul className="data-list">
                 <li>
+                  <span>Project</span>
+                  <strong>{currentProjectLabel}</strong>
+                </li>
+                <li>
                   <span>Phase</span>
                   <strong>{projectPhase}</strong>
                 </li>
@@ -2740,6 +2914,9 @@ function App() {
                 <button className="send-btn" onClick={() => void handleRunTakeover()} disabled={isRunningTakeover}>
                   {isRunningTakeover ? 'Running takeover...' : 'Take over project'}
                 </button>
+              </div>
+              <div className="command-box">
+                <code>{linkedRepoDraft.trim() || 'No folder selected yet'}</code>
               </div>
               <ul className="data-list">
                 <li>
@@ -3097,8 +3274,29 @@ function App() {
           ) : (
             <div className="project-docs-layout">
               <section className="secondary-card">
+                <div className="section-title-row compact">
+                  <h3>Current project</h3>
+                  <span className="hint">{projectCatalogLoading ? 'loading...' : 'single active project'}</span>
+                </div>
+                <div className="project-catalog-list">
+                  <button
+                    type="button"
+                    className="project-catalog-item active"
+                    onClick={() => setDocsPanel('project')}
+                  >
+                    <strong>{projectLabel(activeProjectCard.project_id, activeProjectCard.project_name)}</strong>
+                    <span>@{activeProjectCard.project_id}</span>
+                    <p>{activeProjectCard.phase} - {activeProjectCard.objective}</p>
+                  </button>
+                </div>
+              </section>
+              <section className="secondary-card">
                 <h3>Project summary</h3>
                 <ul className="data-list">
+                  <li>
+                    <span>Project</span>
+                    <strong>{currentProjectLabel}</strong>
+                  </li>
                   <li>
                     <span>Linked repo</span>
                     <strong>{linkedRepoLabel}</strong>
@@ -3414,8 +3612,8 @@ function App() {
             <label className="project-input">
               Project
               <input
-                value={projectId}
-                onChange={(event) => setProjectId(event.target.value.trim() || DEFAULT_PROJECT_ID)}
+                value={projectLabel(ACTIVE_PROJECT_ID, projectSettings?.project_name ?? ACTIVE_PROJECT_ID)}
+                readOnly
               />
             </label>
           </div>
@@ -3602,92 +3800,71 @@ function App() {
                           </button>
                         ))}
                       </div>
-                      <div className="workbench-summary">
-                        <span className="chat-target">Target {directTargetLabel}</span>
-                        <span className={`chat-status ${composerStatus}`}>{composerLabel}</span>
-                        <span className="workbench-mini-pill">
-                          terminal {selectedAgent?.terminal_state === 'running' ? 'live' : selectedAgentId ? 'offline' : 'none'}
-                        </span>
-                      </div>
+                      {workbenchPanel !== 'chat' ? (
+                        <div className="workbench-summary">
+                          <span className="chat-target">Target {directTargetLabel}</span>
+                          <span className={`chat-status ${composerStatus}`}>{composerLabel}</span>
+                          <span className="workbench-mini-pill">
+                            terminal {selectedAgent?.terminal_state === 'running' ? 'live' : selectedAgentId ? 'offline' : 'none'}
+                          </span>
+                        </div>
+                      ) : null}
                     </div>
 
                     {workbenchPanel === 'chat' ? (
                       <section className="chat-section">
-                        <div className="section-title-row">
-                          <h2>Live Chat</h2>
-                          <div className="chat-actions">
-                            <span className="chat-target">{directTarget === 'selected_agent' && selectedAgentChatReady ? `target @${selectedAgent?.agent_id}` : 'target @clems'}</span>
-                            <button className="small-btn" onClick={() => void handleResetChat()}>
-                              Reset chat
-                            </button>
+                        <div className="chat-head-block">
+                          <div className="section-title-row">
+                            <h2>Direct chat</h2>
+                            <div className="chat-actions">
+                              <span className={`chat-status ${composerStatus}`}>{composerLabel}</span>
+                              <span className="chat-target">{directTargetLabel}</span>
+                              <button className="small-btn" onClick={() => void handleResetChat()}>
+                                Reset chat
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                        <div className="mode-row direct-chat-row">
-                          <div className="mode-pill-row">
-                            <span className="mode-pill active">Direct</span>
-                            <span className="mode-pill">Le Conseil lives in the top tab</span>
+                          <div className="direct-chat-toolbar">
+                            <div className="direct-chat-toolbar-group">
+                              <span className="mode-pill active">Direct</span>
+                              <button
+                                className={`target-btn ${directTarget === 'clems' ? 'active' : ''}`}
+                                onClick={() => setDirectTarget('clems')}
+                              >
+                                Clems
+                              </button>
+                              <button
+                                className={`target-btn ${directTarget === 'selected_agent' ? 'active' : ''}`}
+                                onClick={() => setDirectTarget('selected_agent')}
+                                disabled={!selectedAgentChatReady}
+                              >
+                                Selected agent
+                              </button>
+                            </div>
+                            <div className="direct-chat-toolbar-group">
+                              <span className="mode-pill">chat lane</span>
+                              <span className="mode-pill">{selectedAgent ? `selected @${selectedAgent.agent_id}` : 'selected none'}</span>
+                              {directChatMessages.length > 8 ? (
+                                <>
+                                  <button
+                                    className="small-btn"
+                                    onClick={() => setDirectVisibleCount((value) => Math.min(directChatMessages.length, value + 12))}
+                                    disabled={directVisibleCount >= directChatMessages.length}
+                                  >
+                                    Older
+                                  </button>
+                                  <button
+                                    className="small-btn"
+                                    onClick={() => setDirectVisibleCount(8)}
+                                    disabled={directVisibleCount <= 8}
+                                  >
+                                    Latest
+                                  </button>
+                                </>
+                              ) : null}
+                            </div>
                           </div>
-                          <div className="exec-toggle">
-                            <button
-                              className={executionMode === 'chat' ? 'active' : ''}
-                              onClick={() => setExecutionMode('chat')}
-                            >
-                              chat
-                            </button>
-                            <button
-                              className={executionMode === 'scene' ? 'active' : ''}
-                              onClick={() => setExecutionMode('scene')}
-                            >
-                              scene
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="chat-target-card">
-                          <div className="chat-target-actions">
-                            <button
-                              className={`target-btn ${directTarget === 'clems' ? 'active' : ''}`}
-                              onClick={() => setDirectTarget('clems')}
-                            >
-                              Clems
-                            </button>
-                            <button
-                              className={`target-btn ${directTarget === 'selected_agent' ? 'active' : ''}`}
-                              onClick={() => setDirectTarget('selected_agent')}
-                              disabled={!selectedAgentChatReady}
-                            >
-                              Selected agent
-                            </button>
-                          </div>
-                          <div className="chat-target-details">
-                            <p className="chat-target-detail">
-                              {selectedAgent
-                                ? selectedAgentChatReady
-                                  ? `Selected target ready: @${selectedAgent.agent_id}`
-                                  : `@${selectedAgent.agent_id} is not chat-ready. Falling back to @clems.`
-                                : 'No agent selected yet. Direct chat stays on @clems.'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="chat-history-controls">
-                          <span className="hint">showing latest {Math.min(directVisibleCount, directChatMessages.length)} direct messages</span>
-                          <div className="chat-actions">
-                            <button
-                              className="small-btn"
-                              onClick={() => setDirectVisibleCount((value) => Math.min(directChatMessages.length, value + 12))}
-                              disabled={directVisibleCount >= directChatMessages.length}
-                            >
-                              Show older
-                            </button>
-                            <button
-                              className="small-btn"
-                              onClick={() => setDirectVisibleCount(12)}
-                              disabled={directVisibleCount <= 12}
-                            >
-                              Show latest
-                            </button>
-                          </div>
+                          {directTargetNotice ? <p className="chat-target-detail compact direct-chat-notice">{directTargetNotice}</p> : null}
                         </div>
 
                         <div
@@ -3721,23 +3898,9 @@ function App() {
 
                         <div className="composer-stack">
                           <div className="composer-row">
-                            <div className="plus-wrap">
-                              <button className="plus-btn" onClick={() => setShowAddMenu((value) => !value)}>
-                                +
-                              </button>
-                              {showAddMenu ? (
-                                <div className="plus-menu">
-                                  <button onClick={() => addMention('clems')}>mention @clems</button>
-                                  <button onClick={() => addMention('victor')}>mention @victor</button>
-                                  <button onClick={() => addMention('leo')}>mention @leo</button>
-                                  <button onClick={() => addMention('nova')}>mention @nova</button>
-                                </div>
-                              ) : null}
-                            </div>
-
                             <input
-                              value={chatInput}
-                              onChange={(event) => setChatInput(event.target.value)}
+                              value={directChatInput}
+                              onChange={(event) => setDirectChatInput(event.target.value)}
                               onKeyDown={(event) => {
                                 if (event.key === 'Enter') {
                                   event.preventDefault()
@@ -3749,31 +3912,29 @@ function App() {
                                   ? selectedAgentChatReady
                                     ? `Send to @${selectedAgent?.agent_id}`
                                     : 'Select a chat-ready agent or switch back to Clems.'
-                                    : 'Talk to @clems directly.'
+                                  : 'Talk to @clems directly.'
                               }
                             />
                           </div>
                           <div className="composer-actions-row">
-                            <div className="composer-actions">
-                              <button
-                                className={`small-btn voice-btn ${isRecordingVoice ? 'recording' : ''}`}
-                                onClick={() => void handleToggleVoiceRecording()}
-                                disabled={isTranscribingVoice}
-                              >
-                                {isTranscribingVoice ? 'Transcribing...' : isRecordingVoice ? 'Stop voice' : 'Voice'}
-                              </button>
-                              <button
-                                className="send-btn"
-                                onClick={() => void handleSendChat({ targetMode: directTarget, chatMode: 'direct' })}
-                                disabled={isSendingChat}
-                              >
-                                {isSendingChat
-                                  ? 'Sending...'
-                                  : directTarget === 'selected_agent' && selectedAgentChatReady
-                                    ? `Send to @${selectedAgent?.agent_id}`
-                                    : 'Send to @clems'}
-                              </button>
-                            </div>
+                            <button
+                              className={`small-btn voice-btn ${isRecordingVoice ? 'recording' : ''}`}
+                              onClick={() => void handleToggleVoiceRecording()}
+                              disabled={isTranscribingVoice}
+                            >
+                              {isTranscribingVoice ? 'Transcribing...' : isRecordingVoice ? 'Stop voice' : 'Voice'}
+                            </button>
+                            <button
+                              className="send-btn"
+                              onClick={() => void handleSendChat({ targetMode: directTarget, chatMode: 'direct' })}
+                              disabled={isSendingChat}
+                            >
+                              {isSendingChat
+                                ? 'Sending...'
+                                : directTarget === 'selected_agent' && selectedAgentChatReady
+                                  ? `Send to @${selectedAgent?.agent_id}`
+                                  : 'Send to @clems'}
+                            </button>
                           </div>
                         </div>
                       </section>

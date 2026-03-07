@@ -3,6 +3,8 @@ use std::path::Path;
 use anyhow::Result;
 use chrono::Utc;
 use serde_json::{Value, json};
+use tokio::task::JoinSet;
+use tokio::time::{Duration, timeout};
 use uuid::Uuid;
 
 use crate::{
@@ -15,6 +17,7 @@ use crate::{
 };
 
 const OVERLAP_WINDOW_MINUTES: i64 = 30;
+const LLM_CALL_TIMEOUT_SECONDS: u64 = 5;
 
 // Hierarchical delegation metadata and policy guards
 // ISSUE-W20R-A9-004: L0->L1/L1->L2 enforcement
@@ -170,13 +173,33 @@ async fn llm_reply(
     context_ref: Option<&Value>,
     usage_calls: &mut Vec<Value>,
 ) -> String {
+    let context_owned = context_ref.cloned();
     let model = model_for_agent(profile, author);
     let system = actor_prompt(author, &mode);
     let mut user_prompt = format!("Operator message:\n{}\n", user_text.trim());
     if let Some(context_ref) = context_ref {
         user_prompt.push_str(&format!("Context ref:\n{}\n", context_ref));
     }
-    let result = openrouter::chat_completion(&model, &system, &user_prompt).await;
+    let result = match timeout(
+        Duration::from_secs(LLM_CALL_TIMEOUT_SECONDS),
+        openrouter::chat_completion(&model, &system, &user_prompt),
+    )
+    .await
+    {
+        Ok(result) => result,
+        Err(_) => {
+            let fallback = chat::generate_agent_reply(author, user_text, mode.clone());
+            usage_calls.push(json!({
+                "agent_id": author,
+                "model": model,
+                "status": "failed",
+                "usage": json!({}),
+                "error": format!("openrouter_timeout_after_{}s", LLM_CALL_TIMEOUT_SECONDS),
+                "context_ref": context_owned,
+            }));
+            return fallback;
+        }
+    };
     usage_calls.push(json!({
         "agent_id": author,
         "model": result.model,
@@ -208,7 +231,25 @@ async fn clems_summary(
             context_snippets.join("\n- ")
         )
     };
-    let result = openrouter::chat_completion(&model, system, &joined).await;
+    let result = match timeout(
+        Duration::from_secs(LLM_CALL_TIMEOUT_SECONDS),
+        openrouter::chat_completion(&model, system, &joined),
+    )
+    .await
+    {
+        Ok(result) => result,
+        Err(_) => {
+            usage_calls.push(json!({
+                "agent_id": "clems",
+                "model": model,
+                "status": "failed",
+                "usage": json!({}),
+                "error": format!("openrouter_timeout_after_{}s", LLM_CALL_TIMEOUT_SECONDS),
+                "purpose": "summary",
+            }));
+            return chat::clems_summary(user_text, context_snippets.len().max(1));
+        }
+    };
     usage_calls.push(json!({
         "agent_id": "clems",
         "model": result.model,
@@ -299,29 +340,97 @@ pub async fn run_turn(
             });
         }
         ChatMode::ConcealRoom => {
-            let targets = chat::conceal_targets(mentions);
+            let targets = chat::conceal_targets_from_context(payload.context_ref.as_ref(), mentions);
             let mut snippets = Vec::new();
-            for target in &targets {
-                let text = llm_reply(
-                    &profile,
-                    target,
-                    ChatMode::ConcealRoom,
-                    &payload.text,
-                    payload.context_ref.as_ref(),
-                    &mut usage_calls,
-                )
-                .await;
-                snippets.push(format!("@{} {}", target, text));
-                messages.push(message_with_meta(
-                    target,
-                    text,
-                    thread_id.clone(),
-                    run_id,
-                    ChatMode::ConcealRoom,
-                    execution_mode.clone(),
-                    "conceal_reply",
-                    MessageVisibility::Internal,
-                ));
+            if !targets.is_empty() {
+                let mut join_set = JoinSet::new();
+                for target in &targets {
+                    let profile = profile.clone();
+                    let target_id = target.clone();
+                    let user_text = payload.text.clone();
+                    let context_ref = payload.context_ref.clone();
+                    join_set.spawn(async move {
+                        let model = model_for_agent(&profile, &target_id);
+                        let system = actor_prompt(&target_id, &ChatMode::ConcealRoom);
+                        let mut user_prompt = format!("Operator message:\n{}\n", user_text.trim());
+                        if let Some(context_ref) = context_ref.as_ref() {
+                            user_prompt.push_str(&format!("Context ref:\n{}\n", context_ref));
+                        }
+                        let result = match timeout(
+                            Duration::from_secs(LLM_CALL_TIMEOUT_SECONDS),
+                            openrouter::chat_completion(&model, &system, &user_prompt),
+                        )
+                        .await
+                        {
+                            Ok(result) => result,
+                            Err(_) => {
+                                return (
+                                    target_id.clone(),
+                                    chat::generate_agent_reply(
+                                        &target_id,
+                                        &user_text,
+                                        ChatMode::ConcealRoom,
+                                    ),
+                                    json!({
+                                        "agent_id": target_id,
+                                        "model": model,
+                                        "status": "failed",
+                                        "usage": json!({}),
+                                        "error": format!("openrouter_timeout_after_{}s", LLM_CALL_TIMEOUT_SECONDS),
+                                    }),
+                                );
+                            }
+                        };
+                        let text = if result.status == "ok" && !result.text.trim().is_empty() {
+                            result.text.trim().to_string()
+                        } else {
+                            chat::generate_agent_reply(
+                                &target_id,
+                                &user_text,
+                                ChatMode::ConcealRoom,
+                            )
+                        };
+                        (
+                            target_id.clone(),
+                            text,
+                            json!({
+                                "agent_id": target_id,
+                                "model": result.model,
+                                "status": result.status,
+                                "usage": result.usage,
+                                "error": result.error,
+                            }),
+                        )
+                    });
+                }
+
+                let mut target_outputs = Vec::new();
+                while let Some(joined) = join_set.join_next().await {
+                    if let Ok((target, text, usage)) = joined {
+                        target_outputs.push((target, text, usage));
+                    }
+                }
+                target_outputs.sort_by_key(|(target, _, _)| {
+                    targets
+                        .iter()
+                        .position(|candidate| candidate == target)
+                        .unwrap_or(usize::MAX)
+                });
+
+                for (target, text, usage) in target_outputs {
+                    usage_calls.push(usage);
+                    snippets.push(format!("@{} {}", target, text));
+                    messages.push(message_with_meta(
+                        &target,
+                        text,
+                        thread_id.clone(),
+                        run_id,
+                        ChatMode::ConcealRoom,
+                        execution_mode.clone(),
+                        "conceal_reply",
+                        MessageVisibility::Internal,
+                    ));
+                }
             }
 
             let summary = clems_summary(&profile, &payload.text, &snippets, &mut usage_calls).await;

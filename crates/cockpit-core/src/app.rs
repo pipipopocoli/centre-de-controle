@@ -27,14 +27,14 @@ use crate::{
         AgentRecord, ApprovalDecisionRequest, ApprovalStatus, ChatApprovalsResponse,
         ChatHistoryResponse, ChatMessage, CreateAgentRequest, CreateAgentResponse,
         CreateTaskRequest, DeliveryMode, LiveTurnRequest, LiveTurnResponse, LlmProfileResponse,
-        MessageVisibility, PixelAgentStatus, PixelFeedResponse, ProjectSettings,
-        ProjectSettingsResponse, ProjectSummaryResponse, ProjectTaskCounts, RoadmapDraftRequest,
-        RoadmapDraftResponse, RoadmapResponse, RoadmapSections, SkillLibraryEntry,
-        SkillsLibraryResponse, TakeoverStartRequest, TakeoverStartResponse,
-        TakeoverSuggestedSkill, TakeoverSuggestedTask, TaskStatus, TasksResponse,
-        TerminalOpenRequest, TerminalSendRequest, TerminalSession, UpdateLlmProfileRequest,
-        UpdateProjectSettingsRequest, UpdateRoadmapRequest, UpdateTaskRequest,
-        VoiceTranscribeRequest, VoiceTranscribeResponse, WsEventEnvelope,
+        MessageVisibility, PixelAgentStatus, PixelFeedResponse, ProjectCatalogEntry,
+        ProjectCatalogResponse, ProjectSettings, ProjectSettingsResponse, ProjectSummaryResponse,
+        ProjectTaskCounts, RoadmapDraftRequest, RoadmapDraftResponse, RoadmapResponse,
+        RoadmapSections, SkillLibraryEntry, SkillsLibraryResponse, TakeoverStartRequest,
+        TakeoverStartResponse, TakeoverSuggestedSkill, TakeoverSuggestedTask, TaskStatus,
+        TasksResponse, TerminalOpenRequest, TerminalSendRequest, TerminalSession,
+        UpdateLlmProfileRequest, UpdateProjectSettingsRequest, UpdateRoadmapRequest,
+        UpdateTaskRequest, VoiceTranscribeRequest, VoiceTranscribeResponse, WsEventEnvelope,
     },
     openrouter, orchestrator,
     state::AppState,
@@ -44,6 +44,7 @@ use crate::{
 pub fn build_router(state: AppState) -> Router {
     Router::new()
         .route("/healthz", get(healthz))
+        .route("/v1/projects", get(list_projects))
         .route(
             "/v1/projects/{id}/agents",
             post(create_agent).get(list_agents),
@@ -75,12 +76,24 @@ pub fn build_router(state: AppState) -> Router {
         )
         .route("/v1/projects/{id}/pixel-feed", get(pixel_feed))
         .route("/v1/projects/{id}/skills/library", get(get_skills_library))
-        .route("/v1/projects/{id}/project-summary", get(get_project_summary))
+        .route(
+            "/v1/projects/{id}/project-summary",
+            get(get_project_summary),
+        )
         .route("/v1/projects/{id}/tasks", get(get_tasks).post(post_task))
-        .route("/v1/projects/{id}/tasks/{task_id}", axum::routing::patch(patch_task))
-        .route("/v1/projects/{id}/settings", get(get_project_settings).put(put_project_settings))
+        .route(
+            "/v1/projects/{id}/tasks/{task_id}",
+            axum::routing::patch(patch_task),
+        )
+        .route(
+            "/v1/projects/{id}/settings",
+            get(get_project_settings).put(put_project_settings),
+        )
         .route("/v1/projects/{id}/layout", get(get_layout).put(put_layout))
-        .route("/v1/projects/{id}/roadmap", get(get_roadmap).put(put_roadmap))
+        .route(
+            "/v1/projects/{id}/roadmap",
+            get(get_roadmap).put(put_roadmap),
+        )
         .route("/v1/projects/{id}/events", get(ws_events))
         .route(
             "/v1/projects/{id}/llm-profile",
@@ -90,8 +103,14 @@ pub fn build_router(state: AppState) -> Router {
             "/v1/projects/{id}/roadmap/clems-draft",
             post(post_roadmap_clems_draft),
         )
-        .route("/v1/projects/{id}/takeover/start", post(post_takeover_start))
-        .route("/v1/projects/{id}/voice/transcribe", post(post_voice_transcribe))
+        .route(
+            "/v1/projects/{id}/takeover/start",
+            post(post_takeover_start),
+        )
+        .route(
+            "/v1/projects/{id}/voice/transcribe",
+            post(post_voice_transcribe),
+        )
         .layer(CorsLayer::permissive())
         .with_state(state)
 }
@@ -120,6 +139,43 @@ async fn get_skills_library(
         project_id,
         generated_at: Utc::now().to_rfc3339(),
         skills,
+    }))
+}
+
+async fn list_projects(
+    State(state): State<AppState>,
+) -> Result<Json<ProjectCatalogResponse>, ApiError> {
+    let projects = storage::list_projects(state.control_root.as_ref())?
+        .into_iter()
+        .map(|(project_id, raw_settings)| {
+            let settings = normalize_project_settings(&project_id, raw_settings);
+            let state_md =
+                storage::read_project_text(state.control_root.as_ref(), &project_id, "STATE.md")
+                    .unwrap_or_default();
+
+            ProjectCatalogEntry {
+                project_id: settings.project_id.clone(),
+                project_name: if settings.project_name.trim().is_empty() {
+                    settings.project_id.clone()
+                } else {
+                    settings.project_name.clone()
+                },
+                linked_repo_path: settings.linked_repo_path.clone(),
+                phase: markdown_section_bullets(&state_md, "Phase")
+                    .into_iter()
+                    .next()
+                    .unwrap_or_else(|| "Implement".to_string()),
+                objective: markdown_section_bullets(&state_md, "Objective")
+                    .into_iter()
+                    .next()
+                    .unwrap_or_else(|| "No objective set yet.".to_string()),
+            }
+        })
+        .collect();
+
+    Ok(Json(ProjectCatalogResponse {
+        generated_at: Utc::now().to_rfc3339(),
+        projects,
     }))
 }
 
@@ -936,7 +992,8 @@ async fn get_roadmap(
         state.control_root.as_ref(),
         &project_id,
     )?);
-    let raw_md = storage::read_project_text(state.control_root.as_ref(), &project_id, "ROADMAP.md")?;
+    let raw_md =
+        storage::read_project_text(state.control_root.as_ref(), &project_id, "ROADMAP.md")?;
 
     Ok(Json(RoadmapResponse {
         project_id,
@@ -1528,7 +1585,8 @@ async fn post_roadmap_clems_draft(
     let system_prompt = "You are @clems, L0 orchestrator. Generate a structured roadmap draft in JSON format with sections: summary, phases, milestones, risks, and next_actions. Respond with valid JSON only.";
     let user_prompt = format!("Context: {}\n\nPrompt: {}", payload.context, payload.prompt);
 
-    let result = openrouter::chat_completion(&profile.clems_model, system_prompt, &user_prompt).await;
+    let result =
+        openrouter::chat_completion(&profile.clems_model, system_prompt, &user_prompt).await;
 
     if let Some(err) = &result.error {
         return Err(ApiError {
@@ -1565,12 +1623,18 @@ async fn post_takeover_start(
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .map(ToString::to_string)
-        .or(storage::linked_repo_path(state.control_root.as_ref(), &project_id)?);
+        .or(storage::linked_repo_path(
+            state.control_root.as_ref(),
+            &project_id,
+        )?);
 
     let repo_findings = inspect_linked_repo(linked_repo_path.as_deref())?;
-    let state_md = storage::read_project_text(state.control_root.as_ref(), &project_id, "STATE.md")?;
-    let roadmap_md = storage::read_project_text(state.control_root.as_ref(), &project_id, "ROADMAP.md")?;
-    let decisions_md = storage::read_project_text(state.control_root.as_ref(), &project_id, "DECISIONS.md")?;
+    let state_md =
+        storage::read_project_text(state.control_root.as_ref(), &project_id, "STATE.md")?;
+    let roadmap_md =
+        storage::read_project_text(state.control_root.as_ref(), &project_id, "ROADMAP.md")?;
+    let decisions_md =
+        storage::read_project_text(state.control_root.as_ref(), &project_id, "DECISIONS.md")?;
     let tasks = storage::list_tasks(state.control_root.as_ref(), &project_id)?;
     let recent_chat = storage::read_chat(state.control_root.as_ref(), &project_id, 24, None)?;
 
@@ -1675,7 +1739,12 @@ async fn post_voice_transcribe(
     )
     .await;
     let duration_ms = started.elapsed().as_millis() as i64;
-    let status = if result.status == "ok" { "ok" } else { "failed" }.to_string();
+    let status = if result.status == "ok" {
+        "ok"
+    } else {
+        "failed"
+    }
+    .to_string();
 
     state.emit_event(
         &project_id,
@@ -1916,7 +1985,11 @@ fn extract_decision_titles(markdown: &str) -> Vec<String> {
 
 fn load_project_cost_summary(
     project_root: &FsPath,
-) -> (Option<f64>, usize, Vec<crate::models::ProjectModelUsageEntry>) {
+) -> (
+    Option<f64>,
+    usize,
+    Vec<crate::models::ProjectModelUsageEntry>,
+) {
     let cost_events_path = project_root.join("runs").join("cost_events.ndjson");
     if cost_events_path.exists() {
         let current_month = Utc::now().format("%Y-%m").to_string();
@@ -1955,11 +2028,13 @@ fn load_project_cost_summary(
 
         let mut summary = models
             .into_iter()
-            .map(|(model, (cost_cad, events))| crate::models::ProjectModelUsageEntry {
-                model,
-                cost_cad,
-                events,
-            })
+            .map(
+                |(model, (cost_cad, events))| crate::models::ProjectModelUsageEntry {
+                    model,
+                    cost_cad,
+                    events,
+                },
+            )
             .collect::<Vec<_>>();
         summary.sort_by(|left, right| {
             right
@@ -1970,7 +2045,11 @@ fn load_project_cost_summary(
         });
 
         return (
-            if total_events > 0 { Some(total_cost) } else { None },
+            if total_events > 0 {
+                Some(total_cost)
+            } else {
+                None
+            },
             total_events,
             summary,
         );
@@ -2052,7 +2131,11 @@ fn value_as_f64(value: &Value) -> Option<f64> {
         .as_f64()
         .or_else(|| value.as_i64().map(|number| number as f64))
         .or_else(|| value.as_u64().map(|number| number as f64))
-        .or_else(|| value.as_str().and_then(|raw| raw.trim().parse::<f64>().ok()))
+        .or_else(|| {
+            value
+                .as_str()
+                .and_then(|raw| raw.trim().parse::<f64>().ok())
+        })
 }
 
 fn inspect_linked_repo(raw_path: Option<&str>) -> Result<Value, ApiError> {

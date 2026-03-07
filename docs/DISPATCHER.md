@@ -10,12 +10,12 @@ The dispatcher reads run requests and writes per-agent inbox files.
 
 ## Run once
 ```
-./.venv/bin/python scripts/dispatcher.py --project demo --once
+./.venv/bin/python scripts/dispatcher.py --project cockpit --once
 ```
 
 ## Run continuously
 ```
-./.venv/bin/python scripts/dispatcher.py --project demo --interval 5
+./.venv/bin/python scripts/dispatcher.py --project cockpit --interval 5
 ```
 
 ## Notes

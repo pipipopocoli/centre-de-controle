@@ -2,7 +2,7 @@
 """Memory compaction tool (local-first, deterministic).
 
 Usage:
-  ./.venv/bin/python scripts/compact_memory.py --project demo --agent clems
+  ./.venv/bin/python scripts/compact_memory.py --project cockpit --agent clems
 """
 from __future__ import annotations
 

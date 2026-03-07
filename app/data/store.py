@@ -227,10 +227,6 @@ def ensure_project_structure(project_id: str, project_name: str | None = None) -
     return pdir
 
 
-def _default_appsupport_projects_root() -> Path:
-    return Path.home() / "Library" / "Application Support" / "Cockpit" / "projects"
-
-
 def _resolve_path(path: Path) -> Path:
     expanded = path.expanduser()
     try:
@@ -247,18 +243,10 @@ def _is_within(path: Path, root: Path) -> bool:
         return False
 
 
-def _is_appsupport_projects_root(projects_root: Path | None = None) -> bool:
-    root = _resolve_path(projects_root or PROJECTS_DIR)
-    return root == _resolve_path(_default_appsupport_projects_root())
-
-
 def _canonical_project_id_from_entry(entry: Path, projects_root: Path | None = None) -> str:
     root = projects_root or PROJECTS_DIR
     root_resolved = _resolve_path(root)
     entry_id = entry.name
-
-    if _is_appsupport_projects_root(root) and entry_id == "demo" and (root / "cockpit").exists():
-        return "cockpit"
 
     if not entry.exists() and not entry.is_symlink():
         return entry_id
@@ -279,9 +267,6 @@ def _canonical_project_id(project_id: str, projects_root: Path | None = None) ->
         return raw_project_id
 
     root = projects_root or PROJECTS_DIR
-    if _is_appsupport_projects_root(root) and raw_project_id == "demo" and (root / "cockpit").exists():
-        return "cockpit"
-
     entry = root / raw_project_id
     if not entry.exists() and not entry.is_symlink():
         return raw_project_id
@@ -299,18 +284,15 @@ def _is_active_project_entry(entry: Path, projects_root: Path | None = None) -> 
         return False
 
     root = projects_root or PROJECTS_DIR
-    if _is_appsupport_projects_root(root) and entry.name == "demo":
-        return False
-
     canonical = _canonical_project_id_from_entry(entry, root)
     if canonical and canonical != entry.name and (root / canonical).exists():
         return False
     return True
 
 
-def ensure_demo_project() -> ProjectData:
-    target_project_id = "cockpit" if _is_appsupport_projects_root() else "demo"
-    target_project_name = "Cockpit" if target_project_id == "cockpit" else "Demo"
+def ensure_default_project() -> ProjectData:
+    target_project_id = "cockpit"
+    target_project_name = "Cockpit"
     ensure_project_structure(target_project_id, target_project_name)
     return load_project(target_project_id)
 

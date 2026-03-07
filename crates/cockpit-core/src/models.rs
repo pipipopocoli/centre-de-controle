@@ -527,6 +527,22 @@ pub struct ProjectSettingsResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectCatalogEntry {
+    pub project_id: String,
+    pub project_name: String,
+    pub linked_repo_path: Option<String>,
+    pub phase: String,
+    pub objective: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectCatalogResponse {
+    pub generated_at: String,
+    #[serde(default)]
+    pub projects: Vec<ProjectCatalogEntry>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectTaskCounts {
     pub todo: usize,
     pub in_progress: usize,

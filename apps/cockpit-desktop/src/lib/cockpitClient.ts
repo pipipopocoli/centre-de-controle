@@ -126,6 +126,14 @@ export interface ProjectSettings {
   raw: Record<string, unknown>
 }
 
+export interface ProjectCatalogEntry {
+  project_id: string
+  project_name: string
+  linked_repo_path: string | null
+  phase: string
+  objective: string
+}
+
 export interface ProjectTaskCounts {
   todo: number
   in_progress: number
@@ -446,6 +454,11 @@ export async function getLayout(projectId: string): Promise<Record<string, unkno
 export async function getProjectSettings(projectId: string): Promise<ProjectSettings> {
   const payload = await request<{ project_id: string; settings: ProjectSettings }>(`/v1/projects/${projectId}/settings`)
   return payload.settings
+}
+
+export async function getProjects(): Promise<ProjectCatalogEntry[]> {
+  const payload = await request<{ generated_at: string; projects: ProjectCatalogEntry[] }>('/v1/projects')
+  return payload.projects
 }
 
 export async function putProjectSettings(

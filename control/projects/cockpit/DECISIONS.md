@@ -253,3 +253,12 @@
 - Consequences: `docs/swarm_results/`, old `docs/reports/`, local archive trees, and historical run receipts leave the repo tree; release proof curation now lives in `docs/releases/`; runtime db and live registry stay local-only and ignored.
 - Owners: @clems, @leo
 - References: /Users/oliviercloutier/Desktop/Cockpit/docs/releases/README.md, /Users/oliviercloutier/Desktop/Cockpit/scripts/archive_cockpit_history_to_drive.sh, /Users/oliviercloutier/Desktop/Cockpit/docs/PACKAGING.md, /Users/oliviercloutier/Desktop/Cockpit/docs/COCKPIT_NEXT_RUNBOOK.md
+
+## 2026-03-07 - ADR-CP-029 Cockpit-only live project and canonical UI issue set
+- Status: Accepted
+- Context: The desktop shell was mixing live work on `cockpit` with lingering `demo` project artifacts, and local issue files had split one functional problem into duplicate UI tickets.
+- Decision: Remove `control/projects/demo` from the active repo, keep `cockpit` as the only live project in the current operator flow, and consolidate the active shell recovery work onto `ISSUE-CP-0061` (Pixel Home) and `ISSUE-CP-0062` (Le Conseil).
+- Rationale: One live project and one canonical issue per problem removes UI/runtime ambiguity and makes the recovery wave testable.
+- Consequences: `demo` stops surfacing in `/v1/projects`, active docs/scripts stop using it, and duplicate local issue drafts are superseded by the two canonical issues.
+- Owners: @clems, @leo
+- References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0061-fix-z-index-overlay-chat-pixel-home.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0062-impl-menter-pagination-messages-concierge-room.md
