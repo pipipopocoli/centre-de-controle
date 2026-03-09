@@ -14,6 +14,12 @@ pub struct LlmCallResult {
     pub error: Option<String>,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct ChatCompletionOptions {
+    pub max_tokens: Option<u32>,
+    pub temperature: Option<f32>,
+}
+
 /// Maps legacy provider codes to OpenRouter model identifiers.
 /// Ensures OpenRouter-only execution while preserving backward compatibility.
 /// ISSUE-W20R-A9-005: Legacy provider normalization
@@ -80,7 +86,26 @@ fn extract_text(content: &Value) -> String {
     String::new()
 }
 
-pub async fn chat_completion(model: &str, system_prompt: &str, user_prompt: &str) -> LlmCallResult {
+pub async fn chat_completion(
+    model: &str,
+    system_prompt: &str,
+    user_prompt: &str,
+) -> LlmCallResult {
+    chat_completion_with_options(
+        model,
+        system_prompt,
+        user_prompt,
+        &ChatCompletionOptions::default(),
+    )
+    .await
+}
+
+pub async fn chat_completion_with_options(
+    model: &str,
+    system_prompt: &str,
+    user_prompt: &str,
+    options: &ChatCompletionOptions,
+) -> LlmCallResult {
     let key = api_key();
     if key.is_empty() {
         return LlmCallResult {
@@ -92,7 +117,7 @@ pub async fn chat_completion(model: &str, system_prompt: &str, user_prompt: &str
         };
     }
 
-    let payload = json!({
+    let mut payload = json!({
         "model": model,
         "stream": false,
         "messages": [
@@ -100,6 +125,13 @@ pub async fn chat_completion(model: &str, system_prompt: &str, user_prompt: &str
             {"role": "user", "content": user_prompt}
         ],
     });
+
+    if let Some(max_tokens) = options.max_tokens {
+        payload["max_tokens"] = Value::from(max_tokens);
+    }
+    if let Some(temperature) = options.temperature {
+        payload["temperature"] = Value::from(temperature);
+    }
 
     let endpoint = format!("{}/chat/completions", base_url());
     let client = match Client::builder().timeout(Duration::from_secs(45)).build() {

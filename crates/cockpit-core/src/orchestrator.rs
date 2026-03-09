@@ -19,9 +19,11 @@ use crate::{
 const OVERLAP_WINDOW_MINUTES: i64 = 30;
 const ROOM_AGENT_LLM_TIMEOUT_SECONDS: u64 = 12;
 const ROOM_SUMMARY_TIMEOUT_SECONDS: u64 = 18;
-const DIRECT_LLM_TIMEOUT_SECONDS: u64 = 24;
-const DIRECT_LLM_RETRY_DELAY_SECONDS: u64 = 2;
+const DIRECT_LLM_TIMEOUT_SECONDS: u64 = 12;
+const DIRECT_LLM_RETRY_DELAY_SECONDS: u64 = 1;
 const ROOM_SUMMARY_RETRY_DELAY_SECONDS: u64 = 2;
+const DIRECT_CHAT_MAX_TOKENS: u32 = 220;
+const DIRECT_CHAT_TEMPERATURE: f32 = 0.25;
 
 // Hierarchical delegation metadata and policy guards
 // ISSUE-W20R-A9-004: L0->L1/L1->L2 enforcement
@@ -130,6 +132,13 @@ fn actor_prompt(agent_id: &str, mode: &ChatMode) -> String {
     }
 }
 
+fn direct_chat_options(profile: &LlmProfile) -> openrouter::ChatCompletionOptions {
+    openrouter::ChatCompletionOptions {
+        max_tokens: Some(profile.max_tokens.unwrap_or(DIRECT_CHAT_MAX_TOKENS).min(DIRECT_CHAT_MAX_TOKENS)),
+        temperature: Some(profile.temperature.unwrap_or(DIRECT_CHAT_TEMPERATURE).min(DIRECT_CHAT_TEMPERATURE)),
+    }
+}
+
 fn mode_to_str(mode: &ChatMode) -> &'static str {
     match mode {
         ChatMode::Direct => "direct",
@@ -220,9 +229,14 @@ async fn llm_reply(
     };
 
     for attempt in 1..=max_attempts {
+        let options = if matches!(mode, ChatMode::Direct) {
+            direct_chat_options(profile)
+        } else {
+            openrouter::ChatCompletionOptions::default()
+        };
         let result = match timeout(
             Duration::from_secs(timeout_seconds),
-            openrouter::chat_completion(&model, &system, &user_prompt),
+            openrouter::chat_completion_with_options(&model, &system, &user_prompt, &options),
         )
         .await
         {
