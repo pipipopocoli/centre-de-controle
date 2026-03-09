@@ -1809,7 +1809,7 @@ function App() {
           // Keep the main chat surface quiet when a visible reply already exists.
         } else if (chatMode === 'direct' && !hasVisibleReply) {
           setDirectChatInput(text)
-          setUiNotice('direct reply unavailable. draft restored.')
+          setUiNotice('OpenRouter degraded, direct reply unavailable. Retry or switch to Le Conseil.')
         } else {
           setUiNotice(`degraded mode: ${response.error}`)
         }

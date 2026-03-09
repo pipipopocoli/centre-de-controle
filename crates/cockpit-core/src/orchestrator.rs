@@ -21,9 +21,13 @@ const ROOM_AGENT_LLM_TIMEOUT_SECONDS: u64 = 12;
 const ROOM_SUMMARY_TIMEOUT_SECONDS: u64 = 18;
 const DIRECT_LLM_TIMEOUT_SECONDS: u64 = 12;
 const DIRECT_LLM_RETRY_DELAY_SECONDS: u64 = 1;
+const DIRECT_RESCUE_TIMEOUT_SECONDS: u64 = 8;
 const ROOM_SUMMARY_RETRY_DELAY_SECONDS: u64 = 2;
 const DIRECT_CHAT_MAX_TOKENS: u32 = 220;
 const DIRECT_CHAT_TEMPERATURE: f32 = 0.25;
+const DIRECT_RESCUE_MAX_TOKENS: u32 = 120;
+const DIRECT_RESCUE_TEMPERATURE: f32 = 0.15;
+const DIRECT_RESCUE_MODEL: &str = "anthropic/claude-sonnet-4.6";
 
 // Hierarchical delegation metadata and policy guards
 // ISSUE-W20R-A9-004: L0->L1/L1->L2 enforcement
@@ -137,6 +141,34 @@ fn direct_chat_options(profile: &LlmProfile) -> openrouter::ChatCompletionOption
         max_tokens: Some(profile.max_tokens.unwrap_or(DIRECT_CHAT_MAX_TOKENS).min(DIRECT_CHAT_MAX_TOKENS)),
         temperature: Some(profile.temperature.unwrap_or(DIRECT_CHAT_TEMPERATURE).min(DIRECT_CHAT_TEMPERATURE)),
     }
+}
+
+fn direct_rescue_options() -> openrouter::ChatCompletionOptions {
+    openrouter::ChatCompletionOptions {
+        max_tokens: Some(DIRECT_RESCUE_MAX_TOKENS),
+        temperature: Some(DIRECT_RESCUE_TEMPERATURE),
+    }
+}
+
+fn direct_rescue_prompt(agent_id: &str) -> String {
+    match agent_id {
+        "clems" => "You are @clems in a direct operator chat. Reply in natural french, ascii only, with 1 or 2 short sentences max. Be helpful, human, and concrete. Final answer only.".to_string(),
+        "victor" => "You are @victor in a direct operator chat. Reply in natural french, ascii only, with 1 or 2 short sentences max. Be concrete and helpful. Final answer only.".to_string(),
+        "leo" => "You are @leo in a direct operator chat. Reply in natural french, ascii only, with 1 or 2 short sentences max. Be concrete and helpful. Final answer only.".to_string(),
+        "nova" => "You are @nova in a direct operator chat. Reply in natural french, ascii only, with 1 or 2 short sentences max. Be clear, evidence aware, and helpful. Final answer only.".to_string(),
+        "vulgarisation" => "You are @vulgarisation in a direct operator chat. Reply in simple french, ascii only, with 1 or 2 short sentences max. Final answer only.".to_string(),
+        _ => format!(
+            "You are @{agent_id} in a direct operator chat. Reply in natural french, ascii only, with 1 or 2 short sentences max. Be concrete and helpful. Final answer only."
+        ),
+    }
+}
+
+fn direct_rescue_models(primary_model: &str) -> Vec<String> {
+    let mut models = vec![primary_model.to_string()];
+    if primary_model != DIRECT_RESCUE_MODEL {
+        models.push(DIRECT_RESCUE_MODEL.to_string());
+    }
+    models
 }
 
 fn mode_to_str(mode: &ChatMode) -> &'static str {
@@ -280,6 +312,53 @@ async fn llm_reply(
         }
 
         break;
+    }
+
+    if matches!(mode, ChatMode::Direct) {
+        let rescue_prompt = direct_rescue_prompt(author);
+        for rescue_model in direct_rescue_models(&model) {
+            let rescue_result = match timeout(
+                Duration::from_secs(DIRECT_RESCUE_TIMEOUT_SECONDS),
+                openrouter::chat_completion_with_options(
+                    &rescue_model,
+                    &rescue_prompt,
+                    user_text.trim(),
+                    &direct_rescue_options(),
+                ),
+            )
+            .await
+            {
+                Ok(result) => result,
+                Err(_) => openrouter::LlmCallResult {
+                    status: "failed".to_string(),
+                    text: String::new(),
+                    model: rescue_model.clone(),
+                    usage: json!({}),
+                    error: Some(format!(
+                        "openrouter_timeout_after_{}s",
+                        DIRECT_RESCUE_TIMEOUT_SECONDS
+                    )),
+                },
+            };
+
+            usage_calls.push(json!({
+                "agent_id": author,
+                "model": rescue_result.model,
+                "status": rescue_result.status,
+                "usage": rescue_result.usage,
+                "error": rescue_result.error,
+                "attempt": format!("rescue:{rescue_model}"),
+                "context_ref": context_owned,
+                "reply_mode": mode_to_str(&mode),
+            }));
+
+            if rescue_result.status == "ok" && !rescue_result.text.trim().is_empty() {
+                return AgentReply {
+                    text: rescue_result.text.trim().to_string(),
+                    reply_source: "llm",
+                };
+            }
+        }
     }
 
     AgentReply {
