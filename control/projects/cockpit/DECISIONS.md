@@ -262,3 +262,12 @@
 - Consequences: `demo` stops surfacing in `/v1/projects`, active docs/scripts stop using it, and duplicate local issue drafts are superseded by the two canonical issues.
 - Owners: @clems, @leo
 - References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0061-fix-z-index-overlay-chat-pixel-home.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0062-impl-menter-pagination-messages-concierge-room.md
+
+## 2026-03-09 - ADR-CP-030 Le Conseil project actions + minimal live settings + OpenRouter status
+- Status: Accepted
+- Context: The live `cockpit` project was still carrying stale settings schema, an obsolete `FlappyCock` repo link, and project entry flows split across `Overview` and room UI. OpenRouter runtime health was also too vague for operator use.
+- Decision: Hard-prune live `control/projects/cockpit/settings.json` to the minimal schema (`project_id`, `project_name`, `linked_repo_path`, `updated_at`), remove the stale `FlappyCock` link, move `Create new project` and `Take over a project` into Le Conseil, and expose first-class OpenRouter status in both `/healthz`, the app header, and Pilotage.
+- Rationale: One current project state file, one room-owned project action surface, and one explicit provider status model reduce operator ambiguity and stop the app from dragging dead configuration forward.
+- Consequences: `Overview` becomes read-only for project status, `Le Conseil` is the single action surface for greenfield/takeover flows, legacy settings keys are destroyed on save, and runtime diagnostics can now distinguish OpenRouter ready vs degraded vs missing configuration.
+- Owners: @clems, @leo
+- References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/settings.json, /Users/oliviercloutier/Desktop/Cockpit/apps/cockpit-desktop/src/App.tsx, /Users/oliviercloutier/Desktop/Cockpit/apps/cockpit-desktop/src/App.css, /Users/oliviercloutier/Desktop/Cockpit/crates/cockpit-core/src/app.rs, /Users/oliviercloutier/Desktop/Cockpit/crates/cockpit-core/src/state.rs, /Users/oliviercloutier/Desktop/Cockpit/crates/cockpit-core/src/openrouter.rs

@@ -1,5 +1,7 @@
 use std::{env, time::Duration};
 
+const DEFAULT_OPENROUTER_BASE_URL: &str = "https://openrouter.ai/api/v1";
+
 use reqwest::Client;
 use serde_json::{Value, json};
 
@@ -42,9 +44,20 @@ fn api_key() -> String {
 
 fn base_url() -> String {
     env::var("COCKPIT_OPENROUTER_BASE_URL")
-        .unwrap_or_else(|_| "https://openrouter.ai/api/v1".to_string())
+        .unwrap_or_else(|_| DEFAULT_OPENROUTER_BASE_URL.to_string())
         .trim_end_matches('/')
         .to_string()
+}
+
+pub fn health_base_url() -> String {
+    match env::var("COCKPIT_OPENROUTER_BASE_URL") {
+        Ok(value) => value.trim().trim_end_matches('/').to_string(),
+        Err(_) => DEFAULT_OPENROUTER_BASE_URL.to_string(),
+    }
+}
+
+pub fn health_api_key_present() -> bool {
+    !api_key().is_empty()
 }
 
 fn extract_text(content: &Value) -> String {

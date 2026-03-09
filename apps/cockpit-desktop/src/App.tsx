@@ -12,6 +12,7 @@ import {
   approveApproval,
   createTask,
   createAgent,
+  createProject,
   deleteAgent,
   getApiUrl,
   getAgents,
@@ -64,7 +65,6 @@ import type {
 import { openOsTerminal, pickProjectFolder } from './lib/tauriOps'
 
 const DEFAULT_PROJECT_ID = import.meta.env.VITE_DEFAULT_PROJECT_ID ?? 'cockpit'
-const ACTIVE_PROJECT_ID = DEFAULT_PROJECT_ID
 
 type TopTab = 'pixel_home' | 'concierge_room' | 'overview' | 'pilotage' | 'docs' | 'todo' | 'model_routing'
 type WorkspaceTab = 'agent' | 'layout' | 'settings'
@@ -73,6 +73,7 @@ type DirectTargetMode = 'clems' | 'selected_agent'
 type WorkbenchPanel = 'chat' | 'terminal' | 'approvals' | 'events'
 type DocsPanel = 'runbook' | 'skills_library' | 'project'
 type RoomParticipantMode = 'all_active' | 'lead_only' | 'custom'
+type ProjectActionMode = 'create' | 'takeover' | null
 type FallbackDiagnostic = {
   id: string
   timestamp: string
@@ -405,13 +406,18 @@ function App() {
   const [projectSettings, setProjectSettings] = useState<ProjectSettings | null>(null)
   const [projectCatalog, setProjectCatalog] = useState<ProjectCatalogEntry[]>([])
   const [projectCatalogLoading, setProjectCatalogLoading] = useState(false)
-  const [selectedProjectDocId, setSelectedProjectDocId] = useState(ACTIVE_PROJECT_ID)
+  const [selectedProjectDocId, setSelectedProjectDocId] = useState(DEFAULT_PROJECT_ID)
   const [linkedRepoDraft, setLinkedRepoDraft] = useState('')
+  const [projectActionMode, setProjectActionMode] = useState<ProjectActionMode>(null)
+  const [newProjectIdDraft, setNewProjectIdDraft] = useState('')
+  const [newProjectNameDraft, setNewProjectNameDraft] = useState('')
+  const [newProjectRepoDraft, setNewProjectRepoDraft] = useState('')
   const [projectRoadmap, setProjectRoadmap] = useState<RoadmapResponse | null>(null)
   const [takeoverResult, setTakeoverResult] = useState<TakeoverStartResponse | null>(null)
   const [isRunningTakeover, setIsRunningTakeover] = useState(false)
   const [isApplyingTakeover, setIsApplyingTakeover] = useState(false)
   const [isChoosingFolder, setIsChoosingFolder] = useState(false)
+  const [isCreatingProject, setIsCreatingProject] = useState(false)
   const [isRecordingVoice, setIsRecordingVoice] = useState(false)
   const [isTranscribingVoice, setIsTranscribingVoice] = useState(false)
   const [directVisibleCount, setDirectVisibleCount] = useState(8)
@@ -718,10 +724,9 @@ function App() {
     setProjectCatalogLoading(true)
     try {
       const projects = await getProjects()
-      const activeProjects = projects.filter((project) => project.project_id === ACTIVE_PROJECT_ID)
-      setProjectCatalog(activeProjects)
+      setProjectCatalog(projects)
       markSynced()
-      return activeProjects
+      return projects
     } catch (error) {
       setApiError(error instanceof Error ? error.message : String(error))
       return []
@@ -803,7 +808,7 @@ function App() {
       setProfileDraft(profile)
       setTasks(taskPayload.tasks)
       setProjectSettings(settings)
-      setProjectCatalog(projects.filter((project) => project.project_id === ACTIVE_PROJECT_ID))
+      setProjectCatalog(projects)
       setLinkedRepoDraft(settings.linked_repo_path ?? '')
       setProjectRoadmap(roadmap)
       setProjectSummary(summary)
@@ -1650,24 +1655,17 @@ function App() {
   }, [directTarget, selectedAgentChatReady])
 
   useEffect(() => {
-    if (projectId === ACTIVE_PROJECT_ID) {
-      return
-    }
-    setProjectId(ACTIVE_PROJECT_ID)
-  }, [projectId])
-
-  useEffect(() => {
     if (projectCatalog.length === 0) {
-      if (selectedProjectDocId !== ACTIVE_PROJECT_ID) {
-        setSelectedProjectDocId(ACTIVE_PROJECT_ID)
+      if (selectedProjectDocId !== projectId) {
+        setSelectedProjectDocId(projectId)
       }
       return
     }
     if (projectCatalog.some((project) => project.project_id === selectedProjectDocId)) {
       return
     }
-    setSelectedProjectDocId(ACTIVE_PROJECT_ID)
-  }, [projectCatalog, selectedProjectDocId])
+    setSelectedProjectDocId(projectId)
+  }, [projectCatalog, projectId, selectedProjectDocId])
 
   useEffect(() => {
     const valid = new Set(roomCandidateAgents.map((agent) => agent.agent_id))
@@ -1879,18 +1877,21 @@ function App() {
     [projectId],
   )
 
-  const handleChooseRepoFolder = useCallback(async () => {
+  const handleChooseRepoFolder = useCallback(async (target: 'takeover' | 'create') => {
+    const currentValue = target === 'create' ? newProjectRepoDraft : linkedRepoDraft
+    const applyValue = target === 'create' ? setNewProjectRepoDraft : setLinkedRepoDraft
+    const promptLabel = target === 'create' ? 'new project' : 'takeover'
     setIsChoosingFolder(true)
     setApiError(null)
     try {
       const chosen = await pickProjectFolder()
       if (chosen) {
-        setLinkedRepoDraft(chosen)
+        applyValue(chosen)
         setUiNotice(`folder selected: ${chosen}`)
       } else {
-        const fallback = window.prompt('Paste an absolute repo path for takeover.', linkedRepoDraft)
+        const fallback = window.prompt(`Paste an absolute repo path for ${promptLabel}.`, currentValue)
         if (fallback && fallback.trim()) {
-          setLinkedRepoDraft(fallback.trim())
+          applyValue(fallback.trim())
           setUiNotice(`folder path pasted: ${fallback.trim()}`)
         } else {
           setUiNotice('folder picker cancelled')
@@ -1898,9 +1899,9 @@ function App() {
       }
     } catch (error) {
       setApiError(error instanceof Error ? error.message : String(error))
-      const fallback = window.prompt('Native folder picker unavailable. Paste an absolute repo path.', linkedRepoDraft)
+      const fallback = window.prompt('Native folder picker unavailable. Paste an absolute repo path.', currentValue)
       if (fallback && fallback.trim()) {
-        setLinkedRepoDraft(fallback.trim())
+        applyValue(fallback.trim())
         setUiNotice(`folder path pasted: ${fallback.trim()}`)
       } else {
         setUiNotice('native folder picker unavailable. manual path still works.')
@@ -1908,7 +1909,41 @@ function App() {
     } finally {
       setIsChoosingFolder(false)
     }
-  }, [linkedRepoDraft])
+  }, [linkedRepoDraft, newProjectRepoDraft])
+
+  const handleCreateProject = useCallback(async () => {
+    if (isCreatingProject) {
+      return
+    }
+    const nextProjectId = newProjectIdDraft.trim().toLowerCase()
+    if (!nextProjectId) {
+      setApiError('project id is required')
+      return
+    }
+
+    setIsCreatingProject(true)
+    setApiError(null)
+    setUiNotice(null)
+    try {
+      const created = await createProject({
+        project_id: nextProjectId,
+        project_name: newProjectNameDraft.trim() || nextProjectId,
+        linked_repo_path: newProjectRepoDraft.trim() || null,
+      })
+      setTakeoverResult(null)
+      setProjectActionMode(null)
+      setSelectedProjectDocId(created.project_id)
+      setProjectId(created.project_id)
+      setNewProjectIdDraft('')
+      setNewProjectNameDraft('')
+      setNewProjectRepoDraft('')
+      setUiNotice(`project created: ${created.project_id}`)
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setIsCreatingProject(false)
+    }
+  }, [isCreatingProject, newProjectIdDraft, newProjectNameDraft, newProjectRepoDraft])
 
   const handleQuickAgent = useCallback(
     async (agentId: string) => {
@@ -2058,22 +2093,23 @@ function App() {
 
   const activeProjectCard = useMemo<ProjectCatalogEntry>(
     () =>
-      projectCatalog.find((project) => project.project_id === ACTIVE_PROJECT_ID) ?? {
-        project_id: ACTIVE_PROJECT_ID,
-        project_name: projectSettings?.project_name ?? ACTIVE_PROJECT_ID,
+      projectCatalog.find((project) => project.project_id === projectId) ?? {
+        project_id: projectId,
+        project_name: projectSettings?.project_name ?? projectId,
         linked_repo_path: projectSettings?.linked_repo_path ?? null,
         phase: projectSummary?.phase ?? 'Implement',
         objective: projectSummary?.objective ?? 'No objective set yet.',
       },
     [
       projectCatalog,
+      projectId,
       projectSettings?.linked_repo_path,
       projectSettings?.project_name,
       projectSummary?.objective,
       projectSummary?.phase,
     ],
   )
-  const visibleProjectCards = projectCatalog.length > 0 ? projectCatalog : [activeProjectCard]
+  const visibleProjectCards = useMemo(() => [activeProjectCard], [activeProjectCard])
   const selectedProjectCard =
     visibleProjectCards.find((project) => project.project_id === selectedProjectDocId) ?? activeProjectCard
 
@@ -2116,6 +2152,19 @@ function App() {
       : composerStatus === 'http_fallback'
         ? 'HTTP fallback'
         : 'Reconnecting'
+  const openRouterHealth = backendHealth?.openrouter ?? null
+  const openRouterLabel =
+    openRouterHealth?.status === 'ready'
+      ? 'OpenRouter ready'
+      : openRouterHealth?.status === 'degraded'
+        ? 'OpenRouter degraded'
+        : openRouterHealth?.status === 'missing_key'
+          ? 'OpenRouter missing key'
+          : openRouterHealth?.status === 'missing_base_url'
+            ? 'OpenRouter missing base url'
+            : 'OpenRouter unknown'
+  const openRouterPillTone =
+    openRouterHealth?.status === 'ready' ? 'ok' : openRouterHealth?.status ? 'warn' : 'neutral'
 
   const workbenchTabs = [
     { id: 'chat' as const, label: 'Chat' },
@@ -2399,6 +2448,7 @@ function App() {
 
     const quickStatus = [
       { label: 'Backend', value: backendHealth?.status ?? 'unknown' },
+      { label: 'OpenRouter', value: openRouterHealth?.status ?? 'unknown' },
       { label: 'WS', value: composerLabel },
       { label: 'Agents', value: String(agentsTotal) },
       { label: 'Terminals live', value: String(runningTerminals) },
@@ -2428,6 +2478,93 @@ function App() {
                   <span className={`chat-status ${composerStatus}`}>{composerLabel}</span>
                   <span className="chat-target">visible answer via @clems</span>
                 </div>
+              </div>
+              <div className="secondary-card project-actions-card">
+                <div className="section-title-row compact">
+                  <h3>Project actions</h3>
+                  <span className="hint">{currentProjectLabel} - {linkedRepoLabel}</span>
+                </div>
+                <div className="project-actions-mode-row">
+                  <button
+                    className={`small-btn ${projectActionMode === 'create' ? 'active' : ''}`}
+                    onClick={() => setProjectActionMode((value) => (value === 'create' ? null : 'create'))}
+                  >
+                    Create new project
+                  </button>
+                  <button
+                    className={`small-btn ${projectActionMode === 'takeover' ? 'active' : ''}`}
+                    onClick={() => setProjectActionMode((value) => (value === 'takeover' ? null : 'takeover'))}
+                  >
+                    Take over a project
+                  </button>
+                </div>
+                {projectActionMode === 'create' ? (
+                  <div className="project-action-form">
+                    <div className="form-grid">
+                      <label>
+                        <span>Project id</span>
+                        <input
+                          value={newProjectIdDraft}
+                          onChange={(event) => setNewProjectIdDraft(event.target.value)}
+                          placeholder="new-project"
+                        />
+                      </label>
+                      <label>
+                        <span>Project name</span>
+                        <input
+                          value={newProjectNameDraft}
+                          onChange={(event) => setNewProjectNameDraft(event.target.value)}
+                          placeholder="Project name"
+                        />
+                      </label>
+                      <label className="wide">
+                        <span>Linked repo path (optional)</span>
+                        <div className="inline-picker-row">
+                          <input
+                            value={newProjectRepoDraft}
+                            onChange={(event) => setNewProjectRepoDraft(event.target.value)}
+                            placeholder="/absolute/path/to/repo"
+                          />
+                          <button className="small-btn" onClick={() => void handleChooseRepoFolder('create')} disabled={isChoosingFolder}>
+                            {isChoosingFolder ? 'Choosing...' : 'Choose folder'}
+                          </button>
+                        </div>
+                      </label>
+                    </div>
+                    <div className="todo-editor-actions">
+                      <button className="send-btn" onClick={() => void handleCreateProject()} disabled={isCreatingProject}>
+                        {isCreatingProject ? 'Creating...' : 'Create project'}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                {projectActionMode === 'takeover' ? (
+                  <div className="project-action-form">
+                    <div className="form-grid">
+                      <label className="wide">
+                        <span>Linked repo path</span>
+                        <div className="inline-picker-row">
+                          <input
+                            value={linkedRepoDraft}
+                            onChange={(event) => setLinkedRepoDraft(event.target.value)}
+                            placeholder="/absolute/path/to/repo"
+                          />
+                          <button className="small-btn" onClick={() => void handleChooseRepoFolder('takeover')} disabled={isChoosingFolder}>
+                            {isChoosingFolder ? 'Choosing...' : 'Choose folder'}
+                          </button>
+                        </div>
+                      </label>
+                    </div>
+                    <div className="todo-editor-actions">
+                      <button className="send-btn alt" onClick={() => void handleSaveProjectLink()}>
+                        Save linked repo
+                      </button>
+                      <button className="send-btn" onClick={() => void handleRunTakeover()} disabled={isRunningTakeover}>
+                        {isRunningTakeover ? 'Running takeover...' : 'Take over project'}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
               {takeoverResult ? (
                 <div className="takeover-wizard-card">
@@ -2762,6 +2899,31 @@ function App() {
           </div>
           <div className="secondary-columns">
             <section className="secondary-card">
+              <h3>OpenRouter</h3>
+              <ul className="data-list">
+                <li>
+                  <span>Status</span>
+                  <strong>{openRouterHealth?.status ?? 'unknown'}</strong>
+                </li>
+                <li>
+                  <span>Base URL</span>
+                  <strong>{openRouterHealth?.base_url || 'missing'}</strong>
+                </li>
+                <li>
+                  <span>API key</span>
+                  <strong>{openRouterHealth?.api_key_present ? 'present' : 'missing'}</strong>
+                </li>
+                <li>
+                  <span>Last OK</span>
+                  <strong>{openRouterHealth?.last_ok_at ? new Date(openRouterHealth.last_ok_at).toLocaleTimeString() : 'never'}</strong>
+                </li>
+                <li>
+                  <span>Last error</span>
+                  <strong>{openRouterHealth?.last_error || 'none'}</strong>
+                </li>
+              </ul>
+            </section>
+            <section className="secondary-card">
               <h3>Latest operator chat</h3>
               <div className="events-log">
                 {latestDirect.length === 0 ? (
@@ -2903,10 +3065,18 @@ function App() {
                 {STATUS_ORDER.map((status) => (
                   <li key={status}>
                     <span>{STATUS_LABELS[status]}</span>
-                    <strong>{projectTaskCounts ? projectTaskCounts[status] : taskCounts[status]}</strong>
+                  <strong>{projectTaskCounts ? projectTaskCounts[status] : taskCounts[status]}</strong>
                   </li>
                 ))}
               </ul>
+            </section>
+            <section className="secondary-card">
+              <h3>Project actions</h3>
+              <div className="events-log">
+                <p>Project creation and takeover now live in Le Conseil.</p>
+                <p>Use the pinned Project actions card there to create a greenfield project or run repo takeover.</p>
+                <p>Overview stays read-only for runtime, costs, roadmap, and task visibility.</p>
+              </div>
             </section>
             <section className="secondary-card">
               <h3>Operational focus</h3>
@@ -2991,113 +3161,6 @@ function App() {
                   ))
                 )}
               </div>
-            </section>
-            <section className="secondary-card">
-              <h3>Take over project</h3>
-              <div className="form-grid">
-                <label className="wide">
-                  <span>Linked repo path</span>
-                  <div className="inline-picker-row">
-                    <input
-                      value={linkedRepoDraft}
-                      onChange={(event) => setLinkedRepoDraft(event.target.value)}
-                      placeholder="/absolute/path/to/repo"
-                    />
-                    <button className="small-btn" onClick={() => void handleChooseRepoFolder()} disabled={isChoosingFolder}>
-                      {isChoosingFolder ? 'Choosing...' : 'Choose folder'}
-                    </button>
-                  </div>
-                </label>
-              </div>
-              <div className="todo-editor-actions">
-                <button className="send-btn alt" onClick={() => void handleSaveProjectLink()}>
-                  Save linked repo
-                </button>
-                <button className="send-btn" onClick={() => void handleRunTakeover()} disabled={isRunningTakeover}>
-                  {isRunningTakeover ? 'Running takeover...' : 'Take over project'}
-                </button>
-              </div>
-              <div className="command-box">
-                <code>{linkedRepoDraft.trim() || 'No folder selected yet'}</code>
-              </div>
-              <ul className="data-list">
-                <li>
-                  <span>Current link</span>
-                  <strong>{projectSettings?.linked_repo_path || 'not linked'}</strong>
-                </li>
-                <li>
-                  <span>Roadmap now</span>
-                  <strong>{projectRoadmap?.sections.now.length ?? 0}</strong>
-                </li>
-              </ul>
-            </section>
-            <section className="secondary-card">
-              <h3>Takeover draft</h3>
-              {takeoverResult ? (
-                <div className="takeover-result">
-                  <p className="takeover-summary">{takeoverResult.summary_human}</p>
-                  <div className="command-box">
-                    <code>{String(takeoverResult.repo_findings?.path || 'repo not linked')}</code>
-                  </div>
-                  <ul className="data-list">
-                    <li>
-                      <span>Suggested tasks</span>
-                      <strong>{takeoverResult.suggested_tasks.length}</strong>
-                    </li>
-                    <li>
-                      <span>Suggested skills</span>
-                      <strong>{takeoverResult.suggested_skills.length}</strong>
-                    </li>
-                  </ul>
-                  <div className="takeover-columns">
-                    <div>
-                      <h4>Tech summary</h4>
-                      <ul className="simple-list">
-                        {takeoverResult.summary_tech.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <h4>Suggested tasks</h4>
-                      <ul className="simple-list">
-                        {takeoverResult.suggested_tasks.map((task) => (
-                          <li key={`${task.owner}-${task.title}`}>
-                            {task.title} - @{task.owner}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                  <div className="todo-editor-actions">
-                    <button
-                      className="send-btn alt"
-                      onClick={() => void handleApplyTakeoverRoadmap()}
-                      disabled={isApplyingTakeover}
-                    >
-                      {isApplyingTakeover ? 'Applying...' : 'Apply roadmap draft'}
-                    </button>
-                    <button
-                      className="send-btn"
-                      onClick={() => void handleApplyTakeoverTasks()}
-                      disabled={isApplyingTakeover || takeoverResult.suggested_tasks.length === 0}
-                    >
-                      {isApplyingTakeover ? 'Applying...' : 'Add tasks to To Do'}
-                    </button>
-                    <button className="small-btn" onClick={() => setActiveTab('concierge_room')}>
-                      Open Le Conseil
-                    </button>
-                    <button className="small-btn" onClick={() => void handleLaunchTakeoverPlan()} disabled={isSendingChat}>
-                      Lets go
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="empty-panel compact">
-                  <h3>No takeover draft yet</h3>
-                  <p>Save a linked repo path, then run takeover to generate a summary, roadmap draft, tasks, and suggested skills.</p>
-                </div>
-              )}
             </section>
           </div>
         </section>
@@ -3378,7 +3441,7 @@ function App() {
               <section className="secondary-card">
                 <div className="section-title-row compact">
                   <h3>Projects</h3>
-                  <span className="hint">{projectCatalogLoading ? 'loading...' : 'click Cockpit to inspect the active project'}</span>
+                  <span className="hint">{projectCatalogLoading ? 'loading...' : 'current live project only'}</span>
                 </div>
                 <div className="project-catalog-list">
                   {visibleProjectCards.map((project) => (
@@ -3717,7 +3780,7 @@ function App() {
             <label className="project-input">
               Project
               <input
-                value={projectLabel(ACTIVE_PROJECT_ID, projectSettings?.project_name ?? ACTIVE_PROJECT_ID)}
+                value={projectLabel(projectId, projectSettings?.project_name ?? projectId)}
                 readOnly
               />
             </label>
@@ -3727,6 +3790,7 @@ function App() {
               Backend {backendHealth?.status ?? 'unknown'}
             </div>
             <div className={`status-pill ${wsConnected ? 'ok' : 'warn'}`}>WS {composerLabel}</div>
+            <div className={`status-pill ${openRouterPillTone}`}>{openRouterLabel}</div>
             <div className="status-pill neutral">API {getApiUrl()}</div>
             <div className="status-pill neutral">
               Build {(backendHealth?.build_sha ?? 'unknown').slice(0, 12)}

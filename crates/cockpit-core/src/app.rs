@@ -25,16 +25,17 @@ use crate::{
     chat,
     models::{
         AgentRecord, ApprovalDecisionRequest, ApprovalStatus, ChatApprovalsResponse,
-        ChatHistoryResponse, ChatMessage, CreateAgentRequest, CreateAgentResponse,
-        ChatMode, CreateTaskRequest, DeliveryMode, LiveTurnRequest, LiveTurnResponse,
-        LlmProfileResponse, MessageVisibility, PixelAgentStatus, PixelFeedResponse, ProjectCatalogEntry,
-        ProjectCatalogResponse, ProjectSettings, ProjectSettingsResponse, ProjectSummaryResponse,
-        ProjectTaskCounts, RoadmapDraftRequest, RoadmapDraftResponse, RoadmapResponse,
-        RoadmapSections, SkillLibraryEntry, SkillsLibraryResponse, TakeoverStartRequest,
-        TakeoverStartResponse, TakeoverSuggestedSkill, TakeoverSuggestedTask, TaskStatus,
-        TasksResponse, TerminalOpenRequest, TerminalSendRequest, TerminalSession,
-        UpdateLlmProfileRequest, UpdateProjectSettingsRequest, UpdateRoadmapRequest,
-        UpdateTaskRequest, VoiceTranscribeRequest, VoiceTranscribeResponse, WsEventEnvelope,
+        ChatHistoryResponse, ChatMessage, CreateAgentRequest, CreateAgentResponse, ChatMode,
+        CreateProjectRequest, CreateTaskRequest, DeliveryMode, LiveTurnRequest,
+        LiveTurnResponse, LlmProfileResponse, MessageVisibility, PixelAgentStatus,
+        PixelFeedResponse, ProjectCatalogEntry, ProjectCatalogResponse, ProjectSettings,
+        ProjectSettingsResponse, ProjectSummaryResponse, ProjectTaskCounts,
+        RoadmapDraftRequest, RoadmapDraftResponse, RoadmapResponse, RoadmapSections,
+        SkillLibraryEntry, SkillsLibraryResponse, TakeoverStartRequest, TakeoverStartResponse,
+        TakeoverSuggestedSkill, TakeoverSuggestedTask, TaskStatus, TasksResponse,
+        TerminalOpenRequest, TerminalSendRequest, TerminalSession, UpdateLlmProfileRequest,
+        UpdateProjectSettingsRequest, UpdateRoadmapRequest, UpdateTaskRequest,
+        VoiceTranscribeRequest, VoiceTranscribeResponse, WsEventEnvelope,
     },
     openrouter, orchestrator,
     state::AppState,
@@ -44,7 +45,7 @@ use crate::{
 pub fn build_router(state: AppState) -> Router {
     Router::new()
         .route("/healthz", get(healthz))
-        .route("/v1/projects", get(list_projects))
+        .route("/v1/projects", get(list_projects).post(create_project))
         .route(
             "/v1/projects/{id}/agents",
             post(create_agent).get(list_agents),
@@ -115,8 +116,9 @@ pub fn build_router(state: AppState) -> Router {
         .with_state(state)
 }
 
-async fn healthz() -> Json<Value> {
+async fn healthz(State(state): State<AppState>) -> Json<Value> {
     let build = crate::build_info::runtime_build_info();
+    let openrouter = state.openrouter_status();
     Json(json!({
         "status": "ok",
         "mode": "owner_local",
@@ -125,6 +127,13 @@ async fn healthz() -> Json<Value> {
         "build_sha": build.build_sha,
         "build_time": build.build_time,
         "app_mode": build.app_mode,
+        "openrouter": {
+            "status": openrouter.status,
+            "base_url": openrouter.base_url,
+            "api_key_present": openrouter.api_key_present,
+            "last_ok_at": openrouter.last_ok_at,
+            "last_error": openrouter.last_error,
+        }
     }))
 }
 
@@ -177,6 +186,45 @@ async fn list_projects(
         generated_at: Utc::now().to_rfc3339(),
         projects,
     }))
+}
+
+async fn create_project(
+    State(state): State<AppState>,
+    Json(payload): Json<CreateProjectRequest>,
+) -> Result<(StatusCode, Json<ProjectSettingsResponse>), ApiError> {
+    let project_id = normalize_project_id(&payload.project_id)?;
+    if storage::project_root(state.control_root.as_ref(), &project_id).exists() {
+        return Err(ApiError {
+            status: StatusCode::CONFLICT,
+            message: format!("project {project_id} already exists"),
+        });
+    }
+
+    storage::ensure_project_scaffold(state.control_root.as_ref(), &project_id)?;
+    let settings = minimal_project_settings_value(
+        &project_id,
+        payload.project_name.as_deref(),
+        payload.linked_repo_path.as_deref(),
+    );
+    let saved = storage::save_settings(state.control_root.as_ref(), &project_id, &settings)?;
+    let normalized = normalize_project_settings(&project_id, saved);
+
+    state.emit_event(
+        &project_id,
+        "project.created",
+        json!({
+            "project_id": project_id,
+            "project_name": normalized.project_name,
+        }),
+    );
+
+    Ok((
+        StatusCode::CREATED,
+        Json(ProjectSettingsResponse {
+            project_id,
+            settings: normalized,
+        }),
+    ))
 }
 
 async fn get_project_summary(
@@ -450,6 +498,12 @@ async fn live_turn(
         &mentions,
     )
     .await?;
+
+    if let Some(error) = orchestration.error.as_ref() {
+        state.mark_openrouter_error(error.clone());
+    } else {
+        state.mark_openrouter_ok();
+    }
 
     for approval in &orchestration.approval_requests {
         state.emit_event(
@@ -957,21 +1011,21 @@ async fn put_project_settings(
     State(state): State<AppState>,
     Json(payload): Json<UpdateProjectSettingsRequest>,
 ) -> Result<Json<ProjectSettingsResponse>, ApiError> {
-    let mut settings = storage::load_settings(state.control_root.as_ref(), &project_id)?;
-    let object = settings
-        .as_object_mut()
-        .ok_or_else(|| ApiError::bad_request("settings payload is not an object"))?;
-
-    if let Some(project_name) = payload.project_name {
-        object.insert("project_name".to_string(), json!(project_name.trim()));
-    }
-    if let Some(linked_repo_path) = payload.linked_repo_path {
-        object.insert(
-            "linked_repo_path".to_string(),
-            json!(linked_repo_path.trim()),
-        );
-    }
-
+    let current = normalize_project_settings(
+        &project_id,
+        storage::load_settings(state.control_root.as_ref(), &project_id)?,
+    );
+    let settings = minimal_project_settings_value(
+        &project_id,
+        payload
+            .project_name
+            .as_deref()
+            .or(Some(current.project_name.as_str())),
+        payload
+            .linked_repo_path
+            .as_deref()
+            .or(current.linked_repo_path.as_deref()),
+    );
     let saved = storage::save_settings(state.control_root.as_ref(), &project_id, &settings)?;
     let normalized = normalize_project_settings(&project_id, saved);
     state.emit_event(
@@ -1591,11 +1645,13 @@ async fn post_roadmap_clems_draft(
         openrouter::chat_completion(&profile.clems_model, system_prompt, &user_prompt).await;
 
     if let Some(err) = &result.error {
+        state.mark_openrouter_error(err.clone());
         return Err(ApiError {
             status: StatusCode::INTERNAL_SERVER_ERROR,
             message: format!("openrouter failed: {}", err),
         });
     }
+    state.mark_openrouter_ok();
 
     let draft_value = serde_json::from_str(&result.text).unwrap_or_else(|_| {
         json!({
@@ -1665,6 +1721,11 @@ async fn post_takeover_start(
 
     let system_prompt = "You are @clems. Return strict JSON with keys: summary_human (string), summary_tech (array of strings), roadmap_sections ({now,next,risks}), suggested_tasks (array of {title, owner, objective, done_definition}), suggested_skills (array of {skill_id, owner, reason}). Stay concise, ascii only, action oriented.";
     let result = openrouter::chat_completion(&profile.clems_model, system_prompt, &prompt).await;
+    if let Some(err) = &result.error {
+        state.mark_openrouter_error(err.clone());
+    } else {
+        state.mark_openrouter_ok();
+    }
     let parsed = serde_json::from_str::<Value>(&result.text).unwrap_or_else(|_| {
         json!({
             "summary_human": "Takeover draft generated with fallback parser.",
@@ -1740,6 +1801,11 @@ async fn post_voice_transcribe(
         normalize_audio_format(&payload.format),
     )
     .await;
+    if let Some(err) = &result.error {
+        state.mark_openrouter_error(err.clone());
+    } else {
+        state.mark_openrouter_ok();
+    }
     let duration_ms = started.elapsed().as_millis() as i64;
     let status = if result.status == "ok" {
         "ok"
@@ -1795,6 +1861,38 @@ fn normalize_project_settings(project_id: &str, settings: Value) -> ProjectSetti
         updated_at,
         raw: settings,
     }
+}
+
+fn normalize_project_id(raw: &str) -> Result<String, ApiError> {
+    let project_id = raw.trim().to_lowercase();
+    if project_id.is_empty() {
+        return Err(ApiError::bad_request("project_id is required"));
+    }
+    if project_id.contains('/') || project_id.contains('\\') || project_id.contains("..") {
+        return Err(ApiError::bad_request("project_id must not contain path separators"));
+    }
+    Ok(project_id)
+}
+
+fn minimal_project_settings_value(
+    project_id: &str,
+    project_name: Option<&str>,
+    linked_repo_path: Option<&str>,
+) -> Value {
+    let clean_name = project_name
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or(project_id);
+    let clean_repo = linked_repo_path
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string);
+    json!({
+        "project_id": project_id,
+        "project_name": clean_name,
+        "linked_repo_path": clean_repo,
+        "updated_at": Utc::now().to_rfc3339(),
+    })
 }
 
 fn roadmap_sections_from_value(value: Value) -> RoadmapSections {

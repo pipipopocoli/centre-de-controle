@@ -527,6 +527,13 @@ pub struct ProjectSettingsResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateProjectRequest {
+    pub project_id: String,
+    pub project_name: Option<String>,
+    pub linked_repo_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectCatalogEntry {
     pub project_id: String,
     pub project_name: String,

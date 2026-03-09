@@ -241,6 +241,13 @@ export interface HealthzResponse {
   build_sha?: string
   build_time?: string
   app_mode?: string
+  openrouter?: {
+    status: 'ready' | 'degraded' | 'missing_key' | 'missing_base_url'
+    base_url: string
+    api_key_present: boolean
+    last_ok_at?: string | null
+    last_error?: string | null
+  }
 }
 
 export interface LlmProfile {
@@ -459,6 +466,16 @@ export async function getProjectSettings(projectId: string): Promise<ProjectSett
 export async function getProjects(): Promise<ProjectCatalogEntry[]> {
   const payload = await request<{ generated_at: string; projects: ProjectCatalogEntry[] }>('/v1/projects')
   return payload.projects
+}
+
+export async function createProject(
+  payload: { project_id: string; project_name?: string | null; linked_repo_path?: string | null },
+): Promise<ProjectSettings> {
+  const response = await request<{ project_id: string; settings: ProjectSettings }>('/v1/projects', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  return response.settings
 }
 
 export async function putProjectSettings(

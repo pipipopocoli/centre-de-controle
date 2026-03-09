@@ -68,7 +68,7 @@ pub fn ensure_project_scaffold(control_root: &Path, project_id: &str) -> Result<
             serde_json::to_string_pretty(&json!({
                 "project_id": project_id,
                 "project_name": project_id,
-                "linked_repo_path": "",
+                "linked_repo_path": Value::Null,
                 "updated_at": Utc::now().to_rfc3339(),
             }))?,
         )?;
@@ -125,20 +125,25 @@ pub fn load_settings(control_root: &Path, project_id: &str) -> Result<Value> {
 pub fn save_settings(control_root: &Path, project_id: &str, settings: &Value) -> Result<Value> {
     let root = ensure_project_scaffold(control_root, project_id)?;
     let path = root.join("settings.json");
-    let mut payload = settings.clone();
-    if let Some(object) = payload.as_object_mut() {
-        object.insert("project_id".to_string(), json!(project_id));
-        if object
-            .get("project_name")
-            .and_then(Value::as_str)
-            .map(str::trim)
-            .unwrap_or("")
-            .is_empty()
-        {
-            object.insert("project_name".to_string(), json!(project_id));
-        }
-        object.insert("updated_at".to_string(), json!(Utc::now().to_rfc3339()));
-    }
+    let project_name = settings
+        .get("project_name")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or(project_id)
+        .to_string();
+    let linked_repo_path = settings
+        .get("linked_repo_path")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string);
+    let payload = json!({
+        "project_id": project_id,
+        "project_name": project_name,
+        "linked_repo_path": linked_repo_path,
+        "updated_at": Utc::now().to_rfc3339(),
+    });
     fs::write(path, serde_json::to_string_pretty(&payload)?)?;
     Ok(payload)
 }
@@ -167,7 +172,7 @@ pub fn list_projects(control_root: &Path) -> Result<Vec<(String, Value)>> {
                 json!({
                     "project_id": project_id,
                     "project_name": project_id,
-                    "linked_repo_path": "",
+                    "linked_repo_path": Value::Null,
                     "updated_at": Utc::now().to_rfc3339(),
                 })
             })
@@ -175,7 +180,7 @@ pub fn list_projects(control_root: &Path) -> Result<Vec<(String, Value)>> {
             json!({
                 "project_id": project_id,
                 "project_name": project_id,
-                "linked_repo_path": "",
+                "linked_repo_path": Value::Null,
                 "updated_at": Utc::now().to_rfc3339(),
             })
         };

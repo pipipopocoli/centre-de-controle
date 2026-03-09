@@ -4,17 +4,17 @@
 - Implement
 
 ## Objective
-- Stabilize the current Cockpit shell around the live `cockpit` project only.
+- Stabilize the live `cockpit` shell with Le Conseil as the only project action surface and OpenRouter as first-class runtime status.
 
 ## Now
-- CP-0061 is back in flight: remove the extra latest reply surface and finish direct chat visibility in Pixel Home.
-- CP-0062 is back in flight: remove the room reply banner and keep fallback diagnostics out of Le Conseil.
-- `demo` is out of the active runtime and project catalog. `cockpit` is the only live project flow.
+- Live `cockpit` settings are pruned to the minimal schema only.
+- Le Conseil owns `Create new project` and `Take over a project`.
+- Header and Pilotage expose explicit OpenRouter runtime status.
 
 ## Next
-- Rebuild and reinstall Cockpit with the CP-0061 / CP-0062 UI-state fixes.
-- Run direct and room chat QA in the installed app.
-- Re-close the issues only after manual UI verification.
+- Run the shell and backend gates.
+- Rebuild and reinstall Cockpit.app.
+- Verify create/takeover flows from Le Conseil and confirm OpenRouter status is coherent in header + Pilotage.
 
 ## In Progress
 - ISSUE-CP-0061 - Pixel Home direct chat + shell ownership
@@ -24,8 +24,8 @@
 - none
 
 ## Risks
-- fallback warnings can still look broken if they surface in the main chat when a visible reply exists.
-- operator QA is still needed on the installed app after the latest rebuild.
+- Direct chat and room chat still need installed-app QA after rebuild.
+- Folder picker behavior depends on the desktop Tauri bridge and needs manual validation.
 
 ## Links
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0061-fix-z-index-overlay-chat-pixel-home.md
