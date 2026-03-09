@@ -17,9 +17,11 @@ use crate::{
 };
 
 const OVERLAP_WINDOW_MINUTES: i64 = 30;
-const ROOM_LLM_TIMEOUT_SECONDS: u64 = 5;
-const DIRECT_LLM_TIMEOUT_SECONDS: u64 = 20;
+const ROOM_AGENT_LLM_TIMEOUT_SECONDS: u64 = 12;
+const ROOM_SUMMARY_TIMEOUT_SECONDS: u64 = 18;
+const DIRECT_LLM_TIMEOUT_SECONDS: u64 = 24;
 const DIRECT_LLM_RETRY_DELAY_SECONDS: u64 = 2;
+const ROOM_SUMMARY_RETRY_DELAY_SECONDS: u64 = 2;
 
 // Hierarchical delegation metadata and policy guards
 // ISSUE-W20R-A9-004: L0->L1/L1->L2 enforcement
@@ -93,35 +95,35 @@ fn model_for_agent(profile: &LlmProfile, agent_id: &str) -> String {
 fn actor_prompt(agent_id: &str, mode: &ChatMode) -> String {
     match mode {
         ChatMode::Direct => match agent_id {
-            "clems" => "You are @clems, Cockpit L0 orchestrator in a direct operator chat. Reply in natural french, ascii only, concise, human, and genuinely conversational. Answer the operator directly. Suggest next actions only when helpful. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
-            "victor" => "You are @victor, backend lead L1 in a direct operator chat. Reply in natural french, ascii only, concise, and concrete. Stay conversational, but keep your backend lead perspective. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
-            "leo" => "You are @leo, UI lead L1 in a direct operator chat. Reply in natural french, ascii only, concise, and concrete. Stay conversational, but keep your frontend and UX perspective. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
-            "nova" => "You are @nova, creative science lead L1 in a direct operator chat. Reply in natural french, ascii only, concise, and evidence aware. Stay conversational. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
-            "vulgarisation" => "You are @vulgarisation, simplification lead L1 in a direct operator chat. Reply in simple french, ascii only, concise, and very clear. Stay conversational. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
+            "clems" => "You are @clems, Cockpit L0 orchestrator in a direct operator chat. Reply in natural french, ascii only, human, and genuinely conversational. Answer with 1 to 3 short sentences max. Final answer only. No chain of thought. Suggest next actions only when helpful. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
+            "victor" => "You are @victor, backend lead L1 in a direct operator chat. Reply in natural french, ascii only, conversational, and concrete. Answer with 1 to 3 short sentences max. Final answer only. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
+            "leo" => "You are @leo, UI lead L1 in a direct operator chat. Reply in natural french, ascii only, conversational, and concrete. Answer with 1 to 3 short sentences max. Final answer only. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
+            "nova" => "You are @nova, creative science lead L1 in a direct operator chat. Reply in natural french, ascii only, evidence aware, and conversational. Answer with 1 to 3 short sentences max. Final answer only. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
+            "vulgarisation" => "You are @vulgarisation, simplification lead L1 in a direct operator chat. Reply in simple french, ascii only, very clear, and conversational. Answer with 1 to 3 short sentences max. Final answer only. Do not emit a TASKS block unless the operator explicitly asks for official tasks.".to_string(),
             _ => format!(
-                "You are @{agent_id}, specialist L2 in a direct operator chat. Reply in natural french, ascii only, concise, and execution focused. Stay conversational, but do not create roadmap, strategy, or TASKS blocks unless explicitly asked."
+                "You are @{agent_id}, specialist L2 in a direct operator chat. Reply in natural french, ascii only, execution focused, and conversational. Answer with 1 to 3 short sentences max. Final answer only. Do not create roadmap, strategy, or TASKS blocks unless explicitly asked."
             ),
         },
         ChatMode::ConcealRoom => {
             let mode_hint = "conceal_room";
             match agent_id {
                 "clems" => format!(
-                    "You are @clems, Cockpit L0 orchestrator. mode={mode_hint}. Reply in concise french, ascii only, action oriented. If operator asks for a task list or roadmap, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
+                    "You are @clems, Cockpit L0 orchestrator. mode={mode_hint}. Reply in concise french, ascii only, action oriented. Keep the visible answer short: 2 to 4 short lines max. Final answer only. If operator asks for a task list or roadmap, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
                 ),
                 "victor" => format!(
-                    "You are @victor, backend lead L1. mode={mode_hint}. Reply in concise french with implementation actions. If you are defining official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
+                    "You are @victor, backend lead L1. mode={mode_hint}. Reply in concise french with implementation actions. Keep it under 80 words. Final answer only. If you are defining official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
                 ),
                 "leo" => format!(
-                    "You are @leo, UI lead L1. mode={mode_hint}. Reply in concise french with UX and frontend actions. If you are defining official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
+                    "You are @leo, UI lead L1. mode={mode_hint}. Reply in concise french with UX and frontend actions. Keep it under 80 words. Final answer only. If you are defining official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
                 ),
                 "nova" => format!(
-                    "You are @nova, creative science lead L1. mode={mode_hint}. Reply concise with evidence path and decision tag. If you define official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
+                    "You are @nova, creative science lead L1. mode={mode_hint}. Reply concise with evidence path and decision tag. Keep it under 80 words. Final answer only. If you define official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
                 ),
                 "vulgarisation" => format!(
-                    "You are @vulgarisation, simplification lead L1. mode={mode_hint}. Reply in simple french for operator. If you define official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
+                    "You are @vulgarisation, simplification lead L1. mode={mode_hint}. Reply in simple french for operator. Keep it under 70 words. Final answer only. If you define official tasks, append a TASKS: block with bullet lines '- title | owner=agent-id | done=definition'."
                 ),
                 _ => format!(
-                    "You are @{agent_id}, specialist L2. mode={mode_hint}. Reply concise with execution next step. Never create roadmap, strategy, or TASKS block."
+                    "You are @{agent_id}, specialist L2. mode={mode_hint}. Reply concise with one execution next step. Keep it under 60 words. Final answer only. Never create roadmap, strategy, or TASKS block."
                 ),
             }
         }
@@ -211,7 +213,7 @@ async fn llm_reply(
     }
     let timeout_seconds = match mode {
         ChatMode::Direct => DIRECT_LLM_TIMEOUT_SECONDS,
-        ChatMode::ConcealRoom => ROOM_LLM_TIMEOUT_SECONDS,
+        ChatMode::ConcealRoom => ROOM_AGENT_LLM_TIMEOUT_SECONDS,
     };
     let max_attempts = match mode {
         ChatMode::Direct => 2usize,
@@ -282,7 +284,7 @@ async fn clems_summary(
     usage_calls: &mut Vec<Value>,
 ) -> AgentReply {
     let model = model_for_agent(profile, "clems");
-    let system = "You are @clems. Create a short synthesis in french with next immediate action.";
+    let system = "You are @clems. Create a short synthesis in french, ascii only, with Summary and Next. Keep it to 2 or 3 short lines max. Final answer only.";
     let joined = if context_snippets.is_empty() {
         user_text.to_string()
     } else {
@@ -292,43 +294,53 @@ async fn clems_summary(
             context_snippets.join("\n- ")
         )
     };
-    let result = match timeout(
-        Duration::from_secs(ROOM_LLM_TIMEOUT_SECONDS),
-        openrouter::chat_completion(&model, system, &joined),
-    )
-    .await
-    {
-        Ok(result) => result,
-        Err(_) => {
-            usage_calls.push(json!({
-                "agent_id": "clems",
-                "model": model,
-                "status": "failed",
-                "usage": json!({}),
-                "error": format!("openrouter_timeout_after_{}s", ROOM_LLM_TIMEOUT_SECONDS),
-                "purpose": "summary",
-            }));
+    for attempt in 1..=2usize {
+        let result = match timeout(
+            Duration::from_secs(ROOM_SUMMARY_TIMEOUT_SECONDS),
+            openrouter::chat_completion(&model, system, &joined),
+        )
+        .await
+        {
+            Ok(result) => result,
+            Err(_) => openrouter::LlmCallResult {
+                status: "failed".to_string(),
+                text: String::new(),
+                model: model.clone(),
+                usage: json!({}),
+                error: Some(format!(
+                    "openrouter_timeout_after_{}s",
+                    ROOM_SUMMARY_TIMEOUT_SECONDS
+                )),
+            },
+        };
+        usage_calls.push(json!({
+            "agent_id": "clems",
+            "model": result.model,
+            "status": result.status,
+            "usage": result.usage,
+            "error": result.error,
+            "purpose": "summary",
+            "attempt": attempt,
+        }));
+
+        if result.status == "ok" && !result.text.trim().is_empty() {
             return AgentReply {
-                text: chat::clems_summary(user_text, context_snippets.len().max(1)),
-                reply_source: "fallback",
+                text: result.text.trim().to_string(),
+                reply_source: "llm",
             };
         }
-    };
-    usage_calls.push(json!({
-        "agent_id": "clems",
-        "model": result.model,
-        "status": result.status,
-        "usage": result.usage,
-        "error": result.error,
-        "purpose": "summary",
-    }));
 
-    if result.status == "ok" && !result.text.trim().is_empty() {
-        return AgentReply {
-            text: result.text.trim().to_string(),
-            reply_source: "llm",
-        };
+        let error = result
+            .error
+            .clone()
+            .unwrap_or_else(|| "openrouter_empty_response".to_string());
+        if attempt < 2 && is_retryable_error(&error) {
+            sleep(Duration::from_secs(ROOM_SUMMARY_RETRY_DELAY_SECONDS)).await;
+            continue;
+        }
+        break;
     }
+
     AgentReply {
         text: chat::clems_summary(user_text, context_snippets.len().max(1)),
         reply_source: "fallback",
@@ -451,7 +463,7 @@ pub async fn run_turn(
                             user_prompt.push_str(&format!("Context ref:\n{}\n", context_ref));
                         }
                         let result = match timeout(
-                            Duration::from_secs(ROOM_LLM_TIMEOUT_SECONDS),
+                            Duration::from_secs(ROOM_AGENT_LLM_TIMEOUT_SECONDS),
                             openrouter::chat_completion(&model, &system, &user_prompt),
                         )
                         .await
@@ -470,7 +482,10 @@ pub async fn run_turn(
                                         "model": model,
                                         "status": "failed",
                                         "usage": json!({}),
-                                        "error": format!("openrouter_timeout_after_{}s", ROOM_LLM_TIMEOUT_SECONDS),
+                                        "error": format!(
+                                            "openrouter_timeout_after_{}s",
+                                            ROOM_AGENT_LLM_TIMEOUT_SECONDS
+                                        ),
                                     }),
                                 );
                             }

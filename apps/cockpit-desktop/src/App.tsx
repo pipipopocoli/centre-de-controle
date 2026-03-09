@@ -1744,7 +1744,7 @@ function App() {
       }
       directRetryTimerRef.current = window.setTimeout(() => {
         setDirectSendPhase((previous) => (previous === 'thinking' ? 'retrying' : previous))
-      }, 20000)
+      }, 24000)
     }
     setApiError(null)
     setUiNotice(null)

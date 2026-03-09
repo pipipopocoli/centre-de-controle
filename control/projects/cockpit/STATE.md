@@ -1,31 +1,30 @@
 # State
 
 ## Phase
-- Implement
+- Test
 
 ## Objective
-- Stabilize the live `cockpit` shell with Le Conseil as the only project action surface and OpenRouter as first-class runtime status.
+- Stabilize the live `cockpit` shell and keep direct chat plus Le Conseil reliable on the installed app runtime.
 
 ## Now
-- Live `cockpit` settings are pruned to the minimal schema only.
-- Le Conseil owns `Create new project` and `Take over a project`.
+- Direct `@clems` chat returns a real visible LLM reply on the installed runtime.
+- Le Conseil returns a visible `@clems` summary while keeping room diagnostics internal.
 - Header and Pilotage expose explicit OpenRouter runtime status.
 
 ## Next
-- Run the shell and backend gates.
-- Rebuild and reinstall Cockpit.app.
-- Verify create/takeover flows from Le Conseil and confirm OpenRouter status is coherent in header + Pilotage.
+- Manual QA in `Cockpit.app` for Pixel Home and Le Conseil.
+- Verify create/takeover flows from Le Conseil end to end.
+- Keep an eye on room contributor timeouts if the full L1 set stays on Kimi.
 
 ## In Progress
-- ISSUE-CP-0061 - Pixel Home direct chat + shell ownership
-- ISSUE-CP-0062 - Le Conseil room visibility + message window
+- none
 
 ## Blockers
 - none
 
 ## Risks
-- Direct chat and room chat still need installed-app QA after rebuild.
-- Folder picker behavior depends on the desktop Tauri bridge and needs manual validation.
+- Room contributor fanout can still degrade when all active L1 lanes stay on Kimi and OpenRouter is slow.
+- Folder picker behavior still needs final manual validation in the installed app.
 
 ## Links
 - /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0061-fix-z-index-overlay-chat-pixel-home.md
