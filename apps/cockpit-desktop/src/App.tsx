@@ -2475,11 +2475,63 @@ function App() {
           </div>
           <div className="concierge-layout">
             <section className="secondary-card concierge-chat-card">
-              <div className="section-title-row">
-                <h3>Board room</h3>
-                <div className="chat-actions">
-                  <span className={`chat-status ${composerStatus}`}>{composerLabel}</span>
-                  <span className="chat-target">visible answer via @clems</span>
+              <div className="chat-head-block room-head-block">
+                <div className="section-title-row">
+                  <div className="chat-title-block">
+                    <h3>Board room</h3>
+                    <p className="small-copy">Clems coordinates the visible room answer while leads execute in parallel.</p>
+                  </div>
+                  <div className="chat-actions">
+                    <span className={`chat-status ${composerStatus}`}>{composerLabel}</span>
+                    <span className="chat-target">visible answer via @clems</span>
+                  </div>
+                </div>
+                <div className="chat-toolbar-card room-toolbar-card">
+                  <div className="chat-toolbar-row">
+                    <div className="direct-chat-toolbar-group">
+                      <span className="mode-pill active">Le Conseil</span>
+                      <span className="mode-pill">participants {effectiveRoomParticipantIds.length}</span>
+                      <span className="mode-pill">active agents {agentsTotal}</span>
+                    </div>
+                    <div className="chat-actions">
+                      {conciergeChatMessages.length > 8 ? (
+                        <>
+                          <span className="hint">latest {Math.min(roomVisibleCount, conciergeChatMessages.length)}</span>
+                          <button
+                            className="small-btn"
+                            onClick={() => setRoomVisibleCount((value) => Math.min(conciergeChatMessages.length, value + 12))}
+                            disabled={roomVisibleCount >= conciergeChatMessages.length}
+                          >
+                            Show older
+                          </button>
+                          <button
+                            className="small-btn"
+                            onClick={() => setRoomVisibleCount(8)}
+                            disabled={roomVisibleCount <= 8}
+                          >
+                            Show latest
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="chat-toolbar-row">
+                    <span className="chat-target">participants {roomParticipantLabel}</span>
+                    <div className="exec-toggle">
+                      <button
+                        className={executionMode === 'chat' ? 'active' : ''}
+                        onClick={() => setExecutionMode('chat')}
+                      >
+                        chat
+                      </button>
+                      <button
+                        className={executionMode === 'scene' ? 'active' : ''}
+                        onClick={() => setExecutionMode('scene')}
+                      >
+                        scene
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="secondary-card project-actions-card">
@@ -2627,53 +2679,6 @@ function App() {
                     </button>
                     <button className="small-btn" onClick={() => setActiveTab('overview')}>
                       Back to Overview
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-              <div className="concierge-banner">
-                <p>
-                  Use Le Conseil to coordinate the active leads. Clems stays accountable for the visible room answer.
-                </p>
-              </div>
-              <div className="mode-row concierge-controls">
-                <div className="mode-pill-row">
-                  <span className="mode-pill active">Le Conseil</span>
-                  <span className="mode-pill">participants {effectiveRoomParticipantIds.length}</span>
-                  <span className="mode-pill">active agents {agentsTotal}</span>
-                </div>
-                <div className="exec-toggle">
-                  <button
-                    className={executionMode === 'chat' ? 'active' : ''}
-                    onClick={() => setExecutionMode('chat')}
-                  >
-                    chat
-                  </button>
-                  <button
-                    className={executionMode === 'scene' ? 'active' : ''}
-                    onClick={() => setExecutionMode('scene')}
-                    >
-                      scene
-                  </button>
-                </div>
-              </div>
-              {conciergeChatMessages.length > 8 ? (
-                <div className="chat-history-controls">
-                  <span className="hint">showing latest {Math.min(roomVisibleCount, conciergeChatMessages.length)} room messages</span>
-                  <div className="chat-actions">
-                    <button
-                      className="small-btn"
-                      onClick={() => setRoomVisibleCount((value) => Math.min(conciergeChatMessages.length, value + 12))}
-                      disabled={roomVisibleCount >= conciergeChatMessages.length}
-                    >
-                      Show older
-                    </button>
-                    <button
-                      className="small-btn"
-                      onClick={() => setRoomVisibleCount(8)}
-                      disabled={roomVisibleCount <= 8}
-                    >
-                      Show latest
                     </button>
                   </div>
                 </div>
@@ -4042,7 +4047,10 @@ function App() {
                       <section className="chat-section">
                         <div className="chat-head-block">
                           <div className="section-title-row">
-                            <h2>Direct chat</h2>
+                            <div className="chat-title-block">
+                              <h2>Direct chat</h2>
+                              <p className="small-copy">Talk to @clems by default or switch to the selected agent when that lane is chat-ready.</p>
+                            </div>
                             <div className="chat-actions">
                               <span className={`chat-status ${composerStatus}`}>{composerLabel}</span>
                               <span className="chat-target">{directTargetLabel}</span>
@@ -4051,54 +4059,56 @@ function App() {
                               </button>
                             </div>
                           </div>
-                        <div className="chat-target-strip">
-                          <div className="direct-chat-toolbar-group">
-                            <span className="mode-pill active">Direct</span>
-                            <span className="mode-pill">{directTargetBadge}</span>
-                          </div>
-                            <div className="direct-chat-toolbar-group">
-                              <button
-                                className={`target-btn ${directTarget === 'clems' ? 'active' : ''}`}
-                                onClick={() => setDirectTarget('clems')}
-                              >
-                                Clems
-                              </button>
-                              <button
-                                className={`target-btn ${directTarget === 'selected_agent' ? 'active' : ''}`}
-                                onClick={() => setDirectTarget('selected_agent')}
-                                disabled={!selectedAgentChatReady}
-                              >
-                                Selected agent
-                              </button>
+                          <div className="chat-toolbar-card">
+                            <div className="chat-toolbar-row">
+                              <div className="direct-chat-toolbar-group">
+                                <span className="mode-pill active">Direct</span>
+                                <span className="mode-pill">{directTargetBadge}</span>
+                              </div>
+                              <div className="chat-actions">
+                                {directChatMessages.length > 8 ? (
+                                  <>
+                                    <span className="hint">latest {Math.min(directVisibleCount, directChatMessages.length || directVisibleCount)}</span>
+                                    <button
+                                      className="small-btn"
+                                      onClick={() => setDirectVisibleCount((value) => Math.min(directChatMessages.length, value + 12))}
+                                      disabled={directVisibleCount >= directChatMessages.length}
+                                    >
+                                      Older
+                                    </button>
+                                    <button
+                                      className="small-btn"
+                                      onClick={() => setDirectVisibleCount(8)}
+                                      disabled={directVisibleCount <= 8}
+                                    >
+                                      Latest
+                                    </button>
+                                  </>
+                                ) : null}
+                              </div>
                             </div>
-                            <div className="direct-chat-toolbar-group">
-                              <span className="hint">latest {Math.min(directVisibleCount, directChatMessages.length || directVisibleCount)}</span>
-                              {directChatMessages.length > 8 ? (
-                                <>
-                                  <button
-                                    className="small-btn"
-                                    onClick={() => setDirectVisibleCount((value) => Math.min(directChatMessages.length, value + 12))}
-                                    disabled={directVisibleCount >= directChatMessages.length}
-                                  >
-                                    Older
-                                  </button>
-                                  <button
-                                    className="small-btn"
-                                    onClick={() => setDirectVisibleCount(8)}
-                                    disabled={directVisibleCount <= 8}
-                                  >
-                                    Latest
-                                  </button>
-                                </>
+                            <div className="chat-toolbar-row">
+                              <div className="direct-chat-toolbar-group">
+                                <button
+                                  className={`target-btn ${directTarget === 'clems' ? 'active' : ''}`}
+                                  onClick={() => setDirectTarget('clems')}
+                                >
+                                  Clems
+                                </button>
+                                <button
+                                  className={`target-btn ${directTarget === 'selected_agent' ? 'active' : ''}`}
+                                  onClick={() => setDirectTarget('selected_agent')}
+                                  disabled={!selectedAgentChatReady}
+                                >
+                                  Selected agent
+                                </button>
+                              </div>
+                              {selectedAgent ? (
+                                <span className="chat-target-detail compact toolbar-note">
+                                  @{selectedAgent.agent_id} - {selectedAgent.scene_present ? 'on scene' : 'off scene'} - {selectedAgent.current_task || 'no active task'}
+                                </span>
                               ) : null}
                             </div>
-                          </div>
-                          <div className="chat-target-summary">
-                            {selectedAgent ? (
-                              <p className="chat-target-detail compact">
-                                Selected @{selectedAgent.agent_id} - {selectedAgent.scene_present ? 'on scene' : 'off scene'} - {selectedAgent.current_task || 'no active task'}
-                              </p>
-                            ) : null}
                             {directTargetNotice ? <p className="chat-target-detail compact direct-chat-notice">{directTargetNotice}</p> : null}
                           </div>
                         </div>

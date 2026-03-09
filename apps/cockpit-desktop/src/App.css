@@ -1011,6 +1011,37 @@ select:focus-visible,
   min-height: 0;
 }
 
+.chat-title-block {
+  display: grid;
+  gap: 3px;
+}
+
+.chat-title-block h2,
+.chat-title-block h3 {
+  margin: 0;
+}
+
+.chat-title-block p {
+  margin: 0;
+}
+
+.chat-toolbar-card {
+  border: 1px solid rgba(104, 138, 167, 0.36);
+  background: rgba(247, 251, 255, 0.98);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.chat-toolbar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .direct-chat-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -1037,6 +1068,10 @@ select:focus-visible,
 .chat-target-summary {
   display: grid;
   gap: 2px;
+}
+
+.toolbar-note {
+  max-width: 100%;
 }
 
 .chat-target-actions {
@@ -1096,6 +1131,10 @@ select:focus-visible,
   flex-direction: column;
   gap: 8px;
   overflow: hidden;
+}
+
+.room-head-block {
+  gap: 8px;
 }
 
 .concierge-side-card {
@@ -2350,6 +2389,12 @@ select:focus-visible,
   .composer-row-inline,
   .composer-row-room {
     grid-template-columns: 1fr;
+  }
+
+  .chat-toolbar-row {
+    grid-template-columns: 1fr;
+    display: grid;
+    align-items: stretch;
   }
 
   .composer-actions {
