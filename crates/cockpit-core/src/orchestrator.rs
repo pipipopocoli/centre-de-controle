@@ -17,8 +17,8 @@ use crate::{
 };
 
 const OVERLAP_WINDOW_MINUTES: i64 = 30;
-const ROOM_AGENT_LLM_TIMEOUT_SECONDS: u64 = 12;
-const ROOM_SUMMARY_TIMEOUT_SECONDS: u64 = 18;
+const ROOM_AGENT_LLM_TIMEOUT_SECONDS: u64 = 4;
+const ROOM_SUMMARY_TIMEOUT_SECONDS: u64 = 5;
 const DIRECT_LLM_TIMEOUT_SECONDS: u64 = 12;
 const DIRECT_LLM_RETRY_DELAY_SECONDS: u64 = 1;
 const DIRECT_RESCUE_TIMEOUT_SECONDS: u64 = 8;
@@ -28,6 +28,11 @@ const DIRECT_CHAT_TEMPERATURE: f32 = 0.25;
 const DIRECT_RESCUE_MAX_TOKENS: u32 = 120;
 const DIRECT_RESCUE_TEMPERATURE: f32 = 0.15;
 const DIRECT_RESCUE_MODEL: &str = "anthropic/claude-sonnet-4.6";
+const ROOM_AGENT_MAX_TOKENS: u32 = 96;
+const ROOM_AGENT_TEMPERATURE: f32 = 0.2;
+const ROOM_SUMMARY_MAX_TOKENS: u32 = 140;
+const ROOM_SUMMARY_TEMPERATURE: f32 = 0.2;
+const ROOM_SUMMARY_RESCUE_MODEL: &str = "anthropic/claude-sonnet-4.6";
 
 // Hierarchical delegation metadata and policy guards
 // ISSUE-W20R-A9-004: L0->L1/L1->L2 enforcement
@@ -147,6 +152,20 @@ fn direct_rescue_options() -> openrouter::ChatCompletionOptions {
     openrouter::ChatCompletionOptions {
         max_tokens: Some(DIRECT_RESCUE_MAX_TOKENS),
         temperature: Some(DIRECT_RESCUE_TEMPERATURE),
+    }
+}
+
+fn room_agent_options() -> openrouter::ChatCompletionOptions {
+    openrouter::ChatCompletionOptions {
+        max_tokens: Some(ROOM_AGENT_MAX_TOKENS),
+        temperature: Some(ROOM_AGENT_TEMPERATURE),
+    }
+}
+
+fn room_summary_options() -> openrouter::ChatCompletionOptions {
+    openrouter::ChatCompletionOptions {
+        max_tokens: Some(ROOM_SUMMARY_MAX_TOKENS),
+        temperature: Some(ROOM_SUMMARY_TEMPERATURE),
     }
 }
 
@@ -384,10 +403,34 @@ async fn clems_summary(
             context_snippets.join("\n- ")
         )
     };
-    for attempt in 1..=2usize {
+    let summary_models = if context_snippets.is_empty() {
+        let mut models = vec![ROOM_SUMMARY_RESCUE_MODEL.to_string()];
+        if model != ROOM_SUMMARY_RESCUE_MODEL {
+            models.push(model.clone());
+        }
+        models
+    } else {
+        let mut models = vec![model.clone()];
+        if model != ROOM_SUMMARY_RESCUE_MODEL {
+            models.push(ROOM_SUMMARY_RESCUE_MODEL.to_string());
+        }
+        models
+    };
+
+    for (index, summary_model) in summary_models.iter().enumerate() {
+        let attempt_label = if index == 0 {
+            "primary".to_string()
+        } else {
+            format!("rescue:{summary_model}")
+        };
         let result = match timeout(
             Duration::from_secs(ROOM_SUMMARY_TIMEOUT_SECONDS),
-            openrouter::chat_completion(&model, system, &joined),
+            openrouter::chat_completion_with_options(
+                summary_model,
+                system,
+                &joined,
+                &room_summary_options(),
+            ),
         )
         .await
         {
@@ -395,7 +438,7 @@ async fn clems_summary(
             Err(_) => openrouter::LlmCallResult {
                 status: "failed".to_string(),
                 text: String::new(),
-                model: model.clone(),
+                model: summary_model.clone(),
                 usage: json!({}),
                 error: Some(format!(
                     "openrouter_timeout_after_{}s",
@@ -410,7 +453,7 @@ async fn clems_summary(
             "usage": result.usage,
             "error": result.error,
             "purpose": "summary",
-            "attempt": attempt,
+            "attempt": attempt_label,
         }));
 
         if result.status == "ok" && !result.text.trim().is_empty() {
@@ -419,16 +462,13 @@ async fn clems_summary(
                 reply_source: "llm",
             };
         }
-
         let error = result
             .error
             .clone()
             .unwrap_or_else(|| "openrouter_empty_response".to_string());
-        if attempt < 2 && is_retryable_error(&error) {
+        if index + 1 < summary_models.len() && is_retryable_error(&error) {
             sleep(Duration::from_secs(ROOM_SUMMARY_RETRY_DELAY_SECONDS)).await;
-            continue;
         }
-        break;
     }
 
     AgentReply {
@@ -556,7 +596,12 @@ pub async fn run_turn(
                         }
                         let result = match timeout(
                             Duration::from_secs(ROOM_AGENT_LLM_TIMEOUT_SECONDS),
-                            openrouter::chat_completion(&model, &system, &user_prompt),
+                            openrouter::chat_completion_with_options(
+                                &model,
+                                &system,
+                                &user_prompt,
+                                &room_agent_options(),
+                            ),
                         )
                         .await
                         {
