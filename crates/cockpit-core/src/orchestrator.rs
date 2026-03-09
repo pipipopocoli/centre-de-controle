@@ -559,22 +559,17 @@ pub async fn run_turn(
                         ChatMode::ConcealRoom,
                         execution_mode.clone(),
                         "conceal_reply",
-                        MessageVisibility::Internal,
+                        if reply_source == "llm" {
+                            MessageVisibility::Operator
+                        } else {
+                            MessageVisibility::Internal
+                        },
                         Some(reply_source),
                     ));
                 }
             }
 
-            let summary_inputs = if !snippets.is_empty() {
-                snippets.clone()
-            } else if !degraded_targets.is_empty() {
-                degraded_targets
-                    .iter()
-                    .map(|target| format!("@{} pending", target))
-                    .collect()
-            } else {
-                Vec::new()
-            };
+            let summary_inputs = snippets.clone();
 
             let summary_reply =
                 clems_summary(&profile, &payload.text, &summary_inputs, &mut usage_calls).await;

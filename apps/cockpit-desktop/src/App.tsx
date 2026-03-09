@@ -348,6 +348,20 @@ function isSyntheticDirectReply(message: ChatMessage): boolean {
   return message.text.includes('recu en direct. Action immediate sur:')
 }
 
+function isLegacyPendingRoomSummary(message: ChatMessage): boolean {
+  if (messageChatMode(message) !== 'conceal_room') {
+    return false
+  }
+  if (message.author !== 'clems') {
+    return false
+  }
+  const kind = typeof message.metadata?.kind === 'string' ? message.metadata.kind : ''
+  if (kind !== 'conceal_summary') {
+    return false
+  }
+  return message.text.includes('contribution(s) en attente')
+}
+
 function App() {
   const [projectId, setProjectId] = useState(DEFAULT_PROJECT_ID)
   const [apiError, setApiError] = useState<string | null>(null)
@@ -534,7 +548,11 @@ function App() {
   )
 
   const conciergeChatMessages = useMemo(
-    () => operatorChatMessages.filter((message) => messageChatMode(message) === 'conceal_room'),
+    () =>
+      operatorChatMessages.filter(
+        (message) =>
+          messageChatMode(message) === 'conceal_room' && !isLegacyPendingRoomSummary(message),
+      ),
     [operatorChatMessages],
   )
 

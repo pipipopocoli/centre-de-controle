@@ -114,7 +114,6 @@ pub fn generate_agent_reply(agent_id: &str, text: &str, mode: ChatMode) -> Strin
 
 pub fn clems_summary(text: &str, context_snippets: &[String]) -> String {
     let clean_text = text.trim();
-    let contributor_count = context_snippets.len().max(1);
     if let Some(first_snippet) = context_snippets.first() {
         let normalized = first_snippet.replace('\n', " ");
         let compact = if normalized.chars().count() > 140 {
@@ -124,19 +123,13 @@ pub fn clems_summary(text: &str, context_snippets: &[String]) -> String {
             normalized
         };
 
-        if compact.ends_with(" pending") {
-            return format!(
-                "@clems summary: {contributor_count} contribution(s) en attente. Prochaine action: relancer la room sur \"{clean_text}\" et confirmer Now/Next/Blockers."
-            );
-        }
-
         return format!(
             "@clems summary: {compact}. Prochaine action: coordonner la suite sur \"{clean_text}\"."
         );
     }
 
     format!(
-        "@clems summary: {contributor_count} contribution(s) recues. Prochaine action: executer \"{clean_text}\" puis confirmer Now/Next/Blockers."
+        "@clems summary: pas encore de retour exploitable des participants. Prochaine action: relancer la room sur \"{clean_text}\" ou continuer avec moi directement."
     )
 }
 
@@ -206,5 +199,19 @@ mod tests {
     fn mention_parser_handles_symbols() {
         let m = extract_mentions("allo @clems ping @agent-3, merci @victor!");
         assert_eq!(m, vec!["clems", "agent-3", "victor"]);
+    }
+
+    #[test]
+    fn clems_summary_without_context_is_honest() {
+        let summary = clems_summary("relance la room", &[]);
+        assert!(summary.contains("pas encore de retour exploitable"));
+        assert!(!summary.contains("contribution(s) en attente"));
+    }
+
+    #[test]
+    fn clems_summary_with_context_uses_real_snippet() {
+        let summary = clems_summary("corrige le bug", &[String::from("@leo patch en cours")]);
+        assert!(summary.contains("@leo patch en cours"));
+        assert!(!summary.contains("contribution(s) en attente"));
     }
 }
