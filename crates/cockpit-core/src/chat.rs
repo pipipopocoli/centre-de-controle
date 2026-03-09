@@ -70,9 +70,15 @@ pub fn conceal_targets(mentions: &[String]) -> Vec<String> {
     out.into_iter().collect()
 }
 
-pub fn conceal_targets_from_context(context_ref: Option<&Value>, mentions: &[String]) -> Vec<String> {
+pub fn conceal_targets_from_context(
+    context_ref: Option<&Value>,
+    mentions: &[String],
+) -> Vec<String> {
     if let Some(context_ref) = context_ref {
-        if let Some(room_participants) = context_ref.get("room_participants").and_then(Value::as_array) {
+        if let Some(room_participants) = context_ref
+            .get("room_participants")
+            .and_then(Value::as_array)
+        {
             let explicit: BTreeSet<String> = room_participants
                 .iter()
                 .filter_map(Value::as_str)
@@ -106,11 +112,31 @@ pub fn generate_agent_reply(agent_id: &str, text: &str, mode: ChatMode) -> Strin
     }
 }
 
-pub fn clems_summary(text: &str, contributor_count: usize) -> String {
+pub fn clems_summary(text: &str, context_snippets: &[String]) -> String {
+    let clean_text = text.trim();
+    let contributor_count = context_snippets.len().max(1);
+    if let Some(first_snippet) = context_snippets.first() {
+        let normalized = first_snippet.replace('\n', " ");
+        let compact = if normalized.chars().count() > 140 {
+            let clipped: String = normalized.chars().take(137).collect();
+            format!("{clipped}...")
+        } else {
+            normalized
+        };
+
+        if compact.ends_with(" pending") {
+            return format!(
+                "@clems summary: {contributor_count} contribution(s) en attente. Prochaine action: relancer la room sur \"{clean_text}\" et confirmer Now/Next/Blockers."
+            );
+        }
+
+        return format!(
+            "@clems summary: {compact}. Prochaine action: coordonner la suite sur \"{clean_text}\"."
+        );
+    }
+
     format!(
-        "@clems summary: {} contribution(s) recues. Prochaine action: executer \"{}\" puis confirmer Now/Next/Blockers.",
-        contributor_count,
-        text.trim()
+        "@clems summary: {contributor_count} contribution(s) recues. Prochaine action: executer \"{clean_text}\" puis confirmer Now/Next/Blockers."
     )
 }
 

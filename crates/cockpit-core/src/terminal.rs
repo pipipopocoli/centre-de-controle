@@ -35,7 +35,12 @@ impl TerminalManager {
         }
     }
 
-    pub fn open_or_get(&self, project_id: &str, agent_id: &str, cwd: PathBuf) -> Result<TerminalSession> {
+    pub fn open_or_get(
+        &self,
+        project_id: &str,
+        agent_id: &str,
+        cwd: PathBuf,
+    ) -> Result<TerminalSession> {
         let key = session_key(project_id, agent_id);
 
         if let Some(existing) = self
@@ -140,7 +145,12 @@ impl TerminalManager {
         Ok(info)
     }
 
-    pub fn send_input(&self, project_id: &str, agent_id: &str, text: &str) -> Result<TerminalSession> {
+    pub fn send_input(
+        &self,
+        project_id: &str,
+        agent_id: &str,
+        text: &str,
+    ) -> Result<TerminalSession> {
         let key = session_key(project_id, agent_id);
         let mut sessions = self
             .sessions
@@ -165,7 +175,12 @@ impl TerminalManager {
         Ok(cloned)
     }
 
-    pub fn restart(&self, project_id: &str, agent_id: &str, cwd: Option<PathBuf>) -> Result<TerminalSession> {
+    pub fn restart(
+        &self,
+        project_id: &str,
+        agent_id: &str,
+        cwd: Option<PathBuf>,
+    ) -> Result<TerminalSession> {
         let selected_cwd = if let Some(cwd) = cwd {
             cwd
         } else {
@@ -227,7 +242,13 @@ impl TerminalManager {
             .unwrap_or_default()
     }
 
-    fn emit_status(&self, project_id: &str, agent_id: &str, session: &TerminalSession, state: &str) {
+    fn emit_status(
+        &self,
+        project_id: &str,
+        agent_id: &str,
+        session: &TerminalSession,
+        state: &str,
+    ) {
         let event = WsEventEnvelope::new(
             project_id,
             "agent.terminal.status",

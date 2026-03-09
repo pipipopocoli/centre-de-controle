@@ -2263,16 +2263,19 @@ function App() {
           <form className="create-form compact" onSubmit={handleCreateAgent}>
             <input
               ref={createAgentIdInputRef}
+              aria-label="Agent id optional"
               placeholder="agent id (optional)"
               value={createAgentId}
               onChange={(event) => setCreateAgentId(event.target.value)}
             />
             <input
+              aria-label="Agent name optional"
               placeholder="name (optional)"
               value={createAgentName}
               onChange={(event) => setCreateAgentName(event.target.value)}
             />
             <input
+              aria-label="Agent skills comma separated"
               placeholder="skills (comma separated)"
               value={createAgentSkills}
               onChange={(event) => setCreateAgentSkills(event.target.value)}
@@ -2311,7 +2314,7 @@ function App() {
           </div>
         ) : null}
 
-        <div className="agent-cards">
+        <div className="agent-cards" tabIndex={0} aria-label="Agent roster">
           {rosterAgents.map((agent) => (
             <article
               key={agent.agent_id}
@@ -2487,12 +2490,16 @@ function App() {
                 <div className="project-actions-mode-row">
                   <button
                     className={`small-btn ${projectActionMode === 'create' ? 'active' : ''}`}
+                    type="button"
+                    aria-pressed={projectActionMode === 'create'}
                     onClick={() => setProjectActionMode((value) => (value === 'create' ? null : 'create'))}
                   >
                     Create new project
                   </button>
                   <button
                     className={`small-btn ${projectActionMode === 'takeover' ? 'active' : ''}`}
+                    type="button"
+                    aria-pressed={projectActionMode === 'takeover'}
                     onClick={() => setProjectActionMode((value) => (value === 'takeover' ? null : 'takeover'))}
                   >
                     Take over a project
@@ -2506,6 +2513,7 @@ function App() {
                         <input
                           value={newProjectIdDraft}
                           onChange={(event) => setNewProjectIdDraft(event.target.value)}
+                          aria-label="New project id"
                           placeholder="new-project"
                         />
                       </label>
@@ -2514,6 +2522,7 @@ function App() {
                         <input
                           value={newProjectNameDraft}
                           onChange={(event) => setNewProjectNameDraft(event.target.value)}
+                          aria-label="New project name"
                           placeholder="Project name"
                         />
                       </label>
@@ -2523,9 +2532,10 @@ function App() {
                           <input
                             value={newProjectRepoDraft}
                             onChange={(event) => setNewProjectRepoDraft(event.target.value)}
+                            aria-label="Linked repository path optional"
                             placeholder="/absolute/path/to/repo"
                           />
-                          <button className="small-btn" onClick={() => void handleChooseRepoFolder('create')} disabled={isChoosingFolder}>
+                          <button className="small-btn" type="button" onClick={() => void handleChooseRepoFolder('create')} disabled={isChoosingFolder}>
                             {isChoosingFolder ? 'Choosing...' : 'Choose folder'}
                           </button>
                         </div>
@@ -2547,9 +2557,10 @@ function App() {
                           <input
                             value={linkedRepoDraft}
                             onChange={(event) => setLinkedRepoDraft(event.target.value)}
+                            aria-label="Linked repository path"
                             placeholder="/absolute/path/to/repo"
                           />
-                          <button className="small-btn" onClick={() => void handleChooseRepoFolder('takeover')} disabled={isChoosingFolder}>
+                          <button className="small-btn" type="button" onClick={() => void handleChooseRepoFolder('takeover')} disabled={isChoosingFolder}>
                             {isChoosingFolder ? 'Choosing...' : 'Choose folder'}
                           </button>
                         </div>
@@ -2670,6 +2681,8 @@ function App() {
               <div
                 ref={roomChatLogRef}
                 className="chat-log concierge-log"
+                tabIndex={0}
+                aria-label="Le Conseil room transcript"
                 onScroll={(event) => {
                   const node = event.currentTarget
                   roomStickToBottomRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 40
@@ -2698,7 +2711,12 @@ function App() {
                 <div className="composer-stack">
                 <div className="composer-row composer-row-room">
                   <div className="plus-wrap">
-                    <button className="plus-btn" type="button" onClick={() => setShowRoomAddMenu((value) => !value)}>
+                    <button
+                      className="plus-btn"
+                      type="button"
+                      aria-label="Open mention shortcuts"
+                      onClick={() => setShowRoomAddMenu((value) => !value)}
+                    >
                       +
                     </button>
                     {showRoomAddMenu ? (
@@ -2712,6 +2730,7 @@ function App() {
                   </div>
                   <input
                     value={roomChatInput}
+                    aria-label="Le Conseil message"
                     onChange={(event) => setRoomChatInput(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter') {
@@ -2723,6 +2742,8 @@ function App() {
                   />
                   <button
                     className={`small-btn voice-btn ${isRecordingVoice ? 'recording' : ''}`}
+                    type="button"
+                    aria-label={isRecordingVoice ? 'Stop voice recording' : 'Start voice recording'}
                     onClick={() => void handleToggleVoiceRecording()}
                     disabled={isTranscribingVoice}
                   >
@@ -2730,6 +2751,7 @@ function App() {
                   </button>
                   <button
                     className="send-btn"
+                    type="button"
                     onClick={() => void handleSendChat({ chatMode: 'conceal_room', contextRef: roomDispatchContext })}
                     disabled={isSendingChat}
                   >
@@ -2752,18 +2774,24 @@ function App() {
                 <div className="participant-mode-row">
                   <button
                     className={`small-btn ${roomParticipantMode === 'all_active' ? 'active' : ''}`}
+                    type="button"
+                    aria-pressed={roomParticipantMode === 'all_active'}
                     onClick={() => setRoomParticipantMode('all_active')}
                   >
                     All active
                   </button>
                   <button
                     className={`small-btn ${roomParticipantMode === 'lead_only' ? 'active' : ''}`}
+                    type="button"
+                    aria-pressed={roomParticipantMode === 'lead_only'}
                     onClick={() => setRoomParticipantMode('lead_only')}
                   >
                     Leads only
                   </button>
                   <button
                     className={`small-btn ${roomParticipantMode === 'custom' ? 'active' : ''}`}
+                    type="button"
+                    aria-pressed={roomParticipantMode === 'custom'}
                     onClick={() => setRoomParticipantMode('custom')}
                   >
                     Custom
@@ -2777,6 +2805,8 @@ function App() {
                         <button
                           key={agent.agent_id}
                           className={`participant-chip ${active ? 'active' : ''}`}
+                          type="button"
+                          aria-pressed={active}
                           onClick={() =>
                             setRoomCustomParticipants((previous) =>
                               previous.includes(agent.agent_id)
@@ -3188,7 +3218,7 @@ function App() {
                     <h3>{column.label}</h3>
                     <span>{column.items.length}</span>
                   </header>
-                  <div className="todo-column-body">
+                  <div className="todo-column-body" tabIndex={0} aria-label={`${STATUS_LABELS[column.status]} tasks`}>
                     {column.items.length === 0 ? (
                       <p className="terminal-empty">No items.</p>
                     ) : (
@@ -3332,22 +3362,25 @@ function App() {
             <span className="hint">runbook truth + local skills library</span>
           </div>
           <div className="docs-subnav">
-            <button
-              className={`docs-subnav-btn ${docsPanel === 'runbook' ? 'active' : ''}`}
-              onClick={() => setDocsPanel('runbook')}
-            >
+                    <button
+                      className={`docs-subnav-btn ${docsPanel === 'runbook' ? 'active' : ''}`}
+                      type="button"
+                      onClick={() => setDocsPanel('runbook')}
+                    >
               Runbook
             </button>
-            <button
-              className={`docs-subnav-btn ${docsPanel === 'skills_library' ? 'active' : ''}`}
-              onClick={() => setDocsPanel('skills_library')}
-            >
+                    <button
+                      className={`docs-subnav-btn ${docsPanel === 'skills_library' ? 'active' : ''}`}
+                      type="button"
+                      onClick={() => setDocsPanel('skills_library')}
+                    >
               Skills Library
             </button>
-            <button
-              className={`docs-subnav-btn ${docsPanel === 'project' ? 'active' : ''}`}
-              onClick={() => setDocsPanel('project')}
-            >
+                    <button
+                      className={`docs-subnav-btn ${docsPanel === 'project' ? 'active' : ''}`}
+                      type="button"
+                      onClick={() => setDocsPanel('project')}
+                    >
               Project
             </button>
           </div>
@@ -3553,10 +3586,11 @@ function App() {
               <h3>Clems (L0)</h3>
               <div className="option-grid">
                 {CLEMS_MODEL_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    className={`route-option ${profileDraft.clems_model === option.id ? 'active' : ''}`}
-                    onClick={() =>
+                    <button
+                      key={option.id}
+                      className={`route-option ${profileDraft.clems_model === option.id ? 'active' : ''}`}
+                      type="button"
+                      onClick={() =>
                       setProfileDraft((previous) =>
                         previous ? { ...previous, clems_model: option.id, clems_catalog: CLEMS_MODEL_OPTIONS.map((item) => item.id) } : previous,
                       )
@@ -3635,6 +3669,7 @@ function App() {
                     <button
                       key={option.id}
                       className={`route-option compact ${active ? 'active' : ''}`}
+                      type="button"
                       onClick={() =>
                         setProfileDraft((previous) => {
                           if (!previous) {
@@ -3810,11 +3845,12 @@ function App() {
 
       <nav className="top-tabs panel">
         {topTabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={`top-tab ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
+                    <button
+                      key={tab.id}
+                      className={`top-tab ${activeTab === tab.id ? 'active' : ''}`}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                    >
             {tab.label}
           </button>
         ))}
@@ -3834,6 +3870,7 @@ function App() {
           <aside className="left-rail">
             <button
               className={`rail-btn ${workspaceTab === 'agent' && workbenchPanel === 'chat' && directTarget === 'clems' ? 'active' : ''}`}
+              type="button"
               onClick={() => {
                 setActiveTab('pixel_home')
                 setWorkspaceTab('agent')
@@ -3846,6 +3883,7 @@ function App() {
             </button>
             <button
               className={`rail-btn ${workspaceTab === 'agent' && !(workbenchPanel === 'chat' && directTarget === 'clems') ? 'active' : ''}`}
+              type="button"
               onClick={() => {
                 setActiveTab('pixel_home')
                 setWorkspaceTab('agent')
@@ -3856,6 +3894,7 @@ function App() {
             </button>
             <button
               className={`rail-btn ${workspaceTab === 'layout' ? 'active' : ''}`}
+              type="button"
               onClick={() => {
                 setActiveTab('pixel_home')
                 setWorkspaceTab('layout')
@@ -3865,6 +3904,7 @@ function App() {
             </button>
             <button
               className={`rail-btn ${workbenchPanel === 'chat' ? 'active' : ''}`}
+              type="button"
               onClick={() => {
                 setActiveTab('pixel_home')
                 setWorkbenchPanel('chat')
@@ -3879,6 +3919,7 @@ function App() {
             </button>
             <button
               className={`rail-btn ${workbenchPanel === 'terminal' ? 'active' : ''}`}
+              type="button"
               onClick={() => {
                 setActiveTab('pixel_home')
                 setWorkbenchPanel('terminal')
@@ -3904,12 +3945,28 @@ function App() {
                     <p>Video-style shell with live scene and dedicated terminals</p>
                   </div>
                   <div className="zoom-controls">
-                    <button onClick={() => setWorkbenchCollapsed((value) => !value)}>
+                    <button
+                      type="button"
+                      aria-label={workbenchCollapsed ? 'Open workbench' : 'Collapse workbench'}
+                      onClick={() => setWorkbenchCollapsed((value) => !value)}
+                    >
                       {workbenchCollapsed ? 'workbench' : 'collapse'}
                     </button>
-                    <button onClick={() => setZoom((value) => Math.max(0.5, Number((value - 0.2).toFixed(2))))}>-</button>
+                    <button
+                      type="button"
+                      aria-label="Zoom out office scene"
+                      onClick={() => setZoom((value) => Math.max(0.5, Number((value - 0.2).toFixed(2))))}
+                    >
+                      -
+                    </button>
                     <span>{zoom.toFixed(1)}x</span>
-                    <button onClick={() => setZoom((value) => Math.min(4, Number((value + 0.2).toFixed(2))))}>+</button>
+                    <button
+                      type="button"
+                      aria-label="Zoom in office scene"
+                      onClick={() => setZoom((value) => Math.min(4, Number((value + 0.2).toFixed(2))))}
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
 
@@ -3962,6 +4019,7 @@ function App() {
                           <button
                             key={tab.id}
                             className={`workbench-tab-btn ${workbenchPanel === tab.id ? 'active' : ''}`}
+                            type="button"
                             onClick={() => setWorkbenchPanel(tab.id)}
                           >
                             <span>{tab.label}</span>
@@ -4045,10 +4103,12 @@ function App() {
                           </div>
                         </div>
 
-                        <div
-                          ref={directChatLogRef}
-                          className="chat-log"
-                          onScroll={(event) => {
+                          <div
+                            ref={directChatLogRef}
+                            className="chat-log"
+                            tabIndex={0}
+                            aria-label="Direct chat transcript"
+                            onScroll={(event) => {
                             const node = event.currentTarget
                             directStickToBottomRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 40
                           }}
@@ -4093,6 +4153,7 @@ function App() {
                           <div className="composer-row composer-row-inline">
                             <input
                               value={directChatInput}
+                              aria-label="Direct chat message"
                               onChange={(event) => setDirectChatInput(event.target.value)}
                               onKeyDown={(event) => {
                                 if (event.key === 'Enter') {
@@ -4110,6 +4171,8 @@ function App() {
                             />
                             <button
                               className={`small-btn voice-btn ${isRecordingVoice ? 'recording' : ''}`}
+                              type="button"
+                              aria-label={isRecordingVoice ? 'Stop direct voice recording' : 'Start direct voice recording'}
                               onClick={() => void handleToggleVoiceRecording()}
                               disabled={isTranscribingVoice}
                             >
@@ -4117,6 +4180,7 @@ function App() {
                             </button>
                             <button
                               className="send-btn"
+                              type="button"
                               onClick={() => void handleSendChat({ targetMode: directTarget, chatMode: 'direct' })}
                               disabled={isSendingChat}
                             >
@@ -4186,7 +4250,7 @@ function App() {
                           <h2>Approvals</h2>
                           <span className="hint">pending: {approvals.length}</span>
                         </div>
-                        <div className="approvals-log">
+                        <div className="approvals-log" tabIndex={0} aria-label="Pending approvals log">
                           {approvals.length === 0 ? (
                             <div className="empty-panel compact">
                               <h3>No pending approvals</h3>
@@ -4230,7 +4294,7 @@ function App() {
                           <h2>Recent Events</h2>
                           <span className="hint">{eventLog.length} tracked</span>
                         </div>
-                        <div className="events-log">
+                        <div className="events-log" tabIndex={0} aria-label="Recent events log">
                           {eventLog.length === 0 ? (
                             <div className="empty-panel compact">
                               <h3>No events yet</h3>

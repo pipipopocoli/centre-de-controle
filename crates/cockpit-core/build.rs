@@ -25,8 +25,11 @@ fn repo_path(base: &Path, value: &str) -> PathBuf {
 
 fn main() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
-    let repo_root = run_capture("git", &["-C", &manifest_dir, "rev-parse", "--show-toplevel"])
-        .unwrap_or_else(|| manifest_dir.clone());
+    let repo_root = run_capture(
+        "git",
+        &["-C", &manifest_dir, "rev-parse", "--show-toplevel"],
+    )
+    .unwrap_or_else(|| manifest_dir.clone());
     let repo_root_path = PathBuf::from(&repo_root);
 
     println!("cargo:rerun-if-env-changed=COCKPIT_BUILD_SHA");
@@ -35,12 +38,17 @@ fn main() {
 
     if let Some(git_dir) = run_capture("git", &["-C", &repo_root, "rev-parse", "--git-dir"]) {
         let git_dir_path = repo_path(&repo_root_path, &git_dir);
-        println!("cargo:rerun-if-changed={}", git_dir_path.join("HEAD").display());
+        println!(
+            "cargo:rerun-if-changed={}",
+            git_dir_path.join("HEAD").display()
+        );
         println!(
             "cargo:rerun-if-changed={}",
             git_dir_path.join("packed-refs").display()
         );
-        if let Some(head_ref) = run_capture("git", &["-C", &repo_root, "symbolic-ref", "-q", "HEAD"]) {
+        if let Some(head_ref) =
+            run_capture("git", &["-C", &repo_root, "symbolic-ref", "-q", "HEAD"])
+        {
             println!(
                 "cargo:rerun-if-changed={}",
                 git_dir_path.join(head_ref).display()

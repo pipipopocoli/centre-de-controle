@@ -80,11 +80,7 @@ fn extract_text(content: &Value) -> String {
     String::new()
 }
 
-pub async fn chat_completion(
-    model: &str,
-    system_prompt: &str,
-    user_prompt: &str,
-) -> LlmCallResult {
+pub async fn chat_completion(model: &str, system_prompt: &str, user_prompt: &str) -> LlmCallResult {
     let key = api_key();
     if key.is_empty() {
         return LlmCallResult {
@@ -165,7 +161,11 @@ pub async fn chat_completion(
             text: String::new(),
             model: model.to_string(),
             usage: body.get("usage").cloned().unwrap_or_else(|| json!({})),
-            error: Some(format!("openrouter_http_{}: {}", status_code.as_u16(), detail)),
+            error: Some(format!(
+                "openrouter_http_{}: {}",
+                status_code.as_u16(),
+                detail
+            )),
         };
     }
 
@@ -300,7 +300,11 @@ pub async fn transcribe_audio(
             text: String::new(),
             model: model.to_string(),
             usage: body.get("usage").cloned().unwrap_or_else(|| json!({})),
-            error: Some(format!("openrouter_http_{}: {}", status_code.as_u16(), detail)),
+            error: Some(format!(
+                "openrouter_http_{}: {}",
+                status_code.as_u16(),
+                detail
+            )),
         };
     }
 

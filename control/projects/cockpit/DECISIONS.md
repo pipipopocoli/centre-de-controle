@@ -263,6 +263,15 @@
 - Owners: @clems, @leo
 - References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0061-fix-z-index-overlay-chat-pixel-home.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0062-impl-menter-pagination-messages-concierge-room.md
 
+## 2026-03-09 - ADR-CP-031 Live project hardening wave (DB, backup, tablet, WCAG)
+- Status: Accepted
+- Context: After stabilizing the direct and room chat shells, the live app still had four operational gaps: runtime DB hardening, verified backups before destructive actions, broken tablet layouts, and missing WCAG-first operator fixes. The stale `flappycock` project also remained outside the active flow.
+- Decision: Keep `cockpit` as the only live project, archive and remove `flappycock`, centralize runtime SQLite opens with deterministic pragmas and indexes, trigger backups only before risky operations, adopt a tablet-first responsive contract for 1024-1366 widths, and ship a WCAG audit pack plus first-pass accessibility fixes in the live app shell.
+- Rationale: This closes the next real reliability layer without reopening product scope or introducing a second active project path.
+- Consequences: `GET /v1/projects` now hides `flappycock`; risky ops snapshot project state to Drive before mutation; tablet layout is functional first; accessibility work now has current proof docs and explicit deferred items for manual assistive-tech QA.
+- Owners: @clems, @victor, @leo
+- References: /Users/oliviercloutier/Desktop/Cockpit/crates/cockpit-core/src/storage.rs, /Users/oliviercloutier/Desktop/Cockpit/crates/cockpit-core/src/app.rs, /Users/oliviercloutier/Desktop/Cockpit/apps/cockpit-desktop/src/App.tsx, /Users/oliviercloutier/Desktop/Cockpit/apps/cockpit-desktop/src/App.css, /Users/oliviercloutier/Desktop/Cockpit/docs/releases/WCAG_AUDIT_MATRIX_2026-03-09.md
+
 ## 2026-03-09 - ADR-CP-030 Le Conseil project actions + minimal live settings + OpenRouter status
 - Status: Accepted
 - Context: The live `cockpit` project was still carrying stale settings schema, an obsolete `FlappyCock` repo link, and project entry flows split across `Overview` and room UI. OpenRouter runtime health was also too vague for operator use.

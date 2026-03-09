@@ -3,6 +3,7 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
+    time::Duration as StdDuration,
 };
 
 use anyhow::{Context, Result};
@@ -17,9 +18,143 @@ use crate::models::{
 
 const LEGACY_RUNTIME_PLATFORMS: &[&str] = &["codex", "antigravity", "ollama"];
 const LEGACY_SYSTEM_AGENT_IDS: &[&str] = &["codex", "antigravity", "ollama"];
+const DEFAULT_DRIVE_ARCHIVE_ROOT: &str = "/Users/oliviercloutier/Library/CloudStorage/GoogleDrive-oliviier.cloutier@gmail.com/Mon disque/Cockpit";
 
 pub fn project_root(control_root: &Path, project_id: &str) -> PathBuf {
     control_root.join(project_id)
+}
+
+fn drive_archive_root() -> Result<PathBuf> {
+    let raw = std::env::var("COCKPIT_ARCHIVE_DRIVE_ROOT")
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| DEFAULT_DRIVE_ARCHIVE_ROOT.to_string());
+    let path = PathBuf::from(raw);
+    if !path.exists() {
+        anyhow::bail!("drive archive root missing: {}", path.display());
+    }
+    Ok(path)
+}
+
+fn backup_label(label: &str) -> String {
+    let mut out = String::with_capacity(label.len());
+    for ch in label.chars() {
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch.to_ascii_lowercase());
+        } else if matches!(ch, '-' | '_' | ' ') {
+            out.push('-');
+        }
+    }
+    let compact = out.trim_matches('-').replace("--", "-");
+    if compact.is_empty() {
+        "project-backup".to_string()
+    } else {
+        compact
+    }
+}
+
+fn copy_tree_verified(source: &Path, destination: &Path) -> Result<()> {
+    if source.is_file() {
+        if let Some(parent) = destination.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::copy(source, destination)?;
+        let src_meta = fs::metadata(source)?;
+        let dst_meta = fs::metadata(destination)?;
+        if src_meta.len() != dst_meta.len() {
+            anyhow::bail!(
+                "backup verification failed for {} -> {}",
+                source.display(),
+                destination.display()
+            );
+        }
+        return Ok(());
+    }
+
+    fs::create_dir_all(destination)?;
+    for entry in fs::read_dir(source)? {
+        let entry = entry?;
+        let src_path = entry.path();
+        let dst_path = destination.join(entry.file_name());
+        copy_tree_verified(&src_path, &dst_path)?;
+    }
+    Ok(())
+}
+
+fn write_backup_manifest(manifest_path: &Path, entries: &[String]) -> Result<()> {
+    let payload = json!({
+        "generated_at_utc": Utc::now().to_rfc3339(),
+        "entries": entries,
+    });
+    fs::write(manifest_path, serde_json::to_string_pretty(&payload)?)?;
+    Ok(())
+}
+
+pub fn backup_project_before_risky_op(
+    control_root: &Path,
+    project_id: &str,
+    operation_label: &str,
+) -> Result<Option<PathBuf>> {
+    let root = project_root(control_root, project_id);
+    if !root.exists() {
+        return Ok(None);
+    }
+
+    let stamp = Utc::now().format("%Y%m%dT%H%MZ").to_string();
+    let archive_root = drive_archive_root()?
+        .join("archive")
+        .join("live-project-backups")
+        .join(project_id)
+        .join(format!("{}__{}", stamp, backup_label(operation_label)));
+
+    if archive_root.exists() {
+        return Ok(Some(archive_root));
+    }
+
+    let backup_root = archive_root.join(project_id);
+    let mut copied_entries = Vec::new();
+    let snapshot_entries = [
+        "settings.json",
+        "STATE.md",
+        "ROADMAP.md",
+        "DECISIONS.md",
+        "issues",
+        "chat",
+        "runs/runtime.db",
+    ];
+
+    for relative in snapshot_entries {
+        let source = root.join(relative);
+        if !source.exists() {
+            continue;
+        }
+        let destination = backup_root.join(relative);
+        copy_tree_verified(&source, &destination)?;
+        copied_entries.push(relative.to_string());
+    }
+
+    fs::create_dir_all(&archive_root)?;
+    write_backup_manifest(&archive_root.join("backup_manifest.json"), &copied_entries)?;
+    let markdown = [
+        "# Project Backup Manifest".to_string(),
+        String::new(),
+        format!("- project_id: `{project_id}`"),
+        format!("- operation: `{}`", backup_label(operation_label)),
+        format!("- generated_at_utc: `{}`", Utc::now().to_rfc3339()),
+        String::new(),
+        "## Entries".to_string(),
+    ]
+    .into_iter()
+    .chain(copied_entries.iter().map(|entry| format!("- `{entry}`")))
+    .collect::<Vec<_>>()
+    .join("\n");
+    fs::write(
+        archive_root.join("backup_manifest.md"),
+        format!("{markdown}\n"),
+    )?;
+
+    Ok(Some(archive_root))
 }
 
 fn normalize_platform(platform: &str) -> String {
@@ -161,7 +296,10 @@ pub fn list_projects(control_root: &Path) -> Result<Vec<(String, Value)>> {
         }
 
         let project_id = entry.file_name().to_string_lossy().to_string();
-        if project_id.starts_with('.') || project_id.starts_with('_') || project_id == "demo" {
+        if project_id.starts_with('.')
+            || project_id.starts_with('_')
+            || matches!(project_id.as_str(), "demo" | "flappycock")
+        {
             continue;
         }
 
@@ -318,8 +456,7 @@ pub fn append_chat_message(
     let raw = serde_json::to_string(message)?;
     writeln!(file, "{raw}")?;
 
-    let db_path = ensure_runtime_db(control_root, project_id)?;
-    let conn = Connection::open(db_path)?;
+    let conn = open_runtime_db(control_root, project_id)?;
     conn.execute(
         "INSERT INTO chat_messages (timestamp, author, text, payload_json) VALUES (?1, ?2, ?3, ?4)",
         params![message.timestamp, message.author, message.text, raw],
@@ -377,8 +514,7 @@ pub fn clear_chat_data(control_root: &Path, project_id: &str) -> Result<(usize, 
     fs::write(&chat_path, "")?;
     fs::write(&approvals_path, "")?;
 
-    let db_path = ensure_runtime_db(control_root, project_id)?;
-    let conn = Connection::open(db_path)?;
+    let conn = open_runtime_db(control_root, project_id)?;
 
     let chat_deleted = conn.execute("DELETE FROM chat_messages", [])?;
     let approvals_deleted = conn.execute("DELETE FROM approval_requests", [])?;
@@ -410,8 +546,7 @@ pub fn append_runtime_event(
     project_id: &str,
     event: &WsEventEnvelope,
 ) -> Result<()> {
-    let db_path = ensure_runtime_db(control_root, project_id)?;
-    let conn = Connection::open(db_path)?;
+    let conn = open_runtime_db(control_root, project_id)?;
     conn.execute(
         "INSERT INTO events (timestamp, event_type, payload_json) VALUES (?1, ?2, ?3)",
         params![
@@ -434,8 +569,7 @@ pub fn append_approval_request(
     let raw = serde_json::to_string(approval)?;
     writeln!(file, "{raw}")?;
 
-    let db_path = ensure_runtime_db(control_root, project_id)?;
-    let conn = Connection::open(db_path)?;
+    let conn = open_runtime_db(control_root, project_id)?;
     conn.execute(
         "INSERT INTO approval_requests (
             request_id,
@@ -484,8 +618,7 @@ pub fn list_approvals(
     project_id: &str,
     status: Option<ApprovalStatus>,
 ) -> Result<Vec<ApprovalRequest>> {
-    let db_path = ensure_runtime_db(control_root, project_id)?;
-    let conn = Connection::open(db_path)?;
+    let conn = open_runtime_db(control_root, project_id)?;
 
     let mut out = Vec::new();
     if let Some(status) = status {
@@ -526,8 +659,7 @@ pub fn get_approval(
     project_id: &str,
     request_id: &str,
 ) -> Result<Option<ApprovalRequest>> {
-    let db_path = ensure_runtime_db(control_root, project_id)?;
-    let conn = Connection::open(db_path)?;
+    let conn = open_runtime_db(control_root, project_id)?;
     let mut stmt =
         conn.prepare("SELECT payload_json FROM approval_requests WHERE request_id = ?1 LIMIT 1")?;
 
@@ -571,8 +703,7 @@ pub fn has_section_overlap_risk(
     section_tag: &str,
     overlap_window_minutes: i64,
 ) -> Result<bool> {
-    let db_path = ensure_runtime_db(control_root, project_id)?;
-    let conn = Connection::open(db_path)?;
+    let conn = open_runtime_db(control_root, project_id)?;
     let cutoff = (Utc::now() - Duration::minutes(overlap_window_minutes.max(1))).to_rfc3339();
     let mut stmt = conn.prepare(
         "SELECT COUNT(1)
@@ -805,6 +936,7 @@ fn ensure_runtime_db(control_root: &Path, project_id: &str) -> Result<PathBuf> {
     let db_path = root.join("runtime.db");
 
     let conn = Connection::open(&db_path)?;
+    configure_runtime_db(&conn)?;
     conn.execute(
         "CREATE TABLE IF NOT EXISTS events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -840,8 +972,46 @@ fn ensure_runtime_db(control_root: &Path, project_id: &str) -> Result<PathBuf> {
         )",
         [],
     )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_chat_messages_timestamp ON chat_messages(timestamp)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_approval_requests_status_requested_at ON approval_requests(status, requested_at)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_approval_requests_run_id ON approval_requests(run_id)",
+        [],
+    )?;
 
     Ok(db_path)
+}
+
+fn configure_runtime_db(conn: &Connection) -> Result<()> {
+    conn.pragma_update(None, "journal_mode", "WAL")?;
+    conn.pragma_update(None, "synchronous", "NORMAL")?;
+    conn.pragma_update(None, "foreign_keys", "ON")?;
+    conn.pragma_update(None, "temp_store", "MEMORY")?;
+    conn.busy_timeout(StdDuration::from_secs(5))?;
+    Ok(())
+}
+
+fn open_runtime_db(control_root: &Path, project_id: &str) -> Result<Connection> {
+    let db_path = ensure_runtime_db(control_root, project_id)?;
+    let conn = Connection::open(db_path)?;
+    configure_runtime_db(&conn)?;
+    Ok(conn)
+}
+
+pub fn runtime_db_integrity_ok(control_root: &Path, project_id: &str) -> Result<bool> {
+    let conn = open_runtime_db(control_root, project_id)?;
+    let verdict: String = conn.query_row("PRAGMA integrity_check(1)", [], |row| row.get(0))?;
+    Ok(verdict.eq_ignore_ascii_case("ok"))
 }
 
 fn count_lines(path: &Path) -> Result<usize> {
@@ -1457,8 +1627,9 @@ fn parse_ai_task_line(author: &str, line: &str) -> Option<AiTaskSpec> {
 #[cfg(test)]
 mod tests {
     use super::{
-        TaskRecordPatch, create_task, create_tasks_from_ai_message, list_projects, list_tasks,
-        load_agents, load_llm_profile, save_agents, save_llm_profile, update_task,
+        TaskRecordPatch, create_task, create_tasks_from_ai_message, ensure_project_scaffold,
+        list_projects, list_tasks, load_agents, load_llm_profile, runtime_db_integrity_ok,
+        save_agents, save_llm_profile, update_task,
     };
     use crate::models::{AgentRecord, LlmProfile, TaskStatus};
     use std::{collections::HashMap, fs};
@@ -1489,15 +1660,29 @@ mod tests {
     }
 
     #[test]
-    fn list_projects_hides_demo_root() {
+    fn list_projects_hides_non_live_roots() {
         let root = temp_root();
         fs::create_dir_all(root.join("cockpit")).expect("create cockpit project");
         fs::create_dir_all(root.join("demo")).expect("create demo project");
+        fs::create_dir_all(root.join("flappycock")).expect("create flappycock project");
 
         let projects = list_projects(&root).expect("list projects");
-        let ids = projects.into_iter().map(|(project_id, _)| project_id).collect::<Vec<_>>();
+        let ids = projects
+            .into_iter()
+            .map(|(project_id, _)| project_id)
+            .collect::<Vec<_>>();
 
         assert_eq!(ids, vec!["cockpit".to_string()]);
+    }
+
+    #[test]
+    fn runtime_db_integrity_check_passes_after_scaffold() {
+        let root = temp_root();
+        let project_id = "cockpit";
+
+        ensure_project_scaffold(&root, project_id).expect("scaffold project");
+
+        assert!(runtime_db_integrity_ok(&root, project_id).expect("integrity check"));
     }
 
     #[test]

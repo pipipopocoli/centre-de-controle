@@ -25,17 +25,16 @@ use crate::{
     chat,
     models::{
         AgentRecord, ApprovalDecisionRequest, ApprovalStatus, ChatApprovalsResponse,
-        ChatHistoryResponse, ChatMessage, CreateAgentRequest, CreateAgentResponse, ChatMode,
-        CreateProjectRequest, CreateTaskRequest, DeliveryMode, LiveTurnRequest,
-        LiveTurnResponse, LlmProfileResponse, MessageVisibility, PixelAgentStatus,
-        PixelFeedResponse, ProjectCatalogEntry, ProjectCatalogResponse, ProjectSettings,
-        ProjectSettingsResponse, ProjectSummaryResponse, ProjectTaskCounts,
-        RoadmapDraftRequest, RoadmapDraftResponse, RoadmapResponse, RoadmapSections,
-        SkillLibraryEntry, SkillsLibraryResponse, TakeoverStartRequest, TakeoverStartResponse,
-        TakeoverSuggestedSkill, TakeoverSuggestedTask, TaskStatus, TasksResponse,
-        TerminalOpenRequest, TerminalSendRequest, TerminalSession, UpdateLlmProfileRequest,
-        UpdateProjectSettingsRequest, UpdateRoadmapRequest, UpdateTaskRequest,
-        VoiceTranscribeRequest, VoiceTranscribeResponse, WsEventEnvelope,
+        ChatHistoryResponse, ChatMessage, ChatMode, CreateAgentRequest, CreateAgentResponse,
+        CreateProjectRequest, CreateTaskRequest, DeliveryMode, LiveTurnRequest, LiveTurnResponse,
+        LlmProfileResponse, MessageVisibility, PixelAgentStatus, PixelFeedResponse,
+        ProjectCatalogEntry, ProjectCatalogResponse, ProjectSettings, ProjectSettingsResponse,
+        ProjectSummaryResponse, ProjectTaskCounts, RoadmapDraftRequest, RoadmapDraftResponse,
+        RoadmapResponse, RoadmapSections, SkillLibraryEntry, SkillsLibraryResponse,
+        TakeoverStartRequest, TakeoverStartResponse, TakeoverSuggestedSkill, TakeoverSuggestedTask,
+        TaskStatus, TasksResponse, TerminalOpenRequest, TerminalSendRequest, TerminalSession,
+        UpdateLlmProfileRequest, UpdateProjectSettingsRequest, UpdateRoadmapRequest,
+        UpdateTaskRequest, VoiceTranscribeRequest, VoiceTranscribeResponse, WsEventEnvelope,
     },
     openrouter, orchestrator,
     state::AppState,
@@ -653,6 +652,7 @@ async fn reset_chat(
     Path(project_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
+    maybe_backup_before_risky_op(&state, &project_id, "chat-reset")?;
     let (messages_cleared, approvals_cleared, runtime_rows_deleted) =
         storage::clear_chat_data(state.control_root.as_ref(), &project_id)?;
 
@@ -899,6 +899,10 @@ async fn post_task(
         return Err(ApiError::bad_request("task title is required"));
     }
 
+    if matches!(payload.source.as_deref(), Some("takeover")) {
+        maybe_backup_before_risky_op(&state, &project_id, "takeover-tasks")?;
+    }
+
     let task = storage::create_task(
         state.control_root.as_ref(),
         &project_id,
@@ -1011,6 +1015,7 @@ async fn put_project_settings(
     State(state): State<AppState>,
     Json(payload): Json<UpdateProjectSettingsRequest>,
 ) -> Result<Json<ProjectSettingsResponse>, ApiError> {
+    maybe_backup_before_risky_op(&state, &project_id, "settings-prune")?;
     let current = normalize_project_settings(
         &project_id,
         storage::load_settings(state.control_root.as_ref(), &project_id)?,
@@ -1063,6 +1068,7 @@ async fn put_roadmap(
     State(state): State<AppState>,
     Json(payload): Json<UpdateRoadmapRequest>,
 ) -> Result<Json<RoadmapResponse>, ApiError> {
+    maybe_backup_before_risky_op(&state, &project_id, "roadmap-apply")?;
     let raw_md = storage::save_roadmap_sections(
         state.control_root.as_ref(),
         &project_id,
@@ -1581,6 +1587,29 @@ fn validate_layout(layout: &Value) -> Result<(), ApiError> {
     Ok(())
 }
 
+fn maybe_backup_before_risky_op(
+    state: &AppState,
+    project_id: &str,
+    operation_label: &str,
+) -> Result<(), ApiError> {
+    if let Some(path) = storage::backup_project_before_risky_op(
+        state.control_root.as_ref(),
+        project_id,
+        operation_label,
+    )? {
+        state.emit_event(
+            project_id,
+            "project.backup.created",
+            json!({
+                "project_id": project_id,
+                "operation": operation_label,
+                "archive_path": path.display().to_string(),
+            }),
+        );
+    }
+    Ok(())
+}
+
 #[derive(Debug)]
 struct ApiError {
     status: StatusCode,
@@ -1869,7 +1898,9 @@ fn normalize_project_id(raw: &str) -> Result<String, ApiError> {
         return Err(ApiError::bad_request("project_id is required"));
     }
     if project_id.contains('/') || project_id.contains('\\') || project_id.contains("..") {
-        return Err(ApiError::bad_request("project_id must not contain path separators"));
+        return Err(ApiError::bad_request(
+            "project_id must not contain path separators",
+        ));
     }
     Ok(project_id)
 }

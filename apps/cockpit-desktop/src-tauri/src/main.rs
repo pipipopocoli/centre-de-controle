@@ -2,8 +2,7 @@
 
 use std::{
     collections::HashMap,
-    env,
-    fs,
+    env, fs,
     io::{Read, Write},
     net::{SocketAddr, TcpStream},
     path::{Path, PathBuf},
@@ -329,7 +328,10 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![open_os_terminal, pick_project_folder])
+        .invoke_handler(tauri::generate_handler![
+            open_os_terminal,
+            pick_project_folder
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application")
 }

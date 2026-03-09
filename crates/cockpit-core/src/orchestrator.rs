@@ -170,8 +170,7 @@ fn message_with_meta(
 }
 
 fn is_retryable_error(error: &str) -> bool {
-    error.starts_with("openrouter_unreachable:")
-        || error.starts_with("openrouter_timeout_after_")
+    error.starts_with("openrouter_unreachable:") || error.starts_with("openrouter_timeout_after_")
 }
 
 fn should_request_l2(payload: &LiveTurnRequest, l1_outputs: &[String]) -> bool {
@@ -260,9 +259,7 @@ async fn llm_reply(
             .clone()
             .unwrap_or_else(|| "openrouter_empty_response".to_string());
 
-        if matches!(mode, ChatMode::Direct)
-            && attempt < max_attempts
-            && is_retryable_error(&error)
+        if matches!(mode, ChatMode::Direct) && attempt < max_attempts && is_retryable_error(&error)
         {
             sleep(Duration::from_secs(DIRECT_LLM_RETRY_DELAY_SECONDS)).await;
             continue;
@@ -342,7 +339,7 @@ async fn clems_summary(
     }
 
     AgentReply {
-        text: chat::clems_summary(user_text, context_snippets.len().max(1)),
+        text: chat::clems_summary(user_text, context_snippets),
         reply_source: "fallback",
     }
 }
@@ -446,8 +443,10 @@ pub async fn run_turn(
             });
         }
         ChatMode::ConcealRoom => {
-            let targets = chat::conceal_targets_from_context(payload.context_ref.as_ref(), mentions);
+            let targets =
+                chat::conceal_targets_from_context(payload.context_ref.as_ref(), mentions);
             let mut snippets = Vec::new();
+            let mut degraded_targets = Vec::new();
             if !targets.is_empty() {
                 let mut join_set = JoinSet::new();
                 for target in &targets {
@@ -533,7 +532,11 @@ pub async fn run_turn(
                         .map(|status| if status == "ok" { "llm" } else { "fallback" })
                         .unwrap_or("fallback");
                     usage_calls.push(usage);
-                    snippets.push(format!("@{} {}", target, text));
+                    if reply_source == "llm" {
+                        snippets.push(format!("@{} {}", target, text));
+                    } else {
+                        degraded_targets.push(target.clone());
+                    }
                     messages.push(message_with_meta(
                         &target,
                         text,
@@ -548,7 +551,19 @@ pub async fn run_turn(
                 }
             }
 
-            let summary_reply = clems_summary(&profile, &payload.text, &snippets, &mut usage_calls).await;
+            let summary_inputs = if !snippets.is_empty() {
+                snippets.clone()
+            } else if !degraded_targets.is_empty() {
+                degraded_targets
+                    .iter()
+                    .map(|target| format!("@{} pending", target))
+                    .collect()
+            } else {
+                Vec::new()
+            };
+
+            let summary_reply =
+                clems_summary(&profile, &payload.text, &summary_inputs, &mut usage_calls).await;
             messages.push(message_with_meta(
                 "clems",
                 summary_reply.text.clone(),
@@ -601,7 +616,7 @@ pub async fn run_turn(
                 approval_requests.push(approval.clone());
 
                 if matches!(approval.status, ApprovalStatus::Pending) {
-                        messages.push(message_with_meta(
+                    messages.push(message_with_meta(
                             "clems",
                             format!(
                             "L2 request pending on section '{}'. @olivier approve or reject this request.",
