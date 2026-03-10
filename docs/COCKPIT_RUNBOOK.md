@@ -28,13 +28,8 @@ Development entrypoints:
 ./scripts/run_cockpit_tauri.sh
 ```
 
-Legacy fallback (manual debug only):
-
-```bash
-./launch_cockpit_legacy.sh
-```
-
-Do not use archived legacy app bundles in normal Cockpit operations.
+Archived legacy launchers stay historical only and are out of the daily operator path.
+Do not use archived Python/Qt launchers for normal Cockpit work.
 
 ## Local env for installed app
 

@@ -2001,12 +2001,12 @@ function App() {
         if (decision === 'approve') {
           await approveApproval(projectId, requestId, {
             decided_by: 'olivier',
-            note: 'approved from cockpit next ui',
+            note: 'approved from cockpit ui',
           })
         } else {
           await rejectApproval(projectId, requestId, {
             decided_by: 'olivier',
-            note: 'rejected from cockpit next ui',
+            note: 'rejected from cockpit ui',
           })
         }
         await refreshApprovals()

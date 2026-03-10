@@ -79,17 +79,13 @@ Expected: all checks pass.
       "command": "/Users/oliviercloutier/Desktop/Cockpit/venv/bin/python",
       "args": ["/Users/oliviercloutier/Desktop/Cockpit/control/mcp_server.py"],
       "env": {
-        "COCKPIT_PROJECT_ID": "demo"
+        "COCKPIT_PROJECT_ID": "cockpit"
       }
     }
   }
 }
 ```
 
-### 7. Legacy fallback
+### 7. Historical note
 
-If you need the old Python/Qt runtime manually:
-
-```bash
-./launch_cockpit_legacy.sh
-```
+The old Python/Qt runtime is archived and should not be used for normal Cockpit work.

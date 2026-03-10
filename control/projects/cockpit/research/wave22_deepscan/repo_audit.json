@@ -1,0 +1,2676 @@
+{
+  "surfaces": {
+    "desktop_tauri": {
+      "root": "apps/cockpit-desktop",
+      "files": 131,
+      "findings": {
+        "legacy_runtime": [
+          {
+            "file": "apps/cockpit-desktop/src/office/layout/layoutSerializer.ts",
+            "line": 295,
+            "snippet": "* Migrate old layouts that use legacy tile types (TILE_FLOOR=1, WOOD_FLOOR=2, CARPET=3, DOORWAY=4)"
+          },
+          {
+            "file": "apps/cockpit-desktop/src/lib/cockpitClient.ts",
+            "line": 264,
+            "snippet": "legacy_mapping?: Record<string, string>"
+          }
+        ]
+      }
+    },
+    "rust_core": {
+      "root": "crates/cockpit-core",
+      "files": 12,
+      "findings": {
+        "legacy_runtime": [
+          {
+            "file": "crates/cockpit-core/src/openrouter.rs",
+            "line": 23,
+            "snippet": "/// Maps legacy provider codes to OpenRouter model identifiers."
+          },
+          {
+            "file": "crates/cockpit-core/src/openrouter.rs",
+            "line": 25,
+            "snippet": "/// ISSUE-W20R-A9-005: Legacy provider normalization"
+          },
+          {
+            "file": "crates/cockpit-core/src/openrouter.rs",
+            "line": 26,
+            "snippet": "pub fn normalize_legacy_provider(provider: &str) -> String {"
+          },
+          {
+            "file": "crates/cockpit-core/src/models.rs",
+            "line": 413,
+            "snippet": "pub legacy_mapping: Option<HashMap<String, String>>,"
+          },
+          {
+            "file": "crates/cockpit-core/src/models.rs",
+            "line": 497,
+            "snippet": "legacy_mapping: Some(HashMap::new()),"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 19,
+            "snippet": "const LEGACY_RUNTIME_PLATFORMS: &[&str] = &[\"codex\", \"antigravity\", \"ollama\"];"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 20,
+            "snippet": "const LEGACY_SYSTEM_AGENT_IDS: &[&str] = &[\"codex\", \"antigravity\", \"ollama\"];"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 167,
+            "snippet": "if lowered == \"openrouter\" || LEGACY_RUNTIME_PLATFORMS.contains(&lowered.as_str()) {"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 174,
+            "snippet": "fn is_hidden_legacy_system_agent(agent_id: &str) -> bool {"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 175,
+            "snippet": "LEGACY_SYSTEM_AGENT_IDS.contains(&agent_id)"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 180,
+            "snippet": "if is_hidden_legacy_system_agent(&agent.agent_id) {"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 1689,
+            "snippet": "fn load_agents_normalizes_legacy_platforms_and_hides_legacy_system_agents() {"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 1689,
+            "snippet": "fn load_agents_normalizes_legacy_platforms_and_hides_legacy_system_agents() {"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 1730,
+            "snippet": "fn llm_profile_migrates_legacy_fields_to_role_based_schema() {"
+          },
+          {
+            "file": "crates/cockpit-core/src/app.rs",
+            "line": 2189,
+            "snippet": "let legacy_costs_path = project_root.join(\"vulgarisation\").join(\"costs.json\");"
+          },
+          {
+            "file": "crates/cockpit-core/src/app.rs",
+            "line": 2190,
+            "snippet": "if let Ok(raw) = fs::read_to_string(legacy_costs_path) {"
+          }
+        ],
+        "demo_refs": [
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 301,
+            "snippet": "|| matches!(project_id.as_str(), \"demo\" | \"flappycock\")"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 1666,
+            "snippet": "fs::create_dir_all(root.join(\"demo\")).expect(\"create demo project\");"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 1666,
+            "snippet": "fs::create_dir_all(root.join(\"demo\")).expect(\"create demo project\");"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 1691,
+            "snippet": "let project_id = \"demo\";"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 1716,
+            "snippet": "let project_id = \"demo\";"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 1732,
+            "snippet": "let project_id = \"demo\";"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 1759,
+            "snippet": "let project_id = \"demo\";"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 1772,
+            "snippet": "let project_id = \"demo\";"
+          },
+          {
+            "file": "crates/cockpit-core/src/storage.rs",
+            "line": 1811,
+            "snippet": "let project_id = \"demo\";"
+          }
+        ]
+      }
+    },
+    "python_app": {
+      "root": "app",
+      "files": 152,
+      "findings": {
+        "legacy_runtime": [
+          {
+            "file": "app/ui/project_pilotage.py",
+            "line": 32,
+            "snippet": "from app.services.cost_telemetry import estimate_monthly_cad_from_path, legacy_monthly_cad_estimate"
+          },
+          {
+            "file": "app/ui/project_pilotage.py",
+            "line": 440,
+            "snippet": "legacy_costs_path = project_dir / \"vulgarisation\" / \"costs.json\""
+          },
+          {
+            "file": "app/ui/project_pilotage.py",
+            "line": 441,
+            "snippet": "legacy_payload: dict | None = None"
+          },
+          {
+            "file": "app/ui/project_pilotage.py",
+            "line": 442,
+            "snippet": "if legacy_costs_path.exists():"
+          },
+          {
+            "file": "app/ui/project_pilotage.py",
+            "line": 444,
+            "snippet": "parsed = json.loads(_read_text(legacy_costs_path))"
+          },
+          {
+            "file": "app/ui/project_pilotage.py",
+            "line": 448,
+            "snippet": "legacy_payload = parsed"
+          },
+          {
+            "file": "app/ui/project_pilotage.py",
+            "line": 449,
+            "snippet": "legacy_cost = legacy_monthly_cad_estimate(legacy_payload)"
+          },
+          {
+            "file": "app/ui/project_pilotage.py",
+            "line": 449,
+            "snippet": "legacy_cost = legacy_monthly_cad_estimate(legacy_payload)"
+          },
+          {
+            "file": "app/ui/project_pilotage.py",
+            "line": 449,
+            "snippet": "legacy_cost = legacy_monthly_cad_estimate(legacy_payload)"
+          },
+          {
+            "file": "app/ui/project_pilotage.py",
+            "line": 450,
+            "snippet": "monthly_cost_label = \"n/a\" if legacy_cost is None else f\"{legacy_cost:.2f}\""
+          },
+          {
+            "file": "app/ui/project_pilotage.py",
+            "line": 450,
+            "snippet": "monthly_cost_label = \"n/a\" if legacy_cost is None else f\"{legacy_cost:.2f}\""
+          },
+          {
+            "file": "app/data/store.py",
+            "line": 85,
+            "snippet": "if raw in {\"local\", \"legacy\", \"file\"}:"
+          },
+          {
+            "file": "app/services/codex_runner.py",
+            "line": 14,
+            "snippet": "# Legacy compatibility shim. Runtime is OpenRouter-only."
+          },
+          {
+            "file": "app/services/codex_runner.py",
+            "line": 29,
+            "snippet": "# Legacy compatibility shim. Runtime is OpenRouter-only."
+          },
+          {
+            "file": "app/services/cost_telemetry.py",
+            "line": 199,
+            "snippet": "def legacy_monthly_cad_estimate(payload: dict[str, Any] | None) -> float | None:"
+          },
+          {
+            "file": "app/services/ollama_runner.py",
+            "line": 37,
+            "snippet": "# Legacy compatibility shim. Runtime is OpenRouter-only."
+          },
+          {
+            "file": "app/services/auto_mode.py",
+            "line": 388,
+            "snippet": "def _legacy_closed_reason(request_payload: dict[str, Any], agent_id: str) -> str:"
+          },
+          {
+            "file": "app/services/auto_mode.py",
+            "line": 394,
+            "snippet": "return \"legacy_processed\""
+          },
+          {
+            "file": "app/services/auto_mode.py",
+            "line": 506,
+            "snippet": "reason = _legacy_closed_reason(request_payload, agent_id)"
+          },
+          {
+            "file": "app/services/auto_mode.py",
+            "line": 518,
+            "snippet": "closed_reason=\"legacy_processed\","
+          },
+          {
+            "file": "app/services/auto_mode.py",
+            "line": 1148,
+            "snippet": "reason = _legacy_closed_reason(payload, agent_id)"
+          },
+          {
+            "file": "app/services/antigravity_runner.py",
+            "line": 34,
+            "snippet": "# Legacy compatibility shim. Runtime is OpenRouter-only."
+          },
+          {
+            "file": "app/services/project_bible.py",
+            "line": 15,
+            "snippet": "from app.services.cost_telemetry import estimate_monthly_cad_from_path, legacy_monthly_cad_estimate"
+          },
+          {
+            "file": "app/services/project_bible.py",
+            "line": 969,
+            "snippet": "legacy_monthly_cad = legacy_monthly_cad_estimate(costs_payload if isinstance(costs_payload, dict) else None)"
+          },
+          {
+            "file": "app/services/project_bible.py",
+            "line": 969,
+            "snippet": "legacy_monthly_cad = legacy_monthly_cad_estimate(costs_payload if isinstance(costs_payload, dict) else None)"
+          },
+          {
+            "file": "app/services/project_bible.py",
+            "line": 971,
+            "snippet": "monthly_cost_cad = monthly_cost_events_cad if cost_events_count > 0 else legacy_monthly_cad"
+          },
+          {
+            "file": "app/services/project_bible.py",
+            "line": 1039,
+            "snippet": "{\"label\": \"Legacy cost file\", \"value\": \"available\" if costs_path.exists() else \"unavailable\"},"
+          },
+          {
+            "file": "app/services/project_bible.py",
+            "line": 1986,
+            "snippet": "\"\"\"Compatibility wrapper for legacy callers."
+          }
+        ],
+        "stale_api_refs": [
+          {
+            "file": "app/services/cloud_api_client.py",
+            "line": 135,
+            "snippet": "f\"/v1/projects/{urllib.parse.quote(project_id, safe='')}/chat/agentic-turn\","
+          }
+        ]
+      }
+    },
+    "python_server": {
+      "root": "server",
+      "files": 26,
+      "findings": {
+        "stale_api_refs": [
+          {
+            "file": "server/main.py",
+            "line": 993,
+            "snippet": "Route(\"/v1/projects/{project_id:str}/chat/agentic-turn\", post_agentic_turn, methods=[\"POST\"]),"
+          },
+          {
+            "file": "server/main.py",
+            "line": 995,
+            "snippet": "Route(\"/v1/projects/{project_id:str}/wizard-live/start\", wizard_start, methods=[\"POST\"]),"
+          },
+          {
+            "file": "server/main.py",
+            "line": 996,
+            "snippet": "Route(\"/v1/projects/{project_id:str}/wizard-live/run\", wizard_run, methods=[\"POST\"]),"
+          },
+          {
+            "file": "server/main.py",
+            "line": 997,
+            "snippet": "Route(\"/v1/projects/{project_id:str}/wizard-live/stop\", wizard_stop, methods=[\"POST\"]),"
+          }
+        ],
+        "legacy_runtime": [
+          {
+            "file": "server/repository.py",
+            "line": 324,
+            "snippet": "risks=[\"Legacy local-file drift\"],"
+          }
+        ]
+      }
+    },
+    "android": {
+      "root": "android",
+      "files": 6,
+      "findings": {
+        "stale_api_refs": [
+          {
+            "file": "android/app/src/main/java/com/cockpit/mobile/network/CockpitApi.kt",
+            "line": 18,
+            "snippet": "@POST(\"/v1/projects/{project_id}/chat/agentic-turn\")"
+          },
+          {
+            "file": "android/app/src/main/java/com/cockpit/mobile/network/CockpitApi.kt",
+            "line": 21,
+            "snippet": "@POST(\"/v1/projects/{project_id}/wizard-live/start\")"
+          },
+          {
+            "file": "android/app/src/main/java/com/cockpit/mobile/network/CockpitApi.kt",
+            "line": 24,
+            "snippet": "@POST(\"/v1/projects/{project_id}/wizard-live/run\")"
+          },
+          {
+            "file": "android/app/src/main/java/com/cockpit/mobile/network/CockpitApi.kt",
+            "line": 27,
+            "snippet": "@POST(\"/v1/projects/{project_id}/wizard-live/stop\")"
+          }
+        ]
+      }
+    },
+    "scripts": {
+      "root": "scripts",
+      "files": 79,
+      "findings": {
+        "legacy_runtime": [
+          {
+            "file": "scripts/auto_mode_healthcheck.py",
+            "line": 189,
+            "snippet": "lifecycle_mode = \"runtime_v3\" if runtime_requests else \"legacy_v1\""
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 41,
+            "snippet": "\"legacy_naming\": re.compile(r\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\", re.I),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 41,
+            "snippet": "\"legacy_naming\": re.compile(r\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\", re.I),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 41,
+            "snippet": "\"legacy_naming\": re.compile(r\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\", re.I),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 45,
+            "snippet": "\"legacy_runtime\": re.compile(r\"legacy_|legacy\\b\", re.I),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 45,
+            "snippet": "\"legacy_runtime\": re.compile(r\"legacy_|legacy\\b\", re.I),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 45,
+            "snippet": "\"legacy_runtime\": re.compile(r\"legacy_|legacy\\b\", re.I),"
+          },
+          {
+            "file": "scripts/packaging/install_dev_live_launcher.sh",
+            "line": 30,
+            "snippet": "echo \"Tip: drag this app to Dock and remove old legacy icons.\""
+          }
+        ],
+        "legacy_naming": [
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 41,
+            "snippet": "\"legacy_naming\": re.compile(r\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\", re.I),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 41,
+            "snippet": "\"legacy_naming\": re.compile(r\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\", re.I),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 41,
+            "snippet": "\"legacy_naming\": re.compile(r\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\", re.I),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 41,
+            "snippet": "\"legacy_naming\": re.compile(r\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\", re.I),"
+          }
+        ],
+        "demo_refs": [
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 42,
+            "snippet": "\"demo_refs\": re.compile(r\"\\bdemo\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\", re.I),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 42,
+            "snippet": "\"demo_refs\": re.compile(r\"\\bdemo\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\", re.I),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 42,
+            "snippet": "\"demo_refs\": re.compile(r\"\\bdemo\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\", re.I),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 42,
+            "snippet": "\"demo_refs\": re.compile(r\"\\bdemo\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\", re.I),"
+          }
+        ],
+        "stale_api_refs": [
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 43,
+            "snippet": "\"stale_api_refs\": re.compile(r\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\", re.I),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 43,
+            "snippet": "\"stale_api_refs\": re.compile(r\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\", re.I),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 43,
+            "snippet": "\"stale_api_refs\": re.compile(r\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\", re.I),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 43,
+            "snippet": "\"stale_api_refs\": re.compile(r\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\", re.I),"
+          }
+        ],
+        "debt_markers": [
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 44,
+            "snippet": "\"debt_markers\": re.compile(r\"\\b(?:TODO|FIXME|HACK)\\b\"),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 44,
+            "snippet": "\"debt_markers\": re.compile(r\"\\b(?:TODO|FIXME|HACK)\\b\"),"
+          },
+          {
+            "file": "scripts/wave22_repo_audit.py",
+            "line": 44,
+            "snippet": "\"debt_markers\": re.compile(r\"\\b(?:TODO|FIXME|HACK)\\b\"),"
+          }
+        ]
+      }
+    },
+    "docs_active": {
+      "root": "docs",
+      "files": 27,
+      "findings": {
+        "legacy_runtime": [
+          {
+            "file": "docs/COCKPIT_RUNBOOK.md",
+            "line": 31,
+            "snippet": "Archived legacy launchers stay historical only and are out of the daily operator path."
+          },
+          {
+            "file": "docs/PACKAGING.md",
+            "line": 1,
+            "snippet": "# Packaging (legacy Python app archived, Cockpit active)"
+          },
+          {
+            "file": "docs/PACKAGING.md",
+            "line": 5,
+            "snippet": "- Legacy Python packaging is archived."
+          },
+          {
+            "file": "docs/PACKAGING.md",
+            "line": 19,
+            "snippet": "2. Keep legacy app references for historical evidence only."
+          },
+          {
+            "file": "docs/PACKAGING.md",
+            "line": 20,
+            "snippet": "3. If a legacy package script is used, mark the run as debug/manual."
+          },
+          {
+            "file": "docs/WIZARD_LIVE.md",
+            "line": 81,
+            "snippet": "- Re-enable legacy local mode for maintenance only:"
+          },
+          {
+            "file": "docs/RUNBOOK.md",
+            "line": 1,
+            "snippet": "# Legacy Runbook - archived legacy shell"
+          },
+          {
+            "file": "docs/RUNBOOK.md",
+            "line": 1,
+            "snippet": "# Legacy Runbook - archived legacy shell"
+          },
+          {
+            "file": "docs/RUNBOOK.md",
+            "line": 5,
+            "snippet": "- Archived reference only (legacy Python app path)."
+          },
+          {
+            "file": "docs/RUNBOOK.md",
+            "line": 11,
+            "snippet": "## Legacy scope note"
+          },
+          {
+            "file": "docs/RUNBOOK.md",
+            "line": 14,
+            "snippet": "Do not use legacy Python packaging for daily operations."
+          },
+          {
+            "file": "docs/RUNBOOK.md",
+            "line": 16,
+            "snippet": "## Legacy launch (manual debug only)"
+          },
+          {
+            "file": "docs/RUNBOOK.md",
+            "line": 19,
+            "snippet": "./launch_cockpit_legacy.sh"
+          },
+          {
+            "file": "docs/RUNBOOK.md",
+            "line": 37,
+            "snippet": "## Legacy image reference"
+          },
+          {
+            "file": "docs/RUNBOOK.md",
+            "line": 39,
+            "snippet": "![Legacy shell UI](images/centre-de-controle.png)"
+          }
+        ],
+        "legacy_naming": [
+          {
+            "file": "docs/PACKAGING.md",
+            "line": 1,
+            "snippet": "# Packaging (legacy Python app archived, Cockpit active)"
+          },
+          {
+            "file": "docs/PACKAGING.md",
+            "line": 5,
+            "snippet": "- Legacy Python packaging is archived."
+          },
+          {
+            "file": "docs/RUNBOOK.md",
+            "line": 5,
+            "snippet": "- Archived reference only (legacy Python app path)."
+          },
+          {
+            "file": "docs/RUNBOOK.md",
+            "line": 14,
+            "snippet": "Do not use legacy Python packaging for daily operations."
+          },
+          {
+            "file": "docs/RUNBOOK.md",
+            "line": 19,
+            "snippet": "./launch_cockpit_legacy.sh"
+          }
+        ],
+        "stale_api_refs": [
+          {
+            "file": "docs/CLOUD_API_PROTOCOL.md",
+            "line": 47,
+            "snippet": "- `POST /v1/projects/{id}/chat/agentic-turn`"
+          },
+          {
+            "file": "docs/CLOUD_API_PROTOCOL.md",
+            "line": 49,
+            "snippet": "- `POST /v1/projects/{id}/wizard-live/start|run|stop`"
+          },
+          {
+            "file": "docs/WIZARD_LIVE.md",
+            "line": 26,
+            "snippet": "- `POST /v1/projects/{id}/chat/agentic-turn` (`mode=chat|scene`)"
+          },
+          {
+            "file": "docs/OPENROUTER_SETUP.md",
+            "line": 32,
+            "snippet": "3. Chat turn: `POST /v1/projects/{id}/chat/agentic-turn`"
+          },
+          {
+            "file": "docs/PARITY_MATRIX_DESKTOP_ANDROID.md",
+            "line": 15,
+            "snippet": "| Wizard live start/run/stop | Required | Required | `POST /wizard-live/start|run|stop` |"
+          }
+        ]
+      }
+    },
+    "control_project": {
+      "root": "control/projects/cockpit",
+      "files": 228,
+      "findings": {
+        "demo_refs": [
+          {
+            "file": "control/projects/cockpit/PLAN_PAPER_SKILLS_OPS_MEMORY_V2.md",
+            "line": 52,
+            "snippet": "- Project id: `cockpit` only (no demo/evozina/motherload)."
+          },
+          {
+            "file": "control/projects/cockpit/STATE.md",
+            "line": 32,
+            "snippet": "- Many tests and examples still lean on `demo`, which can hide live-project regressions."
+          },
+          {
+            "file": "control/projects/cockpit/DECISIONS.md",
+            "line": 259,
+            "snippet": "- Context: The desktop shell was mixing live work on `cockpit` with lingering `demo` project artifacts, and local issue files had split one functional problem into duplicate UI tickets."
+          },
+          {
+            "file": "control/projects/cockpit/DECISIONS.md",
+            "line": 260,
+            "snippet": "- Decision: Remove `control/projects/demo` from the active repo, keep `cockpit` as the only live project in the current operator flow, and consolidate the active shell recovery work onto `ISSUE-CP-0061` (Pixel Home) and"
+          },
+          {
+            "file": "control/projects/cockpit/DECISIONS.md",
+            "line": 262,
+            "snippet": "- Consequences: `demo` stops surfacing in `/v1/projects`, active docs/scripts stop using it, and duplicate local issue drafts are superseded by the two canonical issues."
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/07_optimization_backlog.md",
+            "line": 6,
+            "snippet": "- Reduce `demo` as a default teaching path in active docs and tests where it pollutes current product understanding."
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/07_optimization_backlog.md",
+            "line": 21,
+            "snippet": "- stale examples that point to `demo` or old agentic endpoints"
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 111,
+            "snippet": "\"snippet\": \"|| matches!(project_id.as_str(), \\\"demo\\\" | \\\"flappycock\\\")\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 116,
+            "snippet": "\"snippet\": \"fs::create_dir_all(root.join(\\\"demo\\\")).expect(\\\"create demo project\\\");\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 116,
+            "snippet": "\"snippet\": \"fs::create_dir_all(root.join(\\\"demo\\\")).expect(\\\"create demo project\\\");\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 121,
+            "snippet": "\"snippet\": \"fs::create_dir_all(root.join(\\\"demo\\\")).expect(\\\"create demo project\\\");\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 121,
+            "snippet": "\"snippet\": \"fs::create_dir_all(root.join(\\\"demo\\\")).expect(\\\"create demo project\\\");\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 126,
+            "snippet": "\"snippet\": \"let project_id = \\\"demo\\\";\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 131,
+            "snippet": "\"snippet\": \"let project_id = \\\"demo\\\";\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 136,
+            "snippet": "\"snippet\": \"let project_id = \\\"demo\\\";\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 141,
+            "snippet": "\"snippet\": \"let project_id = \\\"demo\\\";\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 146,
+            "snippet": "\"snippet\": \"let project_id = \\\"demo\\\";\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 151,
+            "snippet": "\"snippet\": \"let project_id = \\\"demo\\\";\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 446,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 446,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 446,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 446,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 451,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 451,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 451,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 451,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 456,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 456,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 456,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 456,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 461,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 461,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 461,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 461,
+            "snippet": "\"snippet\": \"\\\"demo_refs\\\": re.compile(r\\\"\\\\bdemo\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 650,
+            "snippet": "\"snippet\": \"- Project id: `cockpit` only (no demo/evozina/motherload).\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 655,
+            "snippet": "\"snippet\": \"- Many tests and examples still lean on `demo`, which can hide live-project regressions.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 660,
+            "snippet": "\"snippet\": \"- Context: The desktop shell was mixing live work on `cockpit` with lingering `demo` project artifacts, and local issue files had split one functional problem into duplicate UI tickets.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 665,
+            "snippet": "\"snippet\": \"- Decision: Remove `control/projects/demo` from the active repo, keep `cockpit` as the only live project in the current operator flow, and consolidate the active shell recovery work onto `ISSUE-CP"
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 670,
+            "snippet": "\"snippet\": \"- Consequences: `demo` stops surfacing in `/v1/projects`, active docs/scripts stop using it, and duplicate local issue drafts are superseded by the two canonical issues.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 675,
+            "snippet": "\"snippet\": \"- Reduce `demo` as a default teaching path in active docs and tests where it pollutes current product understanding.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 680,
+            "snippet": "\"snippet\": \"- stale examples that point to `demo` or old agentic endpoints\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 685,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"|| matches!(project_id.as_str(), \\\\\\\"demo\\\\\\\" | \\\\\\\"flappycock\\\\\\\")\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 690,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"fs::create_dir_all(root.join(\\\\\\\"demo\\\\\\\")).expect(\\\\\\\"create demo project\\\\\\\");\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 690,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"fs::create_dir_all(root.join(\\\\\\\"demo\\\\\\\")).expect(\\\\\\\"create demo project\\\\\\\");\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 695,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"fs::create_dir_all(root.join(\\\\\\\"demo\\\\\\\")).expect(\\\\\\\"create demo project\\\\\\\");\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 695,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"fs::create_dir_all(root.join(\\\\\\\"demo\\\\\\\")).expect(\\\\\\\"create demo project\\\\\\\");\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 700,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"fs::create_dir_all(root.join(\\\\\\\"demo\\\\\\\")).expect(\\\\\\\"create demo project\\\\\\\");\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 700,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"fs::create_dir_all(root.join(\\\\\\\"demo\\\\\\\")).expect(\\\\\\\"create demo project\\\\\\\");\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 705,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"fs::create_dir_all(root.join(\\\\\\\"demo\\\\\\\")).expect(\\\\\\\"create demo project\\\\\\\");\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 705,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"fs::create_dir_all(root.join(\\\\\\\"demo\\\\\\\")).expect(\\\\\\\"create demo project\\\\\\\");\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 710,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"let project_id = \\\\\\\"demo\\\\\\\";\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 715,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"let project_id = \\\\\\\"demo\\\\\\\";\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 720,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"let project_id = \\\\\\\"demo\\\\\\\";\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 725,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"let project_id = \\\\\\\"demo\\\\\\\";\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 730,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"let project_id = \\\\\\\"demo\\\\\\\";\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 735,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"let project_id = \\\\\\\"demo\\\\\\\";\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 740,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 740,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 740,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 740,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 745,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 745,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 745,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 745,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 750,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 750,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 750,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 750,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 755,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 755,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 755,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 755,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 760,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 760,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 760,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 760,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 765,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 765,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 765,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 765,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"demo_refs\\\\\\\": re.compile(r\\\\\\\"\\\\\\\\bdemo\\\\\\\\b|wizard-demo|ws-demo|rbac-demo|proj_demo\\\\\\\", re.I),\\\"\""
+          }
+        ],
+        "legacy_runtime": [
+          {
+            "file": "control/projects/cockpit/STATE.md",
+            "line": 31,
+            "snippet": "- Active docs and code still contain legacy naming and stale endpoint references that can confuse implementation."
+          },
+          {
+            "file": "control/projects/cockpit/DECISIONS.md",
+            "line": 53,
+            "snippet": "- Consequences: `cockpit.spec` and `cockpit_v5.spec` are legacy/non-canonical references; `venv/` is fallback-only; root `Cockpit_V2_*.pdf` files are archive references, not primary operational source-of-truth."
+          },
+          {
+            "file": "control/projects/cockpit/DECISIONS.md",
+            "line": 217,
+            "snippet": "- Consequences: Introduces `server/` backend foundation, auth/JWT/RBAC contracts, event envelope stream, and device registration for Android push; legacy local-file mode moves behind migration/cutover gates."
+          },
+          {
+            "file": "control/projects/cockpit/DECISIONS.md",
+            "line": 242,
+            "snippet": "- Decision: Lock active runtime execution to OpenRouter only. Keep legacy provider values only in normalization/migration adapters, and persist normalized provider as `openrouter`."
+          },
+          {
+            "file": "control/projects/cockpit/DECISIONS.md",
+            "line": 280,
+            "snippet": "- Consequences: `Overview` becomes read-only for project status, `Le Conseil` is the single action surface for greenfield/takeover flows, legacy settings keys are destroyed on save, and runtime diagnostics can now distin"
+          },
+          {
+            "file": "control/projects/cockpit/DECISIONS.md",
+            "line": 286,
+            "snippet": "- Context: The repo is now stable enough to support a large scan-and-execution wave, but live code, active docs, legacy references, stale examples, and release-history material are still mixed together in ways that slow"
+          },
+          {
+            "file": "control/projects/cockpit/DECISIONS.md",
+            "line": 289,
+            "snippet": "- Consequences: Wave22 work is now tracked by `ISSUE-CP-0067` to `ISSUE-CP-0076`; active docs begin moving away from legacy launcher references; research and execution planning live beside the current project state inste"
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/07_optimization_backlog.md",
+            "line": 4,
+            "snippet": "- Remove active legacy launcher references from README, QUICKSTART, runbook, and installation docs."
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/07_optimization_backlog.md",
+            "line": 13,
+            "snippet": "- Remove remaining legacy strings in service prompts and UI notes."
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/07_optimization_backlog.md",
+            "line": 19,
+            "snippet": "- legacy launchers in active docs"
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/00_index.md",
+            "line": 10,
+            "snippet": "- Legacy/historical material still exists and must be classified, not mixed into live work."
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 7,
+            "snippet": "\"legacy_runtime\": ["
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 11,
+            "snippet": "\"snippet\": \"* Migrate old layouts that use legacy tile types (TILE_FLOOR=1, WOOD_FLOOR=2, CARPET=3, DOORWAY=4)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 16,
+            "snippet": "\"snippet\": \"legacy_mapping?: Record<string, string>\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 25,
+            "snippet": "\"legacy_runtime\": ["
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 29,
+            "snippet": "\"snippet\": \"/// Maps legacy provider codes to OpenRouter model identifiers.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 34,
+            "snippet": "\"snippet\": \"/// ISSUE-W20R-A9-005: Legacy provider normalization\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 39,
+            "snippet": "\"snippet\": \"pub fn normalize_legacy_provider(provider: &str) -> String {\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 44,
+            "snippet": "\"snippet\": \"pub legacy_mapping: Option<HashMap<String, String>>,\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 49,
+            "snippet": "\"snippet\": \"legacy_mapping: Some(HashMap::new()),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 54,
+            "snippet": "\"snippet\": \"const LEGACY_RUNTIME_PLATFORMS: &[&str] = &[\\\"codex\\\", \\\"antigravity\\\", \\\"ollama\\\"];\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 59,
+            "snippet": "\"snippet\": \"const LEGACY_SYSTEM_AGENT_IDS: &[&str] = &[\\\"codex\\\", \\\"antigravity\\\", \\\"ollama\\\"];\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 64,
+            "snippet": "\"snippet\": \"if lowered == \\\"openrouter\\\" || LEGACY_RUNTIME_PLATFORMS.contains(&lowered.as_str()) {\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 69,
+            "snippet": "\"snippet\": \"fn is_hidden_legacy_system_agent(agent_id: &str) -> bool {\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 74,
+            "snippet": "\"snippet\": \"LEGACY_SYSTEM_AGENT_IDS.contains(&agent_id)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 79,
+            "snippet": "\"snippet\": \"if is_hidden_legacy_system_agent(&agent.agent_id) {\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 84,
+            "snippet": "\"snippet\": \"fn load_agents_normalizes_legacy_platforms_and_hides_legacy_system_agents() {\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 84,
+            "snippet": "\"snippet\": \"fn load_agents_normalizes_legacy_platforms_and_hides_legacy_system_agents() {\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 89,
+            "snippet": "\"snippet\": \"fn load_agents_normalizes_legacy_platforms_and_hides_legacy_system_agents() {\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 89,
+            "snippet": "\"snippet\": \"fn load_agents_normalizes_legacy_platforms_and_hides_legacy_system_agents() {\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 94,
+            "snippet": "\"snippet\": \"fn llm_profile_migrates_legacy_fields_to_role_based_schema() {\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 99,
+            "snippet": "\"snippet\": \"let legacy_costs_path = project_root.join(\\\"vulgarisation\\\").join(\\\"costs.json\\\");\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 104,
+            "snippet": "\"snippet\": \"if let Ok(raw) = fs::read_to_string(legacy_costs_path) {\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 160,
+            "snippet": "\"legacy_runtime\": ["
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 164,
+            "snippet": "\"snippet\": \"from app.services.cost_telemetry import estimate_monthly_cad_from_path, legacy_monthly_cad_estimate\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 169,
+            "snippet": "\"snippet\": \"legacy_costs_path = project_dir / \\\"vulgarisation\\\" / \\\"costs.json\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 174,
+            "snippet": "\"snippet\": \"legacy_payload: dict | None = None\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 179,
+            "snippet": "\"snippet\": \"if legacy_costs_path.exists():\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 184,
+            "snippet": "\"snippet\": \"parsed = json.loads(_read_text(legacy_costs_path))\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 189,
+            "snippet": "\"snippet\": \"legacy_payload = parsed\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 194,
+            "snippet": "\"snippet\": \"legacy_cost = legacy_monthly_cad_estimate(legacy_payload)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 194,
+            "snippet": "\"snippet\": \"legacy_cost = legacy_monthly_cad_estimate(legacy_payload)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 194,
+            "snippet": "\"snippet\": \"legacy_cost = legacy_monthly_cad_estimate(legacy_payload)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 199,
+            "snippet": "\"snippet\": \"legacy_cost = legacy_monthly_cad_estimate(legacy_payload)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 199,
+            "snippet": "\"snippet\": \"legacy_cost = legacy_monthly_cad_estimate(legacy_payload)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 199,
+            "snippet": "\"snippet\": \"legacy_cost = legacy_monthly_cad_estimate(legacy_payload)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 204,
+            "snippet": "\"snippet\": \"legacy_cost = legacy_monthly_cad_estimate(legacy_payload)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 204,
+            "snippet": "\"snippet\": \"legacy_cost = legacy_monthly_cad_estimate(legacy_payload)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 204,
+            "snippet": "\"snippet\": \"legacy_cost = legacy_monthly_cad_estimate(legacy_payload)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 209,
+            "snippet": "\"snippet\": \"monthly_cost_label = \\\"n/a\\\" if legacy_cost is None else f\\\"{legacy_cost:.2f}\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 209,
+            "snippet": "\"snippet\": \"monthly_cost_label = \\\"n/a\\\" if legacy_cost is None else f\\\"{legacy_cost:.2f}\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 214,
+            "snippet": "\"snippet\": \"monthly_cost_label = \\\"n/a\\\" if legacy_cost is None else f\\\"{legacy_cost:.2f}\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 214,
+            "snippet": "\"snippet\": \"monthly_cost_label = \\\"n/a\\\" if legacy_cost is None else f\\\"{legacy_cost:.2f}\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 219,
+            "snippet": "\"snippet\": \"if raw in {\\\"local\\\", \\\"legacy\\\", \\\"file\\\"}:\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 224,
+            "snippet": "\"snippet\": \"# Legacy compatibility shim. Runtime is OpenRouter-only.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 229,
+            "snippet": "\"snippet\": \"# Legacy compatibility shim. Runtime is OpenRouter-only.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 234,
+            "snippet": "\"snippet\": \"def legacy_monthly_cad_estimate(payload: dict[str, Any] | None) -> float | None:\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 239,
+            "snippet": "\"snippet\": \"# Legacy compatibility shim. Runtime is OpenRouter-only.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 244,
+            "snippet": "\"snippet\": \"def _legacy_closed_reason(request_payload: dict[str, Any], agent_id: str) -> str:\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 249,
+            "snippet": "\"snippet\": \"return \\\"legacy_processed\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 254,
+            "snippet": "\"snippet\": \"reason = _legacy_closed_reason(request_payload, agent_id)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 259,
+            "snippet": "\"snippet\": \"closed_reason=\\\"legacy_processed\\\",\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 264,
+            "snippet": "\"snippet\": \"reason = _legacy_closed_reason(payload, agent_id)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 269,
+            "snippet": "\"snippet\": \"# Legacy compatibility shim. Runtime is OpenRouter-only.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 274,
+            "snippet": "\"snippet\": \"from app.services.cost_telemetry import estimate_monthly_cad_from_path, legacy_monthly_cad_estimate\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 279,
+            "snippet": "\"snippet\": \"legacy_monthly_cad = legacy_monthly_cad_estimate(costs_payload if isinstance(costs_payload, dict) else None)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 279,
+            "snippet": "\"snippet\": \"legacy_monthly_cad = legacy_monthly_cad_estimate(costs_payload if isinstance(costs_payload, dict) else None)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 284,
+            "snippet": "\"snippet\": \"legacy_monthly_cad = legacy_monthly_cad_estimate(costs_payload if isinstance(costs_payload, dict) else None)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 284,
+            "snippet": "\"snippet\": \"legacy_monthly_cad = legacy_monthly_cad_estimate(costs_payload if isinstance(costs_payload, dict) else None)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 289,
+            "snippet": "\"snippet\": \"monthly_cost_cad = monthly_cost_events_cad if cost_events_count > 0 else legacy_monthly_cad\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 294,
+            "snippet": "\"snippet\": \"{\\\"label\\\": \\\"Legacy cost file\\\", \\\"value\\\": \\\"available\\\" if costs_path.exists() else \\\"unavailable\\\"},\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 299,
+            "snippet": "\"snippet\": \"\\\"\\\"\\\"Compatibility wrapper for legacy callers.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 337,
+            "snippet": "\"legacy_runtime\": ["
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 341,
+            "snippet": "\"snippet\": \"risks=[\\\"Legacy local-file drift\\\"],\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 378,
+            "snippet": "\"legacy_runtime\": ["
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 382,
+            "snippet": "\"snippet\": \"lifecycle_mode = \\\"runtime_v3\\\" if runtime_requests else \\\"legacy_v1\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 387,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 387,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 387,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 392,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          }
+        ],
+        "legacy_naming": [
+          {
+            "file": "control/projects/cockpit/RELEASE_SNAPSHOT_2026-02-13.md",
+            "line": 6,
+            "snippet": "- Artifact: `dist/Centre de controle.app`"
+          },
+          {
+            "file": "control/projects/cockpit/RELEASE_SNAPSHOT_2026-02-13.md",
+            "line": 16,
+            "snippet": "- Check A: launch packaged binary for 6 seconds (`dist/Centre de controle.app/Contents/MacOS/Centre de controle`)"
+          },
+          {
+            "file": "control/projects/cockpit/RELEASE_SNAPSHOT_2026-02-13.md",
+            "line": 16,
+            "snippet": "- Check A: launch packaged binary for 6 seconds (`dist/Centre de controle.app/Contents/MacOS/Centre de controle`)"
+          },
+          {
+            "file": "control/projects/cockpit/roadmap.yml",
+            "line": 2,
+            "snippet": "- Bootstrap Centre de controle UI"
+          },
+          {
+            "file": "control/projects/cockpit/DECISIONS.md",
+            "line": 51,
+            "snippet": "- Decision: Lock cleanup canonicals to `Centre de controle.spec`, `.venv/`, and docs source-of-truth split as `docs/reports/` (ops evidence) plus `tournament-v1/` and `tournament-v2/` (tournament evidence). Keep tourname"
+          },
+          {
+            "file": "control/projects/cockpit/DECISIONS.md",
+            "line": 125,
+            "snippet": "2. Release app (`dist/Centre de controle.app`) is a frozen snapshot that requires explicit rebuild."
+          },
+          {
+            "file": "control/projects/cockpit/DECISIONS.md",
+            "line": 181,
+            "snippet": "- Consequences: Main `/Applications/Centre de controle.app` now points to release binary (`CFBundleExecutable=Centre de controle`), Dev Live remains optional, and docs are updated to stop framing two-icon behavior as nor"
+          },
+          {
+            "file": "control/projects/cockpit/DECISIONS.md",
+            "line": 181,
+            "snippet": "- Consequences: Main `/Applications/Centre de controle.app` now points to release binary (`CFBundleExecutable=Centre de controle`), Dev Live remains optional, and docs are updated to stop framing two-icon behavior as nor"
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/07_optimization_backlog.md",
+            "line": 20,
+            "snippet": "- old `Centre de controle` build references outside archival receipts"
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 387,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 387,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 387,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 387,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 392,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 392,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 392,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 392,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 397,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 397,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 397,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 397,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 424,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 424,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 424,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 424,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 429,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 429,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 429,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 429,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 434,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 434,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 434,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 434,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 439,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 439,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 439,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 439,
+            "snippet": "\"snippet\": \"\\\"legacy_naming\\\": re.compile(r\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 518,
+            "snippet": "\"snippet\": \"# Packaging (legacy Python app archived, Cockpit active)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 523,
+            "snippet": "\"snippet\": \"- Legacy Python packaging is archived.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 553,
+            "snippet": "\"snippet\": \"- Archived reference only (legacy Python app path).\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 563,
+            "snippet": "\"snippet\": \"Do not use legacy Python packaging for daily operations.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 573,
+            "snippet": "\"snippet\": \"./launch_cockpit_legacy.sh\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 590,
+            "snippet": "\"snippet\": \"# Packaging (legacy Python app archived, Cockpit active)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 595,
+            "snippet": "\"snippet\": \"- Legacy Python packaging is archived.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 600,
+            "snippet": "\"snippet\": \"- Archived reference only (legacy Python app path).\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 605,
+            "snippet": "\"snippet\": \"Do not use legacy Python packaging for daily operations.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 610,
+            "snippet": "\"snippet\": \"./launch_cockpit_legacy.sh\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1442,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1442,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1442,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1442,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1447,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1447,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1447,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1447,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1454,
+            "snippet": "\"snippet\": \"- Artifact: `dist/Centre de controle.app`\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1459,
+            "snippet": "\"snippet\": \"- Check A: launch packaged binary for 6 seconds (`dist/Centre de controle.app/Contents/MacOS/Centre de controle`)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1459,
+            "snippet": "\"snippet\": \"- Check A: launch packaged binary for 6 seconds (`dist/Centre de controle.app/Contents/MacOS/Centre de controle`)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1464,
+            "snippet": "\"snippet\": \"- Check A: launch packaged binary for 6 seconds (`dist/Centre de controle.app/Contents/MacOS/Centre de controle`)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1464,
+            "snippet": "\"snippet\": \"- Check A: launch packaged binary for 6 seconds (`dist/Centre de controle.app/Contents/MacOS/Centre de controle`)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1469,
+            "snippet": "\"snippet\": \"- Bootstrap Centre de controle UI\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1474,
+            "snippet": "\"snippet\": \"- Decision: Lock cleanup canonicals to `Centre de controle.spec`, `.venv/`, and docs source-of-truth split as `docs/reports/` (ops evidence) plus `tournament-v1/` and `tournament-v2/` (tournament"
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1479,
+            "snippet": "\"snippet\": \"2. Release app (`dist/Centre de controle.app`) is a frozen snapshot that requires explicit rebuild.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1484,
+            "snippet": "\"snippet\": \"- Consequences: Main `/Applications/Centre de controle.app` now points to release binary (`CFBundleExecutable=Centre de controle`), Dev Live remains optional, and docs are updated to stop framing"
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1484,
+            "snippet": "\"snippet\": \"- Consequences: Main `/Applications/Centre de controle.app` now points to release binary (`CFBundleExecutable=Centre de controle`), Dev Live remains optional, and docs are updated to stop framing"
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1489,
+            "snippet": "\"snippet\": \"- Consequences: Main `/Applications/Centre de controle.app` now points to release binary (`CFBundleExecutable=Centre de controle`), Dev Live remains optional, and docs are updated to stop framing"
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1489,
+            "snippet": "\"snippet\": \"- Consequences: Main `/Applications/Centre de controle.app` now points to release binary (`CFBundleExecutable=Centre de controle`), Dev Live remains optional, and docs are updated to stop framing"
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1494,
+            "snippet": "\"snippet\": \"- old `Centre de controle` build references outside archival receipts\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1499,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"note: 'approved from cockpit next ui',\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1504,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"note: 'rejected from cockpit next ui',\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1509,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"Tu es Clems, l'orchestrateur IA du Centre de Controle (Cockpit). \\\\\\\"\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1514,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1514,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1514,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1514,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1519,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1519,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1519,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1519,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1524,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"legacy_naming\\\\\\\": re.compile(r\\\\\\\"Cockpit Next|Centre de controle|launch_cockpit_legacy|legacy Python\\\\\\\", re.I),\\\"\""
+          }
+        ],
+        "stale_api_refs": [
+          {
+            "file": "control/projects/cockpit/DECISIONS.md",
+            "line": 233,
+            "snippet": "- Decision: Add OpenRouter-backed runtime endpoints (`llm-profile`, `chat/agentic-turn`, `voice/transcribe`, `pixel-feed`), wire desktop controls (`Model Routing`, `Vocal`, `Sc\u00e8ne`, `Pixel View`), and bootstrap Android m"
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/07_optimization_backlog.md",
+            "line": 5,
+            "snippet": "- Audit and correct stale endpoint docs that still advertise `chat/agentic-turn` and `wizard-live` in active surfaces."
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 306,
+            "snippet": "\"snippet\": \"f\\\"/v1/projects/{urllib.parse.quote(project_id, safe='')}/chat/agentic-turn\\\",\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 319,
+            "snippet": "\"snippet\": \"Route(\\\"/v1/projects/{project_id:str}/chat/agentic-turn\\\", post_agentic_turn, methods=[\\\"POST\\\"]),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 324,
+            "snippet": "\"snippet\": \"Route(\\\"/v1/projects/{project_id:str}/wizard-live/start\\\", wizard_start, methods=[\\\"POST\\\"]),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 329,
+            "snippet": "\"snippet\": \"Route(\\\"/v1/projects/{project_id:str}/wizard-live/run\\\", wizard_run, methods=[\\\"POST\\\"]),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 334,
+            "snippet": "\"snippet\": \"Route(\\\"/v1/projects/{project_id:str}/wizard-live/stop\\\", wizard_stop, methods=[\\\"POST\\\"]),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 354,
+            "snippet": "\"snippet\": \"@POST(\\\"/v1/projects/{project_id}/chat/agentic-turn\\\")\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 359,
+            "snippet": "\"snippet\": \"@POST(\\\"/v1/projects/{project_id}/wizard-live/start\\\")\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 364,
+            "snippet": "\"snippet\": \"@POST(\\\"/v1/projects/{project_id}/wizard-live/run\\\")\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 369,
+            "snippet": "\"snippet\": \"@POST(\\\"/v1/projects/{project_id}/wizard-live/stop\\\")\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 468,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 468,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 468,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 468,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 473,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 473,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 473,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 473,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 478,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 478,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 478,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 478,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 483,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 483,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 483,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 483,
+            "snippet": "\"snippet\": \"\\\"stale_api_refs\\\": re.compile(r\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 617,
+            "snippet": "\"snippet\": \"- `POST /v1/projects/{id}/chat/agentic-turn`\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 622,
+            "snippet": "\"snippet\": \"- `POST /v1/projects/{id}/wizard-live/start|run|stop`\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 627,
+            "snippet": "\"snippet\": \"- `POST /v1/projects/{id}/chat/agentic-turn` (`mode=chat|scene`)\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 632,
+            "snippet": "\"snippet\": \"3. Chat turn: `POST /v1/projects/{id}/chat/agentic-turn`\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 637,
+            "snippet": "\"snippet\": \"| Wizard live start/run/stop | Required | Required | `POST /wizard-live/start|run|stop` |\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1856,
+            "snippet": "\"snippet\": \"- Decision: Add OpenRouter-backed runtime endpoints (`llm-profile`, `chat/agentic-turn`, `voice/transcribe`, `pixel-feed`), wire desktop controls (`Model Routing`, `Vocal`, `Sc\\u00e8ne`, `Pixel Vi"
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1861,
+            "snippet": "\"snippet\": \"- Audit and correct stale endpoint docs that still advertise `chat/agentic-turn` and `wizard-live` in active surfaces.\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1866,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"f\\\\\\\"/v1/projects/{urllib.parse.quote(project_id, safe='')}/chat/agentic-turn\\\\\\\",\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1871,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"Route(\\\\\\\"/v1/projects/{project_id:str}/chat/agentic-turn\\\\\\\", post_agentic_turn, methods=[\\\\\\\"POST\\\\\\\"]),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1876,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"Route(\\\\\\\"/v1/projects/{project_id:str}/wizard-live/start\\\\\\\", wizard_start, methods=[\\\\\\\"POST\\\\\\\"]),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1881,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"Route(\\\\\\\"/v1/projects/{project_id:str}/wizard-live/run\\\\\\\", wizard_run, methods=[\\\\\\\"POST\\\\\\\"]),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1886,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"Route(\\\\\\\"/v1/projects/{project_id:str}/wizard-live/stop\\\\\\\", wizard_stop, methods=[\\\\\\\"POST\\\\\\\"]),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1891,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"@POST(\\\\\\\"/v1/projects/{project_id}/chat/agentic-turn\\\\\\\")\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1896,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"@POST(\\\\\\\"/v1/projects/{project_id}/wizard-live/start\\\\\\\")\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1901,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"@POST(\\\\\\\"/v1/projects/{project_id}/wizard-live/run\\\\\\\")\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1906,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"@POST(\\\\\\\"/v1/projects/{project_id}/wizard-live/stop\\\\\\\")\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1911,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1911,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1911,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1911,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1916,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1916,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1916,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1916,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1921,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1921,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1921,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1921,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1926,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1926,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1926,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1926,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1931,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1931,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1931,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1931,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1936,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1936,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1936,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1936,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1941,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1941,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1941,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1941,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1946,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1946,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1946,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1946,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1951,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1951,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1951,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1951,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 1956,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"stale_api_refs\\\\\\\": re.compile(r\\\\\\\"chat/agentic-turn|wizard-live/start|wizard-live/run|wizard-live/stop\\\\\\\", re.I),\\\"\""
+          }
+        ],
+        "debt_markers": [
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 490,
+            "snippet": "\"snippet\": \"\\\"debt_markers\\\": re.compile(r\\\"\\\\b(?:TODO|FIXME|HACK)\\\\b\\\"),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 490,
+            "snippet": "\"snippet\": \"\\\"debt_markers\\\": re.compile(r\\\"\\\\b(?:TODO|FIXME|HACK)\\\\b\\\"),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 490,
+            "snippet": "\"snippet\": \"\\\"debt_markers\\\": re.compile(r\\\"\\\\b(?:TODO|FIXME|HACK)\\\\b\\\"),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 495,
+            "snippet": "\"snippet\": \"\\\"debt_markers\\\": re.compile(r\\\"\\\\b(?:TODO|FIXME|HACK)\\\\b\\\"),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 495,
+            "snippet": "\"snippet\": \"\\\"debt_markers\\\": re.compile(r\\\"\\\\b(?:TODO|FIXME|HACK)\\\\b\\\"),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 495,
+            "snippet": "\"snippet\": \"\\\"debt_markers\\\": re.compile(r\\\"\\\\b(?:TODO|FIXME|HACK)\\\\b\\\"),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 500,
+            "snippet": "\"snippet\": \"\\\"debt_markers\\\": re.compile(r\\\"\\\\b(?:TODO|FIXME|HACK)\\\\b\\\"),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 500,
+            "snippet": "\"snippet\": \"\\\"debt_markers\\\": re.compile(r\\\"\\\\b(?:TODO|FIXME|HACK)\\\\b\\\"),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 500,
+            "snippet": "\"snippet\": \"\\\"debt_markers\\\": re.compile(r\\\"\\\\b(?:TODO|FIXME|HACK)\\\\b\\\"),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2258,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2258,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2258,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2263,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2263,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2263,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2268,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2268,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2268,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2273,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2273,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2273,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2278,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2278,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2278,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2283,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2283,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2283,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2288,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2288,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2288,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2293,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2293,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2293,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2298,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2298,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2298,
+            "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"\\\\\\\"debt_markers\\\\\\\": re.compile(r\\\\\\\"TODO|FIXME|HACK\\\\\\\", re.I),\\\"\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2303,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2303,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2303,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2308,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2308,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2308,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2313,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2313,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2313,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2318,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2318,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2318,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2323,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2323,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2323,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2328,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2328,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2328,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2333,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2333,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2333,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2338,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2338,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2338,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2343,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2343,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2343,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2348,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2348,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2348,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2353,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2353,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2353,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2358,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2358,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2358,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2363,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2363,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2363,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2368,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2368,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2368,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2373,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          },
+          {
+            "file": "control/projects/cockpit/research/wave22_deepscan/repo_audit.json",
+            "line": 2373,
+            "snippet": "\"snippet\": \"- `scripts/wave22_repo_audit.py:44` - \\\"debt_markers\\\": re.compile(r\\\"TODO|FIXME|HACK\\\", re.I),\""
+          }
+        ]
+      }
+    }
+  },
+  "broken_links": [
+    {
+      "file": "control/projects/cockpit/issues/ISSUE-CP-0034-wave07-ui-polish.md",
+      "target": "../../missions/MISSION-LEO-WAVE07.md",
+      "resolved": "/Users/oliviercloutier/Desktop/Cockpit/control/projects/missions/MISSION-LEO-WAVE07.md"
+    },
+    {
+      "file": "control/projects/cockpit/issues/ISSUE-CP-0034-wave07-ui-polish.md",
+      "target": "../../../../docs/reports/CP01_UI_WAVE07_EVIDENCE.md",
+      "resolved": "/Users/oliviercloutier/Desktop/Cockpit/docs/reports/CP01_UI_WAVE07_EVIDENCE.md"
+    },
+    {
+      "file": "control/projects/cockpit/issues/ISSUE-CP-0014-ui-fail-open-network-down-states.md",
+      "target": "/Users/oliviercloutier/Desktop/Cockpit/docs/reports/CP01_SLO_COST_EVIDENCE_2026-02-19.md",
+      "resolved": "/Users/oliviercloutier/Desktop/Cockpit/docs/reports/CP01_SLO_COST_EVIDENCE_2026-02-19.md"
+    }
+  ]
+}

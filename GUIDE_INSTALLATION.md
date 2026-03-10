@@ -184,7 +184,7 @@ Ouvrez le fichier de config et ajoutez:
       "command": "/Users/oliviercloutier/Desktop/Cockpit/venv/bin/python",
       "args": ["/Users/oliviercloutier/Desktop/Cockpit/control/mcp_server.py"],
       "env": {
-        "COCKPIT_PROJECT_ID": "demo"
+        "COCKPIT_PROJECT_ID": "cockpit"
       }
     }
   }
@@ -208,7 +208,7 @@ Ouvrez le fichier de config et ajoutez:
       "command": "/Users/oliviercloutier/Desktop/Cockpit/venv/bin/python",
       "args": ["/Users/oliviercloutier/Desktop/Cockpit/control/mcp_server.py"],
       "env": {
-        "COCKPIT_PROJECT_ID": "demo"
+        "COCKPIT_PROJECT_ID": "cockpit"
       }
     }
   }
@@ -225,7 +225,7 @@ Ouvrez le fichier de config et ajoutez:
 ls -la /Users/oliviercloutier/Desktop/Cockpit/control/projects/
 ```
 
-Vous devriez voir un dossier `demo/` (créé automatiquement lors des tests).
+Vous devriez voir un dossier `cockpit/` pour le projet live.
 
 ### 5.2 Créer un nouveau projet (optionnel)
 
@@ -284,10 +284,10 @@ Vérifiez que les données ont été sauvegardées:
 
 ```bash
 # Voir les messages postés
-cat control/projects/demo/settings.json | python3 -m json.tool | grep -A 10 "messages"
+cat control/projects/cockpit/settings.json | python3 -m json.tool
 
 # Voir les agents enregistrés
-ls -la control/projects/demo/agents/
+ls -la control/projects/cockpit/agents/
 ```
 
 ---
@@ -401,10 +401,10 @@ tail -f mcp_server.log
 
 | Document | Description |
 |----------|-------------|
-| [QUICKSTART.md](file:///Users/oliviercloutier/Desktop/Cockpit/QUICKSTART.md) | Guide de démarrage rapide |
-| [control/README.md](file:///Users/oliviercloutier/Desktop/Cockpit/control/README.md) | Documentation complète du serveur MCP |
-| [mcp_integration_spec.md](file:///Users/oliviercloutier/.gemini/antigravity/brain/b00d104d-62d7-423d-8534-edde4955adc3/mcp_integration_spec.md) | Spécification technique complète |
-| [walkthrough.md](file:///Users/oliviercloutier/.gemini/antigravity/brain/b00d104d-62d7-423d-8534-edde4955adc3/walkthrough.md) | Walkthrough de l'implémentation |
+| [QUICKSTART.md](QUICKSTART.md) | Guide de demarrage rapide |
+| [control/README.md](control/README.md) | Documentation du serveur MCP |
+| `~/.gemini/antigravity/.../mcp_integration_spec.md` | Reference historique Antigravity locale seulement |
+| `~/.gemini/antigravity/.../walkthrough.md` | Walkthrough historique local seulement |
 
 ---
 

@@ -79,10 +79,7 @@ This imports:
 
 - [Cockpit Runbook](/Users/oliviercloutier/Desktop/Cockpit/docs/COCKPIT_RUNBOOK.md)
 
-## Legacy (manual fallback only)
+## Historical note
 
-Legacy Python/Qt is no longer the default launch path.
-
-```bash
-./launch_cockpit_legacy.sh
-```
+Legacy Python/Qt is archived and is no longer part of the daily operator path.
+Use `Cockpit.app` or the current Cockpit scripts only.

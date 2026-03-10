@@ -280,3 +280,12 @@
 - Consequences: `Overview` becomes read-only for project status, `Le Conseil` is the single action surface for greenfield/takeover flows, legacy settings keys are destroyed on save, and runtime diagnostics can now distinguish OpenRouter ready vs degraded vs missing configuration.
 - Owners: @clems, @leo
 - References: /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/settings.json, /Users/oliviercloutier/Desktop/Cockpit/apps/cockpit-desktop/src/App.tsx, /Users/oliviercloutier/Desktop/Cockpit/apps/cockpit-desktop/src/App.css, /Users/oliviercloutier/Desktop/Cockpit/crates/cockpit-core/src/app.rs, /Users/oliviercloutier/Desktop/Cockpit/crates/cockpit-core/src/state.rs, /Users/oliviercloutier/Desktop/Cockpit/crates/cockpit-core/src/openrouter.rs
+
+## 2026-03-10 - ADR-CP-032 Wave22 research-first execution packet
+- Status: Accepted
+- Context: The repo is now stable enough to support a large scan-and-execution wave, but live code, active docs, legacy references, stale examples, and release-history material are still mixed together in ways that slow delivery and confuse operator truth.
+- Decision: Create a reproducible Wave22 repo audit script, publish a project-scoped research pack under `control/projects/cockpit/research/wave22_deepscan/`, define 10 execution lanes with a strict WIP cap of 5 active lanes, and treat Wave22 as reliability-first with repo hygiene, runtime truth, and direct/room separation ahead of net-new feature work.
+- Rationale: This keeps the next big wave grounded in current repo truth, converts external research into concrete Cockpit decisions, and scales execution without breaking the repo operating system.
+- Consequences: Wave22 work is now tracked by `ISSUE-CP-0067` to `ISSUE-CP-0076`; active docs begin moving away from legacy launcher references; research and execution planning live beside the current project state instead of in ad-hoc notes.
+- Owners: @clems, @victor, @leo, @nova
+- References: /Users/oliviercloutier/Desktop/Cockpit/scripts/wave22_repo_audit.py, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/research/wave22_deepscan/00_index.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/research/wave22_deepscan/06_parallel_execution_plan.md, /Users/oliviercloutier/Desktop/Cockpit/control/projects/cockpit/issues/ISSUE-CP-0067-wave22-architecture-truth-map.md
