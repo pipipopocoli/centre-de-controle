@@ -80,7 +80,7 @@ type FallbackDiagnostic = {
   chatMode: ChatMode
   error: string
 }
-type DirectSendPhase = 'thinking' | 'retrying'
+type DirectSendPhase = 'thinking' | 'retrying' | 'degraded'
 
 type RosterAgentView = {
   agent_id: string
@@ -712,6 +712,7 @@ function App() {
 
   const refreshSkillsLibrary = useCallback(async () => {
     setSkillsLibraryLoading(true)
+
     try {
       const response = await getSkillsLibrary(projectId)
       setSkillsLibrary(response.skills)
@@ -1771,6 +1772,8 @@ function App() {
       setDirectTarget(resolvedTargetMode)
     }
 
+    let keepDirectDegradedState = false
+
     try {
       const response = await liveTurn(projectId, {
         text,
@@ -1809,6 +1812,8 @@ function App() {
           // Keep the main chat surface quiet when a visible reply already exists.
         } else if (chatMode === 'direct' && !hasVisibleReply) {
           setDirectChatInput(text)
+          setDirectSendPhase('degraded')
+          keepDirectDegradedState = true
           setUiNotice('OpenRouter degraded, direct reply unavailable. Retry or switch to Le Conseil.')
         } else {
           setUiNotice(`degraded mode: ${response.error}`)
@@ -1833,7 +1838,7 @@ function App() {
         window.clearTimeout(directRetryTimerRef.current)
         directRetryTimerRef.current = null
       }
-      if (chatMode === 'direct') {
+      if (chatMode === 'direct' && !keepDirectDegradedState) {
         setDirectSendPhase(null)
       }
       setIsSendingChat(false)
@@ -2974,6 +2979,22 @@ function App() {
                   <span>Last error</span>
                   <strong>{openRouterHealth?.last_error || 'none'}</strong>
                 </li>
+                <li>
+                  <span>Error kind</span>
+                  <strong>{openRouterHealth?.last_error_kind || 'none'}</strong>
+                </li>
+                <li>
+                  <span>HTTP status</span>
+                  <strong>{openRouterHealth?.last_http_status ?? 'none'}</strong>
+                </li>
+                <li>
+                  <span>Request ID</span>
+                  <strong>{openRouterHealth?.last_request_id || 'none'}</strong>
+                </li>
+                <li>
+                  <span>Body preview</span>
+                  <strong>{openRouterHealth?.last_body_preview || 'none'}</strong>
+                </li>
               </ul>
             </section>
             <section className="secondary-card">
@@ -4066,8 +4087,8 @@ function App() {
                         <div className="chat-head-block">
                           <div className="section-title-row">
                             <div className="chat-title-block">
-                              <h2>Direct chat</h2>
-                              <p className="small-copy">Talk to @clems by default or switch to the selected agent when that lane is chat-ready.</p>
+                              <h2>Direct with {directTargetBadge}</h2>
+                              <p className="small-copy">One target only. Use Le Conseil for room orchestration.</p>
                             </div>
                             <div className="chat-actions">
                               <span className={`chat-status ${composerStatus}`}>{composerLabel}</span>
@@ -4165,14 +4186,22 @@ function App() {
                               <header>
                                 <div className="chat-row-meta">
                                   <strong className="chat-author">{directTargetLabel}</strong>
-                                  <span className="chat-kind">{directSendPhase === 'retrying' ? 'retrying' : 'thinking'}</span>
+                                  <span className="chat-kind">
+                                    {directSendPhase === 'degraded'
+                                      ? 'degraded'
+                                      : directSendPhase === 'retrying'
+                                        ? 'retrying'
+                                        : 'thinking'}
+                                  </span>
                                 </div>
                                 <time className="chat-time">live</time>
                               </header>
                               <p className="chat-body">
-                                {directSendPhase === 'retrying'
-                                  ? `${directTargetLabel} is retrying OpenRouter...`
-                                  : `${directTargetLabel} is thinking...`}
+                                {directSendPhase === 'degraded'
+                                  ? 'OpenRouter degraded. Direct reply unavailable. Retry or switch to Le Conseil.'
+                                  : directSendPhase === 'retrying'
+                                    ? `${directTargetLabel} is retrying OpenRouter...`
+                                    : `${directTargetLabel} is thinking...`}
                               </p>
                             </article>
                           ) : null}

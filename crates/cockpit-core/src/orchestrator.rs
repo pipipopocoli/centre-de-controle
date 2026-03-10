@@ -21,13 +21,9 @@ const ROOM_AGENT_LLM_TIMEOUT_SECONDS: u64 = 4;
 const ROOM_SUMMARY_TIMEOUT_SECONDS: u64 = 5;
 const DIRECT_LLM_TIMEOUT_SECONDS: u64 = 12;
 const DIRECT_LLM_RETRY_DELAY_SECONDS: u64 = 1;
-const DIRECT_RESCUE_TIMEOUT_SECONDS: u64 = 8;
 const ROOM_SUMMARY_RETRY_DELAY_SECONDS: u64 = 2;
 const DIRECT_CHAT_MAX_TOKENS: u32 = 220;
 const DIRECT_CHAT_TEMPERATURE: f32 = 0.25;
-const DIRECT_RESCUE_MAX_TOKENS: u32 = 120;
-const DIRECT_RESCUE_TEMPERATURE: f32 = 0.15;
-const DIRECT_RESCUE_MODEL: &str = "anthropic/claude-sonnet-4.6";
 const ROOM_AGENT_MAX_TOKENS: u32 = 96;
 const ROOM_AGENT_TEMPERATURE: f32 = 0.2;
 const ROOM_SUMMARY_MAX_TOKENS: u32 = 140;
@@ -81,12 +77,15 @@ pub struct OrchestrationResult {
     pub spawned_agents: Vec<String>,
     pub model_usage: Value,
     pub error: Option<String>,
+    pub openrouter_diagnostics: Option<openrouter::OpenRouterCallDiagnostics>,
 }
 
 #[derive(Debug, Clone)]
 struct AgentReply {
     text: String,
     reply_source: &'static str,
+    error: Option<String>,
+    diagnostics: Option<openrouter::OpenRouterCallDiagnostics>,
 }
 
 fn model_for_agent(profile: &LlmProfile, agent_id: &str) -> String {
@@ -143,15 +142,18 @@ fn actor_prompt(agent_id: &str, mode: &ChatMode) -> String {
 
 fn direct_chat_options(profile: &LlmProfile) -> openrouter::ChatCompletionOptions {
     openrouter::ChatCompletionOptions {
-        max_tokens: Some(profile.max_tokens.unwrap_or(DIRECT_CHAT_MAX_TOKENS).min(DIRECT_CHAT_MAX_TOKENS)),
-        temperature: Some(profile.temperature.unwrap_or(DIRECT_CHAT_TEMPERATURE).min(DIRECT_CHAT_TEMPERATURE)),
-    }
-}
-
-fn direct_rescue_options() -> openrouter::ChatCompletionOptions {
-    openrouter::ChatCompletionOptions {
-        max_tokens: Some(DIRECT_RESCUE_MAX_TOKENS),
-        temperature: Some(DIRECT_RESCUE_TEMPERATURE),
+        max_tokens: Some(
+            profile
+                .max_tokens
+                .unwrap_or(DIRECT_CHAT_MAX_TOKENS)
+                .min(DIRECT_CHAT_MAX_TOKENS),
+        ),
+        temperature: Some(
+            profile
+                .temperature
+                .unwrap_or(DIRECT_CHAT_TEMPERATURE)
+                .min(DIRECT_CHAT_TEMPERATURE),
+        ),
     }
 }
 
@@ -167,27 +169,6 @@ fn room_summary_options() -> openrouter::ChatCompletionOptions {
         max_tokens: Some(ROOM_SUMMARY_MAX_TOKENS),
         temperature: Some(ROOM_SUMMARY_TEMPERATURE),
     }
-}
-
-fn direct_rescue_prompt(agent_id: &str) -> String {
-    match agent_id {
-        "clems" => "You are @clems in a direct operator chat. Reply in natural french, ascii only, with 1 or 2 short sentences max. Be helpful, human, and concrete. Final answer only.".to_string(),
-        "victor" => "You are @victor in a direct operator chat. Reply in natural french, ascii only, with 1 or 2 short sentences max. Be concrete and helpful. Final answer only.".to_string(),
-        "leo" => "You are @leo in a direct operator chat. Reply in natural french, ascii only, with 1 or 2 short sentences max. Be concrete and helpful. Final answer only.".to_string(),
-        "nova" => "You are @nova in a direct operator chat. Reply in natural french, ascii only, with 1 or 2 short sentences max. Be clear, evidence aware, and helpful. Final answer only.".to_string(),
-        "vulgarisation" => "You are @vulgarisation in a direct operator chat. Reply in simple french, ascii only, with 1 or 2 short sentences max. Final answer only.".to_string(),
-        _ => format!(
-            "You are @{agent_id} in a direct operator chat. Reply in natural french, ascii only, with 1 or 2 short sentences max. Be concrete and helpful. Final answer only."
-        ),
-    }
-}
-
-fn direct_rescue_models(primary_model: &str) -> Vec<String> {
-    let mut models = vec![primary_model.to_string()];
-    if primary_model != DIRECT_RESCUE_MODEL {
-        models.push(DIRECT_RESCUE_MODEL.to_string());
-    }
-    models
 }
 
 fn mode_to_str(mode: &ChatMode) -> &'static str {
@@ -278,12 +259,14 @@ async fn llm_reply(
         ChatMode::Direct => 2usize,
         ChatMode::ConcealRoom => 1usize,
     };
+    let mut last_failure_error: Option<String> = None;
+    let mut last_failure_diagnostics: Option<openrouter::OpenRouterCallDiagnostics> = None;
 
     for attempt in 1..=max_attempts {
         let options = if matches!(mode, ChatMode::Direct) {
             direct_chat_options(profile)
         } else {
-            openrouter::ChatCompletionOptions::default()
+            room_agent_options()
         };
         let result = match timeout(
             Duration::from_secs(timeout_seconds),
@@ -298,6 +281,10 @@ async fn llm_reply(
                 model: model.clone(),
                 usage: json!({}),
                 error: Some(format!("openrouter_timeout_after_{}s", timeout_seconds)),
+                diagnostics: Some(openrouter::OpenRouterCallDiagnostics {
+                    error_kind: Some("openrouter_timeout".to_string()),
+                    ..openrouter::OpenRouterCallDiagnostics::default()
+                }),
             },
         };
 
@@ -316,6 +303,8 @@ async fn llm_reply(
             return AgentReply {
                 text: result.text.trim().to_string(),
                 reply_source: "llm",
+                error: None,
+                diagnostics: result.diagnostics,
             };
         }
 
@@ -323,6 +312,8 @@ async fn llm_reply(
             .error
             .clone()
             .unwrap_or_else(|| "openrouter_empty_response".to_string());
+        last_failure_error = Some(error.clone());
+        last_failure_diagnostics = result.diagnostics.clone();
 
         if matches!(mode, ChatMode::Direct) && attempt < max_attempts && is_retryable_error(&error)
         {
@@ -333,56 +324,15 @@ async fn llm_reply(
         break;
     }
 
-    if matches!(mode, ChatMode::Direct) {
-        let rescue_prompt = direct_rescue_prompt(author);
-        for rescue_model in direct_rescue_models(&model) {
-            let rescue_result = match timeout(
-                Duration::from_secs(DIRECT_RESCUE_TIMEOUT_SECONDS),
-                openrouter::chat_completion_with_options(
-                    &rescue_model,
-                    &rescue_prompt,
-                    user_text.trim(),
-                    &direct_rescue_options(),
-                ),
-            )
-            .await
-            {
-                Ok(result) => result,
-                Err(_) => openrouter::LlmCallResult {
-                    status: "failed".to_string(),
-                    text: String::new(),
-                    model: rescue_model.clone(),
-                    usage: json!({}),
-                    error: Some(format!(
-                        "openrouter_timeout_after_{}s",
-                        DIRECT_RESCUE_TIMEOUT_SECONDS
-                    )),
-                },
-            };
-
-            usage_calls.push(json!({
-                "agent_id": author,
-                "model": rescue_result.model,
-                "status": rescue_result.status,
-                "usage": rescue_result.usage,
-                "error": rescue_result.error,
-                "attempt": format!("rescue:{rescue_model}"),
-                "context_ref": context_owned,
-                "reply_mode": mode_to_str(&mode),
-            }));
-
-            if rescue_result.status == "ok" && !rescue_result.text.trim().is_empty() {
-                return AgentReply {
-                    text: rescue_result.text.trim().to_string(),
-                    reply_source: "llm",
-                };
-            }
-        }
-    }
-
     AgentReply {
-        text: chat::generate_agent_reply(author, user_text, mode),
+        text: if matches!(mode, ChatMode::Direct) {
+            String::new()
+        } else {
+            chat::generate_agent_reply(author, user_text, mode)
+        },
         reply_source: "fallback",
+        error: last_failure_error,
+        diagnostics: last_failure_diagnostics,
     }
 }
 
@@ -416,6 +366,8 @@ async fn clems_summary(
         }
         models
     };
+    let mut last_failure_error: Option<String> = None;
+    let mut last_failure_diagnostics: Option<openrouter::OpenRouterCallDiagnostics> = None;
 
     for (index, summary_model) in summary_models.iter().enumerate() {
         let attempt_label = if index == 0 {
@@ -444,6 +396,10 @@ async fn clems_summary(
                     "openrouter_timeout_after_{}s",
                     ROOM_SUMMARY_TIMEOUT_SECONDS
                 )),
+                diagnostics: Some(openrouter::OpenRouterCallDiagnostics {
+                    error_kind: Some("openrouter_timeout".to_string()),
+                    ..openrouter::OpenRouterCallDiagnostics::default()
+                }),
             },
         };
         usage_calls.push(json!({
@@ -460,12 +416,16 @@ async fn clems_summary(
             return AgentReply {
                 text: result.text.trim().to_string(),
                 reply_source: "llm",
+                error: None,
+                diagnostics: result.diagnostics,
             };
         }
         let error = result
             .error
             .clone()
             .unwrap_or_else(|| "openrouter_empty_response".to_string());
+        last_failure_error = Some(error.clone());
+        last_failure_diagnostics = result.diagnostics.clone();
         if index + 1 < summary_models.len() && is_retryable_error(&error) {
             sleep(Duration::from_secs(ROOM_SUMMARY_RETRY_DELAY_SECONDS)).await;
         }
@@ -474,6 +434,8 @@ async fn clems_summary(
     AgentReply {
         text: chat::clems_summary(user_text, context_snippets),
         reply_source: "fallback",
+        error: last_failure_error,
+        diagnostics: last_failure_diagnostics,
     }
 }
 
@@ -490,6 +452,7 @@ pub async fn run_turn(
     let mut approval_requests = Vec::new();
     let mut spawned_agents = Vec::new();
     let mut error: Option<String> = None;
+    let mut openrouter_diagnostics: Option<openrouter::OpenRouterCallDiagnostics> = None;
     let chat_mode = payload.chat_mode.clone();
     let execution_mode = payload.execution_mode.clone();
     let thread_id = payload.thread_id.clone();
@@ -545,11 +508,18 @@ pub async fn run_turn(
                     messages.push(summary_msg);
                     if summary_reply.reply_source == "fallback" {
                         error = Some("some_llm_calls_failed_using_fallback".to_string());
+                        openrouter_diagnostics = summary_reply.diagnostics.clone();
                     }
                     summary_text
                 }
             } else {
-                error = Some("some_llm_calls_failed_using_fallback".to_string());
+                error = Some(
+                    target_reply
+                        .error
+                        .clone()
+                        .unwrap_or_else(|| "some_llm_calls_failed_using_fallback".to_string()),
+                );
+                openrouter_diagnostics = target_reply.diagnostics.clone();
                 messages.push(message_with_meta(
                     &target,
                     format!(
@@ -573,6 +543,7 @@ pub async fn run_turn(
                 spawned_agents,
                 model_usage: json!({ "calls": usage_calls }),
                 error,
+                openrouter_diagnostics,
             });
         }
         ChatMode::ConcealRoom => {
@@ -623,11 +594,24 @@ pub async fn run_turn(
                                             "openrouter_timeout_after_{}s",
                                             ROOM_AGENT_LLM_TIMEOUT_SECONDS
                                         ),
+                                        "diagnostics": {
+                                            "error_kind": "openrouter_timeout",
+                                        },
+                                    }),
+                                    "fallback",
+                                    Some(openrouter::OpenRouterCallDiagnostics {
+                                        error_kind: Some("openrouter_timeout".to_string()),
+                                        ..openrouter::OpenRouterCallDiagnostics::default()
                                     }),
                                 );
                             }
                         };
-                        let text = if result.status == "ok" && !result.text.trim().is_empty() {
+                        let reply_source = if result.status == "ok" && !result.text.trim().is_empty() {
+                            "llm"
+                        } else {
+                            "fallback"
+                        };
+                        let text = if reply_source == "llm" {
                             result.text.trim().to_string()
                         } else {
                             chat::generate_agent_reply(
@@ -645,35 +629,41 @@ pub async fn run_turn(
                                 "status": result.status,
                                 "usage": result.usage,
                                 "error": result.error,
+                                "diagnostics": {
+                                    "error_kind": result.diagnostics.as_ref().and_then(|value| value.error_kind.clone()),
+                                    "http_status": result.diagnostics.as_ref().and_then(|value| value.http_status),
+                                    "request_id": result.diagnostics.as_ref().and_then(|value| value.request_id.clone()),
+                                    "body_preview": result.diagnostics.as_ref().and_then(|value| value.body_preview.clone()),
+                                },
                             }),
+                            reply_source,
+                            result.diagnostics,
                         )
                     });
                 }
 
                 let mut target_outputs = Vec::new();
                 while let Some(joined) = join_set.join_next().await {
-                    if let Ok((target, text, usage)) = joined {
-                        target_outputs.push((target, text, usage));
+                    if let Ok((target, text, usage, reply_source, diagnostics)) = joined {
+                        target_outputs.push((target, text, usage, reply_source, diagnostics));
                     }
                 }
-                target_outputs.sort_by_key(|(target, _, _)| {
+                target_outputs.sort_by_key(|(target, _, _, _, _)| {
                     targets
                         .iter()
                         .position(|candidate| candidate == target)
                         .unwrap_or(usize::MAX)
                 });
 
-                for (target, text, usage) in target_outputs {
-                    let reply_source = usage
-                        .get("status")
-                        .and_then(Value::as_str)
-                        .map(|status| if status == "ok" { "llm" } else { "fallback" })
-                        .unwrap_or("fallback");
+                for (target, text, usage, reply_source, diagnostics) in target_outputs {
                     usage_calls.push(usage);
                     if reply_source == "llm" {
                         snippets.push(format!("@{} {}", target, text));
                     } else {
                         degraded_targets.push(target.clone());
+                        if openrouter_diagnostics.is_none() {
+                            openrouter_diagnostics = diagnostics;
+                        }
                     }
                     messages.push(message_with_meta(
                         &target,
@@ -708,6 +698,9 @@ pub async fn run_turn(
                 MessageVisibility::Operator,
                 Some(summary_reply.reply_source),
             ));
+            if summary_reply.reply_source == "fallback" && openrouter_diagnostics.is_none() {
+                openrouter_diagnostics = summary_reply.diagnostics.clone();
+            }
 
             if should_request_l2(payload, &snippets) {
                 let section_tag = payload
@@ -813,6 +806,7 @@ pub async fn run_turn(
                 spawned_agents,
                 model_usage: json!({ "calls": usage_calls }),
                 error,
+                openrouter_diagnostics,
             });
         }
     }

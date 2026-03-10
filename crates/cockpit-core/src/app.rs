@@ -132,6 +132,10 @@ async fn healthz(State(state): State<AppState>) -> Json<Value> {
             "api_key_present": openrouter.api_key_present,
             "last_ok_at": openrouter.last_ok_at,
             "last_error": openrouter.last_error,
+            "last_error_kind": openrouter.last_error_kind,
+            "last_http_status": openrouter.last_http_status,
+            "last_request_id": openrouter.last_request_id,
+            "last_body_preview": openrouter.last_body_preview,
         }
     }))
 }
@@ -499,9 +503,12 @@ async fn live_turn(
     .await?;
 
     if let Some(error) = orchestration.error.as_ref() {
-        state.mark_openrouter_error(error.clone());
+        state.mark_openrouter_error_with_diagnostics(
+            error.clone(),
+            orchestration.openrouter_diagnostics.as_ref(),
+        );
     } else {
-        state.mark_openrouter_ok();
+        state.mark_openrouter_ok_with_diagnostics(orchestration.openrouter_diagnostics.as_ref());
     }
 
     for approval in &orchestration.approval_requests {
@@ -1674,13 +1681,13 @@ async fn post_roadmap_clems_draft(
         openrouter::chat_completion(&profile.clems_model, system_prompt, &user_prompt).await;
 
     if let Some(err) = &result.error {
-        state.mark_openrouter_error(err.clone());
+        state.mark_openrouter_error_with_diagnostics(err.clone(), result.diagnostics.as_ref());
         return Err(ApiError {
             status: StatusCode::INTERNAL_SERVER_ERROR,
             message: format!("openrouter failed: {}", err),
         });
     }
-    state.mark_openrouter_ok();
+    state.mark_openrouter_ok_with_diagnostics(result.diagnostics.as_ref());
 
     let draft_value = serde_json::from_str(&result.text).unwrap_or_else(|_| {
         json!({
@@ -1751,9 +1758,9 @@ async fn post_takeover_start(
     let system_prompt = "You are @clems. Return strict JSON with keys: summary_human (string), summary_tech (array of strings), roadmap_sections ({now,next,risks}), suggested_tasks (array of {title, owner, objective, done_definition}), suggested_skills (array of {skill_id, owner, reason}). Stay concise, ascii only, action oriented.";
     let result = openrouter::chat_completion(&profile.clems_model, system_prompt, &prompt).await;
     if let Some(err) = &result.error {
-        state.mark_openrouter_error(err.clone());
+        state.mark_openrouter_error_with_diagnostics(err.clone(), result.diagnostics.as_ref());
     } else {
-        state.mark_openrouter_ok();
+        state.mark_openrouter_ok_with_diagnostics(result.diagnostics.as_ref());
     }
     let parsed = serde_json::from_str::<Value>(&result.text).unwrap_or_else(|_| {
         json!({
@@ -1831,9 +1838,9 @@ async fn post_voice_transcribe(
     )
     .await;
     if let Some(err) = &result.error {
-        state.mark_openrouter_error(err.clone());
+        state.mark_openrouter_error_with_diagnostics(err.clone(), result.diagnostics.as_ref());
     } else {
-        state.mark_openrouter_ok();
+        state.mark_openrouter_ok_with_diagnostics(result.diagnostics.as_ref());
     }
     let duration_ms = started.elapsed().as_millis() as i64;
     let status = if result.status == "ok" {

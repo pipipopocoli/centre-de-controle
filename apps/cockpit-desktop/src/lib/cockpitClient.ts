@@ -247,6 +247,10 @@ export interface HealthzResponse {
     api_key_present: boolean
     last_ok_at?: string | null
     last_error?: string | null
+    last_error_kind?: string | null
+    last_http_status?: number | null
+    last_request_id?: string | null
+    last_body_preview?: string | null
   }
 }
 

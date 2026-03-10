@@ -18,6 +18,10 @@ pub struct OpenRouterStatusSnapshot {
     pub api_key_present: bool,
     pub last_ok_at: Option<String>,
     pub last_error: Option<String>,
+    pub last_error_kind: Option<String>,
+    pub last_http_status: Option<u16>,
+    pub last_request_id: Option<String>,
+    pub last_body_preview: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -26,6 +30,10 @@ struct OpenRouterRuntimeState {
     api_key_present: bool,
     last_ok_at: Option<String>,
     last_error: Option<String>,
+    last_error_kind: Option<String>,
+    last_http_status: Option<u16>,
+    last_request_id: Option<String>,
+    last_body_preview: Option<String>,
 }
 
 impl OpenRouterRuntimeState {
@@ -35,6 +43,10 @@ impl OpenRouterRuntimeState {
             api_key_present: openrouter::health_api_key_present(),
             last_ok_at: None,
             last_error: None,
+            last_error_kind: None,
+            last_http_status: None,
+            last_request_id: None,
+            last_body_preview: None,
         }
     }
 
@@ -55,6 +67,10 @@ impl OpenRouterRuntimeState {
             api_key_present: self.api_key_present,
             last_ok_at: self.last_ok_at.clone(),
             last_error: self.last_error.clone(),
+            last_error_kind: self.last_error_kind.clone(),
+            last_http_status: self.last_http_status,
+            last_request_id: self.last_request_id.clone(),
+            last_body_preview: self.last_body_preview.clone(),
         }
     }
 }
@@ -96,15 +112,38 @@ impl AppState {
     }
 
     pub fn mark_openrouter_ok(&self) {
+        self.mark_openrouter_ok_with_diagnostics(None);
+    }
+
+    pub fn mark_openrouter_ok_with_diagnostics(
+        &self,
+        diagnostics: Option<&openrouter::OpenRouterCallDiagnostics>,
+    ) {
         if let Ok(mut state) = self.openrouter_state.lock() {
             state.last_ok_at = Some(Utc::now().to_rfc3339());
             state.last_error = None;
+            state.last_error_kind = None;
+            state.last_http_status = None;
+            state.last_body_preview = None;
+            state.last_request_id = diagnostics.and_then(|value| value.request_id.clone());
         }
     }
 
     pub fn mark_openrouter_error(&self, error: impl Into<String>) {
+        self.mark_openrouter_error_with_diagnostics(error, None);
+    }
+
+    pub fn mark_openrouter_error_with_diagnostics(
+        &self,
+        error: impl Into<String>,
+        diagnostics: Option<&openrouter::OpenRouterCallDiagnostics>,
+    ) {
         if let Ok(mut state) = self.openrouter_state.lock() {
             state.last_error = Some(error.into());
+            state.last_error_kind = diagnostics.and_then(|value| value.error_kind.clone());
+            state.last_http_status = diagnostics.and_then(|value| value.http_status);
+            state.last_request_id = diagnostics.and_then(|value| value.request_id.clone());
+            state.last_body_preview = diagnostics.and_then(|value| value.body_preview.clone());
         }
     }
 
