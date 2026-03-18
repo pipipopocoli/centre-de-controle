@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Cockpit Core Backend (Rust/Axum)",
+      "runtimeExecutable": "cargo",
+      "runtimeArgs": ["run", "--manifest-path", "crates/cockpit-core/Cargo.toml"],
+      "port": 8787
+    },
+    {
+      "name": "Cockpit Desktop Frontend (Vite)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "apps/cockpit-desktop"],
+      "port": 5173
+    },
+    {
+      "name": "Cockpit Desktop (Tauri)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "tauri:dev", "--prefix", "apps/cockpit-desktop"],
+      "port": 5173
+    }
+  ]
+}

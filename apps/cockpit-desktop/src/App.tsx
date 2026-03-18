@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { FormEvent } from 'react'
 import './App.css'
 import { EditorState } from './office/editor/editorState.js'
 import { OfficeState } from './office/engine/officeState.js'
 import { OfficeCanvas } from './office/components/OfficeCanvas.js'
 import { ToolOverlay } from './office/components/ToolOverlay.js'
-import type { ToolActivity } from './office/types.js'
 import { loadDonargTheme } from './office/themes/donargTheme.js'
 import { loadPixelReferenceTheme } from './office/themes/pixelReferenceTheme.js'
 import {
@@ -43,405 +42,134 @@ import {
   updateTask,
 } from './lib/cockpitClient'
 import type {
-  AgentRecord,
-  ApprovalRequest,
   ChatMessage,
   ChatMode,
-  ExecutionMode,
-  HealthzResponse,
-  LlmProfile,
   PixelFeedResponse,
-  ProjectSummaryResponse,
   ProjectCatalogEntry,
-  ProjectSettings,
-  RoadmapResponse,
-  SkillLibraryEntry,
   TaskRecord,
   TaskStatus,
-  TakeoverStartResponse,
   VoiceTranscribeResponse,
-  WsEventEnvelope,
 } from './lib/cockpitClient'
 import { openOsTerminal, pickProjectFolder } from './lib/tauriOps'
+import {
+  useCockpitStore,
+  selectDirectChatMessages,
+  selectConciergeChatMessages,
+  selectInternalConciergeMessages,
+  selectActiveChatMode,
+} from './store/index.js'
+import type { ComposerStatus, DirectTargetMode, RosterAgentView, WorkbenchPanel } from './types.js'
+import type { ToolActivity } from './office/types.js'
+import {
+  parseSkillsInput,
+  formatSkillChip,
+  agentInitials,
+  formatHeartbeat,
+  formatAgentState,
+  formatCurrencyCad,
+  projectLabel,
+  modelLabel,
+  isUnavailableModel,
+  messageKindLabel,
+  messageChatMode,
+  isSyntheticDirectReply,
+  roomLeadAgentIdsFromRecords,
+  preferredVoiceRecorder,
+  blobToBase64,
+  emptyTaskEditor,
+  compareTasksByFreshness,
+} from './lib/formatters.js'
+import {
+  STATUS_ORDER,
+  STATUS_LABELS,
+  CLEMS_MODEL_OPTIONS,
+  L1_MODEL_OPTIONS,
+  L2_MODEL_OPTIONS,
+  QUICK_AGENT_PRESETS,
+  VOICE_STT_OPTIONS,
+} from './lib/appConstants.js'
 
-const DEFAULT_PROJECT_ID = import.meta.env.VITE_DEFAULT_PROJECT_ID ?? 'cockpit'
-
-type TopTab = 'pixel_home' | 'concierge_room' | 'overview' | 'pilotage' | 'docs' | 'todo' | 'model_routing'
-type WorkspaceTab = 'agent' | 'layout' | 'settings'
-type ComposerStatus = 'live' | 'reconnecting' | 'http_fallback'
-type DirectTargetMode = 'clems' | 'selected_agent'
-type WorkbenchPanel = 'chat' | 'terminal' | 'approvals' | 'events'
-type DocsPanel = 'runbook' | 'skills_library' | 'project'
-type RoomParticipantMode = 'all_active' | 'lead_only' | 'custom'
-type ProjectActionMode = 'create' | 'takeover' | null
-type FallbackDiagnostic = {
-  id: string
-  timestamp: string
-  chatMode: ChatMode
-  error: string
-}
-type DirectSendPhase = 'thinking' | 'retrying' | 'degraded'
-
-type RosterAgentView = {
-  agent_id: string
-  name: string
-  engine: string
-  platform: string
-  level: number
-  lead_id: string | null
-  role: string
-  chat_targetable: boolean
-  terminal_state: string
-  terminal_session_id: string | null
-  skills: string[]
-  phase: string | null
-  status: string | null
-  current_task: string | null
-  heartbeat: string | null
-  scene_present: boolean
-}
-
-type TaskEditorState = {
-  title: string
-  owner: string
-  phase: string
-  status: TaskStatus
-  objective: string
-  done_definition: string
-}
-
-const STATUS_ORDER: TaskStatus[] = ['todo', 'in_progress', 'blocked', 'done']
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  todo: 'Todo',
-  in_progress: 'In Progress',
-  blocked: 'Blocked',
-  done: 'Done',
-}
-
-const CLEMS_MODEL_OPTIONS = [
-  { id: 'moonshotai/kimi-k2.5', label: 'Kimi K2.5', note: 'default L0' },
-  { id: 'anthropic/claude-sonnet-4.6', label: 'Claude Sonnet 4.6', note: 'higher reasoning' },
-  { id: 'anthropic/claude-opus-4.6', label: 'Claude Opus 4.6', note: 'max depth' },
-] as const
-
-const L1_MODEL_OPTIONS = [
-  { id: 'moonshotai/kimi-k2.5', label: 'Kimi K2.5', note: 'fast default' },
-  { id: 'anthropic/claude-sonnet-4.6', label: 'Claude Sonnet 4.6', note: 'strong lead' },
-  { id: 'anthropic/claude-opus-4.6', label: 'Claude Opus 4.6', note: 'max depth' },
-  { id: 'openai/gpt-5.4', label: 'GPT-5.4', note: 'broad reasoning' },
-  { id: 'google/gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview', note: 'wide context' },
-  { id: 'x-ai/grok-4', label: 'Grok 4', note: 'current OpenRouter grok 4.x entry' },
-] as const
-
-const L2_MODEL_OPTIONS = [
-  { id: 'minimax/minimax-m2.5', label: 'MiniMax M2.5', note: 'surgical primary' },
-  { id: 'moonshotai/kimi-k2.5', label: 'Kimi K2.5', note: 'precise fallback' },
-  { id: 'deepseek/deepseek-chat-v3.1', label: 'DeepSeek Chat V3.1', note: 'bounded execution' },
-] as const
-
-const QUICK_AGENT_PRESETS = [
-  { agent_id: 'clems', label: 'Clems' },
-  { agent_id: 'victor', label: 'Victor' },
-  { agent_id: 'leo', label: 'Leo' },
-  { agent_id: 'nova', label: 'Nova' },
-  { agent_id: 'vulgarisation', label: 'Vulgarisation' },
-] as const
-
-const VOICE_STT_OPTIONS = [
-  'google/gemini-2.5-flash',
-  'openai/gpt-4o-mini-transcribe',
-] as const
-
-function parseSkillsInput(raw: string): string[] {
-  return [...new Set(raw.split(',').map((item) => item.trim()).filter(Boolean))]
-}
-
-function formatSkillChip(skillId: string): string {
-  return skillId.replaceAll('-', ' ')
-}
-
-function agentInitials(name: string, agentId: string): string {
-  const source = name.trim() || agentId.trim()
-  const parts = source.split(/\s+/).filter(Boolean)
-  if (parts.length === 0) {
-    return 'AG'
-  }
-  if (parts.length === 1) {
-    return parts[0].slice(0, 2).toUpperCase()
-  }
-  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase()
-}
-
-function formatHeartbeat(ts: string | null | undefined): string {
-  if (!ts) {
-    return 'heartbeat n/a'
-  }
-  const parsed = Date.parse(ts)
-  if (Number.isNaN(parsed)) {
-    return 'heartbeat unknown'
-  }
-  const deltaSeconds = Math.max(0, Math.floor((Date.now() - parsed) / 1000))
-  if (deltaSeconds < 60) {
-    return 'heartbeat now'
-  }
-  const deltaMinutes = Math.floor(deltaSeconds / 60)
-  if (deltaMinutes < 60) {
-    return `heartbeat ${deltaMinutes}m ago`
-  }
-  const deltaHours = Math.floor(deltaMinutes / 60)
-  if (deltaHours < 24) {
-    return `heartbeat ${deltaHours}h ago`
-  }
-  const deltaDays = Math.floor(deltaHours / 24)
-  return `heartbeat ${deltaDays}d ago`
-}
-
-function formatAgentState(phase: string | null | undefined, status: string | null | undefined): string {
-  const cleanPhase = phase?.trim()
-  const cleanStatus = status?.trim()
-  if (cleanPhase && cleanStatus) {
-    return `${cleanPhase} - ${cleanStatus}`
-  }
-  return cleanPhase || cleanStatus || 'state unknown'
-}
-
-function formatCurrencyCad(value: number | null | undefined): string {
-  if (value == null || Number.isNaN(value)) {
-    return 'n/a'
-  }
-  return new Intl.NumberFormat('en-CA', {
-    style: 'currency',
-    currency: 'CAD',
-    maximumFractionDigits: value >= 100 ? 0 : 2,
-  }).format(value)
-}
-
-function projectLabel(projectId: string, projectName?: string | null): string {
-  const cleanName = projectName?.trim()
-  if (cleanName && cleanName.toLowerCase() !== projectId.trim().toLowerCase()) {
-    return cleanName
-  }
-
-  if (projectId.trim().length === 0) {
-    return 'Project'
-  }
-
-  return projectId
-    .split(/[-_]/g)
-    .filter(Boolean)
-    .map((chunk) => `${chunk.slice(0, 1).toUpperCase()}${chunk.slice(1)}`)
-    .join(' ')
-}
-
-function modelLabel(modelId: string): string {
-  const found = [...CLEMS_MODEL_OPTIONS, ...L1_MODEL_OPTIONS, ...L2_MODEL_OPTIONS].find(
-    (option) => option.id === modelId,
-  )
-  return found ? found.label : `${modelId} (unavailable)`
-}
-
-function isUnavailableModel(modelId: string): boolean {
-  return modelLabel(modelId).endsWith('(unavailable)')
-}
-
-function roomLeadAgentIdsFromRecords(agentRecords: AgentRecord[]): string[] {
-  return agentRecords
-    .filter((agent) => agent.agent_id !== 'clems' && agent.level === 1)
-    .map((agent) => agent.agent_id)
-    .sort()
-}
-
-function preferredVoiceRecorder(): { mimeType: string; format: string } | null {
-  if (typeof window === 'undefined' || typeof MediaRecorder === 'undefined') {
-    return null
-  }
-
-  const candidates = [
-    { mimeType: 'audio/mp4', format: 'm4a' },
-    { mimeType: 'audio/ogg;codecs=opus', format: 'ogg' },
-    { mimeType: 'audio/webm;codecs=opus', format: 'webm' },
-  ] as const
-
-  for (const candidate of candidates) {
-    if (MediaRecorder.isTypeSupported(candidate.mimeType)) {
-      return { mimeType: candidate.mimeType, format: candidate.format }
-    }
-  }
-
-  return null
-}
-
-async function blobToBase64(blob: Blob): Promise<string> {
-  const buffer = await blob.arrayBuffer()
-  let binary = ''
-  const bytes = new Uint8Array(buffer)
-  for (const value of bytes) {
-    binary += String.fromCharCode(value)
-  }
-  return window.btoa(binary)
-}
-
-function emptyTaskEditor(): TaskEditorState {
-  return {
-    title: '',
-    owner: 'clems',
-    phase: 'Implement',
-    status: 'todo',
-    objective: '',
-    done_definition: '',
-  }
-}
-
-function compareTasksByFreshness(left: TaskRecord, right: TaskRecord): number {
-  const leftTime = Date.parse(left.updated_at)
-  const rightTime = Date.parse(right.updated_at)
-  if (Number.isNaN(leftTime) || Number.isNaN(rightTime)) {
-    return left.task_id.localeCompare(right.task_id)
-  }
-  return rightTime - leftTime
-}
-
-function messageKindLabel(message: ChatMessage): string | null {
-  const rawKind = typeof message.metadata?.kind === 'string' ? message.metadata.kind : null
-  if (!rawKind) {
-    return message.author === 'operator' ? 'operator' : null
-  }
-
-  const labels: Record<string, string> = {
-    direct_reply: 'direct reply',
-    direct_summary: 'internal summary',
-    direct_fallback: 'fallback',
-    conceal_reply: 'room reply',
-    conceal_summary: 'room summary',
-    approval_pending: 'approval pending',
-    approval_spawn: 'approval spawn',
-    terminal_online_ack: 'terminal ready',
-  }
-
-  return labels[rawKind] ?? rawKind.replaceAll('_', ' ')
-}
-
-function messageChatMode(message: ChatMessage): ChatMode {
-  const rawMode = typeof message.metadata?.chat_mode === 'string'
-    ? message.metadata.chat_mode
-    : typeof message.metadata?.mode === 'string'
-      ? message.metadata.mode
-      : null
-
-  return rawMode === 'conceal_room' ? 'conceal_room' : 'direct'
-}
-
-function messageReplySource(message: ChatMessage): string | null {
-  return typeof message.metadata?.reply_source === 'string' ? message.metadata.reply_source : null
-}
-
-function isSyntheticDirectReply(message: ChatMessage): boolean {
-  if (message.author === 'operator' || messageChatMode(message) !== 'direct') {
-    return false
-  }
-  if (messageReplySource(message) === 'fallback') {
-    return true
-  }
-  if (typeof message.metadata?.kind === 'string' && message.metadata.kind === 'direct_fallback') {
-    return true
-  }
-  return message.text.includes('recu en direct. Action immediate sur:')
-}
-
-function isLegacyPendingRoomSummary(message: ChatMessage): boolean {
-  if (messageChatMode(message) !== 'conceal_room') {
-    return false
-  }
-  if (message.author !== 'clems') {
-    return false
-  }
-  const kind = typeof message.metadata?.kind === 'string' ? message.metadata.kind : ''
-  if (kind !== 'conceal_summary') {
-    return false
-  }
-  return message.text.includes('contribution(s) en attente')
-}
 
 function App() {
-  const [projectId, setProjectId] = useState(DEFAULT_PROJECT_ID)
-  const [apiError, setApiError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [feed, setFeed] = useState<PixelFeedResponse | null>(null)
-  const [agentRecords, setAgentRecords] = useState<AgentRecord[]>([])
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
-  const [directChatInput, setDirectChatInput] = useState('')
-  const [roomChatInput, setRoomChatInput] = useState('')
-  const [executionMode, setExecutionMode] = useState<ExecutionMode>('chat')
-  const [wsConnected, setWsConnected] = useState(false)
-  const [composerStatus, setComposerStatus] = useState<ComposerStatus>('reconnecting')
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
-  const [directTarget, setDirectTarget] = useState<DirectTargetMode>('clems')
-  const [eventLog, setEventLog] = useState<WsEventEnvelope[]>([])
-  const [createAgentId, setCreateAgentId] = useState('')
-  const [createAgentName, setCreateAgentName] = useState('')
-  const [createAgentSkills, setCreateAgentSkills] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSendingChat, setIsSendingChat] = useState(false)
-  const [showRoomAddMenu, setShowRoomAddMenu] = useState(false)
-  const [refreshTick, setRefreshTick] = useState(0)
-  const [agentTools, setAgentTools] = useState<Record<number, ToolActivity[]>>({})
-  const [overlayViewport, setOverlayViewport] = useState({
-    viewportWidth: 0,
-    viewportHeight: 0,
-    panX: 0,
-    panY: 0,
-    dpr: 1,
-  })
-  const [activeTab, setActiveTab] = useState<TopTab>('pixel_home')
-  const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>('agent')
-  const [approvals, setApprovals] = useState<ApprovalRequest[]>([])
-  const [approvalBusy, setApprovalBusy] = useState<Record<string, boolean>>({})
-  const [uiNotice, setUiNotice] = useState<string | null>(null)
-  const [fallbackDiagnostics, setFallbackDiagnostics] = useState<FallbackDiagnostic[]>([])
-  const [directSendPhase, setDirectSendPhase] = useState<DirectSendPhase | null>(null)
-  const [zoom, setZoom] = useState(2)
-  const [workbenchCollapsed, setWorkbenchCollapsed] = useState(false)
-  const [workbenchPanel, setWorkbenchPanel] = useState<WorkbenchPanel>('chat')
-  const [backendHealth, setBackendHealth] = useState<HealthzResponse | null>(null)
-  const [llmProfile, setLlmProfile] = useState<LlmProfile | null>(null)
-  const [profileDraft, setProfileDraft] = useState<LlmProfile | null>(null)
-  const [tasks, setTasks] = useState<TaskRecord[]>([])
-  const [taskEditor, setTaskEditor] = useState<TaskEditorState>(emptyTaskEditor)
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-  const [isSavingTask, setIsSavingTask] = useState(false)
-  const [isSavingProfile, setIsSavingProfile] = useState(false)
-  const [clockNow, setClockNow] = useState(() => new Date())
-  const [lastEventAt, setLastEventAt] = useState<string | null>(null)
-  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null)
-  const [docsPanel, setDocsPanel] = useState<DocsPanel>('runbook')
-  const [skillsLibrary, setSkillsLibrary] = useState<SkillLibraryEntry[]>([])
-  const [skillsLibraryLoading, setSkillsLibraryLoading] = useState(false)
-  const [projectSummary, setProjectSummary] = useState<ProjectSummaryResponse | null>(null)
-  const [projectSettings, setProjectSettings] = useState<ProjectSettings | null>(null)
-  const [projectCatalog, setProjectCatalog] = useState<ProjectCatalogEntry[]>([])
-  const [projectCatalogLoading, setProjectCatalogLoading] = useState(false)
-  const [selectedProjectDocId, setSelectedProjectDocId] = useState(DEFAULT_PROJECT_ID)
-  const [linkedRepoDraft, setLinkedRepoDraft] = useState('')
-  const [projectActionMode, setProjectActionMode] = useState<ProjectActionMode>(null)
-  const [newProjectIdDraft, setNewProjectIdDraft] = useState('')
-  const [newProjectNameDraft, setNewProjectNameDraft] = useState('')
-  const [newProjectRepoDraft, setNewProjectRepoDraft] = useState('')
-  const [projectRoadmap, setProjectRoadmap] = useState<RoadmapResponse | null>(null)
-  const [takeoverResult, setTakeoverResult] = useState<TakeoverStartResponse | null>(null)
-  const [isRunningTakeover, setIsRunningTakeover] = useState(false)
-  const [isApplyingTakeover, setIsApplyingTakeover] = useState(false)
-  const [isChoosingFolder, setIsChoosingFolder] = useState(false)
-  const [isCreatingProject, setIsCreatingProject] = useState(false)
-  const [isRecordingVoice, setIsRecordingVoice] = useState(false)
-  const [isTranscribingVoice, setIsTranscribingVoice] = useState(false)
-  const [directVisibleCount, setDirectVisibleCount] = useState(8)
-  const [roomVisibleCount, setRoomVisibleCount] = useState(8)
-  const [roomParticipantMode, setRoomParticipantMode] = useState<RoomParticipantMode>('all_active')
-  const [roomCustomParticipants, setRoomCustomParticipants] = useState<string[]>(['clems'])
-  const [assetsStatus, setAssetsStatus] = useState<{ donarg: boolean; pixelRef: boolean }>({
-    donarg: false,
-    pixelRef: false,
-  })
+  const store = useCockpitStore()
+  const {
+    projectId, setProjectId,
+    apiError, setApiError,
+    loading, setLoading,
+    feed, setFeed,
+    agentRecords, setAgentRecords,
+    setChatMessages,
+    directChatInput, setDirectChatInput,
+    roomChatInput, setRoomChatInput,
+    executionMode, setExecutionMode,
+    wsConnected, setWsConnected,
+    composerStatus, setComposerStatus,
+    selectedAgentId, setSelectedAgentId,
+    directTarget, setDirectTarget,
+    eventLog, setEventLog,
+    createAgentId, setCreateAgentId,
+    createAgentName, setCreateAgentName,
+    createAgentSkills, setCreateAgentSkills,
+    isSubmitting, setIsSubmitting,
+    isSendingChat, setIsSendingChat,
+    showRoomAddMenu, setShowRoomAddMenu,
+    refreshTick, setRefreshTick,
+    agentTools, setAgentTools,
+    overlayViewport, setOverlayViewport,
+    activeTab, setActiveTab,
+    workspaceTab, setWorkspaceTab,
+    approvals, setApprovals,
+    approvalBusy, setApprovalBusy,
+    uiNotice, setUiNotice,
+    fallbackDiagnostics, setFallbackDiagnostics,
+    directSendPhase, setDirectSendPhase,
+    zoom, setZoom,
+    workbenchCollapsed, setWorkbenchCollapsed,
+    workbenchPanel, setWorkbenchPanel,
+    backendHealth, setBackendHealth,
+    llmProfile, setLlmProfile,
+    profileDraft, setProfileDraft,
+    tasks, setTasks,
+    taskEditor, setTaskEditor,
+    selectedTaskId, setSelectedTaskId,
+    isSavingTask, setIsSavingTask,
+    isSavingProfile, setIsSavingProfile,
+    clockNow, setClockNow,
+    lastEventAt, setLastEventAt,
+    lastSyncAt,
+    docsPanel, setDocsPanel,
+    skillsLibrary, setSkillsLibrary,
+    skillsLibraryLoading, setSkillsLibraryLoading,
+    projectSummary, setProjectSummary,
+    projectSettings, setProjectSettings,
+    projectCatalog, setProjectCatalog,
+    projectCatalogLoading, setProjectCatalogLoading,
+    selectedProjectDocId, setSelectedProjectDocId,
+    linkedRepoDraft, setLinkedRepoDraft,
+    projectActionMode, setProjectActionMode,
+    newProjectIdDraft, setNewProjectIdDraft,
+    newProjectNameDraft, setNewProjectNameDraft,
+    newProjectRepoDraft, setNewProjectRepoDraft,
+    projectRoadmap, setProjectRoadmap,
+    takeoverResult, setTakeoverResult,
+    isRunningTakeover, setIsRunningTakeover,
+    isApplyingTakeover, setIsApplyingTakeover,
+    isChoosingFolder, setIsChoosingFolder,
+    isCreatingProject, setIsCreatingProject,
+    isRecordingVoice, setIsRecordingVoice,
+    isTranscribingVoice, setIsTranscribingVoice,
+    directVisibleCount, setDirectVisibleCount,
+    roomVisibleCount, setRoomVisibleCount,
+    roomParticipantMode, setRoomParticipantMode,
+    roomCustomParticipants, setRoomCustomParticipants,
+    assetsStatus, setAssetsStatus,
+    mergeChatMessages,
+    markSynced,
+  } = store
+  const directChatMessages = useCockpitStore(selectDirectChatMessages)
+  const conciergeChatMessages = useCockpitStore(selectConciergeChatMessages)
+  const internalConciergeMessages = useCockpitStore(selectInternalConciergeMessages)
+  const activeChatMode = useCockpitStore(selectActiveChatMode)
 
   const officeState = useMemo(() => new OfficeState(), [])
   const editorState = useMemo(() => new EditorState(), [])
@@ -502,70 +230,6 @@ function App() {
     }
   }, [])
 
-  const mergeChatMessages = useCallback((incoming: ChatMessage[]) => {
-    if (incoming.length === 0) {
-      return
-    }
-
-    setChatMessages((previous) => {
-      const byId = new Map<string, ChatMessage>()
-      for (const row of previous) {
-        byId.set(row.message_id, {
-          ...row,
-          visibility: row.visibility ?? 'operator',
-        })
-      }
-      for (const row of incoming) {
-        if (!row?.message_id) {
-          continue
-        }
-        byId.set(row.message_id, {
-          ...row,
-          visibility: row.visibility ?? 'operator',
-        })
-      }
-
-      return [...byId.values()].sort((a, b) => {
-        if (a.timestamp === b.timestamp) {
-          return a.message_id.localeCompare(b.message_id)
-        }
-        return a.timestamp.localeCompare(b.timestamp)
-      })
-    })
-  }, [])
-
-  const operatorChatMessages = useMemo(
-    () => chatMessages.filter((message) => message.visibility !== 'internal'),
-    [chatMessages],
-  )
-
-  const directChatMessages = useMemo(
-    () =>
-      operatorChatMessages.filter(
-        (message) => messageChatMode(message) === 'direct' && !isSyntheticDirectReply(message),
-      ),
-    [operatorChatMessages],
-  )
-
-  const conciergeChatMessages = useMemo(
-    () =>
-      operatorChatMessages.filter(
-        (message) =>
-          messageChatMode(message) === 'conceal_room' && !isLegacyPendingRoomSummary(message),
-      ),
-    [operatorChatMessages],
-  )
-
-  const internalConciergeMessages = useMemo(
-    () =>
-      chatMessages.filter(
-        (message) => message.visibility === 'internal' && messageChatMode(message) === 'conceal_room',
-      ),
-    [chatMessages],
-  )
-
-  const activeChatMode: ChatMode = activeTab === 'concierge_room' ? 'conceal_room' : 'direct'
-
   const stopFallbackPolling = useCallback(
     (nextStatus?: ComposerStatus) => {
       fallbackPollingRef.current = false
@@ -584,9 +248,7 @@ function App() {
     [],
   )
 
-  const markSynced = useCallback(() => {
-    setLastSyncAt(new Date().toISOString())
-  }, [])
+  // markSynced is now provided by the Zustand store
 
   const refreshApprovals = useCallback(async () => {
     try {
@@ -681,12 +343,10 @@ function App() {
         ]
       }
 
-      setSelectedAgentId((previous) => {
-        if (previous && ids.has(previous)) {
-          return previous
-        }
-        return ids.has('clems') ? 'clems' : nextFeed.agents[0]?.agent_id ?? null
-      })
+      const currentSelected = useCockpitStore.getState().selectedAgentId
+      if (!currentSelected || !ids.has(currentSelected)) {
+        setSelectedAgentId(ids.has('clems') ? 'clems' : nextFeed.agents[0]?.agent_id ?? null)
+      }
 
       setAgentTools(tools)
       setRefreshTick((value) => value + 1)
@@ -2005,12 +1665,12 @@ function App() {
       try {
         if (decision === 'approve') {
           await approveApproval(projectId, requestId, {
-            decided_by: 'olivier',
+            decided_by: 'operator',
             note: 'approved from cockpit ui',
           })
         } else {
           await rejectApproval(projectId, requestId, {
-            decided_by: 'olivier',
+            decided_by: 'operator',
             note: 'rejected from cockpit ui',
           })
         }
@@ -3992,7 +3652,7 @@ function App() {
                     <button
                       type="button"
                       aria-label={workbenchCollapsed ? 'Open workbench' : 'Collapse workbench'}
-                      onClick={() => setWorkbenchCollapsed((value) => !value)}
+                      onClick={() => setWorkbenchCollapsed(!workbenchCollapsed)}
                     >
                       {workbenchCollapsed ? 'workbench' : 'collapse'}
                     </button>
