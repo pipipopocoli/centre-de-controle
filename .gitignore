@@ -61,3 +61,4 @@ docs/swarm/_runs/
 docs/swarm/_cache/
 docs/swarm_results/
 docs/reports/
+.claude/worktrees/
