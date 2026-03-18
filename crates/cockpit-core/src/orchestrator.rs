@@ -752,7 +752,7 @@ pub async fn run_turn(
                     messages.push(message_with_meta(
                             "clems",
                             format!(
-                            "L2 request pending on section '{}'. @olivier approve or reject this request.",
+                            "L2 request pending on section '{}'. Operator, approve or reject this request.",
                             section_tag
                         ),
                         thread_id.clone(),
