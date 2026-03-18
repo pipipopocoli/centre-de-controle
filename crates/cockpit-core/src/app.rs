@@ -12,6 +12,7 @@ use axum::{
         ws::{Message, WebSocket},
     },
     http::StatusCode,
+    middleware,
     response::{IntoResponse, Response},
     routing::{delete, get, post},
 };
@@ -111,6 +112,7 @@ pub fn build_router(state: AppState) -> Router {
             "/v1/projects/{id}/voice/transcribe",
             post(post_voice_transcribe),
         )
+        .layer(middleware::from_fn(crate::auth::require_token))
         .layer(CorsLayer::permissive())
         .with_state(state)
 }
@@ -1244,14 +1246,21 @@ fn parse_visibility_filter(raw: Option<&str>) -> Result<Option<MessageVisibility
 }
 
 fn normalize_decider(decided_by: Option<String>) -> Result<String, ApiError> {
+    let operator_name = std::env::var("COCKPIT_OPERATOR_NAME")
+        .ok()
+        .map(|v| v.trim().to_lowercase())
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| "operator".to_string());
     let normalized = decided_by
-        .unwrap_or_else(|| "olivier".to_string())
+        .unwrap_or_else(|| operator_name.clone())
         .trim()
         .to_lowercase();
-    if normalized == "olivier" || normalized == "clems" {
+    if normalized == operator_name || normalized == "operator" || normalized == "clems" {
         return Ok(normalized);
     }
-    Err(ApiError::bad_request("decided_by must be olivier or clems"))
+    Err(ApiError::bad_request(
+        "decided_by must be operator, clems, or match COCKPIT_OPERATOR_NAME",
+    ))
 }
 
 fn default_agent_profile(

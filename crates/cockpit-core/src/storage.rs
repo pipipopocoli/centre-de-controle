@@ -18,7 +18,13 @@ use crate::models::{
 
 const LEGACY_RUNTIME_PLATFORMS: &[&str] = &["codex", "antigravity", "ollama"];
 const LEGACY_SYSTEM_AGENT_IDS: &[&str] = &["codex", "antigravity", "ollama"];
-const DEFAULT_DRIVE_ARCHIVE_ROOT: &str = "/Users/oliviercloutier/Library/CloudStorage/GoogleDrive-oliviier.cloutier@gmail.com/Mon disque/Cockpit";
+fn default_drive_archive_root() -> String {
+    if let Some(home) = dirs::data_dir() {
+        home.join("Cockpit").join("archive").display().to_string()
+    } else {
+        "/tmp/cockpit-archive".to_string()
+    }
+}
 
 pub fn project_root(control_root: &Path, project_id: &str) -> PathBuf {
     control_root.join(project_id)
@@ -29,7 +35,7 @@ fn drive_archive_root() -> Result<PathBuf> {
         .ok()
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty())
-        .unwrap_or_else(|| DEFAULT_DRIVE_ARCHIVE_ROOT.to_string());
+        .unwrap_or_else(default_drive_archive_root);
     let path = PathBuf::from(raw);
     if !path.exists() {
         anyhow::bail!("drive archive root missing: {}", path.display());
