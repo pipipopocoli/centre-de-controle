@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { useCockpitStore } from '../store/index.js'
 import type { RosterAgentView } from '../types.js'
 import { modelLabel, isUnavailableModel } from '../lib/formatters.js'
@@ -13,7 +13,7 @@ export interface ModelRoutingTabProps {
   handleSaveLlmProfile: () => Promise<void>
 }
 
-export function ModelRoutingTab({
+export const ModelRoutingTab = memo(function ModelRoutingTab({
   handleSaveLlmProfile,
 }: ModelRoutingTabProps) {
   const feed = useCockpitStore((state) => state.feed)
@@ -262,4 +262,4 @@ export function ModelRoutingTab({
       </div>
     </section>
   )
-}
+})

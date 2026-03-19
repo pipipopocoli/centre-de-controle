@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { useCockpitStore } from '../store/index.js'
 import type { TaskStatus } from '../lib/cockpitClient'
 import { compareTasksByFreshness } from '../lib/formatters.js'
@@ -9,7 +10,7 @@ export interface TodoTabProps {
   handleTaskStatusMove: (taskId: string, status: TaskStatus) => Promise<void>
 }
 
-export function TodoTab({
+export const TodoTab = memo(function TodoTab({
   handleCreateTask,
   handleSaveTask,
   handleTaskStatusMove,
@@ -177,4 +178,4 @@ export function TodoTab({
       </div>
     </section>
   )
-}
+})

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import {
   useCockpitStore,
   useConciergeChatMessages,
@@ -17,7 +17,7 @@ export interface OverviewTabProps {
   lastEventAt: string | null
 }
 
-export function OverviewTab({
+export const OverviewTab = memo(function OverviewTab({
   composerLabel,
   backendHealth,
   directTargetLabel,
@@ -315,4 +315,4 @@ export function OverviewTab({
       </div>
     </section>
   )
-}
+})

@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type { RefObject } from 'react'
 import {
   useCockpitStore,
@@ -72,7 +73,7 @@ export interface ConciergeRoomTabProps {
   handleLaunchTakeoverPlan: () => Promise<void>
 }
 
-export function ConciergeRoomTab({
+export const ConciergeRoomTab = memo(function ConciergeRoomTab({
   composerStatus,
   composerLabel,
   roomChatInput,
@@ -575,4 +576,4 @@ export function ConciergeRoomTab({
       </div>
     </section>
   )
-}
+})

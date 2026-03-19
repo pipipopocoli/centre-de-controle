@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import {
   useCockpitStore,
   useDirectChatMessages,
@@ -14,7 +15,7 @@ export interface PilotageTabProps {
   eventLog: Array<{ type: string; timestamp: string }>
 }
 
-export function PilotageTab({
+export const PilotageTab = memo(function PilotageTab({
   composerLabel,
   fallbackDiagnostics,
   backendHealth,
@@ -134,4 +135,4 @@ export function PilotageTab({
       </div>
     </section>
   )
-}
+})

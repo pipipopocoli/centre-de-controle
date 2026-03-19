@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { useCockpitStore } from '../store/index.js'
 import type { HealthzResponse, ProjectCatalogEntry } from '../lib/cockpitClient'
 import { projectLabel, formatCurrencyCad } from '../lib/formatters.js'
@@ -7,7 +7,7 @@ export interface DocsTabProps {
   backendHealth: HealthzResponse | null
 }
 
-export function DocsTab({
+export const DocsTab = memo(function DocsTab({
   backendHealth,
 }: DocsTabProps) {
   const projectId = useCockpitStore((state) => state.projectId)
@@ -273,4 +273,4 @@ export function DocsTab({
       )}
     </section>
   )
-}
+})
