@@ -9,36 +9,36 @@
   font-family: 'IBM Plex Sans', 'Avenir Next', 'Segoe UI', sans-serif;
   --font-display: 'FS Pixel Sans', 'Azeret Mono', 'JetBrains Mono', monospace;
   --font-body: 'IBM Plex Sans', 'Avenir Next', 'Segoe UI', sans-serif;
-  color-scheme: only light;
-  --bg-0: #eef3f6;
-  --bg-1: #dde7ee;
-  --bg-2: #d0dbe4;
-  --fg-0: #13212b;
-  --fg-1: #4a5b67;
-  --fg-2: #71808b;
-  --line: #b7c5d1;
-  --line-strong: #8ea2b2;
-  --accent: #215d9c;
-  --accent-2: #d48d3d;
-  --danger: #cf4c4c;
-  --ok: #267e57;
-  --warn: #b47b16;
-  --card-shadow: 0 14px 38px rgba(24, 43, 63, 0.12);
-  --surface-0: rgba(252, 254, 255, 0.96);
-  --surface-1: rgba(246, 250, 253, 0.98);
-  --surface-2: #d9e5ef;
-  --surface-3: rgba(235, 242, 247, 0.98);
-  --surface-input: #f5f9fc;
-  --button-bg: #dce9f4;
-  --button-border: #98afc2;
-  --button-hover: #cfe0ee;
-  --chat-row-bg: rgba(242, 248, 253, 0.98);
-  --chat-row-border: rgba(156, 181, 202, 0.92);
-  --terminal-bg: #1a2430;
-  --terminal-text: #d3f0db;
-  --radius-lg: 22px;
-  --radius-md: 14px;
-  --radius-sm: 10px;
+  color-scheme: dark;
+  --bg-0: #0d1117;
+  --bg-1: #161b22;
+  --bg-2: #21262d;
+  --fg-0: #e6edf3;
+  --fg-1: #8b949e;
+  --fg-2: #484f58;
+  --line: #30363d;
+  --line-strong: #484f58;
+  --accent: #58a6ff;
+  --accent-2: #f0883e;
+  --danger: #f85149;
+  --ok: #3fb950;
+  --warn: #d29922;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --surface-0: #161b22;
+  --surface-1: #1c2128;
+  --surface-2: #21262d;
+  --surface-3: #282e36;
+  --surface-input: #0d1117;
+  --button-bg: #21262d;
+  --button-border: #30363d;
+  --button-hover: #30363d;
+  --chat-row-bg: #1c2128;
+  --chat-row-border: #30363d;
+  --terminal-bg: #0d1117;
+  --terminal-text: #7ee787;
+  --radius-lg: 8px;
+  --radius-md: 6px;
+  --radius-sm: 4px;
 }
 
 * {
@@ -51,10 +51,7 @@ body,
   margin: 0;
   min-height: 100%;
   width: 100%;
-  background:
-    radial-gradient(circle at 14% 8%, rgba(76, 139, 194, 0.22), transparent 36%),
-    radial-gradient(circle at 92% 0%, rgba(216, 180, 132, 0.3), transparent 29%),
-    linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 44%, var(--bg-2) 100%);
+  background: var(--bg-0);
   color: var(--fg-0);
 }
 

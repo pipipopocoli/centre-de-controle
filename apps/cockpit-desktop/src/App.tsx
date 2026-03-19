@@ -448,15 +448,15 @@ function App() {
   const currentProjectLabel = projectLabel(projectId, projectSettings?.project_name ?? projectId)
   const linkedRepoLabel = projectSummary?.linked_repo_path ?? projectSettings?.linked_repo_path ?? 'not linked'
 
-  const topTabs = useMemo(
+  const sidebarNav = useMemo(
     () => [
-      { id: 'pixel_home' as const, label: 'Pixel Home' },
-      { id: 'concierge_room' as const, label: 'Le Conseil' },
-      { id: 'overview' as const, label: 'Overview' },
-      { id: 'pilotage' as const, label: 'Pilotage' },
-      { id: 'docs' as const, label: 'Docs' },
-      { id: 'todo' as const, label: 'To Do' },
-      { id: 'model_routing' as const, label: 'Model Routing' },
+      { id: 'pixel_home' as const, label: 'Pixel Home', icon: '\u2302' },
+      { id: 'concierge_room' as const, label: 'Le Conseil', icon: '\u2636' },
+      { id: 'overview' as const, label: 'Overview', icon: '\u2261' },
+      { id: 'pilotage' as const, label: 'Pilotage', icon: '\u2699' },
+      { id: 'docs' as const, label: 'Docs', icon: '\u2637' },
+      { id: 'todo' as const, label: 'To Do', icon: '\u2611' },
+      { id: 'model_routing' as const, label: 'Model Routing', icon: '\u2726' },
     ],
     [],
   )
@@ -628,37 +628,57 @@ function App() {
   }
 
   // ── Render ────────────────────────────────────────────────────────
+  const activeNavItem = sidebarNav.find((item) => item.id === activeTab)
+
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <div className="header-left">
-          <h1>Cockpit</h1>
-          <span className="project-badge">{projectId}</span>
+      <aside className="sidebar">
+        <div className="sidebar-brand">
+          <h1 className="sidebar-logo">Cockpit</h1>
+          <span className="sidebar-project">{projectId}</span>
         </div>
-        <nav className="top-tabs">
-          {topTabs.map((tab) => (
+        <nav className="sidebar-nav">
+          {sidebarNav.map((item) => (
             <button
-              key={tab.id}
-              className={`top-tab ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
+              key={item.id}
+              className={`sidebar-nav-item ${activeTab === item.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(item.id)}
             >
-              {tab.label}
-              {tab.id === 'concierge_room' && conciergeChatMessages.length > 0 ? (
-                <span className="tab-badge">{conciergeChatMessages.length}</span>
+              <span className="sidebar-nav-icon">{item.icon}</span>
+              <span className="sidebar-nav-label">{item.label}</span>
+              {item.id === 'concierge_room' && conciergeChatMessages.length > 0 ? (
+                <span className="sidebar-badge">{conciergeChatMessages.length}</span>
               ) : null}
-              {tab.id === 'todo' ? (
-                <span className="tab-badge">
+              {item.id === 'todo' ? (
+                <span className="sidebar-badge">
                   {taskCounts.todo + taskCounts.in_progress + taskCounts.blocked}
                 </span>
               ) : null}
             </button>
           ))}
         </nav>
-        <div className="header-right">
-          <span className={`status-pill ${wsConnected ? 'ok' : 'warn'}`}>{composerLabel}</span>
-          {apiError ? <span className="status-pill warn" title={apiError}>Error</span> : null}
+        <div className="sidebar-footer">
+          <div className="sidebar-status">
+            <span className={`sidebar-dot ${wsConnected ? 'ok' : 'warn'}`} />
+            <span className="sidebar-status-label">{wsConnected ? 'Live' : composerLabel}</span>
+          </div>
+          {apiError ? <p className="sidebar-error" title={apiError}>API Error</p> : null}
+          <div className="sidebar-counts">
+            <span>L0: {rosterAgents.filter((a) => a.level === 0).length}</span>
+            <span>L1: {rosterAgents.filter((a) => a.level === 1).length}</span>
+            <span>L2: {rosterAgents.filter((a) => a.level === 2).length}</span>
+          </div>
         </div>
-      </header>
+      </aside>
+
+      <div className="main-content">
+        <header className="app-header">
+          <h2 className="page-title">{activeNavItem?.label ?? 'Cockpit'}</h2>
+          <div className="header-right">
+            <span className={`status-pill ${wsConnected ? 'ok' : 'warn'}`}>{composerLabel}</span>
+            {apiError ? <span className="status-pill warn" title={apiError}>Error</span> : null}
+          </div>
+        </header>
 
       {activeTab === 'pixel_home' ? (
         <PixelHomeTab
@@ -784,6 +804,7 @@ function App() {
       ) : activeTab === 'model_routing' ? (
         <ModelRoutingTab handleSaveLlmProfile={handleSaveLlmProfile} />
       ) : null}
+      </div>
     </div>
   )
 }
