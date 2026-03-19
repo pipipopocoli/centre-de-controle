@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { create } from 'zustand'
 import type {
   AgentRecord,
@@ -425,3 +426,19 @@ export const selectInternalConciergeMessages = (state: CockpitState) =>
 
 export const selectActiveChatMode = (state: CockpitState) =>
   state.activeTab === 'concierge_room' ? 'conceal_room' as const : 'direct' as const
+
+// ── Memoized selector hooks (avoid infinite loops with React 19) ──
+export function useDirectChatMessages() {
+  const chatMessages = useCockpitStore((s) => s.chatMessages)
+  return useMemo(() => selectDirectChatMessages({ chatMessages } as CockpitState), [chatMessages])
+}
+
+export function useConciergeChatMessages() {
+  const chatMessages = useCockpitStore((s) => s.chatMessages)
+  return useMemo(() => selectConciergeChatMessages({ chatMessages } as CockpitState), [chatMessages])
+}
+
+export function useInternalConciergeMessages() {
+  const chatMessages = useCockpitStore((s) => s.chatMessages)
+  return useMemo(() => selectInternalConciergeMessages({ chatMessages } as CockpitState), [chatMessages])
+}

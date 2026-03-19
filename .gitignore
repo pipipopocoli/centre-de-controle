@@ -1,34 +1,38 @@
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Python (MCP server only)
+__pycache__/
+*.pyc
 .venv/
 .venv*/
 venv/
-__pycache__/
-*.pyc
-*.log
-.DS_Store
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-build/
-android/.gradle/
-android/local.properties
-dist/
-build-v5/
-Cockpit-v5-Release/
-local_packages/
 *.egg-info/
+
+# Rust
+crates/**/target/
+
+# Node / Frontend
+apps/**/node_modules/
+apps/**/dist/
+
+# Tauri
+apps/**/src-tauri/target/
+apps/**/src-tauri/gen/
+
+# Build artifacts
+build/
+dist/
 *.app/
 *.spec
-!Centre de controle.spec
-app/version.json
-cockpit_build.py
-generate_theme.py
-app/ui/styles.py
-app/ui/tokens.py
-**/memory.proposed.md
-**/runs/*.ndjson
-**/runs/*.sqlite3
-control/projects/**/runs/inbox/
-control/projects/**/runs/dispatch_state.json
+
+# Control runtime data (state, not source code)
 control/projects/**/agents/agent-*/
 control/projects/**/agents/*/state.json
 control/projects/**/agents/*/journal.ndjson
@@ -36,29 +40,25 @@ control/projects/**/agents/registry.json
 control/projects/**/chat/global.ndjson
 control/projects/**/chat/threads/
 control/projects/**/packs/
-control/projects/**/runs/auto_mode_state.json
-control/projects/**/runs/runtime.db
-control/projects/**/runs/WAVE*.md
-control/projects/**/runs/V2_WAVE*.md
-control/projects/**/runs/NEXT_WAVE*.md
-control/projects/**/runs/NOVA_*.md
-control/projects/**/runs/WEB_REPUBLISH_*.md
-control/projects/**/runs/control_snapshot*.md
-control/projects/**/runs/ship_ready_signoff*.md
-control/projects/**/runs/queue_recovery*.ndjson
+control/projects/**/runs/
 control/_archive_local/
 control/projects/_archive/
-_cleanup_archive/
-brainfs/profiles/*.json
-!brainfs/profiles/template.json
-apps/**/node_modules/
-apps/**/dist/
-apps/**/src-tauri/target/
-apps/**/src-tauri/gen/
+
+# Agent memory proposals
+**/memory.proposed.md
+
+# Local assets (licensed, not committed)
 apps/cockpit-next-desktop/public/local-assets/
-crates/**/target/
+
+# Documentation build artifacts
 docs/swarm/_runs/
 docs/swarm/_cache/
 docs/swarm_results/
 docs/reports/
+
+# Claude Code worktrees
 .claude/worktrees/
+
+# Environment files
+.env
+.env.local
