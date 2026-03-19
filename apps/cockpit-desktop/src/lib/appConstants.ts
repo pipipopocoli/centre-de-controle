@@ -31,6 +31,8 @@ export const L2_MODEL_OPTIONS = [
   { id: 'deepseek/deepseek-chat-v3.1', label: 'DeepSeek Chat V3.1', note: 'bounded execution' },
 ] as const
 
+export const PREFERRED_AGENT_ORDER = ['clems', 'victor', 'leo', 'nova', 'vulgarisation'] as const
+
 export const QUICK_AGENT_PRESETS = [
   { agent_id: 'clems', label: 'Clems' },
   { agent_id: 'victor', label: 'Victor' },

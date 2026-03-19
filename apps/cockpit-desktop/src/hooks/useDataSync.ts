@@ -23,6 +23,7 @@ import type { ToolActivity } from '../office/types.js'
 import { loadDonargTheme } from '../office/themes/donargTheme.js'
 import { loadPixelReferenceTheme } from '../office/themes/pixelReferenceTheme.js'
 import type { OfficeState } from '../office/engine/officeState.js'
+import type { OfficeLayout } from '../office/types.js'
 
 /**
  * All refresh* callbacks, bootstrap, syncOfficeAgents, and tab-conditional refresh effects.
@@ -265,7 +266,7 @@ export function useDataSync({
         }
       }
 
-      officeState.rebuildFromLayout(activeLayout as never)
+      officeState.rebuildFromLayout(activeLayout as unknown as OfficeLayout)
       setFeed(pixel)
       mergeChatMessages(chat.messages)
       setApprovals(pendingApprovals.approvals)

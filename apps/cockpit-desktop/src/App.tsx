@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import './App.css'
 import { EditorState } from './office/editor/editorState.js'
 import { OfficeState } from './office/engine/officeState.js'
+import type { OfficeLayout } from './office/types.js'
 import {
   approveApproval,
   putLayout,
@@ -18,7 +19,7 @@ import {
   compareTasksByFreshness,
   projectLabel,
 } from './lib/formatters.js'
-import { STATUS_ORDER } from './lib/appConstants.js'
+import { STATUS_ORDER, PREFERRED_AGENT_ORDER } from './lib/appConstants.js'
 import {
   useCockpitStore,
   useDirectChatMessages,
@@ -274,8 +275,7 @@ function App() {
   const rosterAgents = useMemo<RosterAgentView[]>(() => {
     const recordsByAgentId = new Map(agentRecords.map((agent) => [agent.agent_id, agent]))
     const feedByAgentId = new Map((feed?.agents ?? []).map((agent) => [agent.agent_id, agent]))
-    const preferredOrder = ['clems', 'victor', 'leo', 'nova', 'vulgarisation']
-    const mergedIds = [...new Set([...preferredOrder, ...Array.from(recordsByAgentId.keys()), ...Array.from(feedByAgentId.keys())])]
+    const mergedIds = [...new Set([...PREFERRED_AGENT_ORDER, ...Array.from(recordsByAgentId.keys()), ...Array.from(feedByAgentId.keys())])]
 
     return mergedIds
       .map((agentId) => {
@@ -305,9 +305,8 @@ function App() {
       })
       .filter((agent): agent is RosterAgentView => agent !== null)
       .sort((left, right) => {
-        const preferredOrder = ['clems', 'victor', 'leo', 'nova', 'vulgarisation']
-        const leftOrder = preferredOrder.indexOf(left.agent_id)
-        const rightOrder = preferredOrder.indexOf(right.agent_id)
+        const leftOrder = PREFERRED_AGENT_ORDER.indexOf(left.agent_id as typeof PREFERRED_AGENT_ORDER[number])
+        const rightOrder = PREFERRED_AGENT_ORDER.indexOf(right.agent_id as typeof PREFERRED_AGENT_ORDER[number])
         if (leftOrder !== -1 || rightOrder !== -1) {
           return (leftOrder === -1 ? Number.MAX_SAFE_INTEGER : leftOrder) - (rightOrder === -1 ? Number.MAX_SAFE_INTEGER : rightOrder)
         }
@@ -444,6 +443,11 @@ function App() {
 
   const agentsTotal = feed?.agents.length ?? 0
   const chatReadyCount = rosterAgents.filter((agent) => agent.chat_targetable).length
+  const agentLevelCounts = useMemo(() => ({
+    l0: rosterAgents.filter((a) => a.level === 0).length,
+    l1: rosterAgents.filter((a) => a.level === 1).length,
+    l2: rosterAgents.filter((a) => a.level === 2).length,
+  }), [rosterAgents])
   const taskCounts = STATUS_ORDER.reduce<Record<TaskStatus, number>>(
     (accumulator, status) => ({
       ...accumulator,
@@ -513,7 +517,7 @@ function App() {
       const layout = (await response.json()) as Record<string, unknown>
       await putLayout(projectId, layout)
       window.localStorage.setItem(`cockpit.video_preset_applied.${projectId}`, '1')
-      officeState.rebuildFromLayout(layout as never)
+      officeState.rebuildFromLayout(layout as unknown as OfficeLayout)
       setRefreshTick((value) => value + 1)
       await refreshPixelFeed()
       setUiNotice('video preset applied')
@@ -550,24 +554,6 @@ function App() {
       done_definition: selectedTask.done_definition,
     })
   }, [selectedTask, setTaskEditor])
-
-  // ── Side-effect: cockpit-office-message listener ──────────────────
-  useEffect(() => {
-    const listener = (rawEvent: Event) => {
-      const event = rawEvent as CustomEvent<{ type: string }>
-      if (!event.detail?.type) {
-        return
-      }
-      if (event.detail.type === 'saveAgentSeats') {
-        return
-      }
-    }
-
-    window.addEventListener('cockpit-office-message', listener)
-    return () => {
-      window.removeEventListener('cockpit-office-message', listener)
-    }
-  }, [])
 
   // ── Side-effect: fallback agent selection when selected disappears ─
   useEffect(() => {
@@ -706,9 +692,9 @@ function App() {
           </div>
           {apiError ? <p className="sidebar-error" title={apiError}>API Error</p> : null}
           <div className="sidebar-counts">
-            <span>L0: {rosterAgents.filter((a) => a.level === 0).length}</span>
-            <span>L1: {rosterAgents.filter((a) => a.level === 1).length}</span>
-            <span>L2: {rosterAgents.filter((a) => a.level === 2).length}</span>
+            <span>L0: {agentLevelCounts.l0}</span>
+            <span>L1: {agentLevelCounts.l1}</span>
+            <span>L2: {agentLevelCounts.l2}</span>
           </div>
         </div>
       </aside>

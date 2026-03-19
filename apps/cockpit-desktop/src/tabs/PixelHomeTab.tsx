@@ -192,7 +192,7 @@ export function PixelHomeTab({
     [],
   )
 
-  const workbenchTabs = [
+  const workbenchTabs = useMemo(() => [
     { id: 'chat' as const, label: 'Chat' },
     {
       id: 'terminal' as const,
@@ -201,7 +201,7 @@ export function PixelHomeTab({
     },
     { id: 'approvals' as const, label: 'Approvals', count: approvals.length > 0 ? String(approvals.length) : undefined },
     { id: 'events' as const, label: 'Events', count: eventLog.length > 0 ? String(Math.min(eventLog.length, 99)) : undefined },
-  ] satisfies Array<{ id: WorkbenchPanel; label: string; count?: string }>
+  ] satisfies Array<{ id: WorkbenchPanel; label: string; count?: string }>, [selectedAgent?.terminal_state, selectedAgentId, approvals.length, eventLog.length])
 
   const renderWorkspaceLeftPanel = () => {
     if (workspaceTab === 'layout') {

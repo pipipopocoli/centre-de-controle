@@ -5,10 +5,6 @@ export function parseSkillsInput(raw: string): string[] {
   return [...new Set(raw.split(',').map((item) => item.trim()).filter(Boolean))]
 }
 
-export function formatSkillChip(skillId: string): string {
-  return skillId.replaceAll('-', ' ')
-}
-
 export function agentInitials(name: string, agentId: string): string {
   const source = name.trim() || agentId.trim()
   const parts = source.split(/\s+/).filter(Boolean)
@@ -123,7 +119,7 @@ export function messageChatMode(message: ChatMessage): ChatMode {
   return rawMode === 'conceal_room' ? 'conceal_room' : 'direct'
 }
 
-export function messageReplySource(message: ChatMessage): string | null {
+function messageReplySource(message: ChatMessage): string | null {
   return typeof message.metadata?.reply_source === 'string' ? message.metadata.reply_source : null
 }
 
