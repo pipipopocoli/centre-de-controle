@@ -465,7 +465,8 @@ select:focus-visible,
 .workspace-left {
   background: var(--surface-0);
   padding: 12px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: grid;
 }
 
@@ -474,7 +475,8 @@ select:focus-visible,
   min-height: 0;
   display: grid;
   gap: 10px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .workspace-section-agents {
@@ -974,7 +976,8 @@ select:focus-visible,
 .workbench {
   background: var(--surface-0);
   padding: 10px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -1065,7 +1068,7 @@ select:focus-visible,
 .approvals-section,
 .events-section {
   min-height: 0;
-  height: 100%;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -3685,6 +3688,8 @@ select:focus-visible,
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .agent-dashboard-header {

@@ -742,6 +742,7 @@ function App() {
           refreshPixelFeed={refreshPixelFeed}
         />
       ) : (
+        <div className="secondary-shell">
         <Suspense fallback={<div className="tab-loading">Loading...</div>}>
         {activeTab === 'concierge_room' ? (
         <ConciergeRoomTab
@@ -835,6 +836,7 @@ function App() {
         <ModelRoutingTab handleSaveLlmProfile={handleSaveLlmProfile} />
       ) : null}
         </Suspense>
+        </div>
       )}
       </div>
 
