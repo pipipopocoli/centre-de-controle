@@ -42,6 +42,7 @@ import { PilotageTab } from './tabs/PilotageTab.js'
 import { DocsTab } from './tabs/DocsTab.js'
 import { TodoTab } from './tabs/TodoTab.js'
 import { ModelRoutingTab } from './tabs/ModelRoutingTab.js'
+import { FloatingClems } from './components/FloatingClems.js'
 
 
 function App() {
@@ -805,6 +806,8 @@ function App() {
         <ModelRoutingTab handleSaveLlmProfile={handleSaveLlmProfile} />
       ) : null}
       </div>
+
+      <FloatingClems />
     </div>
   )
 }
