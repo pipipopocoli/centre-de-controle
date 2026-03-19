@@ -14,13 +14,10 @@ import type {
   WorkbenchPanel,
 } from '../types.js'
 import {
-  agentInitials,
-  formatHeartbeat,
-  formatAgentState,
-  formatSkillChip,
   messageKindLabel,
 } from '../lib/formatters.js'
 import { QUICK_AGENT_PRESETS } from '../lib/appConstants.js'
+import { AgentDashboard } from '../components/AgentDashboard.js'
 import type { OfficeState } from '../office/engine/officeState.js'
 import type { EditorState } from '../office/editor/editorState.js'
 import { OfficeCanvas } from '../office/components/OfficeCanvas.js'
@@ -186,20 +183,6 @@ export function PixelHomeTab({
     }
   }, [projectId, selectedAgentId, setApiError])
 
-  const handleOpenExternalTerminalForAgent = useCallback(
-    async (agentId: string) => {
-      setSelectedAgentId(agentId)
-      setApiError(null)
-      try {
-        const session = await openTerminal(projectId, agentId)
-        await openOsTerminal(agentId, session.cwd)
-      } catch (error) {
-        setApiError(error instanceof Error ? error.message : String(error))
-      }
-    },
-    [projectId, setApiError, setSelectedAgentId],
-  )
-
   const workspaceTabs = useMemo(
     () => [
       { id: 'agent' as const, label: 'Agents' },
@@ -278,10 +261,17 @@ export function PixelHomeTab({
 
     return (
       <section className="workspace-section workspace-section-agents">
-        <div className="section-title-row compact">
-          <h2>Agents</h2>
-          <span className="hint">stable roster + quick launch</span>
-        </div>
+        <AgentDashboard
+          rosterAgents={rosterAgents}
+          selectedAgentId={selectedAgentId}
+          activeTasksByOwner={activeTasksByOwner}
+          resolvedModelForAgent={resolvedModelForAgent}
+          onSelectAgent={handleSelectAgent}
+          onDeleteAgent={handleDeleteAgent}
+          onNewAgent={() => {
+            window.requestAnimationFrame(() => createAgentIdInputRef.current?.focus())
+          }}
+        />
 
         <div className="agent-create-card">
           <div className="quick-agent-row">
@@ -327,130 +317,6 @@ export function PixelHomeTab({
               {isSubmitting ? 'Creating...' : '+ Agent'}
             </button>
           </form>
-          <p className="small-copy">
-            Clems is always live at startup. L1 leads are one click away. Add skills now or assign them later.
-          </p>
-        </div>
-
-        {selectedAgent ? (
-          <div className="selected-agent-banner">
-            <div className="selected-agent-avatar">{agentInitials(selectedAgent.name, selectedAgent.agent_id)}</div>
-            <div className="selected-agent-copy">
-              <p className="selected-agent-label">Selected now</p>
-              <strong>@{selectedAgent.agent_id}</strong>
-              <span>{formatAgentState(selectedAgent.phase, selectedAgent.status)}</span>
-              <span>
-                {selectedAgent.current_task
-                  ? `task ${selectedAgent.current_task}`
-                  : activeTasksByOwner.get(selectedAgent.agent_id)
-                    ? `task ${activeTasksByOwner.get(selectedAgent.agent_id)?.title}`
-                    : 'no active task'}
-              </span>
-              <span>
-                {selectedAgent.chat_targetable ? 'chat ready' : 'chat unavailable'} - terminal{' '}
-                {selectedAgent.terminal_state === 'running' ? 'live' : 'offline'} - {formatHeartbeat(selectedAgent.heartbeat)}
-              </span>
-              <span>
-                model {resolvedModelForAgent(selectedAgent)} - {selectedAgent.scene_present ? 'on scene' : 'off scene'}
-              </span>
-            </div>
-          </div>
-        ) : null}
-
-        <div className="agent-cards" tabIndex={0} aria-label="Agent roster">
-          {rosterAgents.map((agent) => (
-            <article
-              key={agent.agent_id}
-              className={`agent-card level-${agent.level} ${selectedAgentId === agent.agent_id ? 'active' : ''}`}
-            >
-              <button className="agent-card-main" onClick={() => handleSelectAgent(agent.agent_id)}>
-                <div className="agent-card-head">
-                  <div className="agent-identity">
-                    <div className="agent-avatar">{agentInitials(agent.name, agent.agent_id)}</div>
-                    <div>
-                      <p className="agent-name">{agent.name}</p>
-                      <p className="agent-meta">@{agent.agent_id}</p>
-                    </div>
-                  </div>
-                  <span className="agent-level-pill">L{agent.level}</span>
-                </div>
-                <div className="agent-card-copy">
-                  <p className="agent-role">{agent.role}</p>
-                  <p className="agent-lead">
-                    {agent.lead_id ? `lead @${agent.lead_id}` : 'top-level operator lane'}
-                  </p>
-                  <p className="agent-runtime-line">
-                    model {resolvedModelForAgent(agent)} - {agent.platform}
-                  </p>
-                  <p className="agent-runtime-line">
-                    {agent.current_task
-                      ? `task ${agent.current_task}`
-                      : activeTasksByOwner.get(agent.agent_id)
-                        ? `task ${activeTasksByOwner.get(agent.agent_id)?.title}`
-                        : 'no open task assigned'}
-                  </p>
-                  <p className="agent-runtime-line">{formatAgentState(agent.phase, agent.status)}</p>
-                  <p className="agent-runtime-line">{formatHeartbeat(agent.heartbeat)}</p>
-                </div>
-                {agent.skills.length > 0 ? (
-                  <div className="agent-skill-row">
-                    {agent.skills.slice(0, 3).map((skill) => (
-                      <span key={skill} className="skill-chip" title={skill}>
-                        {formatSkillChip(skill)}
-                      </span>
-                    ))}
-                    {agent.skills.length > 3 ? <span className="skill-chip overflow">+{agent.skills.length - 3}</span> : null}
-                  </div>
-                ) : (
-                  <p className="agent-skill-empty">No skills assigned yet.</p>
-                )}
-                <div className="agent-card-statuses">
-                  <span className={`dot ${agent.chat_targetable ? 'green' : 'gray'}`}>
-                    {agent.chat_targetable ? 'chat ready' : 'chat unavailable'}
-                  </span>
-                  <span className={`dot ${agent.terminal_state === 'running' ? 'green' : 'gray'}`}>
-                    terminal {agent.terminal_state === 'running' ? 'live' : 'offline'}
-                  </span>
-                  <span className={`dot ${agent.scene_present ? 'green' : 'gray'}`}>
-                    {agent.scene_present ? 'on scene' : 'off scene'}
-                  </span>
-                </div>
-              </button>
-              <div className="agent-card-footer">
-                <button
-                  className="agent-action"
-                  onClick={() => {
-                    void handleOpenExternalTerminalForAgent(agent.agent_id)
-                  }}
-                >
-                  Open terminal
-                </button>
-                <button
-                  className="agent-action"
-                  onClick={() => {
-                    setSelectedAgentId(agent.agent_id)
-                    setActiveTab('pixel_home')
-                    setWorkbenchPanel('chat')
-                    setDirectTarget(agent.agent_id === 'clems' ? 'clems' : 'selected_agent')
-                  }}
-                >
-                  Chat
-                </button>
-                {agent.agent_id !== 'clems' ? (
-                  <button
-                    className="agent-delete"
-                    onClick={() => {
-                      void handleDeleteAgent(agent.agent_id)
-                    }}
-                  >
-                    Remove
-                  </button>
-                ) : (
-                  <span className="agent-keeper">system</span>
-                )}
-              </div>
-            </article>
-          ))}
         </div>
       </section>
     )

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { EditorState } from './office/editor/editorState.js'
 import { OfficeState } from './office/engine/officeState.js'
@@ -25,7 +25,7 @@ import {
   useConciergeChatMessages,
   useInternalConciergeMessages,
 } from './store/index.js'
-import type { RosterAgentView } from './types.js'
+import type { RosterAgentView, TopTab } from './types.js'
 
 import { usePolling } from './hooks/usePolling.js'
 import { useDataSync } from './hooks/useDataSync.js'
@@ -36,16 +36,22 @@ import { useTaskActions } from './hooks/useTaskActions.js'
 import { useProjectActions } from './hooks/useProjectActions.js'
 
 import { PixelHomeTab } from './tabs/PixelHomeTab.js'
-import { ConciergeRoomTab } from './tabs/ConciergeRoomTab.js'
-import { OverviewTab } from './tabs/OverviewTab.js'
-import { PilotageTab } from './tabs/PilotageTab.js'
-import { DocsTab } from './tabs/DocsTab.js'
-import { TodoTab } from './tabs/TodoTab.js'
-import { ModelRoutingTab } from './tabs/ModelRoutingTab.js'
 import { FloatingClems } from './components/FloatingClems.js'
+import { CommandPalette } from './components/CommandPalette.js'
+import { ProjectSwitcher } from './components/ProjectSwitcher.js'
+
+// ── Lazy-loaded tabs (code splitting) ────────────────────────────
+const ConciergeRoomTab = lazy(() => import('./tabs/ConciergeRoomTab.js').then((m) => ({ default: m.ConciergeRoomTab })))
+const OverviewTab = lazy(() => import('./tabs/OverviewTab.js').then((m) => ({ default: m.OverviewTab })))
+const PilotageTab = lazy(() => import('./tabs/PilotageTab.js').then((m) => ({ default: m.PilotageTab })))
+const DocsTab = lazy(() => import('./tabs/DocsTab.js').then((m) => ({ default: m.DocsTab })))
+const TodoTab = lazy(() => import('./tabs/TodoTab.js').then((m) => ({ default: m.TodoTab })))
+const ModelRoutingTab = lazy(() => import('./tabs/ModelRoutingTab.js').then((m) => ({ default: m.ModelRoutingTab })))
 
 
 function App() {
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+
   const projectId = useCockpitStore((s) => s.projectId)
   const loading = useCockpitStore((s) => s.loading)
   const apiError = useCockpitStore((s) => s.apiError)
@@ -616,6 +622,40 @@ function App() {
     })
   }, [roomCandidateAgents, setRoomCustomParticipants])
 
+  // ── Keyboard shortcuts (Cmd+1-7 tabs, Cmd+P palette) ──────────────
+  useEffect(() => {
+    const TAB_KEYS: Record<string, TopTab> = {
+      '1': 'pixel_home',
+      '2': 'concierge_room',
+      '3': 'overview',
+      '4': 'pilotage',
+      '5': 'docs',
+      '6': 'todo',
+      '7': 'model_routing',
+    }
+
+    const handler = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return
+
+      if (e.key === 'p') {
+        e.preventDefault()
+        setCommandPaletteOpen((prev: boolean) => !prev)
+        return
+      }
+
+      const tab = TAB_KEYS[e.key]
+      if (tab) {
+        e.preventDefault()
+        setActiveTab(tab)
+      }
+    }
+
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [setActiveTab])
+
+  const closeCommandPalette = useCallback(() => setCommandPaletteOpen(false), [])
+
   // ── Loading screen ────────────────────────────────────────────────
   if (loading) {
     return (
@@ -638,6 +678,7 @@ function App() {
           <h1 className="sidebar-logo">Cockpit</h1>
           <span className="sidebar-project">{projectId}</span>
         </div>
+        <ProjectSwitcher />
         <nav className="sidebar-nav">
           {sidebarNav.map((item) => (
             <button
@@ -714,7 +755,9 @@ function App() {
           bootstrap={bootstrap}
           refreshPixelFeed={refreshPixelFeed}
         />
-      ) : activeTab === 'concierge_room' ? (
+      ) : (
+        <Suspense fallback={<div className="tab-loading">Loading...</div>}>
+        {activeTab === 'concierge_room' ? (
         <ConciergeRoomTab
           composerStatus={composerStatus}
           composerLabel={composerLabel}
@@ -805,9 +848,12 @@ function App() {
       ) : activeTab === 'model_routing' ? (
         <ModelRoutingTab handleSaveLlmProfile={handleSaveLlmProfile} />
       ) : null}
+        </Suspense>
+      )}
       </div>
 
       <FloatingClems />
+      <CommandPalette open={commandPaletteOpen} onClose={closeCommandPalette} />
     </div>
   )
 }
